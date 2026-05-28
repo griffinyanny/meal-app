@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$TOOL_INPUT\" | grep -q 'git commit'; then cd /Users/griffinyianakopolos/claude-projects/meal-app && npm run lint 2>&1 && npm run typecheck 2>&1 && npm run test:run 2>&1; fi; exit 0",
+            "blocking": true
+          }
+        ]
+      }
+    ]
+  }
+}
