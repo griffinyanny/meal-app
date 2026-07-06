@@ -5,10 +5,20 @@ import {
   integer,
   date,
   timestamp,
+  jsonb,
   index,
 } from "drizzle-orm/pg-core";
+import { z } from "zod";
 import { households } from "./households";
 import { recipes } from "./recipes";
+
+// A slot holds a lightweight "meal concept" at plan time (title, rationale,
+// ingredient preview pills, tags, est. time, list-view chips). The full recipe
+// is generated lazily and linked via recipeId on confirm/cook. See decisions.md
+// "Plan generation produces lightweight meal concepts" (2026-05-28).
+export const ingredientPreviewSchema = z.array(z.string().max(80)).max(12);
+export const slotTagsSchema = z.array(z.string().max(40)).max(6);
+export const slotChipsSchema = z.array(z.string().max(60)).max(4);
 
 export const mealPlans = pgTable(
   "meal_plans",
@@ -57,6 +67,14 @@ export const mealPlanSlots = pgTable(
     })
       .notNull()
       .default("recipe"),
+    title: text("title"),
+    description: text("description"),
+    ingredientPreview: jsonb("ingredient_preview")
+      .$type<string[]>()
+      .default([]),
+    slotTags: jsonb("slot_tags").$type<string[]>().default([]),
+    estTimeMinutes: integer("est_time_minutes"),
+    chips: jsonb("chips").$type<string[]>().default([]),
     servings: integer("servings").default(2),
     rationale: text("rationale"),
     feedback: text("feedback", { enum: ["thumbs_up", "thumbs_down"] }),

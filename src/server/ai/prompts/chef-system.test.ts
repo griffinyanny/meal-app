@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildChefSystemPrompt, buildUserContext } from "./chef-system";
+import {
+  buildChefSystemPrompt,
+  buildPlanSystemPrompt,
+  buildPlanModifySystemPrompt,
+  buildUserContext,
+} from "./chef-system";
 
 describe("buildChefSystemPrompt", () => {
   it("should include role, safety, and output sections", () => {
@@ -25,6 +30,47 @@ describe("buildChefSystemPrompt", () => {
   it("should contain no interpolated user data (static prompt)", () => {
     // Called with no arguments — there is no way for user content to enter it.
     expect(buildChefSystemPrompt.length).toBe(0);
+  });
+});
+
+describe("buildPlanSystemPrompt", () => {
+  it("should reuse the chef role and food-safety rules", () => {
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("personal chef");
+    expect(prompt).toContain("Food safety");
+    expect(prompt).toContain("165°F");
+  });
+
+  it("should describe lightweight meal concepts, not full recipes", () => {
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("weekly plan");
+    expect(prompt).toContain("CONCEPTS");
+    expect(prompt).toContain("dayOffset");
+    expect(prompt).toContain("chefSummary");
+  });
+
+  it("should be static (no interpolated user data)", () => {
+    expect(buildPlanSystemPrompt.length).toBe(0);
+  });
+});
+
+describe("buildPlanModifySystemPrompt", () => {
+  it("should instruct the model to return only a diff", () => {
+    const prompt = buildPlanModifySystemPrompt();
+    expect(prompt).toContain("modifying a plan");
+    expect(prompt).toContain("changedMeals");
+    expect(prompt).toContain("removedDayOffsets");
+    expect(prompt).toContain("chefResponse");
+  });
+
+  it("should reuse the chef role and food-safety rules", () => {
+    const prompt = buildPlanModifySystemPrompt();
+    expect(prompt).toContain("personal chef");
+    expect(prompt).toContain("Food safety");
+  });
+
+  it("should be static (no interpolated user data)", () => {
+    expect(buildPlanModifySystemPrompt.length).toBe(0);
   });
 });
 

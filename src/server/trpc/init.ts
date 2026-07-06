@@ -4,6 +4,7 @@ import { getDb } from "@/server/db";
 import { householdMembers } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
+import { checkAiRateLimit, consumeDailyAiBudget } from "@/server/ratelimit";
 
 export async function createTRPCContext() {
   const supabase = await createClient();
@@ -53,4 +54,29 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
       householdId: membership.householdId,
     },
   });
+});
+
+// protectedProcedure + per-user rate limiting. Use for any procedure that calls
+// the AI provider, so a runaway client can't burn the provider key.
+export const aiProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const result = checkAiRateLimit(ctx.user.id);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message:
+        "You're asking the chef a lot right now — give it a few seconds and try again.",
+    });
+  }
+
+  // Distributed hard cap: the in-memory check above resets per serverless
+  // instance; this one is enforced in Postgres across all of them.
+  const daily = await consumeDailyAiBudget(ctx.db, ctx.user.id, ctx.householdId);
+  if (!daily.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "The chef has hit today's limit — come back tomorrow.",
+    });
+  }
+
+  return next();
 });
