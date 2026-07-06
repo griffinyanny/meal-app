@@ -42,18 +42,39 @@ export const userRouter = router({
       })
       .returning();
 
-    const [household] = await ctx.db
-      .insert(households)
-      .values({ name: `${user.displayName ?? "My"}'s Kitchen` })
-      .returning();
+    // Concurrency-safe first-login onboarding: household + membership are
+    // created in one transaction, and household_members.user_id is UNIQUE.
+    // If two first-login calls race (e.g. double-mounted guard, two tabs),
+    // the loser's membership insert hits the unique index, its transaction
+    // rolls back (discarding the orphan household), and we return the
+    // winner's household instead.
+    try {
+      return await ctx.db.transaction(async (tx) => {
+        const [household] = await tx
+          .insert(households)
+          .values({ name: `${user.displayName ?? "My"}'s Kitchen` })
+          .returning();
 
-    await ctx.db.insert(householdMembers).values({
-      householdId: household.id,
-      userId: user.id,
-      role: "owner",
-    });
+        await tx.insert(householdMembers).values({
+          householdId: household.id,
+          userId: user.id,
+          role: "owner",
+        });
 
-    return { status: "created" as const, householdId: household.id };
+        return { status: "created" as const, householdId: household.id };
+      });
+    } catch (error) {
+      const winner = await ctx.db.query.householdMembers.findFirst({
+        where: eq(householdMembers.userId, ctx.user.id),
+      });
+      if (winner) {
+        return {
+          status: "already_onboarded" as const,
+          householdId: winner.householdId,
+        };
+      }
+      throw error;
+    }
   }),
 
   preferences: protectedProcedure.query(async ({ ctx }) => {

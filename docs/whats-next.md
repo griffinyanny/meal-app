@@ -1,37 +1,44 @@
 # What's Next
 
-Last updated: 2026-05-27 (Session 11)
+Last updated: 2026-07-06 (Session 14)
 
 ## Exact Status
-- **Phase**: Phase 1B COMPLETE (functionally). Milestone M2 achieved. Phase 1C ready to begin.
-- **Where we are**: Full recipe AI loop works end-to-end against the real OpenAI API. Generate a recipe from a prompt, import from a URL (with Jina fallback for bot-protected sites), modify into a new version, browse/search the library, favorite. AI service layer on Vercel AI SDK v6, personal-chef system prompt, SSRF-hardened URL parsing, AI memory core. Ran `/review` + `/codex-review` at the phase boundary; fixed all findings (SSRF, prompt injection, output validation, retry classification, optimistic updates). 30 tests passing, build clean.
-- **What we were doing**: Built all of Phase 1B, switched LLM from Gemini (depleted credits) to OpenAI gpt-4.1-mini, debugged a stack of infra issues (DB SSL, Next.js 16 proxy/Turbopack deadlock, OpenAI strict schema, AllRecipes bot-block), then ran the full review gauntlet and fixed everything.
-- **NOT yet committed**: All Phase 1B work + the proxy/DB fixes are staged for the first real commit (repo only has the initial scaffold commit). Also not yet re-deployed to Vercel.
+- **Phase**: Phase 1C (Plan Tab) BUILT and mid-manual-test. Security hardening pass COMPLETE. All work committed as of Session 14.
+- **Where we are**: The full plan loop works — streaming generation (route handler + `useObject`), rolling-7-day model, in-place chip modify, expanded meal sheet, Talk-to-Chef free-form modify, confirm, mid-week view. Manual test loop (Session 12, 2026-05-31) passed Tests 1–3 of ~8, then stalled on a drawer bug (vaul body pointer-events conflict with two drawers in one tree). Fix (`modal={false}` + `noBodyStyles` on both sheets) is in but **was never retested** — that retest is the immediate pickup point.
+- **Session 13–14 (2026-07-06)**: resumed after a month. Fixed the real login blocker: the proxy's cookie-presence check missed **chunked** Supabase session cookies (`sb-*-auth-token.0/.1` — Google OAuth sessions chunk), so authenticated users bounced to /login forever. Then ran a deep security audit (1 HIGH, 5 MED, 6 LOW) and fixed everything except deliberate deferrals. 163 tests passing (83 new router tests). Lint/typecheck clean.
+
+## Manual test loop — where we are (dev server: PORT=3001, FFOS owns 3000)
+Tests 1–4 are verbatim from Session 12; the original 5–8 wording is lost (transcript expired) — remaining tests reconstructed from built-but-untested surfaces.
+
+| # | Surface | Status |
+|---|---------|--------|
+| 1 | Empty state → pill → streaming generate → today-start review | ✅ PASS |
+| 2 | Card chip → in-place single-day modify | ✅ PASS (UX feedback in backlog: click-ack + card-scoped toast) |
+| 3 | Card body → expanded sheet → action chip / swap | ✅ PASS + drawer bug found |
+| 3R | **Drawer retest**: every card opens sheet on first tap, repeatedly; check background scroll + Talk-to-Chef send (fix removed vaul scroll-lock) | ⏳ **NEXT — never confirmed** |
+| 4 | Talk to the Chef from hero → free-form modify (pills + textarea → `plan.modify`) | Not run (defined in Session 12) |
+| 5 | Meal-scoped Talk to the Chef from the expanded sheet (chatScope) | Not run (reconstructed) |
+| 6 | Confirm flow: "Looks good →" → status confirmed → batch-expand → grocery list | Not run (reconstructed) |
+| 7 | Mid-week view: confirmed plan + past days → EARLIER THIS WEEK + thumbs feedback | Not run (reconstructed) |
+| 8 | Regenerate over existing plan (one-active-plan replacement) + stream-error/retry states | Not run (reconstructed) |
 
 ## Next Session Should
-1. **Commit + deploy if not already done** (verify Vercel still builds with the OpenAI env var — add `OPENAI_API_KEY` to Vercel env).
-2. **Start Phase 1C: Plan Tab** (~2 weeks) — the signature experience:
-   - Plan generation pipeline (constraints → weekly plan, structured output, uses AI memory context)
-   - Plan modification pipeline (natural language → targeted changes)
-   - All 6 Figma states (plan ready, Talk to the Chef, no-plan, option cards, expanded card, mid-week)
-   - Chef voice (rationale lines, summaries), contextual chips, thumbs feedback
-   - **Wire `generateStream` into the UI** — generation is 7-20s; streaming was deferred from 1B and should land here for plans + recipes
-   - Goal (M3): open app → see generated plan → modify via Talk to Chef → confirm
+1. **Drawer retest (3R)** — then Tests 4–8 in order. One test at a time, pass/fail, log UX feedback to backlog without fixing inline (except real interaction bugs).
+2. After the loop: triage the UX backlog items from testing (click-ack/card-toast is the big macro one) into a polish pass.
+3. Deploy to Vercel — prod is still the pre-1B scaffold and confused Griffin once already (looks like an old app). Needs `OPENAI_API_KEY` env + a redeploy.
+4. Deferred security items when approaching real users: distributed per-minute rate limit (Upstash/Vercel KV; the Postgres daily budget is already distributed), full CSP with nonces, Next bump for the postcss advisory.
 
-## Phase 1B follow-ups (deferred, low priority)
-- Streaming UI for generation (see above — do in 1C)
-- `confirm()` → styled AlertDialog in recipe detail
-- Dedup the two near-identical AI dialogs (generate/import) into a shared component
-- Tune recipe generation quality (prompt refinement) — see idea-backlog
-- Accepted risks (documented, not fixing): DNS-rebinding TOCTOU on URL import (IP-pinning overkill for this threat model); Jina does its own resolution (reduces our SSRF exposure, doesn't increase it)
+## Login on localhost (solved — don't rediscover)
+- Google OAuth works on localhost:3001 now: Supabase Redirect URLs include it AND the proxy recognizes chunked cookies.
+- If "sign-in loops back to /login" ever recurs: check cookie chunking first (`sb-*-auth-token.0/.1` vs the proxy regex in `src/lib/supabase/middleware.ts`).
 
 ## Key Files for Next Session
-- `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md` — Systems architecture + Phase 1 plan. Phase 1C details at line ~907.
-- `docs/design/brief-plan-states.md` — the 6 Plan tab state briefs
-- `docs/design/Guidelines.md` — Design system reference
-- `src/server/ai/` — AI service layer (index.ts, config.ts, retry.ts, memory.ts, prompts/, tasks/). Add plan tasks here.
-- `src/server/trpc/routers/plan.ts` — skeleton plan router (needs generate/modify/confirm/feedback)
-- `src/server/ai/index.ts` — `generateStream` is built + logged but not yet consumed by any UI
+- `src/components/plan/` — all Plan tab UI (page-client, no-plan-state, streaming-plan, plan-review, plan-midweek, expanded-meal-sheet, talk-to-chef-sheet)
+- `src/app/api/plan/stream/route.ts` — streaming generation (auth + Zod + rate limit + daily budget + CSRF origin check)
+- `src/server/trpc/routers/plan.ts` — modify/confirm/feedback/current
+- `src/server/ratelimit.ts` — per-minute (in-memory) + daily budget (Postgres, distributed)
+- `src/server/db/migrations/0002_rls.sql`, `0003_ai_budget.sql` — RLS in repo + budget table; `src/server/db/rls.test.ts` is the CI guard
+- `docs/idea-backlog.md` — UX feedback from testing lives here
 
 ## Development Workflow (established Session 8)
 - Claude builds autonomously — don't stop for every change
@@ -42,17 +49,8 @@ Last updated: 2026-05-27 (Session 11)
 - Run the gauntlet (lint + typecheck + build) proactively, not just at commit time
 - Run `/review` at the end of every build phase
 
-## Milestone M2: ACHIEVED
-- [x] Generate a recipe from a prompt (AI structured output, Zod-validated)
-- [x] Import a recipe from a URL (SSRF-hardened, Jina fallback for blocked sites)
-- [x] Modify a recipe into a new version (version chain)
-- [x] Browse + search the recipe library, favorite recipes
-- [x] AI memory core (chef context read/write)
-- [x] `/review` + `/codex-review` done, all findings fixed, 30 tests passing
-
 ## Open Questions Remaining
 1. Free-form vs. structured list entry for Groceries (resolve during 1D)
 2. AI-first preferences vs. static settings for You tab (resolve during 1E)
-3. Final naming for "Talk to the Chef" affordance (resolve during 1C build)
-4. Expanded card: bottom sheet vs. near-full-screen (test both during 1C build)
-5. ~~Recipe image strategy~~ RESOLVED: text-forward for V1 (no hero-image generation)
+3. `recipe.get` returns `null` for missing recipes while `favorite`/`delete` throw NOT_FOUND — inconsistent; decide and align (surfaced by Session 14 test-writing)
+4. Expanded card: bottom sheet vs. near-full-screen (validating bottom sheet in the current test loop)

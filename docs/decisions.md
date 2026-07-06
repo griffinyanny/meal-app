@@ -225,3 +225,56 @@ All confirmed product and technical decisions. Each entry includes the decision,
 **AI prompt structure: static system prompt, user context in delimited user message** (2026-05-27)
 - The personal-chef system prompt is static (role, food-safety, output rules). Per-user data (dietary framework, restrictions, dislikes, memories) is passed in the user message wrapped in `<user_context>`.
 - Rationale: enforces the `ai-pipelines.md` rule (user content never interpolated into system prompts). Free-text memories are user-derived and could carry injected instructions — keeping them at user privilege (not system) prevents a poisoned memory from issuing system-level commands. Flagged by both `/review` and `/codex-review`.
+
+### Phase 1C: Plan Tab Decisions (2026-05-28)
+
+**Plan generation produces lightweight "meal concepts," not full recipes** (2026-05-28)
+- Generating a week produces ~5 lightweight meal concepts per slot (title, one-line rationale, ~6 ingredient-preview pills, cuisine/effort tags, est. time), NOT full recipes. Full recipes (real quantities, steps, timers) are generated lazily by the existing 1B recipe pipeline at two boundaries: (1) batch-expand the whole week **on confirm** ("Looks good"), which feeds the grocery list; (2) expand a single meal **on cook** if not already expanded.
+- Rationale: fidelity should be generated at the moment of *commitment*, not the moment of *consideration*. During planning the user is browsing/swapping/regenerating — cheap disposable concepts are the right fidelity. Full generation per slot at plan time would be 5–7× the tokens/latency (blows the 7–20s budget), and most generated recipes are swapped or skipped (wasted spend). Concepts are cheap to throw away; full recipes are expensive to throw away — which is exactly the "things change" risk. The work doesn't disappear, it relocates to the confirm boundary (where the grocery list needs real quantities anyway) and the cook boundary. Mirrors how a chef works: sketch the week loosely, then write the actual recipes/shopping list once the week is locked. Also keeps the Recipes library clean (un-cooked concepts don't pollute it) and scales to future "pre-draft next week" without burning speculative generations.
+- Future impact: requires extending `meal_plan_slots` with concept columns (title, description, ingredientPreview jsonb + Zod, tags, estTimeMinutes, list-view chips). `recipeId` stays nullable, populated only on lazy expansion. Migration + RLS CI check required. Confirm flow gains a batch-expand step ("building your list…").
+
+**Plan scope: dinners only for V1** (2026-05-28)
+- The weekly plan generates dinners only in V1. The `meal_type` enum already supports breakfast/lunch/snack — adding them later is generator config, not a migration.
+- Rationale: every Plan-tab design shows dinners; the North Star is "what's for dinner"; breakfast/lunch are lower-value, higher-noise (repeated/ad-hoc). Keeps the generation schema and token budget tight.
+
+**Plan generation streams from the start (route handler + AI SDK), not a fast-follow** (2026-05-28)
+- Plan generation is built streaming-first: a dedicated Next.js route handler (`src/app/api/plan/stream/route.ts`) returns `streamObject(...).toTextStreamResponse()`; the client consumes it via `experimental_useObject` from `@ai-sdk/react` (to be installed). The handler replicates `protectedProcedure`'s auth (Supabase `getUser` + household resolution) and persists the plan + slots transactionally on stream finish; the client then settles onto the canonical persisted plan via a tRPC `plan.current` refetch. Modify/confirm/feedback stay in tRPC.
+- **Rule carve-out (deliberate, documented):** AI *generation streaming* endpoints may live as route handlers. All other DB mutations stay in tRPC. The "all mutations through tRPC" rule's intent (centralized auth, no direct DB from components, Zod-validated writes) is preserved because the handler reuses the same auth + Drizzle + validation server-side.
+- Rationale: generation is 7–20s on the signature screen — a static spinner is unacceptable, and watching the week materialize is on-brand for "AI generates the UI." Griffin chose streaming-first over the de-risked plain-first sequencing (accepting a slightly slower path to M3) because the materializing-week experience is core, not polish. The route-handler mechanism is the well-trodden AI SDK path; tRPC-native partial-object streaming (httpBatchStreamLink + async generators) was rejected as awkward with superjson.
+
+**Plan cards: text-forward for V1; images deferred pending cost-effective approach** (2026-05-28, resolves design/decision conflict)
+- The Figma briefs assume hero food photography + thumbnails, but V1 ships text-forward (no images), consistent with the 1B "text-forward for V1" decision. Cards must look genuinely premium without photos (typography- and glass-led, à la Crouton/Mela) — no broken-image wells or empty placeholders.
+- Rationale: AI image generation is expensive; generated meals have no natural image source; stock-photo matching is unreliable. But the mocks *do* look notably better with imagery, so this is a "ship without, but solve later" — a cost-effective image strategy is a real future need, captured in the backlog. Griffin explicitly wants the no-image version to look great so we *can* ship without them.
+
+**Plan modification returns a targeted diff, not a full regeneration** (2026-05-28)
+- "Make Tuesday lighter" returns structured slot-level operations (replace slot X with concept Y, swap, mark eating-out), applied transactionally — it does NOT regenerate the whole week. Every AI-returned `slotId` is validated to belong to the household's plan before applying (never trust AI-returned IDs).
+- Rationale: full regen would wipe untouched slots' feedback/confirmed state and cost ~5× for a one-meal change. Diffs preserve the rest of the plan and are cheaper.
+
+**Rate limiting middleware added in 1C** (2026-05-28)
+- A minimal per-user rate-limit middleware is added to the tRPC layer now and applied to AI-calling procedures (plan generate/modify, and retrofitted to recipe generate/importUrl/modify). Closes the existing repo-wide gap against the `trpc-routers.md` rule.
+- Rationale: plan generation is the most expensive AI call; a bug looping generation could quietly burn the OpenAI key. Cheap insurance even for a 2-user app. The rule already requires it and nothing implemented it.
+
+**V1 Plan Model: Rolling 7-day plan from creation day** (2026-05-29)
+- The V1 plan is a fixed 7 days starting today (UTC). `dayOffset 0` is the day you create the plan; `dayOffset 6` is six days later. The plan has NO calendar-week alignment — it does not anchor on Sunday or any week boundary. The `meal_plans.week_start` column stores the creation day.
+- **One active plan per household.** Generating replaces it outright (delete-all + insert in one transaction). No plan history, no concurrent plans.
+- The mid-week ("EARLIER THIS WEEK / rate what you cooked") layout appears only when the plan is `status='confirmed'` AND at least one slot's date is in the past. A draft plan always shows the review layout, no matter what day it is.
+- Rationale: The original Figma briefs assumed Sunday-morning planning for the calendar week (Sun–Sat). But real users generate plans mid-week, and every calendar-week model degrades for that case: current-week-with-past-days shows "EARLIER THIS WEEK is full of meals I never cooked"; next-week semantics introduce a 0–6 day holding state before the plan is "live"; user-picks-duration adds configuration before we know users want it. Rolling-7-from-today is the only model that's coherent regardless of when the plan is created, matches the chef metaphor ("plan my dinners"), and stays simple. Validated by reproducing the alternative-model failure modes during Session 12 testing.
+- Future impact: The streaming generation prompt is keyed on `dayOffset 0–6`. The mid-week view gating logic depends on this model. The "one active plan" rule means we cannot offer plan history or "draft a future week alongside this one" without revisiting the data model. Alternative mental models (calendar-week current-week, calendar-week next-week, user-selectable start day, user-selectable plan length, auto-inferred-from-intent) are captured in `idea-backlog.md` as real models other users may hold, to consider after the core loop is validated.
+
+### Session 13–14: Security Hardening Decisions (2026-07-06)
+
+**Proxy session check must match chunked Supabase cookies** (2026-07-06)
+- The cookie-presence check in `src/lib/supabase/middleware.ts` uses a regex matching `sb-*-auth-token` AND its chunked variants (`.0`, `.1`), while deliberately excluding `sb-*-auth-token-code-verifier` (exists mid-OAuth, pre-authentication — matching it would create a redirect loop).
+- Rationale: @supabase/ssr chunks large sessions (Google OAuth always). The old `endsWith` check treated every Google-authenticated user as logged out. This was the entire "login broken" incident.
+
+**RLS lives in the migration chain; no FORCE; app-layer scoping is the primary control** (2026-07-06)
+- RLS policies are versioned in `0002_rls.sql` and guarded by a static CI test. FORCE ROW LEVEL SECURITY is deliberately absent: the app's connection role has BYPASSRLS, so FORCE is a no-op. Threat model: RLS protects direct PostgREST/anon-key access; household scoping in tRPC (`ctx.householdId` on every query) protects the app path.
+- Future impact: if the app ever moves to a non-owner DB role or plumbs JWTs into the Drizzle connection, revisit FORCE.
+
+**AI cost control is two-layer: in-memory per-minute + Postgres daily budget** (2026-07-06)
+- 10 calls/min (in-memory, per-instance, UX guard) + 150 calls/user/day (Postgres atomic upsert, distributed hard cap). Chosen over Upstash/Vercel KV to avoid new infrastructure; Postgres is already shared across instances.
+- Future impact: before real signups, move the per-minute limiter to a shared store; the budget table pattern extends to token-based budgets if needed.
+
+**One household per user is a DB constraint** (2026-07-06)
+- `household_members.user_id` has a unique index; `ensureOnboarded` creates household+membership transactionally and recovers gracefully when a concurrent call wins. Encodes the V1 single-household model at the database level.
+- Future impact: multi-household membership (if ever wanted) requires dropping this index and redesigning `protectedProcedure`'s household resolution.

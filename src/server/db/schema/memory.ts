@@ -7,7 +7,9 @@ import {
   boolean,
   jsonb,
   timestamp,
+  date,
   index,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 import { households, users } from "./households";
 import { z } from "zod";
@@ -80,5 +82,33 @@ export const aiMemories = pgTable(
   (table) => [
     index("ai_memories_household_id_idx").on(table.householdId),
     index("ai_memories_category_idx").on(table.category),
+  ]
+);
+
+// Daily AI-call accounting, one row per user per UTC day. The per-minute
+// limiter (src/server/ratelimit.ts) is in-memory and per-serverless-instance;
+// this table is the distributed backstop — a hard daily budget enforced in
+// Postgres via atomic upsert, shared across all instances.
+export const aiUsageDaily = pgTable(
+  "ai_usage_daily",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    householdId: uuid("household_id")
+      .notNull()
+      .references(() => households.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    calls: integer("calls").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.day] }),
+    index("ai_usage_daily_household_id_idx").on(table.householdId),
   ]
 );

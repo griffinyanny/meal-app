@@ -404,3 +404,28 @@ Griffin requested formal systems to ensure long-running multi-phase build doesn'
 ### What's next
 - Phase 1C: Plan Tab (the signature "AI generates your week" experience, all 6 Figma states).
 - Deferred from 1B review: streaming for user-facing generation (wire `generateStream` into the UI — flagged but it's a focused 1C task), `confirm()` → AlertDialog, dedup the two AI dialogs.
+
+## Session 13–14 — 2026-07-06 (resumed after ~5 weeks)
+
+### What happened
+- **Session recovery**: located the Session 12 testing session from transcripts; restored full test-loop state (Tests 1–3 passed, drawer fix awaiting retest). Original transcript has since expired — test state now lives in `whats-next.md`.
+- **Fixed the localhost login blocker**: Google OAuth appeared broken, but sign-in was actually succeeding. Root cause: the proxy's session check (`endsWith("-auth-token")`) missed **chunked** Supabase cookies (`sb-*-auth-token.0/.1`) that Google OAuth sessions produce, so authenticated users were bounced back to /login forever. Fix: regex matching chunked names (deliberately excluding `-code-verifier`). Also added `http://localhost:3001/**` to Supabase Redirect URLs.
+- Griffin briefly landed on the stale Vercel deploy (still pre-1B scaffold) and mistook it for a regression — flagged deploy refresh as a next-session item.
+- **Deep security audit** (read-only agent, full app): 1 HIGH, 5 MEDIUM, 6 LOW. Core came back solid (tRPC auth/scoping, prompt-injection hygiene, SSRF guards, secrets, XSS all verified clean).
+- **Hardening pass — all findings fixed except deliberate deferrals**:
+  - H1: RLS captured into the tracked migration chain (`0002_rls.sql`) + static CI test (`src/server/db/rls.test.ts`) that fails if any table ships without RLS+policy. `is_household_member()` now pins `search_path` (SECURITY DEFINER hijack class). No FORCE: app role has BYPASSRLS, so RLS guards the anon/PostgREST path; app-layer scoping is the primary control (documented in the migration).
+  - M1: `(app)` layout now verifies the session per-request via `getClaims()` (the "documented but missing" second leg of the auth model).
+  - M2: AI timeouts wired (30s one-shot / 60s streams, fresh AbortSignal per retry attempt).
+  - M3: security headers (CSP frame-ancestors 'none', nosniff, referrer-policy, permissions-policy).
+  - M4: **daily AI budget** (150 calls/user/day) enforced in Postgres via atomic upsert (`ai_usage_daily` table, migration `0003`) — distributed across serverless instances, wired into `aiProcedure` + the stream route. Per-minute in-memory limiter unchanged.
+  - M5: **83 tRPC router tests** added (9 co-located files): auth rejection + household scoping per procedure, budget exhaustion, onboarding race, ILIKE escaping. Full suite now 163 tests.
+  - L1: CSRF origin check on `/api/plan/stream`. L2: `shadcn` → devDependencies (hono HIGH advisory out of prod tree). L3: onboarding race closed (unique index on `household_members.user_id` + transaction + loser-recovery). L4: ILIKE wildcard escaping in `recipe.search`. L5: `.env.example` corrected.
+  - Deferred deliberately: distributed per-minute limiter (needs Upstash/KV; daily budget already covers cost abuse), full nonce-based CSP, Next bump for postcss advisory, L6 provider-adapters dir (cosmetic).
+- Migrations 0002 + 0003 applied to the live Supabase DB and verified.
+- Gauntlet green end-to-end: lint, typecheck, 163/163 tests.
+
+### Testing infrastructure note
+- Test-mock construction uses `as unknown as` casts in exactly one place per router test file (bridging mock db/supabase into `createCaller`) — a documented exception to the no-cast rule; alternative (hand-written fakes of generated types) is a worse trade.
+
+### Where the test loop stands
+See the table in `whats-next.md`. Pickup point: drawer retest (3R), then Tests 4–8.
