@@ -11,9 +11,12 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname.startsWith("/auth");
 
+  // Large sessions (e.g. Google OAuth) get chunked by @supabase/ssr into
+  // sb-<ref>-auth-token.0 / .1 — match those too. Deliberately NOT matching
+  // sb-<ref>-auth-token-code-verifier, which exists mid-OAuth before auth.
   const hasSessionCookie = request.cookies
     .getAll()
-    .some((c) => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
+    .some((c) => /^sb-.+-auth-token(\.\d+)?$/.test(c.name));
 
   if (!hasSessionCookie && !isAuthPage) {
     const url = request.nextUrl.clone();
