@@ -26,5 +26,8 @@ export function getModel(task: AITask) {
 export const AI_DEFAULTS = {
   maxRetries: 1,
   timeoutMs: 30_000,
+  // Streams surface tokens progressively (plan generation runs 7-20s healthy),
+  // so they get a looser bound than one-shot calls.
+  streamTimeoutMs: 60_000,
   maxTokens: 4096,
 } as const;

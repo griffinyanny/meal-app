@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../init";
+import { router, protectedProcedure, aiProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
 import { recipes } from "@/server/db/schema";
 import { eq, and, desc, ilike, or } from "drizzle-orm";
@@ -45,7 +45,8 @@ export const recipeRouter = router({
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1).max(200) }))
     .query(async ({ ctx, input }) => {
-      const term = `%${input.query}%`;
+      // Escape ILIKE wildcards so user input matches literally.
+      const term = `%${input.query.replace(/[%_\\]/g, "\\$&")}%`;
 
       const results = await ctx.db
         .select()
@@ -65,7 +66,7 @@ export const recipeRouter = router({
       return results;
     }),
 
-  generate: protectedProcedure
+  generate: aiProcedure
     .input(z.object({ prompt: z.string().min(1).max(1000) }))
     .mutation(async ({ ctx, input }) => {
       const chefCtx = await getChefContext(
@@ -100,7 +101,7 @@ export const recipeRouter = router({
       return saved;
     }),
 
-  importUrl: protectedProcedure
+  importUrl: aiProcedure
     .input(z.object({ url: z.string().url().max(2048) }))
     .mutation(async ({ ctx, input }) => {
       let aiRecipe;
@@ -134,7 +135,7 @@ export const recipeRouter = router({
       return saved;
     }),
 
-  modify: protectedProcedure
+  modify: aiProcedure
     .input(
       z.object({
         recipeId: z.string().uuid(),

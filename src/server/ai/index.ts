@@ -25,6 +25,10 @@ interface StreamStructuredOptions<T> {
   prompt: string;
   schema: Schema<T>;
   maxTokens?: number;
+  // Runs once the stream finishes successfully, with the final object. Awaited
+  // by the SDK before the stream closes, so it's a safe place to persist. Must
+  // not throw — handle its own errors.
+  onComplete?: (object: T) => Promise<void> | void;
 }
 
 export async function generateStructured<T>(
@@ -42,6 +46,9 @@ export async function generateStructured<T>(
         schema: options.schema,
         maxOutputTokens: options.maxTokens ?? AI_DEFAULTS.maxTokens,
         maxRetries: 0,
+        // Fresh signal per attempt (created inside the retry callback) so a
+        // retried call isn't born already-aborted.
+        abortSignal: AbortSignal.timeout(AI_DEFAULTS.timeoutMs),
       });
 
       logAICall({
@@ -83,6 +90,7 @@ export async function generateTextResponse(
         prompt: options.prompt,
         maxOutputTokens: options.maxTokens ?? AI_DEFAULTS.maxTokens,
         maxRetries: 0,
+        abortSignal: AbortSignal.timeout(AI_DEFAULTS.timeoutMs),
       });
 
       logAICall({
@@ -121,7 +129,8 @@ export function generateStream<T>(options: StreamStructuredOptions<T>) {
     schema: options.schema,
     maxOutputTokens: options.maxTokens ?? AI_DEFAULTS.maxTokens,
     maxRetries: AI_DEFAULTS.maxRetries,
-    onFinish({ usage, error, response }) {
+    abortSignal: AbortSignal.timeout(AI_DEFAULTS.streamTimeoutMs),
+    async onFinish({ usage, error, response, object }) {
       logAICall({
         task: options.task,
         model: response?.modelId ?? "unknown",
@@ -135,6 +144,10 @@ export function generateStream<T>(options: StreamStructuredOptions<T>) {
             : String(error)
           : undefined,
       });
+
+      if (!error && object !== undefined && options.onComplete) {
+        await options.onComplete(object);
+      }
     },
   });
 }
