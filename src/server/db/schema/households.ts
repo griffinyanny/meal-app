@@ -4,6 +4,7 @@ import {
   text,
   timestamp,
   primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 export const households = pgTable("households", {
@@ -48,5 +49,10 @@ export const householdMembers = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [primaryKey({ columns: [table.householdId, table.userId] })]
+  (table) => [
+    primaryKey({ columns: [table.householdId, table.userId] }),
+    // V1 model: one household per user. Makes concurrent first-login
+    // onboarding race-safe at the DB level (see user.ensureOnboarded).
+    uniqueIndex("household_members_user_id_unique").on(table.userId),
+  ]
 );
