@@ -9,7 +9,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { MessageCircle, X } from "lucide-react";
-import { type DisplayMeal, metaLine } from "./plan-helpers";
+import { type DisplayMeal, metaLine, scopedRequest } from "./plan-helpers";
 
 export interface ExpandedMealSheetProps {
   meal: DisplayMeal | null;
@@ -85,7 +85,7 @@ function ExpandedMealContent({
   const actions = [
     ...meal.chips.map((chip) => ({
       label: chip,
-      request: `${chip} — for ${meal.dayName.toLowerCase()}'s ${meal.title ?? "dinner"}.`,
+      request: scopedRequest(chip, meal),
     })),
     {
       label: "Swap for something else",
@@ -95,7 +95,7 @@ function ExpandedMealContent({
 
   return (
     <>
-      <DrawerHeader className="text-left">
+      <DrawerHeader className="text-left pr-12">
         <p className="text-[11px] font-medium tracking-widest text-muted-foreground">
           {label}
         </p>
