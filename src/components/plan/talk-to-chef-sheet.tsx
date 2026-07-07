@@ -66,7 +66,7 @@ export function TalkToChefSheet({
         >
           <X className="size-5" />
         </DrawerClose>
-        <DrawerHeader className="text-left">
+        <DrawerHeader className="text-left pr-12">
           <DrawerTitle className="text-lg">{headline}</DrawerTitle>
           <DrawerDescription className="sr-only">
             Tell your chef what you&apos;re thinking for the week.
@@ -100,8 +100,13 @@ export function TalkToChefSheet({
               disabled={isSubmitting}
               className="min-h-24 resize-none bg-white/5 pr-12 text-base"
               onKeyDown={(e) => {
-                // Enter submits; Shift+Enter inserts a newline.
-                if (e.key === "Enter" && !e.shiftKey) {
+                // Enter submits; Shift+Enter inserts a newline. Ignore Enter
+                // while an IME composition is active (don't submit mid-compose).
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
                   e.preventDefault();
                   handleSubmit();
                 }

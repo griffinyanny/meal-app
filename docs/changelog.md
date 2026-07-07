@@ -457,8 +457,18 @@ Ran the Plan-tab manual test loop from 3R through Test 8. **7 of 8 pass; Test 8 
 ### Test-data handling
 The only plan in the DB was the stale May-30 one (all days ~5 weeks past), which is why confirming it (Test 6) flipped to an all-past mid-week view. Reseeded via date-shift UPDATEs to test 6 (draft, starts today) and 7 (confirmed, 3 past + tonight + 3 upcoming), then deleted it so Griffin could regenerate a fresh plan through the real flow (also re-validated Test 1). Note: unqualified `DELETE FROM meal_plans` was blocked by the auto-mode safety classifier; ID-scoped deletes off auto-mode are the way.
 
+### Dual-review QA pass (end of session)
+Committed the work to branch `session-15-plan-fixes`, then ran the dual reviewer.
+- **Codex CLI: unavailable.** Every model (`gpt-5.3-codex`, `gpt-5-codex`, `gpt-5.1`, `gpt-5`, `o4-mini`) is rejected with "not supported when using Codex with a ChatGPT account." Re-running `codex login` did NOT fix it — it's an account-tier/entitlement issue, not a stale token. Options: a ChatGPT plan that includes Codex, or switch Codex to API-key mode (an `OPENAI_API_KEY` exists in `~/.codex/auth.json`, but that's API billing — Griffin's call). Left auth untouched.
+- **Internal review (4 parallel finder agents + verify):** found a real regression I introduced plus a reuse miss. Fixed all in a follow-up commit:
+  1. **Keyboard a11y bug (regression):** the `div[role=button]` whole-card change nested real chip buttons inside a button role; chips only `stopPropagation` on click, so keyboard Enter on a chip bubbled to the card and opened the sheet (Space double-fired). Refactored to an overlay-button pattern — a real `<button>` fills the card behind pointer-events-none content, chips re-enable pointer events and sit above, so button + chips are siblings (no nested interactives, keyboard unambiguous).
+  2. **IME Enter:** added `!e.nativeEvent.isComposing` guard so Enter doesn't submit mid-composition.
+  3. **Reuse miss:** `expanded-meal-sheet.tsx` was still building the chip request string inline; migrated to `scopedRequest()` so it's under the regression test.
+  4. **X overlaps long titles:** added `pr-12` to both sheet headers.
+  - Conventions review: clean. Deferred to the drawer design pass: X `DrawerClose` is duplicated per-sheet (belongs in shared `DrawerContent`) and is first-in-focus-order before the heading.
+
 ### Gauntlet
-Lint + typecheck clean; 167/167 tests (up from 163). Changes not yet committed.
+Lint + typecheck clean; 167/167 tests (up from 163). Committed on branch `session-15-plan-fixes` (2 commits; not merged to main, not pushed).
 
 ### What's next
 - **Build pass (design-led):** regenerate/new-plan entry point + the "AI is working" affordance system + drawer dismissal (X shipped; click-outside pending). Bring in ux-design-critic — these set app-wide patterns.
