@@ -15,6 +15,7 @@ import { TalkToChefSheet } from "./talk-to-chef-sheet";
 import { ExpandedMealSheet } from "./expanded-meal-sheet";
 import {
   type DisplayMeal,
+  scopedRequest,
   slotToDisplayMeal,
   streamedMealToDisplay,
   weekStartISO,
@@ -118,8 +119,14 @@ export function PlanPageClient() {
     modifyMutation.mutate({ request });
   }
 
+  // Free-form chef submit. When the sheet was opened scoped to a meal, anchor
+  // the request to that meal; otherwise it's a whole-week request.
+  function handleChatSubmit(text: string) {
+    handleModify(chatScope ? scopedRequest(text, chatScope) : text);
+  }
+
   function handleChipClick(meal: DisplayMeal, chip: string) {
-    handleModify(`${chip} — for ${meal.dayName.toLowerCase()}'s ${meal.title ?? "dinner"}.`);
+    handleModify(scopedRequest(chip, meal));
   }
 
   function openChat(scope: DisplayMeal | null) {
@@ -245,7 +252,7 @@ export function PlanPageClient() {
       <TalkToChefSheet
         open={chatOpen}
         onOpenChange={setChatOpen}
-        onSubmit={handleModify}
+        onSubmit={handleChatSubmit}
         isSubmitting={modifyMutation.isPending}
         suggestions={GENERAL_SUGGESTIONS}
         headline={chatHeadline}

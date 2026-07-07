@@ -2,12 +2,13 @@
 
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
 import { type DisplayMeal, metaLine } from "./plan-helpers";
 
 export interface ExpandedMealSheetProps {
@@ -42,6 +43,12 @@ export function ExpandedMealSheet({
       noBodyStyles
     >
       <DrawerContent className="glass-sheet">
+        <DrawerClose
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="size-5" />
+        </DrawerClose>
         {meal && (
           <ExpandedMealContent
             meal={meal}

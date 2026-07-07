@@ -156,3 +156,10 @@ export function metaLine(meal: DisplayMeal): string {
 export function isCookable(slotType: SlotType): boolean {
   return slotType === "recipe" || slotType === "leftover";
 }
+
+// Anchor a free-form modify request to a specific meal so the chef changes the
+// right day. Both card chips and meal-scoped chat route through this — without
+// it, "swap this" reaches the AI with no referent and the wrong meal changes.
+export function scopedRequest(text: string, meal: DisplayMeal): string {
+  return `${text} — for ${meal.dayName.toLowerCase()}'s ${meal.title ?? "dinner"}.`;
+}
