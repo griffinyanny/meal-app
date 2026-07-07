@@ -278,3 +278,11 @@ All confirmed product and technical decisions. Each entry includes the decision,
 **One household per user is a DB constraint** (2026-07-06)
 - `household_members.user_id` has a unique index; `ensureOnboarded` creates household+membership transactionally and recovers gracefully when a concurrent call wins. Encodes the V1 single-household model at the database level.
 - Future impact: multi-household membership (if ever wanted) requires dropping this index and redesigning `protectedProcedure`'s household resolution.
+
+**Meal-scoped modify uses natural-language injection, not a structured target** (2026-07-06, Session 15)
+- When a modify is scoped to a specific meal (card chip or meal-scoped chat), the target day + dish are injected into the request string (`scopedRequest()` in `plan-helpers.ts`), e.g. "swap this for salmon — for sunday's Chicken Tikka." The `plan.modify` procedure stays a single free-text field; the AI resolves the target from the text + the current-meals list. Chosen for consistency (the card chips already worked this way) and minimal surface area over adding a structured `targetDate` to the procedure.
+- Future impact: if scoping ever proves unreliable at scale, revisit by passing an explicit target to `plan.modify` and constraining the AI to that slot. Regression test lives in `plan-helpers.test.ts`.
+
+**One active plan: generation replaces the current plan** (confirmed Session 15)
+- The stream route's `persistPlan` deletes the household's existing plan and inserts the new one, transactionally. The one-active-plan data behavior is implemented server-side; the gap is purely UI (no regenerate trigger — see open-questions).
+- Future impact: plan history / concurrent next-week drafting (deferred idea) would require keying on plan identity instead of "delete all for household."

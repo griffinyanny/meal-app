@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, X } from "lucide-react";
 
 export interface TalkToChefSheetProps {
   open: boolean;
@@ -59,6 +60,12 @@ export function TalkToChefSheet({
       noBodyStyles
     >
       <DrawerContent className="glass-sheet">
+        <DrawerClose
+          aria-label="Close"
+          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <X className="size-5" />
+        </DrawerClose>
         <DrawerHeader className="text-left">
           <DrawerTitle className="text-lg">{headline}</DrawerTitle>
           <DrawerDescription className="sr-only">
@@ -93,7 +100,9 @@ export function TalkToChefSheet({
               disabled={isSubmitting}
               className="min-h-24 resize-none bg-white/5 pr-12 text-base"
               onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                // Enter submits; Shift+Enter inserts a newline.
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
                   handleSubmit();
                 }
               }}

@@ -429,3 +429,39 @@ Griffin requested formal systems to ensure long-running multi-phase build doesn'
 
 ### Where the test loop stands
 See the table in `whats-next.md`. Pickup point: drawer retest (3R), then Tests 4–8.
+
+---
+
+## Session 15 — 2026-07-06
+
+### What happened
+Ran the Plan-tab manual test loop from 3R through Test 8. **7 of 8 pass; Test 8 is blocked** on a missing UI flow (see below). Fixed every real interaction bug inline; logged UX/design feedback to the backlog without inline-fixing per the loop protocol.
+
+**Bugs fixed (inline, with the gauntlet green after each):**
+- **Card touch target (3R)** — only the text block was tappable; padding + chip row were dead zones (Griffin got ~10s of dead taps). Whole card is now the tap target (`div[role=button]` + Enter/Space handler); chips `stopPropagation` so they keep their own action. `meal-card.tsx`.
+- **Enter-to-submit in Talk to the Chef (Test 4)** — plain Enter inserted a newline; now Enter submits, Shift+Enter is the newline. `talk-to-chef-sheet.tsx`.
+- **Meal-scoped chat changed the wrong meal (Test 5) — real correctness bug.** The chat scope only drove the sheet headline; the request reached the AI with no anchor, so "swap this" changed an arbitrary day (Griffin reproduced on two meals). Fix: `scopedRequest()` injects the day + dish into the request, matching the convention the card chips already used. Extracted to `plan-helpers.ts` and covered by a new regression test (`plan-helpers.test.ts`, 4 cases). `plan-page-client.tsx`.
+- **Drawer width on desktop** — vaul defaults bottom sheets to full-viewport width; on desktop they stretched edge-to-edge while the app is a 430px centered column. Constrained bottom drawers to `max-w-[430px]` centered in the shared `DrawerContent` (bottom-direction only), so all sheets match the frame. `ui/drawer.tsx`.
+- **Sheet see-through** — `.glass-sheet` backdrop-blur wasn't compositing over stacked content and the overlay is only `bg-black/10`; bumped sheet background opacity 0.88 → 0.96. `globals.css`.
+
+**Also added:** an X close button (`DrawerClose`) to both sheets — drag-handle/Escape weren't discoverable, especially with a mouse.
+
+**Chips investigation (Test 7):** expanded-sheet action chips read as bare adjectives ("quick", "high-protein"). Traced to stale AI output on the re-dated May plan, NOT the prompt — `chef-system.ts:104` already specifies action phrases ("Make it spicier", "Swap the protein"). Regenerated a fresh plan; chips came back good. Confirmed: no prompt change needed; it was stale data.
+
+### Discovered — logged as backlog blockers
+- **No regenerate / "new plan" entry point (V1 BLOCKER).** Once a plan exists, `NoPlanState` never renders again and neither review nor mid-week offers "start a new week." The stream route's `persistPlan` already deletes+replaces the current plan (the one-active-plan data behavior IS implemented), but there's no UI trigger. Breaks the weekly ritual. This is the actual content of Test 8, which can't run until the entry point is built. Deferred to a design+build pass with ux-design-critic.
+- **"Something is happening" affordance (macro).** `handleModify` closes the sheet before the mutation resolves, so the in-sheet "Reworking…" text is unreachable, and the success ack is a top-of-page toast the user can't see when scrolled. Net: no reachable pending state for a modify. Needs an in-place, scroll-independent affordance. Design pass.
+- **Confirmed-but-entirely-past plan** renders a nonsensical "rest of the week" mid-week view. Likely resolved with the regenerate work.
+- **Drawer click-outside-to-close** staged (conflicts with the deliberate `modal={false}` fix; needs careful design).
+
+### Test-data handling
+The only plan in the DB was the stale May-30 one (all days ~5 weeks past), which is why confirming it (Test 6) flipped to an all-past mid-week view. Reseeded via date-shift UPDATEs to test 6 (draft, starts today) and 7 (confirmed, 3 past + tonight + 3 upcoming), then deleted it so Griffin could regenerate a fresh plan through the real flow (also re-validated Test 1). Note: unqualified `DELETE FROM meal_plans` was blocked by the auto-mode safety classifier; ID-scoped deletes off auto-mode are the way.
+
+### Gauntlet
+Lint + typecheck clean; 167/167 tests (up from 163). Changes not yet committed.
+
+### What's next
+- **Build pass (design-led):** regenerate/new-plan entry point + the "AI is working" affordance system + drawer dismissal (X shipped; click-outside pending). Bring in ux-design-critic — these set app-wide patterns.
+- Then re-run Test 8 (needs the entry point).
+- Vercel deploy refresh (prod still on pre-1B scaffold; needs `OPENAI_API_KEY` + redeploy).
+- Triage the rest of the UX backlog into a polish pass.

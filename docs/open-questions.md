@@ -109,3 +109,8 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 **Question**: Which LLM provider(s) to use for production? Current recommendation is tiered routing (GPT-4.1-mini for routine, Claude Sonnet for complex). Need to benchmark on actual recipe tasks before deciding.
 **Status**: Research done. Decision deferred to prototyping phase. Will test on Gemini free tier first, then benchmark.
 **Raised**: Session 1 (2026-03-28)
+
+### Regenerate / "new plan" entry point (V1 blocker)
+**Question**: Where does "plan a new week" live once a plan already exists? `NoPlanState` only shows when there's no plan, so today the plan dead-ends after week one. Related: should a new generation replace the current plan (backend already does this) or archive it for history? And how does an elapsed/all-past confirmed plan invite a fresh week instead of showing a nonsensical mid-week view?
+**Status**: OPEN — surfaced in Session 15 (Test 8 couldn't run without it). Backend replace-on-generate is implemented; the gap is UI + interaction design. Deferred to a design-led build pass with ux-design-critic. Tracked in `idea-backlog.md` as a V1 blocker.
+**Raised**: Session 15 (2026-07-06)
