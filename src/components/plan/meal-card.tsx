@@ -46,8 +46,12 @@ export function MealCard({
         <button
           type="button"
           onClick={onTap}
-          aria-label={meal.title ? `Open ${meal.title}` : "Open meal"}
-          className="absolute inset-0 z-0 cursor-pointer rounded-[inherit]"
+          aria-label={
+            meal.title
+              ? `Open ${meal.dayName}'s ${meal.title}`
+              : `Open ${meal.dayName}'s meal`
+          }
+          className="absolute inset-0 z-0 cursor-pointer rounded-[inherit] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         />
       )}
 
@@ -79,7 +83,7 @@ export function MealCard({
                 type="button"
                 onClick={() => onChipClick?.(chip)}
                 disabled={!onChipClick}
-                className="pointer-events-auto rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 transition-colors hover:bg-white/10 disabled:cursor-default disabled:opacity-60"
+                className="pointer-events-auto rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 transition-colors hover:bg-white/10 disabled:pointer-events-none disabled:cursor-default disabled:opacity-60"
               >
                 {chip}
               </button>
