@@ -16,9 +16,10 @@ No browser tool was available in Session 16, so the live UI was NOT click-tested
 4. **⭐ Drawer click-outside (highest-risk, un-click-tested).** Open each sheet (expanded + Talk-to-Chef) and tap the dimmed area outside it — it should close. Confirm this did NOT reintroduce the two-drawer pointer-events lockup (open a sheet, close via outside-tap, then tap a card — the card must still open). Also confirm the X still works and drag-to-dismiss still works. Note: background scroll while a sheet is open is now blocked by the scrim (accepted trade for click-outside — flag if you dislike it).
 5. **Error path.** If you can force a modify failure (or just eyeball the code path): inline-chip failure → bottom "That didn't take — try again?" pill with Retry; sheet failure → the sheet stays open with the retry line.
 
-## Branch / deploy — pick up here
-- **Merge/push**: `session-15-plan-fixes` (now carries Session 15 + Session 16). If not yet merged, merge to `main` + push (gauntlet + build + dual-review green).
-- **Vercel deploy**: prod still on the pre-1B scaffold. Needs `OPENAI_API_KEY` set in Vercel env + a redeploy. This is outward-facing — do it after the manual pass above (or on Griffin's go-ahead). Env source: the Anthropic/OpenAI dashboards → 1Password (see `reference_env_secrets`).
+## Branch / deploy — DONE this session
+- **Merged + pushed**: `session-15-plan-fixes` → `main` (fast-forward), both on origin. This was the repo's FIRST push ever (needed `git config http.postBuffer 524288000` to get past an HTTP 400 on the large initial push).
+- **Vercel**: the repo is git-connected and auto-deploys `main` → production. Correction to the old note: `OPENAI_API_KEY` (and all other prod env vars) were ALREADY set in Vercel Production (41 days ago) — the prerequisite was already met. Triggered a production deploy of Session 16 (`vercel deploy --prod`). The prior scaffold prod remains a rollback candidate. **Preview deploys lack `OPENAI_API_KEY`** (no Preview-scoped env var — only Development + Production), so branch previews have broken AI; set a Preview-scoped key if preview AI testing is wanted.
+- Still owed: Griffin's manual test pass (Test 8 + affordance + click-outside) against the deployed prod URL or local.
 
 ## Known deviation
 - `plan-page-client.tsx` is 330 lines (30 over the 300 rule). Every cohesive unit was already extracted; the rest is controller wiring + a render switch. Deliberately not split further (would mean a 20-prop presenter child). Overrule if you want it split.
