@@ -2,13 +2,12 @@
 
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { MessageCircle, X } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { type DisplayMeal, metaLine, scopedRequest } from "./plan-helpers";
 
 export interface ExpandedMealSheetProps {
@@ -18,6 +17,8 @@ export interface ExpandedMealSheetProps {
   onModify: (request: string) => void;
   onTalkToChef: (meal: DisplayMeal) => void;
   isModifying: boolean;
+  workingLabel?: string;
+  modifyError?: string | null;
 }
 
 export function ExpandedMealSheet({
@@ -27,6 +28,8 @@ export function ExpandedMealSheet({
   onModify,
   onTalkToChef,
   isModifying,
+  workingLabel,
+  modifyError,
 }: ExpandedMealSheetProps) {
   // Always render the Drawer so vaul can transition closed→open cleanly on the
   // first tap. Content is conditional inside.
@@ -34,7 +37,8 @@ export function ExpandedMealSheet({
   // and pointer-events toggling), which conflicts when two drawers coexist in
   // the tree (this one + TalkToChefSheet) and was leaving the body with
   // `pointer-events: none` after close, killing subsequent card taps. Drag-to-
-  // dismiss still works via dismissible (the default).
+  // dismiss (default), the X, and click-outside (shared DrawerContent scrim)
+  // all still close it.
   return (
     <Drawer
       open={open && meal !== null}
@@ -43,18 +47,14 @@ export function ExpandedMealSheet({
       noBodyStyles
     >
       <DrawerContent className="glass-sheet">
-        <DrawerClose
-          aria-label="Close"
-          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <X className="size-5" />
-        </DrawerClose>
         {meal && (
           <ExpandedMealContent
             meal={meal}
             onModify={onModify}
             onTalkToChef={onTalkToChef}
             isModifying={isModifying}
+            workingLabel={workingLabel}
+            modifyError={modifyError}
           />
         )}
       </DrawerContent>
@@ -67,6 +67,8 @@ interface ExpandedMealContentProps {
   onModify: (request: string) => void;
   onTalkToChef: (meal: DisplayMeal) => void;
   isModifying: boolean;
+  workingLabel?: string;
+  modifyError?: string | null;
 }
 
 function ExpandedMealContent({
@@ -74,6 +76,8 @@ function ExpandedMealContent({
   onModify,
   onTalkToChef,
   isModifying,
+  workingLabel,
+  modifyError,
 }: ExpandedMealContentProps) {
   const meta = metaLine(meal);
   const label = [meal.dayName, meal.relative ?? "DINNER"]
@@ -136,7 +140,7 @@ function ExpandedMealContent({
                 type="button"
                 onClick={() => onModify(action.request)}
                 disabled={isModifying}
-                className="glass-card rounded-xl px-4 py-3 text-left text-sm transition-colors hover:bg-white/5 disabled:opacity-60"
+                className="glass-card rounded-xl px-4 py-3 text-left text-sm transition-all hover:bg-white/5 active:scale-[0.99] active:opacity-80 disabled:opacity-60"
               >
                 {action.label}
               </button>
@@ -153,8 +157,21 @@ function ExpandedMealContent({
           </div>
         </div>
 
-        {isModifying && (
-          <p className="text-sm text-muted-foreground">Reworking your plan…</p>
+        {/* Pending stays IN the open sheet (the sheet closes on success, not on
+            tap) so the action never feels like it did nothing. */}
+        {isModifying ? (
+          <div aria-live="polite">
+            <p className="text-sm text-primary/90">
+              {workingLabel ?? "Reworking your plan…"}
+            </p>
+            <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
+          </div>
+        ) : (
+          modifyError && (
+            <p className="text-sm text-destructive/90" role="alert">
+              {modifyError}
+            </p>
+          )
         )}
       </div>
     </>

@@ -207,6 +207,9 @@ describe("planRouter.modify", () => {
 
     expect(result.chefResponse).toBe("Sure, swapping Monday's dinner for burgers.");
     expect(result.plan).toEqual({ ...existingPlan, slots: updatedSlots });
+    // The client highlights (and scrolls to) whatever days changed — dayOffset
+    // 0 maps to the plan's week start.
+    expect(result.changedDates).toEqual([WEEK_START]);
     // The changed meal landed on the same date as the existing slot, so it
     // should update that row in place rather than inserting a duplicate.
     expect(txUpdateCalled).toBe(true);
@@ -214,6 +217,30 @@ describe("planRouter.modify", () => {
       where: eq(mealPlans.householdId, "household-1"),
       orderBy: desc(mealPlans.weekStart),
     });
+  });
+
+  it("should report removed days in changedDates so the client can surface them", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.query.mealPlans.findFirst.mockResolvedValueOnce(existingPlan);
+    db.__selectResults.set(mealPlanSlots, [existingSlot]);
+    mockModifyPlan.mockResolvedValueOnce({
+      chefResponse: "Cleared Wednesday — you're eating out.",
+      changedMeals: [],
+      removedDayOffsets: [2],
+    });
+    db.transaction.mockImplementationOnce(async (cb) => {
+      const tx = {
+        update: vi.fn(() => makeMutationChain()),
+        insert: vi.fn(() => makeMutationChain()),
+      };
+      return cb(tx);
+    });
+
+    const caller = planRouter.createCaller(buildCtx(db, makeUser("user-remove")));
+    const result = await caller.modify({ request: "Clear Wednesday, we're eating out" });
+
+    // dayOffset 2 from the 2026-07-06 week start = 2026-07-08.
+    expect(result.changedDates).toEqual(["2026-07-08"]);
   });
 
   it("should reject with TOO_MANY_REQUESTS once the household's daily AI budget is exhausted", async () => {

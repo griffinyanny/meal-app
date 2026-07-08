@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "vaul"
+import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -29,30 +30,28 @@ function DrawerClose({
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />
 }
 
-function DrawerOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Overlay>) {
-  return (
-    <DrawerPrimitive.Overlay
-      data-slot="drawer-overlay"
-      className={cn(
-        "fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
 function DrawerContent({
   className,
   children,
+  showCloseButton = true,
   ...props
-}: React.ComponentProps<typeof DrawerPrimitive.Content>) {
+}: React.ComponentProps<typeof DrawerPrimitive.Content> & {
+  showCloseButton?: boolean
+}) {
   return (
     <DrawerPortal data-slot="drawer-portal">
-      <DrawerOverlay />
+      {/* Click-outside-to-close. A self-contained scrim (never toggles
+          document.body pointer-events) so it can't reintroduce the two-drawer
+          lockup that forced modal={false}. Wrapped in Close so a tap on the
+          dimmed area dismisses; aria-hidden keeps it out of the a11y tree (the
+          labelled X below is the accessible close). Sits under the content. */}
+      <DrawerPrimitive.Close asChild>
+        <div
+          data-slot="drawer-scrim"
+          aria-hidden="true"
+          className="fixed inset-0 z-40 bg-black/10 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+        />
+      </DrawerPrimitive.Close>
       <DrawerPrimitive.Content
         data-slot="drawer-content"
         className={cn(
@@ -63,6 +62,17 @@ function DrawerContent({
       >
         <div className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
         {children}
+        {/* Rendered after children so keyboard/AT users reach the sheet's
+            heading and body before the Close control (positioned top-right by
+            CSS, independent of DOM order). */}
+        {showCloseButton && (
+          <DrawerClose
+            aria-label="Close"
+            className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <X className="size-5" />
+          </DrawerClose>
+        )}
       </DrawerPrimitive.Content>
     </DrawerPortal>
   )
@@ -123,7 +133,6 @@ function DrawerDescription({
 export {
   Drawer,
   DrawerPortal,
-  DrawerOverlay,
   DrawerTrigger,
   DrawerClose,
   DrawerContent,

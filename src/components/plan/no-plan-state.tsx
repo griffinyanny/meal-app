@@ -8,6 +8,11 @@ import { ArrowUp } from "lucide-react";
 export interface NoPlanStateProps {
   onGenerate: (request?: string) => void;
   isGenerating: boolean;
+  // Present when re-prompting over an existing plan (vs. the first-run empty
+  // state). `onCancel` returns to the current plan; `replaceWarning` tells the
+  // user generating will replace a confirmed week.
+  onCancel?: () => void;
+  replaceWarning?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -18,12 +23,28 @@ const SUGGESTIONS = [
   "Dinner party Saturday",
 ];
 
-export function NoPlanState({ onGenerate, isGenerating }: NoPlanStateProps) {
+export function NoPlanState({
+  onGenerate,
+  isGenerating,
+  onCancel,
+  replaceWarning,
+}: NoPlanStateProps) {
   const [text, setText] = useState("");
   const canSubmit = text.trim().length > 0 && !isGenerating;
 
   return (
     <div className="space-y-6 py-2">
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isGenerating}
+          className="text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+        >
+          ← Keep current plan
+        </button>
+      )}
+
       <div className="space-y-2">
         <h1 className="text-[26px] font-bold leading-tight tracking-tight">
           What are you thinking this week?
@@ -32,6 +53,12 @@ export function NoPlanState({ onGenerate, isGenerating }: NoPlanStateProps) {
           Tell me what you&apos;re in the mood for, or I&apos;ll figure it out.
         </p>
       </div>
+
+      {replaceWarning && (
+        <p className="text-xs text-muted-foreground">
+          Generating a new plan will replace this week&apos;s meals.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {SUGGESTIONS.map((s) => (
