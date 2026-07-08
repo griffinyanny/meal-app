@@ -16,7 +16,7 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-Phase 1C: Plan Tab — built; manual test loop complete as of Session 15 (7/8 pass, Test 8 blocked on the missing regenerate entry point) + dual-review QA pass (internal + Codex) done. All fixes committed on branch `session-15-plan-fixes` (3 commits, not merged/pushed); 167 tests passing. Remaining before 1C is truly done: a design-led build pass (regenerate/new-plan entry point + "AI is working" affordance + drawer dismissal) with ux-design-critic — see `docs/whats-next.md`. (Phase 1B completed 2026-05-27, Milestone M2: full recipe AI loop on Vercel AI SDK v6 + OpenAI gpt-4.1-mini.)
+Phase 1C: Plan Tab — the design-led build pass is COMPLETE (Session 16, 2026-07-08): regenerate/new-plan entry point (unblocks Test 8), elapsed-plan "week wrapped" state, the in-place "AI is working" affordance (reusable `usePlanModify` hook), and drawer dismissal cleanup — all built, dual-reviewed (4 correctness bugs fixed), gauntlet + production build green, 173 tests. On branch `session-15-plan-fixes`. Remaining before 1C closes: Griffin's manual verification (Test 8 + affordance + click-outside — see `docs/whats-next.md`) and the Vercel deploy refresh (`OPENAI_API_KEY` + redeploy). (Phase 1B completed 2026-05-27, Milestone M2: full recipe AI loop on Vercel AI SDK v6 + OpenAI gpt-4.1-mini.)
 
 ---
 

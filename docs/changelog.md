@@ -475,3 +475,37 @@ Lint + typecheck clean; 167/167 tests (up from 163). Committed on branch `sessio
 - Then re-run Test 8 (needs the entry point).
 - Vercel deploy refresh (prod still on pre-1B scaffold; needs `OPENAI_API_KEY` + redeploy).
 - Triage the rest of the UX backlog into a polish pass.
+
+---
+
+## Session 16 — 2026-07-08
+
+### What happened
+The design-led build pass to finish Phase 1C. Brought in the ux-design-critic before building to design two app-wide patterns (regenerate entry point + the "AI is working" affordance), then built all three items from the Session 15 backlog, ran a high-effort dual code review, and fixed everything it surfaced. Gauntlet + production build green; 173/173 tests.
+
+### Built (design-led)
+1. **Regenerate / "new plan" entry point (V1 BLOCKER — resolved).** Muted, end-of-list trigger (never the header — fat-finger territory next to Settings): draft → "Not feeling this week? Start over →"; confirmed/mid-week → "Starting fresh? Plan a new week →". It **re-prompts** through the existing `NoPlanState` intent screen (fresh weekly intent is the whole value, not a blind reroll), with a "← Keep current plan" escape. **No confirm dialog** — generate is non-destructive until the stream POST fires (`persistPlan` deletes+replaces only then), so the intent screen IS the airlock; safety is one muted line above the pills when replacing a confirmed plan. New `intentMode` flag in `plan-page-client.tsx`. Unblocks Test 8.
+2. **Elapsed-plan state (`week-wrapped-state.tsx`).** When every day is past, replaces the nonsensical "adjust the rest of the week" mid-week view with a chef check-in: "That's a wrap on this week. You cooked N dinners. How'd they land?" → thumbs recap (reused `PastMealRow`, extracted to its own file) → "Plan next week →". Stale-never-confirmed variant reads "This plan's gone stale." Detected via `isPlanElapsed()`.
+3. **"AI is working" affordance (the app-wide pattern).** The MealCard is now the canonical "working / just changed" surface (`working`/`justChanged` props): instant tap-depress, then the card dims and its chip row is replaced by a chef-voice line + a shimmer bar (reusing the streaming vocabulary); on success the new content lands with a highlight ring that fades. **The initiating sheet stays OPEN showing pending and closes on SUCCESS, not on tap** — removing the eager close is the core fix for "nothing happens then it silently changes." Scoped modify → the changed card is its own acknowledgment; whole-week modify → a transient bottom ack-pill (`ModifyStatusPills` at the `BottomBar` anchor) carries the chef's sentence and taps to scroll to the change. Backend `plan.modify` now returns `changedDates`; the client swaps optimistically via `setData(data.plan)`. State machine extracted to a `usePlanModify` hook (reusable by future tabs). Reachable error/retry added (modify genuinely fails on AI timeout/rate-limit).
+4. **Drawer cleanup.** The duplicated close X moved into shared `DrawerContent` (with focus order fixed — heading before Close); a self-contained click-outside scrim that never touches `document.body` pointer-events (so it can't reintroduce the two-drawer lockup that forced `modal={false}`); removed the now-dead `DrawerOverlay` export.
+
+### Dual code review (high effort) — 4 correctness bugs found + fixed
+Two independent reviewers (correctness + cleanup/conventions) over the ~1.2k-line diff.
+1. **Stale modify clobbering a regenerated plan (CONFIRMED).** An in-flight modify's `onSuccess` unconditionally `setData`'d — a late response could jam the pre-regenerate plan back over a freshly generated one. Fixed with a monotonic token in `usePlanModify`; `cancelInFlight()` on generate invalidates in-flight results.
+2. **Removed days got no highlight/scroll (CONFIRMED, fires on every "clear this day").** The `eating_out` card takes an early return in `MealCard` that lacked `data-meal-date` and the highlight; added both.
+3. **Global pending leaked into unrelated sheets (CONFIRMED).** Opening a different sheet mid-modify showed the wrong day's label and got force-closed on resolve. Scoped pending/error/close to the initiating `source` ("inline" | "chat" | "expanded").
+4. **Stale ack/error pill over the intent/streaming screen (CONFIRMED).** Gated the pills with `!intentMode && !isStreaming`.
+Cleanup: extracted the 4×-duplicated bottom-anchor wrapper into `BottomBar`; removed dead `DrawerOverlay`; confirmed the two-sheet pending/error block is correctly inlined at 2 occurrences.
+
+### Files
+New: `week-wrapped-state.tsx`, `past-meal-row.tsx` (extracted), `use-plan-modify.ts`, `bottom-bar.tsx`, `modify-status-pills.tsx`. Changed: `plan-page-client.tsx`, `meal-card.tsx`, `plan-review.tsx`, `plan-midweek.tsx`, `no-plan-state.tsx`, `expanded-meal-sheet.tsx`, `talk-to-chef-sheet.tsx`, `ui/drawer.tsx`, `globals.css` (shimmer + highlight keyframes), `plan-helpers.ts` (`workingLabel`, `isPlanElapsed`), `server/trpc/routers/plan.ts` (`changedDates`). Tests: +6 (modify `changedDates` for changes and removals; `workingLabel`; `isPlanElapsed`).
+
+### Known deviation (flagged, not fixed)
+`plan-page-client.tsx` is 330 lines (30 over the 300 rule). Every genuinely cohesive unit was already extracted (hook, BottomBar, status pills, past-meal-row, week-wrapped); the remainder is irreducible controller wiring + a render switch whose extraction would require threading 20+ pass-through props into an artificial child. Judgment call: a clean 330-line controller reads better than a 20-prop presenter. Open for Griffin to overrule.
+
+### NOT verified this session
+No browser-automation tool was available in this (non-interactive) session, so the live UI could not be click-driven. Verified: lint, typecheck, 173 tests, production build, dual review. NOT verified by clicking: Test 8 end-to-end, the affordance timing/feel, and especially the **drawer click-outside scrim** (the correctness reviewer traced vaul source and concluded it works and can't re-lock the page, but it wasn't click-tested). See whats-next for the manual script.
+
+### What's next
+- Griffin runs the manual script: Test 8 (regenerate) + the affordance on all modify paths + click-outside on both sheets.
+- Merge/push `session-15-plan-fixes` (done this session if green) + Vercel deploy refresh (`OPENAI_API_KEY` + redeploy).

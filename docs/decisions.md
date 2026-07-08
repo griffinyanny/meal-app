@@ -286,3 +286,25 @@ All confirmed product and technical decisions. Each entry includes the decision,
 **One active plan: generation replaces the current plan** (confirmed Session 15)
 - The stream route's `persistPlan` deletes the household's existing plan and inserts the new one, transactionally. The one-active-plan data behavior is implemented server-side; the gap is purely UI (no regenerate trigger — see open-questions).
 - Future impact: plan history / concurrent next-week drafting (deferred idea) would require keying on plan identity instead of "delete all for household."
+
+---
+
+### Plan-tab interaction decisions (Session 16, 2026-07-08)
+
+**Regenerate lives at the end of the meal list, muted — never the header** (2026-07-08)
+- "Start over →" (draft) / "Plan a new week →" (confirmed) sits below the last meal card, as a muted text link. Rationale: the header sits next to Settings and would be fat-finger territory for a destructive action; an overflow menu is over-engineered for one item. The primary "Looks good →" confirm lives in the hero + sticky bar (top/anchored) — different zone, different emphasis.
+
+**Regenerate re-prompts through the intent screen, not a blind reroll** (2026-07-08)
+- Tapping regenerate routes to the existing `NoPlanState` intent capture (pills + freeform). Rationale: fresh weekly intent is the entire value of the ritual; a blind reroll turns the chef into a slot machine.
+
+**No confirm dialog for destructive regenerate — the intent screen is the airlock** (2026-07-08)
+- Generation is non-destructive until the stream POST fires (`persistPlan` deletes+replaces only then). So routing to the intent screen destroys nothing; the destructive act requires a deliberate second tap on a pill/send. Safety = one muted (not red — red fights the chef tone) line above the pills when replacing a confirmed plan. No Undo is offered (hard delete).
+
+**Elapsed plans invite a fresh week, not a mid-week adjust** (2026-07-08)
+- A plan whose every day is past renders a "week wrapped" chef check-in (`isPlanElapsed`), not the mid-week "adjust the rest of the week" view. Closes the loop as a ritual moment.
+
+**AI-mutation feedback is in-place and scroll-independent — never a top-of-page toast** (2026-07-08)
+- App-wide pattern (`usePlanModify` hook, reusable across tabs). The tapped element reacts instantly; the initiating sheet stays open showing pending and closes on SUCCESS (not on tap); scoped changes acknowledge on the changed card; whole-week changes narrate in a bottom pill. Removed the old `chefMessage` top toast. Rationale: Griffin's testing — "if you're not paying attention you might not notice," and top toasts are invisible when scrolled down.
+
+**Drawer click-outside via a self-contained scrim; background-scroll-while-open sacrificed** (2026-07-08)
+- Click-outside-to-close is added with a custom scrim that never touches `document.body` pointer-events, so it can't reintroduce the two-drawer lockup that forced `modal={false}`. Trade: the scrim blocks background scroll while a sheet is open (standard bottom-sheet behavior). Chosen over preserving background scroll because tap-to-dismiss is the more expected, higher-value affordance.
