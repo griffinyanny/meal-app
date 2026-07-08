@@ -1,10 +1,10 @@
 # What's Next
 
-Last updated: 2026-07-06 (Session 15)
+Last updated: 2026-07-08 (Session 15)
 
 ## Exact Status
-- **Phase**: Phase 1C (Plan Tab) BUILT; manual test loop essentially COMPLETE (7/8 pass, Test 8 blocked on a missing flow). Security hardening COMPLETE (Session 14).
-- **Session 15 (2026-07-06)**: ran the manual test loop 3R→8. Fixed 5 real interaction bugs inline (touch target, Enter-to-submit, meal-scoping correctness bug, drawer width, sheet opacity) + added X close buttons. Logged all UX/design feedback to the backlog. Discovered the **regenerate entry-point blocker** (Test 8 can't run). 167 tests passing (4 new for the scoping fix). Lint/typecheck clean. **Changes NOT yet committed.**
+- **Phase**: Phase 1C (Plan Tab) BUILT; manual test loop COMPLETE (7/8 pass, Test 8 blocked on a missing flow) + dual-review QA pass done. Security hardening COMPLETE (Session 14).
+- **Session 15**: ran the manual test loop 3R→8. Fixed 5 interaction bugs inline (touch target, Enter-to-submit, meal-scoping correctness bug, drawer width, sheet opacity) + X close buttons. Then a dual-review QA pass (internal 4-agent review + Codex CLI) caught a keyboard-a11y regression from the whole-card change (fixed via an overlay-button pattern) plus IME/reuse/focus-ring/aria fixes. Discovered the **regenerate entry-point blocker** (Test 8 can't run). **Committed on branch `session-15-plan-fixes` (3 commits): [e12960a] loop fixes + regression test, [c9d8920] internal-review fixes, [fa3b6e8] Codex-review fixes. NOT merged to main, NOT pushed.** 167 tests passing; lint/typecheck clean.
 - **Where we are**: The plan loop works end-to-end. What's left is a **design-led build pass** (regenerate entry point + "AI is working" affordance + drawer dismissal) before 1C is truly done — those are patterns worth designing once, so bring in ux-design-critic.
 
 ## Manual test loop — RESULTS (dev server: PORT=3001, FFOS owns 3000)
@@ -27,7 +27,7 @@ Last updated: 2026-07-06 (Session 15)
    - **"AI is working" affordance** — in-place, scroll-independent pending state for all modify paths (macro backlog item).
    - **Drawer click-outside-to-close** (X already shipped) — carefully, without breaking the `modal={false}` fix.
 2. Re-run Test 8 once the entry point exists.
-3. **Commit Session 15 work** (not yet committed) + run `/review`.
+3. **Merge/push `session-15-plan-fixes`** to main (3 commits, reviewed and green, currently local-only).
 4. Deploy to Vercel — prod still on pre-1B scaffold. Needs `OPENAI_API_KEY` env + redeploy.
 5. Triage the rest of the UX backlog into a polish pass (sticky-bar visual, chip tuning, etc.).
 6. Deferred security items when approaching real users: distributed per-minute rate limit, full CSP with nonces, Next bump for the postcss advisory.
