@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { BottomBar } from "./bottom-bar";
 import { MealCard } from "./meal-card";
 import { type DisplayMeal, isCookable } from "./plan-helpers";
 
@@ -14,6 +15,12 @@ export interface PlanReviewProps {
   onTalkToChef: () => void;
   onTapMeal: (meal: DisplayMeal) => void;
   onChipClick: (meal: DisplayMeal, chip: string) => void;
+  onStartOver: () => void;
+  // AI-mutation affordance threaded to each card: which day is mid-modify, its
+  // chef-voice label, and which days just changed (one-shot highlight).
+  pendingDate: string | null;
+  pendingLabel: string;
+  changedDates: string[];
 }
 
 function planStats(meals: DisplayMeal[]): string {
@@ -36,6 +43,10 @@ export function PlanReview({
   onTalkToChef,
   onTapMeal,
   onChipClick,
+  onStartOver,
+  pendingDate,
+  pendingLabel,
+  changedDates,
 }: PlanReviewProps) {
   const heroRef = useRef<HTMLDivElement>(null);
   const [heroVisible, setHeroVisible] = useState(true);
@@ -97,12 +108,31 @@ export function PlanReview({
             meal={meal}
             onTap={() => onTapMeal(meal)}
             onChipClick={(chip) => onChipClick(meal, chip)}
+            working={pendingDate !== null && pendingDate === meal.date}
+            workingLabel={pendingLabel}
+            justChanged={!!meal.date && changedDates.includes(meal.date)}
           />
         ))}
       </div>
 
+      {/* Regenerate entry point — muted, end-of-list, so it can't be mistaken
+          for the primary "Looks good →" confirm. Routes to the intent screen
+          (non-destructive until generate actually fires there). */}
+      <div className="pt-1">
+        <span className="text-sm text-muted-foreground">
+          {isConfirmed ? "Starting fresh? " : "Not feeling this week? "}
+        </span>
+        <button
+          type="button"
+          onClick={onStartOver}
+          className="text-sm text-primary/90 transition-colors hover:text-primary"
+        >
+          {isConfirmed ? "Plan a new week →" : "Start over →"}
+        </button>
+      </div>
+
       {showStickyBar && (
-        <div className="fixed inset-x-0 bottom-20 z-30 mx-auto max-w-[430px] px-4">
+        <BottomBar>
           <div className="glass-sheet flex items-center justify-between rounded-2xl px-4 py-3">
             <span className="text-sm text-muted-foreground">
               {planStats(meals)}
@@ -111,7 +141,7 @@ export function PlanReview({
               {isConfirming ? "Saving…" : "Looks good →"}
             </Button>
           </div>
-        </div>
+        </BottomBar>
       )}
     </div>
   );

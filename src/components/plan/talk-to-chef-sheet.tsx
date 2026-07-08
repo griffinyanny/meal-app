@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowUp, X } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 
 export interface TalkToChefSheetProps {
   open: boolean;
@@ -21,6 +20,8 @@ export interface TalkToChefSheetProps {
   suggestions: string[];
   headline: string;
   initialText?: string;
+  workingLabel?: string;
+  modifyError?: string | null;
 }
 
 export function TalkToChefSheet({
@@ -31,6 +32,8 @@ export function TalkToChefSheet({
   suggestions,
   headline,
   initialText,
+  workingLabel,
+  modifyError,
 }: TalkToChefSheetProps) {
   const [text, setText] = useState(initialText ?? "");
   const [prevOpen, setPrevOpen] = useState(open);
@@ -60,12 +63,6 @@ export function TalkToChefSheet({
       noBodyStyles
     >
       <DrawerContent className="glass-sheet">
-        <DrawerClose
-          aria-label="Close"
-          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <X className="size-5" />
-        </DrawerClose>
         <DrawerHeader className="text-left pr-12">
           <DrawerTitle className="text-lg">{headline}</DrawerTitle>
           <DrawerDescription className="sr-only">
@@ -124,10 +121,21 @@ export function TalkToChefSheet({
             </Button>
           </div>
 
-          {isSubmitting && (
-            <p className="text-sm text-muted-foreground">
-              Reworking your plan…
-            </p>
+          {/* Pending stays IN the open sheet (closes on success, not on submit)
+              so a whole-week request never feels like it did nothing. */}
+          {isSubmitting ? (
+            <div aria-live="polite">
+              <p className="text-sm text-primary/90">
+                {workingLabel ?? "Reworking your plan…"}
+              </p>
+              <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
+            </div>
+          ) : (
+            modifyError && (
+              <p className="text-sm text-destructive/90" role="alert">
+                {modifyError}
+              </p>
+            )
           )}
         </div>
       </DrawerContent>

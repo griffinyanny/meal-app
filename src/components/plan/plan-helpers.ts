@@ -163,3 +163,18 @@ export function isCookable(slotType: SlotType): boolean {
 export function scopedRequest(text: string, meal: DisplayMeal): string {
   return `${text} — for ${meal.dayName.toLowerCase()}'s ${meal.title ?? "dinner"}.`;
 }
+
+// The chef-voice line shown in the in-place pending state while a modify runs.
+// Day-level contextual (always correct) rather than parsing the free-text
+// request — a scoped change names its day; a whole-week change stays general.
+export function workingLabel(scope: DisplayMeal | null): string {
+  if (!scope) return "Reworking your week…";
+  return `Reworking ${scope.dayName.toLowerCase()}'s dinner…`;
+}
+
+// True when every day in a plan is already in the past — the week has fully
+// elapsed. Such a plan should invite a fresh week rather than render as an
+// adjustable mid-week view (which reads as nonsensical once nothing's ahead).
+export function isPlanElapsed(meals: DisplayMeal[]): boolean {
+  return meals.length > 0 && meals.every((m) => m.timeframe === "past");
+}

@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { BottomBar } from "./bottom-bar";
 import { MealCard } from "./meal-card";
+import { PastMealRow } from "./past-meal-row";
 import { type DisplayMeal, isCookable } from "./plan-helpers";
 
 export interface PlanMidweekProps {
@@ -15,52 +15,10 @@ export interface PlanMidweekProps {
   onTapMeal: (meal: DisplayMeal) => void;
   onChipClick: (meal: DisplayMeal, chip: string) => void;
   onFeedback: (meal: DisplayMeal, feedback: "thumbs_up" | "thumbs_down") => void;
-}
-
-function PastMealRow({
-  meal,
-  onFeedback,
-}: {
-  meal: DisplayMeal;
-  onFeedback: (f: "thumbs_up" | "thumbs_down") => void;
-}) {
-  if (!isCookable(meal.slotType)) return null;
-  return (
-    <div className="glass-card flex items-center gap-3 px-4 py-3 opacity-80">
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-medium tracking-widest text-muted-foreground">
-          {meal.dayName}
-        </p>
-        <p className="truncate text-sm">{meal.title}</p>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => onFeedback("thumbs_up")}
-          aria-label="Liked it"
-          className={cn(
-            "rounded-full p-1.5 transition-colors hover:bg-white/10",
-            meal.feedback === "thumbs_up" ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          <ThumbsUp className="size-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => onFeedback("thumbs_down")}
-          aria-label="Didn't like it"
-          className={cn(
-            "rounded-full p-1.5 transition-colors hover:bg-white/10",
-            meal.feedback === "thumbs_down"
-              ? "text-primary"
-              : "text-muted-foreground"
-          )}
-        >
-          <ThumbsDown className="size-4" />
-        </button>
-      </div>
-    </div>
-  );
+  onStartOver: () => void;
+  pendingDate: string | null;
+  pendingLabel: string;
+  changedDates: string[];
 }
 
 export function PlanMidweek({
@@ -72,10 +30,20 @@ export function PlanMidweek({
   onTapMeal,
   onChipClick,
   onFeedback,
+  onStartOver,
+  pendingDate,
+  pendingLabel,
+  changedDates,
 }: PlanMidweekProps) {
   const tonight = meals.find((m) => m.timeframe === "tonight");
   const past = meals.filter((m) => m.timeframe === "past");
   const upcoming = meals.filter((m) => m.timeframe === "upcoming");
+
+  const cardAffordance = (meal: DisplayMeal) => ({
+    working: pendingDate !== null && pendingDate === meal.date,
+    workingLabel: pendingLabel,
+    justChanged: !!meal.date && changedDates.includes(meal.date),
+  });
 
   return (
     <div className="space-y-6 pb-4">
@@ -86,6 +54,7 @@ export function PlanMidweek({
               meal={tonight}
               onTap={() => onTapMeal(tonight)}
               onChipClick={(chip) => onChipClick(tonight, chip)}
+              {...cardAffordance(tonight)}
             />
           </div>
         </div>
@@ -119,21 +88,36 @@ export function PlanMidweek({
               meal={meal}
               onTap={() => onTapMeal(meal)}
               onChipClick={(chip) => onChipClick(meal, chip)}
+              {...cardAffordance(meal)}
             />
           ))}
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={onTalkToChef}
-        className="text-sm text-primary/90 transition-colors hover:text-primary"
-      >
-        Anything to adjust for the rest of the week? Talk to the Chef →
-      </button>
+      <div className="space-y-1">
+        <button
+          type="button"
+          onClick={onTalkToChef}
+          className="block text-sm text-primary/90 transition-colors hover:text-primary"
+        >
+          Anything to adjust for the rest of the week? Talk to the Chef →
+        </button>
+        {/* Regenerate entry point — more muted than the tweak action above,
+            since starting fresh replaces the confirmed week. */}
+        <div>
+          <span className="text-sm text-muted-foreground">Starting fresh? </span>
+          <button
+            type="button"
+            onClick={onStartOver}
+            className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground"
+          >
+            Plan a new week →
+          </button>
+        </div>
+      </div>
 
       {!isConfirmed && (
-        <div className="fixed inset-x-0 bottom-20 z-30 mx-auto max-w-[430px] px-4">
+        <BottomBar>
           <div className="glass-sheet flex items-center justify-between rounded-2xl px-4 py-3">
             <span className="text-sm text-muted-foreground">
               {upcoming.length} {upcoming.length === 1 ? "meal" : "meals"} ahead
@@ -142,7 +126,7 @@ export function PlanMidweek({
               {isConfirming ? "Saving…" : "Looks good →"}
             </Button>
           </div>
-        </div>
+        </BottomBar>
       )}
     </div>
   );

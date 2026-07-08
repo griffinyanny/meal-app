@@ -152,6 +152,13 @@ export const planRouter = router({
 
       return {
         chefResponse: validated.chefResponse,
+        // The days this modify touched — the client highlights these cards and,
+        // for whole-week requests, scrolls to the first one so the change is
+        // never silent. Both edited and removed days count as "changed."
+        changedDates: [
+          ...validated.changedMeals.map((m) => m.date),
+          ...validated.removedDates,
+        ],
         plan: { ...plan, slots: updatedSlots },
       };
     }),

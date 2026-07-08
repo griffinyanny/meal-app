@@ -118,4 +118,42 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-xl);
   }
+
+  /* Indeterminate "AI is working" bar — a primary-tinted highlight sweeping
+     across a thin track. Shares the streaming vocabulary so a modify-in-flight
+     reads as the same family as a plan generating. Element sets its own size. */
+  .shimmer-bar {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(58, 134, 255, 0.7),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer-bar 1.2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer-bar {
+    0% {
+      background-position: -150% 0;
+    }
+    100% {
+      background-position: 250% 0;
+    }
+  }
+
+  /* One-shot highlight the instant an AI change lands, drawing the eye to the
+     card that just changed, then fading so it doesn't linger. */
+  .animate-highlight-ring {
+    animation: highlight-ring-fade 1.5s ease-out forwards;
+  }
+
+  @keyframes highlight-ring-fade {
+    0% {
+      box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.55);
+    }
+    100% {
+      box-shadow: 0 0 0 2px rgba(58, 134, 255, 0);
+    }
+  }
 }
