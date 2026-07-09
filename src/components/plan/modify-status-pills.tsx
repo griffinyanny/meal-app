@@ -31,7 +31,10 @@ export function ModifyStatusPills({
   if (errorMessage) {
     return (
       <BottomBar className="z-40">
-        <div className="glass-sheet flex items-center justify-between gap-3 rounded-2xl px-4 py-3">
+        <div
+          data-testid="modify-error-pill"
+          className="glass-sheet flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+        >
           <span className="text-sm text-destructive/90">{errorMessage}</span>
           <Button size="sm" variant="secondary" onClick={onRetry}>
             Retry
@@ -46,6 +49,7 @@ export function ModifyStatusPills({
       <BottomBar className="z-40">
         <button
           type="button"
+          data-testid="modify-ack-pill"
           onClick={() => {
             scrollToDate(ack.firstDate);
             onDismissAck();
