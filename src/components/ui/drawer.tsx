@@ -45,11 +45,15 @@ function DrawerContent({
           lockup that forced modal={false}. Wrapped in Close so a tap on the
           dimmed area dismisses; aria-hidden keeps it out of the a11y tree (the
           labelled X below is the accessible close). Sits under the content. */}
+      {/* pointer-events-auto is required: vaul sets the portal to
+          pointer-events-none under modal={false} (to keep the background
+          interactive), which the scrim would otherwise inherit — leaving
+          tap-outside-to-close dead. This re-enables it for the scrim only. */}
       <DrawerPrimitive.Close asChild>
         <div
           data-slot="drawer-scrim"
           aria-hidden="true"
-          className="fixed inset-0 z-40 bg-black/10 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
+          className="pointer-events-auto fixed inset-0 z-40 bg-black/10 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0"
         />
       </DrawerPrimitive.Close>
       <DrawerPrimitive.Content

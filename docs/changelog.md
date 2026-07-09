@@ -4,6 +4,19 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 17 — 2026-07-09 (E2E testing harness — Phase 1)
+
+### What happened
+- Started building the Playwright E2E harness per `docs/plans/spike-e2e-testing-harness.md` to close the "ships UI Claude can't click-verify" gap.
+- **AI mock seam (server-side, at the model layer).** Rejected the spike's `page.route` leaning: intercepting `/api/plan/stream` in the browser leaves the DB stale (client refetches `plan.current` after streaming), and intercepting tRPC means forging superjson batches. Instead, `getModel()` (`src/server/ai/config.ts`) returns a `MockLanguageModelV3` from `ai/test` when `E2E_AI_MOCK=1`. The full real pipeline (retry, streamObject parse, Zod validation, `persistPlan`, tRPC serialization, invalidation) runs against canned fixtures — verified end-to-end via a throwaway script (scoped/whole-week/eating-out modify + 7-meal generation + FAIL directive all correct).
+- Fixtures + `[E2E:*]` token grammar in `src/server/ai/providers/e2e-mock-fixtures.ts` (FAIL → throw, SLOW=ms → latency, "eating out" → day removal, title-match → scoped rework, else → whole-week rework). Generation returns 7 "Fresh …" meals; seeds will use "Seeded …" so replace-on-generate is assertable.
+- Double-gated (`E2E_AI_MOCK==="1" && !VERCEL`; flag lives only in playwright.config webServer.env). Relaxed the in-memory AI rate limit under the mock flag only (`src/server/ratelimit.ts`).
+- Scaffolding: `@playwright/test` + chromium, `tests/e2e/{harness,app,specs}` tree, `test:e2e` scripts, vitest excludes `tests/e2e/**`, `.gitignore` for playwright artifacts + `.auth/`.
+
+### Verification
+- Gauntlet green with mock inert: lint + typecheck + 173/173 unit tests pass (mock never activates without the flag).
+
+
 ## Session 1 — 2026-03-28
 
 ### What happened

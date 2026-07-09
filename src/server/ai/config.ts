@@ -1,4 +1,6 @@
 import { openai } from "@ai-sdk/openai";
+import type { LanguageModel } from "ai";
+import { aiMockEnabled, makeE2EMockModel } from "./providers/e2e-mock";
 
 export type AITask =
   | "recipe-generate"
@@ -19,7 +21,10 @@ const taskModelMap: Record<AITask, () => ReturnType<typeof openai>> = {
   "memory-extract": () => openai("gpt-4.1-mini"),
 };
 
-export function getModel(task: AITask) {
+export function getModel(task: AITask): LanguageModel {
+  // E2E test mode: swap in a deterministic mock so the whole pipeline runs
+  // against canned output. Double-gated; inert unless explicitly enabled.
+  if (aiMockEnabled()) return makeE2EMockModel(task);
   return taskModelMap[task]();
 }
 
