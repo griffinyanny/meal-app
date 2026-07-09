@@ -133,7 +133,10 @@ export function PlanReview({
 
       {showStickyBar && (
         <BottomBar>
-          <div className="glass-sheet flex items-center justify-between rounded-2xl px-4 py-3">
+          <div
+            data-testid="sticky-confirm-bar"
+            className="glass-sheet flex items-center justify-between rounded-2xl px-4 py-3"
+          >
             <span className="text-sm text-muted-foreground">
               {planStats(meals)}
             </span>

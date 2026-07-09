@@ -93,6 +93,13 @@
   html {
     @apply font-sans;
   }
+  /* Tailwind v4 dropped the default cursor:pointer on <button>. Restore it
+     app-wide so every interactive control (cards, chips, sheet actions) shows
+     the hand cursor; disabled controls stay default. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
 }
 
 @layer utilities {
