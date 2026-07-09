@@ -16,12 +16,14 @@ import { ModifyStatusPills } from "./modify-status-pills";
 import { TalkToChefSheet } from "./talk-to-chef-sheet";
 import { ExpandedMealSheet } from "./expanded-meal-sheet";
 import { usePlanModify } from "./use-plan-modify";
+import { useDebugPanel } from "@/lib/debug/debug-hud";
 import {
   type DisplayMeal,
   isPlanElapsed,
   scopedRequest,
   slotToDisplayMeal,
   streamedMealToDisplay,
+  todayISO,
   weekStartISO,
 } from "./plan-helpers";
 
@@ -268,6 +270,46 @@ export function PlanPageClient() {
   // Pills only make sense over a rendered plan — never over the intent screen
   // or a streaming generation (where a stale modify result could land).
   const showPills = !sheetOpen && !intentMode && !isStreaming;
+
+  const derivedState = isStreaming
+    ? "streaming"
+    : intentMode
+      ? "intent"
+      : streamError && !plan
+        ? "stream-error"
+        : plan && persistedMeals.length > 0
+          ? isElapsed
+            ? "elapsed"
+            : showMidweek
+              ? "midweek"
+              : "review"
+          : "empty";
+
+  // Publish live Plan-tab state to the dev debug HUD (see debug-hud.ts).
+  useDebugPanel("plan", () => ({
+    derivedState,
+    planId: plan?.id ?? null,
+    status: plan?.status ?? null,
+    weekStart: plan?.weekStart ?? null,
+    todayUTC: todayISO(),
+    todayLocal: new Date().toLocaleDateString(),
+    isConfirmed,
+    isElapsed,
+    showMidweek,
+    isStreaming,
+    intentMode,
+    sheetOpen,
+    pending,
+    changedDates,
+    ack,
+    modifyError: modifyError?.message ?? null,
+    slots: persistedMeals.map((m) => ({
+      date: m.date,
+      timeframe: m.timeframe,
+      slotType: m.slotType,
+      title: m.title,
+    })),
+  }));
 
   return (
     <div className="space-y-4">
