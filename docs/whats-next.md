@@ -1,8 +1,31 @@
 # What's Next
 
-Last updated: 2026-07-08 (Session 16)
+Last updated: 2026-07-09 (Session 17)
 
-## Exact Status
+## Exact Status (Session 17 — E2E harness Phase 1 landed)
+- **Phase 1 of the E2E harness is built and green.** Playwright + server-side AI
+  mock + auth bypass + DB seeding + a debug HUD. 20 Plan-tab cases automated
+  (D1-D7, RG1-RG5, M1-M7) + smokes: **23 passing, 1 finding (D7), 2 clean runs**.
+  Run `npm run test:e2e` (builds + starts its own server on 3102, mock-only).
+- **What this changes for you:** the Plan-tab *mechanics* are now machine-verified
+  every run — you no longer need to click every drawer/regenerate/modify path.
+  Your manual pass shrinks to **taste**: does the generated plan read well, do the
+  chips sound like tappable imperatives, does the affordance *feel* right.
+- **Two things need you (see "Griffin's calls" below).**
+
+## ⭐ Griffin's calls
+1. **D7 finding — background scroll behind an open sheet.** The harness proved the
+   background DOES scroll while a sheet is open (the Session 16 note that the scrim
+   blocks it was wrong). Options: (a) accept it as the trade for click-outside, or
+   (b) re-lock via a scrim `onWheel`/`onTouchMove` `preventDefault` (safe — does
+   NOT reintroduce the D3 pointer-lockup). The D7 spec is `test.fixme`, ready to
+   verify whichever you choose.
+2. **Functional/taste review of the Plan tab** — mechanics are verified; I'd value
+   your eye on whether it *feels* right. Dev server + signin snippet below.
+3. **Optional:** enable the Playwright MCP (~10 min) so I can also drive a live
+   browser in-session for exploratory checks. Complements the harness.
+
+## Prior status (Session 16, still relevant)
 - **Phase**: Phase 1C (Plan Tab) — the design-led build pass is COMPLETE. All three Session 15 backlog items built (regenerate entry point, "AI is working" affordance, drawer dismissal), a high-effort dual review found + fixed 4 correctness bugs, and the gauntlet + production build are green (173/173 tests, +6 this session).
 - **Session 16**: ux-design-critic designed the two app-wide patterns before building. Built: (1) regenerate/new-plan entry point via `intentMode` (re-prompts through the intent screen; no confirm dialog — the intent screen is the airlock) + a new elapsed-plan "week wrapped" state; (2) the in-place, scroll-independent AI-working affordance (MealCard `working`/`justChanged`, sheets stay open and close on success, bottom ack/error pills, optimistic `setData`, reusable `usePlanModify` hook, reachable error/retry); (3) drawer cleanup (shared X in `DrawerContent`, click-outside scrim that never touches body pointer-events, focus order). Dual review fixed: stale-modify-over-regenerate (token guard), removed-day highlight/scroll, global-pending-leaking-into-sheets (source scoping), stale pills over intent/streaming. Extracted `BottomBar`, removed dead `DrawerOverlay`.
 - **Where the branch is**: `session-15-plan-fixes` — see "Branch / deploy" below for whether this session merged/pushed it.

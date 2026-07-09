@@ -12,9 +12,26 @@ Session-by-session log of decisions, progress, and key discussions.
 - Fixtures + `[E2E:*]` token grammar in `src/server/ai/providers/e2e-mock-fixtures.ts` (FAIL → throw, SLOW=ms → latency, "eating out" → day removal, title-match → scoped rework, else → whole-week rework). Generation returns 7 "Fresh …" meals; seeds will use "Seeded …" so replace-on-generate is assertable.
 - Double-gated (`E2E_AI_MOCK==="1" && !VERCEL`; flag lives only in playwright.config webServer.env). Relaxed the in-memory AI rate limit under the mock flag only (`src/server/ratelimit.ts`).
 - Scaffolding: `@playwright/test` + chromium, `tests/e2e/{harness,app,specs}` tree, `test:e2e` scripts, vitest excludes `tests/e2e/**`, `.gitignore` for playwright artifacts + `.auth/`.
+- **Reusable core + app layer.** `tests/e2e/harness/` is generic and copyable (session minting, seed-client, config factory, `README.md` + `ai-mock-pattern.md` porting recipe). `tests/e2e/app/` + `tests/e2e/specs/` are meal-app-specific. Porting to FFOS/Leila = copy `harness/`, write the app layer.
+- **Auth bypass** mints a REAL Supabase session (admin createUser → password sign-in → replay through `@supabase/ssr` for byte-identical cookies → Playwright storageState) and bootstraps users/household/membership. Passes the proxy + the layout's real `getClaims()`. No Supabase dashboard toggle was needed (Email provider already on).
+- **Seeding** (`tests/e2e/app/seed.ts`): 5 named states via Drizzle, with a bulletproof safety guard (refuses any household not named "E2E Test Kitchen" with the test user as sole member; verified it throws on a bogus id). Runs against the real Supabase project, isolated to the guarded test household.
+- **Server prod build for the E2E server** (`next build && next start`), not `next dev`: Next 16 blocks a second `next dev` from the same dir. `E2E_REUSE_BUILD=1` skips rebuild for fast iteration.
+- **Debug HUD** (`useDebugPanel` + `DebugHud`): dev-only, toggleable (Cmd/Ctrl+Shift+D or 🐛), copyable JSON snapshot of live Plan-tab state incl. todayUTC-vs-local. Gated dev / `NEXT_PUBLIC_DEBUG_HUD` / `localStorage debug-hud=1`; off by default (prod-safe).
+- **Mock bug the specs caught:** initial routing read the whole prompt, but the chef *system prompt* literally contains "<user_request>" and "eating out", so every scoped modify mis-routed to the eating-out branch. Fixed to read only the user message.
+
+### Specs authored (docs/test-plan.md 1:1) — 23 passing, 1 finding, 2 clean runs
+- **D1-D7 drawer**: D1-D6 pass; **D3 (the two-drawer pointer-lockup regression) is verified sound**. D4 drag-to-dismiss passes (not flaky). **D7 FINDING** — background DOES scroll while a sheet is open (the S16 "scrim blocks it" note is wrong; `modal={false}+noBodyStyles` means nothing blocks window scroll). Marked `test.fixme` pending Griffin's call.
+- **RG1-RG5 regenerate (the Test 8 V1 blocker)**: all pass, incl. RG4 true one-active-plan replacement through the REAL persist pipeline and RG5 the stale-modify token guard.
+- **M1-M7 modify affordance**: all pass — in-place working, sheet-stays-open, scope anchor, whole-week ack pill + scroll-to, bottom-anchored feedback, single active modify, eating-out day.
 
 ### Verification
+- Full E2E suite: **23 passed, 1 skipped (D7 finding)** across two consecutive clean runs; the `[e2e-mock]` banner confirms zero real OpenAI calls.
 - Gauntlet green with mock inert: lint + typecheck + 173/173 unit tests pass (mock never activates without the flag).
+
+### Open for Griffin
+- **D7 product call**: accept background-scroll behind a sheet, or re-lock it (via scrim `onWheel`/`onTouchMove` preventDefault — does not reintroduce the D3 body pointer-events lockup).
+- Ready for his functional review: the Plan-tab mechanics are now machine-verified; his pass shrinks to **taste** (does the generated plan read well, do chips sound like natural imperatives, does the affordance *feel* right) rather than clicking every path.
+- This commit also carried two pre-existing uncommitted working-tree tweaks not authored this session (cursor affordances: `globals.css` button cursor + drawer handle `cursor-grab`).
 
 
 ## Session 1 — 2026-03-28

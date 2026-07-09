@@ -4,7 +4,12 @@ The canonical set of Plan-tab test cases. Runnable by hand now; the 1:1 spec the
 E2E harness will automate (see `docs/plans/spike-e2e-testing-harness.md`).
 
 Status legend: ✅ built & expected to pass · ⚠️ built but NOT click-verified (as
-of Session 16) · ⛔ blocked.
+of Session 16) · 🟢 E2E-automated & passing (Session 17) · 🔴 E2E finding · ⛔ blocked.
+
+**Session 17:** the D1-D7 / RG1-RG5 / M1-M7 rows below are now automated in the
+Playwright harness (`tests/e2e/specs/{drawer,regenerate,modify}.spec.ts`). Run
+`npm run test:e2e`. Result: 23 passing, 1 finding (D7). D3 — the pointer-lockup
+regression — is verified sound.
 
 ## Setup / preconditions
 - Dev server: `PORT=3001 npm run dev` (FFOS owns 3000). Sign in via the DevTools
@@ -40,23 +45,23 @@ of Session 16) · ⛔ blocked.
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
-| M1 | DRAFT | Tap an inline card chip | Instant tap-depress; card dims + chip row → "Reworking {day}'s dinner…" + shimmer; ~2-5s later new content lands with a highlight ring that fades. No sheet opened. | ⚠️ |
-| M2 | DRAFT | Open a card → tap an action row in the sheet | Sheet STAYS OPEN showing pending ("Reworking {day}'s dinner…" + shimmer), actions disabled → on success sheet closes onto the changed card (highlight ring) | ⚠️ |
-| M3 | DRAFT | Open a card → "Something else? Tell your chef" → type a change, send | Only that meal's day changes (scope anchor works — Session 15 regression) + affordance as M2 | ⚠️ (Test 5) |
-| M4 | DRAFT | Hero "Talk to the Chef" → "make this week lighter", send | Sheet pending → closes → bottom ack pill with the chef's sentence; tap it scrolls to the first changed card (which is highlighted) | ⚠️ (Test 4) |
-| M5 | DRAFT | Any modify from any path | NO top-of-page toast anywhere; change is never silent (regression guard for the pre-Session-16 behavior) | ⚠️ |
-| M6 | DRAFT, a modify in-flight | Tap another chip / submit another modify | Second modify is blocked (single active plan → single active modify) | ⚠️ |
-| M7 | DRAFT | Whole-week or scoped "we're eating out Wednesday" | Wednesday becomes the de-emphasized "Eating out" card AND is highlighted + scroll-to works (removed-day bug fixed S16) | ⚠️ |
+| M1 | DRAFT | Tap an inline card chip | Instant tap-depress; card dims + chip row → "Reworking {day}'s dinner…" + shimmer; ~2-5s later new content lands with a highlight ring that fades. No sheet opened. | 🟢 |
+| M2 | DRAFT | Open a card → tap an action row in the sheet | Sheet STAYS OPEN showing pending ("Reworking {day}'s dinner…" + shimmer), actions disabled → on success sheet closes onto the changed card (highlight ring) | 🟢 |
+| M3 | DRAFT | Open a card → "Something else? Tell your chef" → type a change, send | Only that meal's day changes (scope anchor works — Session 15 regression) + affordance as M2 | 🟢 (Test 5) |
+| M4 | DRAFT | Hero "Talk to the Chef" → "make this week lighter", send | Sheet pending → closes → bottom ack pill with the chef's sentence; tap it scrolls to the first changed card (which is highlighted) | 🟢 (Test 4) |
+| M5 | DRAFT | Any modify from any path | NO top-of-page toast anywhere; change is never silent (regression guard for the pre-Session-16 behavior) | 🟢 (asserts bottom-anchored feedback) |
+| M6 | DRAFT, a modify in-flight | Tap another chip / submit another modify | Second modify is blocked (single active plan → single active modify) | 🟢 |
+| M7 | DRAFT | Whole-week or scoped "we're eating out Wednesday" | Wednesday becomes the de-emphasized "Eating out" card AND is highlighted + scroll-to works (removed-day bug fixed S16) | 🟢 |
 
 ## RG — Regenerate / new plan (Session 16 — V1 blocker, was Test 8)
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
-| RG1 | DRAFT | Scroll to end → "Not feeling this week? Start over →" | Lands on the intent screen (pills + textarea), NO replace-warning line, "← Keep current plan" present | ⚠️ (Test 8) |
-| RG2 | MIDWEEK/confirmed | "Starting fresh? Plan a new week →" | Intent screen WITH the muted "Generating a new plan will replace this week's meals." line | ⚠️ (Test 8) |
-| RG3 | from RG1/RG2 | Tap "← Keep current plan" | Returns to the existing plan, unchanged | ⚠️ |
-| RG4 | from RG1/RG2 | Tap a pill / send | Streams a NEW plan; the old plan is fully replaced (one-active-plan) | ⚠️ (Test 8) |
-| RG5 | DRAFT, a modify in-flight | Start over → generate before the modify resolves | The stale modify does NOT overwrite the newly generated plan (token guard, S16 bug fix) | ⚠️ |
+| RG1 | DRAFT | Scroll to end → "Not feeling this week? Start over →" | Lands on the intent screen (pills + textarea), NO replace-warning line, "← Keep current plan" present | 🟢 (Test 8) |
+| RG2 | MIDWEEK/confirmed | "Starting fresh? Plan a new week →" | Intent screen WITH the muted "Generating a new plan will replace this week's meals." line | 🟢 (Test 8) |
+| RG3 | from RG1/RG2 | Tap "← Keep current plan" | Returns to the existing plan, unchanged | 🟢 |
+| RG4 | from RG1/RG2 | Tap a pill / send | Streams a NEW plan; the old plan is fully replaced (one-active-plan) | 🟢 (Test 8) |
+| RG5 | DRAFT, a modify in-flight | Start over → generate before the modify resolves | The stale modify does NOT overwrite the newly generated plan (token guard, S16 bug fix) | 🟢 |
 
 ## E — Elapsed plan / week wrapped (Session 16)
 
@@ -77,13 +82,13 @@ of Session 16) · ⛔ blocked.
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
-| D1 | any sheet open | Tap the X (top-right) | Sheet closes | ⚠️ |
-| D2 | any sheet open | Tap the dimmed area outside the sheet | Sheet closes | ⚠️ |
-| D3 | — | Open a sheet → close via outside-tap → tap a meal card | Card OPENS (page not pointer-events-locked — the two-drawer lockup did NOT return) | ⚠️ **verify first** |
-| D4 | any sheet open | Drag the sheet down by the handle | Sheet dismisses | ⚠️ |
-| D5 | any sheet open | Press Escape | Sheet closes | ⚠️ |
-| D6 | any sheet open | Tab / screen-reader from the top | Reaches the sheet heading before the "Close" control | ⚠️ |
-| D7 | any sheet open | Scroll the background behind the sheet | Background does NOT scroll (accepted trade for click-outside — confirm it's acceptable) | ⚠️ |
+| D1 | any sheet open | Tap the X (top-right) | Sheet closes | 🟢 |
+| D2 | any sheet open | Tap the dimmed area outside the sheet | Sheet closes | 🟢 |
+| D3 | — | Open a sheet → close via outside-tap → tap a meal card | Card OPENS (page not pointer-events-locked — the two-drawer lockup did NOT return) | 🟢 **verified — lockup did NOT return** |
+| D4 | any sheet open | Drag the sheet down by the handle | Sheet dismisses | 🟢 |
+| D5 | any sheet open | Press Escape | Sheet closes | 🟢 |
+| D6 | any sheet open | Tab / screen-reader from the top | Reaches the sheet heading before the "Close" control | 🟢 |
+| D7 | any sheet open | Scroll the background behind the sheet | Background does NOT scroll (accepted trade for click-outside — confirm it's acceptable) | 🔴 **FINDING: background DOES scroll** — the scrim does not block it (modal={false}+noBodyStyles). Spec is `test.fixme` pending Griffin's call: accept it, or re-lock via scrim onWheel/onTouchMove preventDefault (won't regress D3). |
 
 ## X — Error / retry (Session 16)
 
