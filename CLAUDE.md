@@ -162,11 +162,13 @@ These apply to ALL code. Hooks enforce the critical ones deterministically.
 
 ### After Writing Code
 - **Run the gauntlet:** `npm run lint && npm run typecheck && npm run test:run` (hooks enforce this on commit, but run proactively).
+- **Run the E2E suite when your change touches its coverage** (see "E2E test suite" below) and always at a feature/phase wrap.
 - **Security self-check on auth/data code:** RLS policy? Zod validation? Service key not in client code?
 
 ### Auto-Invoke Rules (Claude does these without being asked)
 - **Before any feature touching 3+ files:** Run `/architect` to validate the approach against project architecture.
-- **At the end of every build phase (1A, 1B, 1C, etc.):** Run `/review` for a multi-perspective code review.
+- **When building UI/flows the E2E suite covers:** run `npm run test:e2e` before wrapping, and EXTEND the specs for the new behavior (a feature isn't done until its mechanics are covered). See "E2E test suite" below.
+- **At the end of every build phase (1A, 1B, 1C, etc.):** Run `/review` for a multi-perspective code review AND run the full E2E suite (`npm run test:e2e`).
 - **When Griffin corrects your approach:** Propose adding the correction as a permanent rule (compound learning).
 
 ### Griffin Invokes Explicitly
@@ -177,3 +179,24 @@ These apply to ALL code. Hooks enforce the critical ones deterministically.
 - **Pre-commit hooks** fire on every commit (no invocation needed)
 - **`.claude/rules/`** load when matching files are touched (no invocation needed)
 - **CLAUDE.md rules** are loaded every session (no invocation needed)
+
+---
+
+## E2E test suite (Playwright) — when to run it
+
+There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; details in `docs/plans/spike-e2e-testing-harness.md` and `tests/e2e/harness/README.md`). It self-verifies real UI mechanics in a browser — the layer unit tests can't reach.
+
+**Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend; ~1.5 min. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
+
+**Run it (without being asked) when:**
+- Your change touches code the suite covers, OR
+- You're wrapping a feature or closing a build phase, OR
+- You touched drawers/sheets, the plan/AI pipeline, auth, or seeding.
+
+**Coverage today:** the **Plan tab** — drawer dismissal (D1-D7), regenerate (RG1-RG5), the modify affordance (M1-M7). `docs/test-plan.md` is the 1:1 catalog. Other tabs (Recipes, Groceries) have no E2E coverage yet, so a change isolated to them won't be caught by this suite — extend the harness as those tabs mature.
+
+**A feature isn't done until its mechanics are in the suite.** When you build new Plan-tab behavior, add/extend the spec in the same session. When a spec surfaces a real product question rather than a bug, mark it `test.fixme` with a comment and flag it for Griffin (don't weaken the assertion to force green).
+
+**Not in the pre-commit hook on purpose:** it needs a build and is minutes-slow, so it's a relevant-change + wrap-time gate, not a per-commit one. The fast gauntlet (lint/typecheck/unit) stays the commit gate.
+
+**The mechanical/taste split (Griffin's directive):** the harness owns *mechanical* verification so Griffin no longer clicks every path. Use judgment to tell him when a feature is machine-verified and READY for his *functional/taste* review (does it read well, do chips sound like imperatives, does it feel right) — scope his pass to taste, don't hand him a full click script, and don't skip bringing him in.
