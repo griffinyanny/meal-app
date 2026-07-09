@@ -64,7 +64,10 @@ function DrawerContent({
         )}
         {...props}
       >
-        <div className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block" />
+        <div
+          data-testid="drawer-handle"
+          className="mx-auto mt-4 hidden h-1 w-[100px] shrink-0 cursor-grab rounded-full bg-muted group-data-[vaul-drawer-direction=bottom]/drawer-content:block"
+        />
         {children}
         {/* Rendered after children so keyboard/AT users reach the sheet's
             heading and body before the Close control (positioned top-right by
