@@ -2,24 +2,32 @@
 
 Last updated: 2026-07-09 (Session 17)
 
-## Exact Status (Session 17 — E2E harness Phase 1 landed)
-- **Phase 1 of the E2E harness is built and green.** Playwright + server-side AI
-  mock + auth bypass + DB seeding + a debug HUD. 20 Plan-tab cases automated
-  (D1-D7, RG1-RG5, M1-M7) + smokes: **23 passing, 1 finding (D7), 2 clean runs**.
-  Run `npm run test:e2e` (builds + starts its own server on 3102, mock-only).
-- **What this changes for you:** the Plan-tab *mechanics* are now machine-verified
-  every run — you no longer need to click every drawer/regenerate/modify path.
-  Your manual pass shrinks to **taste**: does the generated plan read well, do the
-  chips sound like tappable imperatives, does the affordance *feel* right.
-- **Two things need you (see "Griffin's calls" below).**
+## Exact Status (Session 17 — E2E harness Phase 1 + manual pass)
+- **E2E harness built and green.** Playwright + server-side AI mock + auth bypass
+  + DB seeding + a debug HUD. Plan-tab catalog now automated end to end except the
+  low-risk G/R/W generate/review rows: D1-D7, RG1-RG5, M1-M7, **E1-E4 (elapsed),
+  X1-X2 (error/retry)** → **30 passing, 0 findings**. Run `npm run test:e2e`.
+- **A live manual pass (Session 17) caught two real bugs the harness had shipped
+  past, both now fixed + committed + redeployed to prod:**
+  - **D2 click-outside was dead in the browser** — the scrim inherited
+    `pointer-events:none` from vaul's `modal={false}` portal. Fixed with
+    `pointer-events-auto` on the scrim (`ui/drawer.tsx`). The harness's D2 test
+    was green only because the fix landed in the same commit as the scaffold — so
+    the harness *would* catch a regression, but the original prod bug reached
+    users. Lesson: the harness didn't exist at Session 16 ship; now it guards this.
+  - **No pointer cursor on any button** — Tailwind v4 dropped the default
+    `cursor:pointer` on `<button>`. Fixed app-wide with a base rule + `cursor-grab`
+    on the drawer handle (`globals.css`, `ui/drawer.tsx`).
+- **Prod redeployed** (meal-app-swart.vercel.app) — was stuck on the Session 16
+  build with the broken click-outside; now current.
+- **What's left for you: the taste pass** (does the plan read well, do chips sound
+  like imperatives, does it *feel* right). Mechanics are machine-verified.
 
 ## ⭐ Griffin's calls
-1. **D7 finding — background scroll behind an open sheet.** The harness proved the
-   background DOES scroll while a sheet is open (the Session 16 note that the scrim
-   blocks it was wrong). Options: (a) accept it as the trade for click-outside, or
-   (b) re-lock via a scrim `onWheel`/`onTouchMove` `preventDefault` (safe — does
-   NOT reintroduce the D3 pointer-lockup). The D7 spec is `test.fixme`, ready to
-   verify whichever you choose.
+1. ~~**D7 finding — background scroll.**~~ RESOLVED — Griffin accepted: he wants
+   both a scrollable background AND click-outside. D7 spec flipped to assert the
+   page is NOT scroll-locked. (Mobile caveat: on a real phone a touch-drag on the
+   scrim may be captured; confirm on-device when convenient.)
 2. **Functional/taste review of the Plan tab** — mechanics are verified; I'd value
    your eye on whether it *feels* right. Dev server + signin snippet below.
 3. **Optional:** enable the Playwright MCP (~10 min) so I can also drive a live

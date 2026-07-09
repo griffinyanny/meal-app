@@ -6,10 +6,11 @@ E2E harness will automate (see `docs/plans/spike-e2e-testing-harness.md`).
 Status legend: ✅ built & expected to pass · ⚠️ built but NOT click-verified (as
 of Session 16) · 🟢 E2E-automated & passing (Session 17) · 🔴 E2E finding · ⛔ blocked.
 
-**Session 17:** the D1-D7 / RG1-RG5 / M1-M7 rows below are now automated in the
-Playwright harness (`tests/e2e/specs/{drawer,regenerate,modify}.spec.ts`). Run
-`npm run test:e2e`. Result: 23 passing, 1 finding (D7). D3 — the pointer-lockup
-regression — is verified sound.
+**Session 17:** D1-D7 / RG1-RG5 / M1-M7 automated. **Session 17 (cont.):** E1-E4
+(elapsed) + X1-X2 (error/retry) automated too, and D7 resolved (Griffin accepted
+background scroll). Full suite: **30 passing, 0 findings** (`npm run test:e2e`).
+Plan-tab mechanics are now machine-covered end to end except the low-risk G/R/W
+generate/review rows. D3 — the pointer-lockup regression — is verified sound.
 
 ## Setup / preconditions
 - Dev server: `PORT=3001 npm run dev` (FFOS owns 3000). Sign in via the DevTools
@@ -67,10 +68,10 @@ regression — is verified sound.
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
-| E1 | ELAPSED_CONFIRMED | Open Plan tab | "That's a wrap on this week. You cooked N dinners. How'd they land?" + "HOW'D IT GO" thumbs recap + "Plan next week →". NOT the old mid-week view. | ⚠️ |
-| E2 | ELAPSED_CONFIRMED | Tap a thumb in the recap | Toggles + persists; writes to chef memory | ⚠️ |
-| E3 | ELAPSED_DRAFT | Open Plan tab | "This plan's gone stale." variant; no thumbs section | ⚠️ |
-| E4 | ELAPSED_* | "Plan next week →" | Intent screen → generate replaces the elapsed plan | ⚠️ |
+| E1 | ELAPSED_CONFIRMED | Open Plan tab | "That's a wrap on this week. You cooked N dinners. How'd they land?" + "HOW'D IT GO" thumbs recap + "Plan next week →". NOT the old mid-week view. | 🟢 |
+| E2 | ELAPSED_CONFIRMED | Tap a thumb in the recap | Toggles + persists; writes to chef memory | 🟢 (toggle+persist; memory write not asserted) |
+| E3 | ELAPSED_DRAFT | Open Plan tab | "This plan's gone stale." variant; no thumbs section | 🟢 |
+| E4 | ELAPSED_* | "Plan next week →" | Intent screen → generate replaces the elapsed plan | 🟢 |
 
 ## W — Mid-week (existing)
 
@@ -88,14 +89,14 @@ regression — is verified sound.
 | D4 | any sheet open | Drag the sheet down by the handle | Sheet dismisses | 🟢 |
 | D5 | any sheet open | Press Escape | Sheet closes | 🟢 |
 | D6 | any sheet open | Tab / screen-reader from the top | Reaches the sheet heading before the "Close" control | 🟢 |
-| D7 | any sheet open | Scroll the background behind the sheet | Background does NOT scroll (accepted trade for click-outside — confirm it's acceptable) | 🔴 **FINDING: background DOES scroll** — the scrim does not block it (modal={false}+noBodyStyles). Spec is `test.fixme` pending Griffin's call: accept it, or re-lock via scrim onWheel/onTouchMove preventDefault (won't regress D3). |
+| D7 | any sheet open | Scroll the background behind the sheet | Background SCROLLS freely (Griffin accepted: he wants both a scrollable background AND click-outside). Spec guards against a future accidental scroll-lock. | 🟢 (resolved — accepted behavior) |
 
 ## X — Error / retry (Session 16)
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
-| X1 | DRAFT, force modify failure | Tap an inline chip that fails | Bottom "That didn't take — try again?" pill with a Retry button; Retry re-fires the same request | ⚠️ |
-| X2 | DRAFT, force modify failure | Fail a modify launched from a sheet | Sheet stays open with the retry line; send/actions re-enabled | ⚠️ |
+| X1 | DRAFT, force modify failure | Tap an inline chip that fails | Bottom "That didn't take — try again?" pill with a Retry button; Retry re-fires the same request | 🟢 (via [E2E:FAIL] token) |
+| X2 | DRAFT, force modify failure | Fail a modify launched from a sheet | Sheet stays open with the retry line; send/actions re-enabled | 🟢 (via [E2E:FAIL] token) |
 
 ---
 

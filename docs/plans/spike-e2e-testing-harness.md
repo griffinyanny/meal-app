@@ -1,9 +1,10 @@
 # Spike / Plan — E2E Testing Harness
 
 Status: **Phase 1 DONE (Session 17, 2026-07-09).** Playwright + server-side AI mock
-+ auth bypass + seeding + debug HUD built; D1-D7 / RG1-RG5 / M1-M7 automated (23
-passing, 1 finding D7). Reusable core in `tests/e2e/harness/` (see its README).
-Phase 2 (CI + the G/R/E/W/X specs) and Phase 3 (visual) remain. Owner: Claude.
++ auth bypass + seeding + debug HUD built; D1-D7 / RG1-RG5 / M1-M7 / **E1-E4 /
+X1-X2** automated + D7 resolved — **30 passing, 0 findings**. Reusable core in
+`tests/e2e/harness/`. Remaining: CI wiring + the low-risk G/R/W generate/review
+specs (Phase 2) and visual assertions (Phase 3). Owner: Claude.
 
 ## Why (the gap)
 Every session ships UI that Claude cannot click-verify — verification stops at

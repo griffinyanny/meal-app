@@ -26,7 +26,7 @@ Plans for technical investigations or design explorations that inform future wor
 
 Format: `spike-{topic}.md` (e.g., `spike-ai-model-benchmarking.md`)
 
-- `spike-e2e-testing-harness.md` — Playwright E2E harness (auth bypass + AI-mock + seed) so Claude can self-verify UI. **Phase 1 COMPLETE** 2026-07-09 (Session 17): harness built + reusable core in `tests/e2e/harness/`; Plan-tab D1-D7/RG1-RG5/M1-M7 automated (23 passing, 1 finding D7). Run `npm run test:e2e`. Phase 2 (CI + G/R/E/W/X specs) + Phase 3 (visual) remain. Extending to Recipes/Groceries = catalog + tab AI fixtures + seed builder + specs (small; infra is reused).
+- `spike-e2e-testing-harness.md` — Playwright E2E harness (auth bypass + AI-mock + seed) so Claude can self-verify UI. **Phase 1 COMPLETE** 2026-07-09 (Session 17): harness built + reusable core in `tests/e2e/harness/`; Plan-tab D1-D7/RG1-RG5/M1-M7/E1-E4/X1-X2 automated + D7 resolved — **30 passing, 0 findings**. Run `npm run test:e2e`. Phase 2 (CI + low-risk G/R/W specs) + Phase 3 (visual) remain. Extending to Recipes/Groceries = catalog + tab AI fixtures + seed builder + specs (small; infra is reused).
 
 ## Rules
 - Every plan references the overall roadmap (`docs/roadmap.md`) to stay grounded
