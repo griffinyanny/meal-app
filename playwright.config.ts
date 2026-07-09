@@ -19,5 +19,7 @@ export default baseE2EConfig({
   testDir: "./tests/e2e",
   storageStatePath: STORAGE_STATE_PATH,
   webServerCommand,
-  webServerEnv: { E2E_AI_MOCK: "1" },
+  // Latency high enough that in-place pending states (shimmer, disabled actions)
+  // are reliably observable by specs, still fast enough to keep the suite snappy.
+  webServerEnv: { E2E_AI_MOCK: "1", E2E_AI_MOCK_LATENCY_MS: "700" },
 });
