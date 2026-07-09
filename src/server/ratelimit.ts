@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "@/server/db/schema";
 import { aiUsageDaily } from "@/server/db/schema";
+import { aiMockEnabled } from "@/server/ai/providers/e2e-mock";
 
 interface Bucket {
   count: number;
@@ -45,7 +46,11 @@ export function checkRateLimit(
 export const AI_RATE_LIMIT = { limit: 10, windowMs: 60_000 } as const;
 
 export function checkAiRateLimit(userId: string): RateLimitResult {
-  return checkRateLimit(`ai:${userId}`, AI_RATE_LIMIT.limit, AI_RATE_LIMIT.windowMs);
+  // E2E runs many AI-gated calls back-to-back; the mock makes them free, so the
+  // per-minute guard would only produce false failures. Relaxed only under the
+  // (double-gated) mock flag — the real limit is untouched in every other run.
+  const limit = aiMockEnabled() ? 1000 : AI_RATE_LIMIT.limit;
+  return checkRateLimit(`ai:${userId}`, limit, AI_RATE_LIMIT.windowMs);
 }
 
 // Distributed daily budget, enforced in Postgres so it holds across serverless
