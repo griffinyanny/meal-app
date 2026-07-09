@@ -4,6 +4,16 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ---
 
+## Needs Griffin's call
+
+### D7 — background scroll behind an open sheet (Session 17 E2E finding)
+**Question**: The harness proved the background DOES scroll while a bottom sheet is open — the Session 16 note that the scrim blocks it was wrong (`modal={false}+noBodyStyles`, the fix for the D3 pointer-lockup, means nothing stops window scroll). Accept it as the trade for click-outside, or re-lock it?
+- Option A: accept (scrolling background behind a non-modal sheet is common and harmless).
+- Option B: re-lock via a scrim `onWheel`/`onTouchMove` `preventDefault` — safe, does NOT reintroduce the D3 body-pointer-events lockup.
+- The D7 spec is `test.fixme`, ready to verify whichever way you go. Resolve → move to decisions.md.
+
+---
+
 ## Product / UX
 
 ### AI Interaction Model (High Priority — blocks V1 UI design)

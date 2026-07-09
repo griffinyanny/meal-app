@@ -4,6 +4,23 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+### E2E Testing Harness (Session 17, 2026-07-09)
+
+**AI mock lives server-side at the model layer, NOT Playwright `page.route`** (2026-07-09)
+- `getModel()` returns a `MockLanguageModelV3` (`ai/test`) under `E2E_AI_MOCK=1`, so the whole real pipeline (validation, persistence, tRPC serialization, invalidation) runs against fixtures.
+- Rationale: browser interception leaves the DB inconsistent with the UI (the client refetches server state after streaming, so a "did the plan replace?" assertion falsely fails) and would force forging serialized payloads. Double-gated (`&& !VERCEL`); the flag lives only in playwright.config.
+
+**E2E server uses `next build && next start`, not `next dev`** (2026-07-09)
+- Rationale: Next 16 blocks a second `next dev` from the same directory (Griffin often has one running); a prod build also avoids dev compile flakiness. `E2E_REUSE_BUILD=1` skips rebuild for fast iteration.
+
+**Test isolation = a guarded "E2E Test Kitchen" household in the real Supabase project, not a separate DB** (2026-07-09)
+- Rationale: self-bootstraps in any repo using its own env vars (portable to FFOS/Leila with zero manual DB setup). A guard refuses to write unless the resolved household matches the sentinel name with the test user as sole member. Escape hatch: move to an isolated DB later if data sensitivity warrants.
+
+**E2E is a relevant-change + wrap-time gate, not a per-commit hook** (2026-07-09)
+- Rationale: needs a build and is minutes-slow with Plan-tab-only coverage; per-commit would wreck the commit-early rhythm. Wired via CLAUDE.md + `.claude/rules/plan-e2e.md`. The fast gauntlet stays the commit gate.
+
+---
+
 ### Product Decisions
 
 **Target user for V1: Solo health-conscious adult** (2026-03-28)
