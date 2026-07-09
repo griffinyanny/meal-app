@@ -91,22 +91,19 @@ test("D6 - heading precedes the Close control in DOM (AT order)", async ({
   expect(order).toBe("title-first");
 });
 
-// FINDING (Session 17): this FAILS today — the background DOES scroll while a
-// sheet is open (scrollY 0 → 600). The Session 16 notes claimed the scrim blocks
-// background scroll, but modal={false} + noBodyStyles (the fix for the D3
-// pointer-lockup) means nothing prevents the window from scrolling. Marked fixme
-// pending Griffin's call: accept scrolling (the trade for click-outside), or
-// re-lock via onWheel/onTouchMove preventDefault on the scrim (does NOT need to
-// reintroduce body pointer-events, so it won't regress D3). Un-fixme when decided.
-test.fixme(
-  "D7 - background does not scroll while the sheet is open",
-  async ({ page }) => {
+// D7 — RESOLVED (Griffin, Session 17): ACCEPT background scroll. modal={false} +
+// noBodyStyles (the D3 pointer-lockup fix) intentionally leaves the page
+// scrollable while a sheet is open, and Griffin confirmed he wants both a
+// scrollable background AND click-outside (D2). This guards that the page is
+// NOT scroll-locked — a regression to a scroll-lock would fail here.
+test("D7 - background scrolls freely while a sheet is open (accepted trade)", async ({
+  page,
+}) => {
   await openCardSheet(page, plan.slots[1].date);
   await expect(sheetContent(page)).toBeVisible();
   const before = await page.evaluate(() => window.scrollY);
   await page.mouse.wheel(0, 600);
   await page.waitForTimeout(250);
   const after = await page.evaluate(() => window.scrollY);
-  expect(after).toBe(before);
-  }
-);
+  expect(after).toBeGreaterThan(before);
+});
