@@ -23,6 +23,14 @@ Last updated: 2026-07-09 (Session 17)
 - **What's left for you: the taste pass** (does the plan read well, do chips sound
   like imperatives, does it *feel* right). Mechanics are machine-verified.
 
+## ▶ Next session — Plan-tab (1C) feedback triage
+Griffin will bring overall feedback on the whole Plan tab. The job is TRIAGE, not blind fixing:
+- **bug / correctness** → fix now, add/extend an E2E spec (`.claude/rules/plan-e2e.md`).
+- **quality / friction** (rough edges, bad chip phrasing, awkward sticky bar) → fix now or near-term.
+- **product change** (flow/behavior) → decide with Griffin, log in decisions.md.
+- **visual polish** → do NOT do now → append to the polish backlog for the post-V1 design-system pass (see decision 2026-07-09).
+Read first: this file, `docs/test-plan.md`, `docs/decisions.md` (esp. the 2026-07-09 polish decision), and `src/components/plan/`. Dev server `PORT=3001 npm run dev`; debug HUD toggles with **Cmd/Ctrl+Shift+D** (copyable state blob). Run `npm run test:e2e` after Plan-tab changes.
+
 ## ⭐ Griffin's calls
 1. ~~**D7 finding — background scroll.**~~ RESOLVED — Griffin accepted: he wants
    both a scrollable background AND click-outside. D7 spec flipped to assert the

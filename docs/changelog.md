@@ -34,6 +34,16 @@ Session-by-session log of decisions, progress, and key discussions.
 - Ready for his functional review: the Plan-tab mechanics are now machine-verified; his pass shrinks to **taste** (does the generated plan read well, do chips sound like natural imperatives, does the affordance *feel* right) rather than clicking every path.
 - This commit also carried two pre-existing uncommitted working-tree tweaks not authored this session (cursor affordances: `globals.css` button cursor + drawer handle `cursor-grab`).
 
+### Session 17 (continued) — live manual pass + E/X specs + polish call
+Ran in parallel to the harness build (same working dir — the harness's `git add` swept the two tweaks below into its commits; noted the coordination hazard: use separate worktrees next time).
+- **Live manual QA pass caught two real bugs the harness had shipped past, both fixed + committed + redeployed to prod:**
+  1. **D2 click-outside was DEAD in the browser** — the scrim inherited `pointer-events:none` from vaul's `modal={false}` portal. Fixed with `pointer-events-auto` on the scrim (`ui/drawer.tsx`). The harness's faithful D2 test was green only because the fix landed in the same commit as the scaffold, so it never saw the broken code — but the bug reached prod. Lesson captured: the harness guards regressions; a periodic *live* pass still catches real-vs-headless gaps the harness (which didn't exist at S16 ship) let through.
+  2. **No pointer cursor on any button** (Tailwind v4 dropped the default) — fixed app-wide with a base `button { cursor: pointer }` rule + `cursor-grab` on the drawer handle.
+- **Prod redeployed** (`vercel deploy --prod`) — was stuck on the S16 build with the broken click-outside; meal-app-swart.vercel.app now current + smoke-tested.
+- **E1-E4 (elapsed) + X1-X2 (error/retry) automated**, and **D7 resolved** — Griffin accepted background-scroll + click-outside both; D7 flipped from `test.fixme` to asserting the page is NOT scroll-locked. Full suite now **30 passing, 0 findings**. Corrected the (wrong) S16 "background-scroll sacrificed" decision — it never was; both behaviors coexist.
+- **Decision logged:** design polish is a dedicated design-SYSTEM pass AFTER the V1 flow is complete + validated, not per-screen now (sunk-cost anchoring, system-built-once, value-before-premium). Quality bugs still fixed inline. Feedback triaged bug/quality-now vs polish-later.
+- **Next session:** Griffin's overall Plan-tab (1C) feedback → triage. See whats-next "Next session."
+
 
 ## Session 1 — 2026-03-28
 
