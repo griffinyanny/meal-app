@@ -50,6 +50,13 @@ Add stable `data-testid`s where selectors would otherwise be brittle
 (`data-meal-date` already exists and doubles as a hook).
 
 ## Scope / phasing
+- **Phase 0 (small, do first):** dev-only **debug HUD** — a `DebugHud` in the app
+  shell (dev-only, stripped from prod) toggled by a hotkey, reading a shared
+  `DebugContext` that each surface feeds via `useDebugPanel('plan', () => ({…}))`.
+  Copy button → JSON blob for pasting into a session. Kills the "describe your
+  state in prose" round-trip during manual QA and gives Claude a paste-to-debug
+  input. Plan tab emits derivedState/planId/status/slots/pending/changedDates/
+  ack/error. Scales by one hook call per new surface. (Backlog: Session 16.)
 - **Phase 1 (this session):** stand up Playwright + auth bypass + AI-mock + seed;
   wire `npm run test:e2e`; author the FIRST specs — prioritize what shipped
   unverified: **RG1-RG5 (regenerate/Test 8), D1-D7 (drawer dismissal, esp. D3
