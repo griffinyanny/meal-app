@@ -26,7 +26,7 @@ Plans for technical investigations or design explorations that inform future wor
 
 Format: `spike-{topic}.md` (e.g., `spike-ai-model-benchmarking.md`)
 
-(none yet created)
+- `spike-e2e-testing-harness.md` — Playwright E2E harness (auth bypass + AI-mock + seed) so Claude can self-verify UI. **NOT STARTED** (teed up Session 16, 2026-07-08). Source of cases: `docs/test-plan.md`. Has a paste-in invocation prompt. Can run as a parallel work stream (own branch) alongside feature work.
 
 ## Rules
 - Every plan references the overall roadmap (`docs/roadmap.md`) to stay grounded
