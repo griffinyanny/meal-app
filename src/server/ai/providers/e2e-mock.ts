@@ -46,15 +46,15 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Flatten a normalized prompt to plain text so the fixtures can read the
-// <current_plan> / <user_request> blocks and any [E2E:*] control tokens.
+// Flatten the USER message(s) to plain text so the fixtures can read the
+// <current_plan> / <user_request> blocks and any [E2E:*] control tokens. The
+// system prompt is deliberately excluded: it literally contains the strings
+// "<user_request>" and "eating out" (as instructions), which would otherwise
+// contaminate block extraction and request routing.
 function promptToText(options: LanguageModelV3CallOptions): string {
   const parts: string[] = [];
   for (const msg of options.prompt) {
-    if (typeof msg.content === "string") {
-      parts.push(msg.content);
-      continue;
-    }
+    if (msg.role !== "user") continue;
     for (const piece of msg.content) {
       if (piece.type === "text") parts.push(piece.text);
     }
