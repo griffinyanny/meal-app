@@ -1,6 +1,7 @@
 "use client";
 
 import { TabBar } from "./tab-bar";
+import { DebugHud } from "@/components/debug/debug-hud";
 
 export type AppShellProps = {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </main>
         <TabBar />
+        <DebugHud />
       </div>
     </div>
   );
