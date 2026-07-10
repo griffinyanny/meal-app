@@ -1,19 +1,11 @@
 # Phase 1C Scope — Plan Tab
 
-> **What this document is.** The scope contract for the current milestone: what we're
-> shipping, the acceptance criteria for each piece, and what's explicitly deferred.
-> This is the layer between the roadmap (too coarse to build against) and
-> whats-next.md (session state, too granular to see the milestone). Griffin owns
-> scope; Claude builds against it and flags anything trying to creep in.
->
-> **Session ritual (both directions):**
-> - **Session start:** Claude restates the milestone goal, what's DONE vs REMAINING
->   here, and any new items awaiting a scope call.
-> - **During a session:** any new idea/feedback that isn't in this doc gets triaged —
->   into scope (logged in the change log below), or out (backlog with a phase tag).
->   Nothing gets built that isn't in this doc.
-> - **Scope changes are normal** — but they're decisions, not drift. Each one gets a
->   change-log line.
+> **What this document is.** The phase-level scope contract: in-scope features with
+> acceptance criteria, explicit deferrals, and a change log. The release-level view
+> lives in [scope-v1.md](scope-v1.md) (the hub — start there); this doc is its 1C
+> spoke and carries the detail/churn. Session ritual: see CLAUDE.md → Session Protocol.
+> Griffin owns scope; Claude builds against it — nothing gets built that isn't in a
+> scope doc, and scope changes land as change-log lines, not drift.
 
 **Created:** 2026-07-10 (Session 18) · **Milestone:** Phase 1C, part of V1 "The 10-Minute Weekly Ritual"
 **Phase status:** Build complete (S16) + machine-verified (S17) → now in Griffin's feedback/taste pass (S18–)

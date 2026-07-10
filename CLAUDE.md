@@ -35,21 +35,22 @@ The plan answers "where are we going." The docs answer "where are we right now."
 When Griffin says "resume meal app" or starts a new session in this project:
 1. Read these files to restore full context:
    - `docs/whats-next.md` — **Exact status and pickup point.** Read this first.
-   - `docs/scope-<phase>.md` (e.g. `scope-1C.md`) — **the milestone scope contract.** In-scope features + acceptance criteria + explicit out-of-scope.
+   - `docs/scope-v1.md` — **the Release 1 scope hub** (phase spine, DoD, out-of-scope, post-MVP gate). Read before the phase doc.
+   - `docs/scope-<phase>.md` (e.g. `scope-1C.md`) — the active phase's detail: features + acceptance criteria.
    - `docs/changelog.md` — what happened in previous sessions
    - `docs/decisions.md` — all confirmed decisions with rationale
    - `docs/open-questions.md` — unresolved questions
    - `docs/discovery-log.md` — Griffin's preferences, taste profile, and interaction model decisions (critical during Phase 0)
    - `~/.claude/plans/purrfect-hatching-ladybug.md` — the strategic roadmap, for context on where the current work fits in the V1-V4 arc
 2. Briefly summarize to Griffin: "Here's where we left off: [status]. We were working on [topic]. Next up: [what's next]."
-3. **Scope check (every session):** restate the milestone goal from the scope doc, what's DONE vs REMAINING against it, and any items awaiting a scope call. During the session, anything new that isn't in the scope doc gets triaged — into scope (change-log line) or to the backlog with a phase tag. Don't build what isn't in the scope doc.
+3. **Scope check (every session, ≤6 lines — momentum over ceremony):** open with a clickable link to [docs/scope-v1.md](docs/scope-v1.md), then: (1) release position — phase X of 6, what's left in the active phase; (2) roadmap position — one line placing R1 on the V1→V4 arc + post-MVP gate status; (3) deltas since last session; (4) items awaiting Griffin's call. Respond to any checkbox/comment edits Griffin made in the scope docs (he may edit directly, but usually he'll just say it — apply his words to the doc). During the session, anything new gets triaged — into scope (change-log line) or to the backlog with a phase tag. Don't build what isn't in a scope doc.
 4. If there's an active phase plan in `docs/plans/`, read that too
 5. Do NOT ask Griffin to re-explain context. The docs have everything.
 
 ### At the END of every session:
 1. Update `docs/changelog.md` with decisions made, progress, and discussions
 2. Update `docs/whats-next.md` with immediate next steps
-2b. Update the active `docs/scope-<phase>.md`: feature statuses, any scope changes to the change log, resolved/new open questions
+2b. Update the active `docs/scope-<phase>.md` (feature statuses, scope-change log lines, open questions). Flip `docs/scope-v1.md` statuses ONLY if warranted — the hub changes on status flips/scope changes/DoD progress, not every session (anti-sprawl rule; phase docs carry the churn)
 3. Update `docs/decisions.md` if any new decisions were made
 4. Update `docs/idea-backlog.md` if any new ideas surfaced (slot into a phase or leave as Incoming)
 5. Update `docs/open-questions.md` if any questions were raised or resolved
@@ -100,7 +101,8 @@ Plans live in `docs/plans/` at three levels. See `docs/plans/README.md` for the 
 - **`~/.claude/plans/purrfect-hatching-ladybug.md`** — The strategic roadmap for the project. Contains product strategy, phased roadmap (V1-V4), technical research findings, Figma operating model, feature details, and validation approach. **Refreshed at phase boundaries, not session-by-session.** For session-level state (what's in flight, what's next, what got decided this week), use the `docs/` files below. See "Document roles" in Session Protocol.
 
 ### Tracking & Context (read these to restore context)
-- `docs/scope-<phase>.md` — **Milestone scope contract**: in-scope features + acceptance criteria + explicit out-of-scope + scope change log. One per phase (currently `scope-1C.md`); created at phase start, closed at phase exit.
+- `docs/scope-v1.md` — **Release 1 scope hub**: phase spine (1A–1F) w/ milestones + dates, per-phase checklists, release DoD, explicit out-of-scope, post-MVP gate + V1.5 preview, change log. Linked at every session start.
+- `docs/scope-<phase>.md` — **Active phase's scope detail**: in-scope features + acceptance criteria + deferrals + change log. One per phase (currently `scope-1C.md`); created at phase start, closed at phase exit.
 - `docs/changelog.md` — Session-by-session log of decisions and progress
 - `docs/whats-next.md` — What to do in the next session (always current)
 - `docs/decisions.md` — All confirmed product and technical decisions

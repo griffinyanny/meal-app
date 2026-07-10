@@ -7,9 +7,10 @@ This directory contains all plans created during the product build. Plans exist 
 ### Phase Plans (one per major phase)
 High-level plans covering an entire phase (V1, V1.5, V2, etc.). Created before starting a phase. Covers architecture, feature scope, dependencies, and success criteria.
 
-- `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md` — Systems Architecture & Phase 1 Plan (ACTIVE, approved 2026-05-26). Covers all 6 build phases (1A-1F).
+- `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md` — Systems Architecture & Phase 1 Plan (approved 2026-05-26). **LOST** — the file was never committed to the `~/.claude` repo and an accidental 2026 deletion made it unrecoverable (discovered Session 18). Its phase skeleton (1A–1F) survives in `docs/changelog.md` Session 9; its scope-tracking role is absorbed by **`docs/scope-v1.md`** (the Release 1 hub, created Session 19), which is now the authoritative phase spine.
 - Phase 1A: Foundation Sprint — **COMPLETED** 2026-05-27 (Milestone M1 achieved)
-- Phase 1B: AI Core + Recipes — **NEXT**
+- Phase 1B: AI Core + Recipes — **COMPLETED** 2026-05-27 (Milestone M2 achieved)
+- Phase 1C: Plan Tab — **ACTIVE** (see `docs/scope-1C.md`)
 - `phase-1.5-pantry-sharing.md` — (not yet created)
 - `phase-2-integrations.md` — (not yet created)
 - `phase-3-intelligence.md` — (not yet created)
