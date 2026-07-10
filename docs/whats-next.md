@@ -1,37 +1,51 @@
 # What's Next
 
-Last updated: 2026-07-10 (Session 18)
+Last updated: 2026-07-10 (Session 19)
 
-## Exact Status (Session 18 — Plan-tab feedback triage, part 1)
-- **Griffin's feedback pass on the Plan tab has begun.** Batch 1 (mid-week state) triaged
-  and the "now" items are FIXED: lowercase-day bug (`dayTitle()` + tightened tests) and
-  the chip-quality prompt hardening (verb-first actions, no bare attributes, no title
-  echoing — see decisions.md 2026-07-10). Product items logged in idea-backlog Incoming
-  (structural action model, move-a-meal, variety miss).
-- **`docs/scope-1C.md` now exists** — the milestone scope contract (13 features w/
-  acceptance criteria, out-of-scope table, change log). Session protocol updated: open
-  every session with a scope check against it, close by updating it. This answers
-  Griffin's S18 visibility concern; keep the ritual.
-- Gauntlet green (176/176). E2E: **30/30 green** on the final full-suite run (one M3
-  flake under machine load earlier in the session; modify timeouts bumped 6s→10s).
+## ▶ NEXT SESSION — kick off Phase 1D (Groceries), in PLAN MODE
+**Copy-paste kickoff prompt:**
+> Resume meal app — kick off Phase 1D (Groceries) in plan mode: inventory the existing
+> grocery skeleton, decide the ingredient-merge architecture (deterministic vs AI vs
+> hybrid), and design the plan→list→shop flow live (no Figma), landing a `docs/scope-1D.md`.
+> Start by reading `docs/scope-v1.md` and `reference/grocery-notes-research.md`.
 
-## ▶ Next session
-1. **Scope check first** (new protocol): read `docs/scope-1C.md`, restate what's left.
-2. **Continue Griffin's feedback batches** — same triage discipline (bug/quality → fix
-   now + E2E; product → discuss + log; visual → polish backlog).
-3. **Verify chip quality on a fresh generation** (scope item 12) — regenerate a real
-   plan, check chips are imperative and titles natural. If still drifting: few-shot
-   examples, then consider a stronger model for plan tasks (scope item 13 variety too).
-4. **Griffin's open calls** (scope-1C.md): does chip quality gate 1C exit? Pull
-   Talk-to-Chef pill auto-send into 1C? Restore the 4 deleted `~/.claude/plans/` files
-   (incl. the meal-app + FFOS master plans) — `git -C ~/.claude restore <paths>`, needs
-   his go-ahead since it's outside this repo.
+- **Design LIVE, not Figma** (decided S19): Groceries is a solved genre (categorized list,
+  check-off, add, staples, export); the hard decisions are the merge behavior + data flow,
+  worked out better live against real data. Design-system polish is deferred to 1F anyway.
+  Use ux-design-critic for the 1-2 novel bits (merge reconciliation, staples surfacing).
+- **1D starting material:** a partial skeleton already exists — `grocery` schema
+  (`src/server/db/schema/grocery.ts`) + a router with `addItem`/`checkItem`/`removeItem`
+  (`src/server/trpc/routers/grocery.ts`), but NO plan→list generation and NO merging.
+  Behavioral research: `reference/grocery-notes-research.md`. The 1D planning pass should
+  do the built-vs-planned inventory first (same exercise that made 1C legible).
+- **The hard/risky part = AI ingredient merging** ("2 cups + 1 cup broth = 3 cups";
+  "scallions" = "green onions"). Master plan calls it the hardest V1 problem. Settle the
+  architecture before building. Note: an `ingredient-normalize` AI task is already stubbed
+  in the model config (`src/server/ai/config.ts`).
+- **Carry-in open questions for 1D** (from open-questions.md): free-form vs structured
+  list entry (#1); `recipe.get` null-vs-NOT_FOUND consistency (#3, small, do during a 1D
+  router touch). Extend the E2E harness to Groceries as the tab matures.
 
-## ⭐ Griffin's calls (carry-over + new)
-1. **Plan-file restore** (above) — recommend yes for the two master plans at minimum.
-2. **Scope-1C open questions** — chip-quality gate + pill auto-send.
-3. **Optional:** enable the Playwright MCP (~10 min) so Claude can drive a live browser
-   in-session for exploratory checks. Complements the harness.
+## Exact Status (end of Session 19 — 1C CLOSED, scope system stood up)
+- **Phase 1C (Plan tab) is COMPLETE.** 3 of 6 phases done. All 13 scope-1C items met;
+  Griffin's feedback pass done; the two AI-quality items (chips + week variety) **verified
+  on the real model** S19 (real-gen check, 3 requests: 100% imperative chips, 7/7 distinct
+  dish forms — the 7×-grilled-salad and attribute-chip problems are gone).
+- **Release-level scope system stood up** (Griffin's visibility ask): `docs/scope-v1.md`
+  is the Release 1 hub (phase spine 1A–1F, DoD, out-of-scope, post-MVP gate); `scope-1C.md`
+  is its spoke. Session ritual v2 in CLAUDE.md: every session opens with a ≤6-line scope
+  check linking scope-v1.md. Linear deferred with explicit graduation triggers (decisions.md).
+  R1 boundary locked = **solo-user MVP** (sharing UI/realtime/cook mode → V1.5).
+- **Restored 4 accidentally-deleted `~/.claude/plans/` files** (incl. meal-app + FFOS
+  master plans); meal-app master plan reconciled with the R1-boundary note + committed.
+- Green: 176/176 unit, 30/30 E2E. Both repos pushed to main (meal-app `e631714`).
+
+## ⭐ Griffin's calls (carry-over)
+1. **Optional:** enable the Playwright MCP (~10 min) so Claude can drive a live browser
+   in-session for exploratory checks. Complements the harness — more useful now that 1D
+   has no Figma mocks to work against.
+2. **scope-v1.md open question:** small closed beta beyond Griffin + wife before R1 ship,
+   or is two-user validation enough? (Decide during 1E.)
 
 ## Prior status (Session 17 — E2E harness Phase 1 + manual pass)
 - **E2E harness built and green.** Playwright + server-side AI mock + auth bypass

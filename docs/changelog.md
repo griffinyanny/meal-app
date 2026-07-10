@@ -4,6 +4,48 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 19 — 2026-07-10 (Release-scope system, master-plan restore, 1C closed)
+
+*Continued directly from S18 (same day); split here because the work shifted from
+feedback-triage to the release-level scope system + phase close.*
+
+### What happened
+- **Griffin's part-2 visibility ask:** he wanted a level above the phase doc — a scope
+  contract for the whole first release, opened every session, plus an explicit Linear-vs-files
+  decision. Confirmed via AskUserQuestion: **file-based hub-and-spoke** (Linear deferred with
+  named graduation triggers) and **R1 boundary = solo-user MVP** (S9 cuts — sharing UI,
+  realtime, cook mode → V1.5 — confirmed; household infra stays).
+- **Built `docs/scope-v1.md`** — the Release 1 hub: phase spine 1A–1F w/ milestones + dates,
+  per-phase feature checklists, release DoD, explicit out-of-scope table, post-MVP gate +
+  V1.5 preview, change log. `scope-1C.md` reframed as its spoke. Session ritual v2 in
+  CLAUDE.md: every session opens with a ≤6-line scope check (release position, roadmap
+  position on the V1→V4 arc, deltas, open calls) linking the hub; anti-sprawl cadence (hub
+  flips on status changes only, phase docs carry churn). Two decisions logged.
+- **Restored 4 deleted plan files** from `~/.claude/plans/` (accidental working-tree
+  deletions): meal-app master plan (`purrfect-hatching-ladybug.md`), FFOS master plan,
+  2 Uber prep files. The Phase-1 architecture plan (`...starfish.md`) was **unrecoverable**
+  (never committed) — its 1A–1F skeleton survives in this changelog (S9) and its scope role
+  is now absorbed by `scope-v1.md`. `plans/README.md` marks it LOST. Master plan reconciled
+  with a dated R1-boundary note + committed/pushed to the `~/.claude` repo.
+- **Closed Phase 1C.** Verified the S18 chip/variety prompt fixes on the REAL model
+  (throwaway `tsx` script, gpt-4.1-mini, 3 requests incl. the "I want to grill" case that
+  likely drove the 7×-grill week): **100% verb-first imperative chips** (attributes correctly
+  landed in tags, not chips), **7/7 distinct dish forms** every week, grilling correctly
+  localized to the weekend on the grill request. Both open 1C quality items (12/13) → ✅.
+  scope-1C exit criteria met; scope-v1 flipped 1C ✅ / 1D next (3 of 6 phases done). Script
+  deleted after judging (not wired into the suite; it hits the real API).
+- **Decided 1D approach:** design LIVE, not Figma (Groceries is a solved genre; the hard
+  decisions are merge behavior + data flow; design-system polish is 1F). 1D kickoff staged
+  as a plan-mode session — see whats-next.
+
+### Verification
+- Real-model plan-quality check passed (see above). Unit 176/176, E2E 30/30 unchanged
+  (no product code touched this half — prompt + docs only; the prompt change was S18).
+- Both repos pushed to main: meal-app `e631714`, `~/.claude` `9436d45`.
+
+### Next
+- **Plan-mode kickoff of Phase 1D (Groceries)** in a fresh session. Prompt in whats-next.
+
 ## Session 18 — 2026-07-10 (Plan-tab feedback triage, part 1 + scope visibility system)
 
 ### What happened
