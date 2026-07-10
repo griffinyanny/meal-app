@@ -46,8 +46,8 @@ interaction rate · list quality.
 |-------|-----------------|-----------|--------|-------|--------|
 | **1A** Foundation | Scaffold, schema+RLS, auth, tab shell, deploy | M1: deployed app, login, tabs, DB writes | ✅ | 2026-05-27 (1 day) | [changelog S10](changelog.md) |
 | **1B** AI Core + Recipes | AI service layer, chef prompt, recipe pipelines + tab | M2: generate/import/modify/browse end-to-end | ✅ | 2026-05-27 (1 day) | [changelog S11](changelog.md) |
-| **1C** Plan Tab | The signature "AI generates your week" experience | M3: full plan loop — generate→review→confirm→modify→wrap | 🔨 active | 2026-07-06 → | [scope-1C.md](scope-1C.md) |
-| **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | ⬜ | — | scope doc at phase start |
+| **1C** Plan Tab | The signature "AI generates your week" experience | M3: full plan loop — generate→review→confirm→modify→wrap | ✅ | 2026-07-06 → 07-10 | [scope-1C.md](scope-1C.md) |
+| **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | 🔨 next — needs planning pass | 2026-07-10 → | scope doc at phase start |
 | **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | ⬜ | — | scope doc at phase start |
 | **1F** Polish / Production Readiness | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
 
@@ -69,11 +69,11 @@ reusable for 1D–1F). Dates exist so pace is visible, not a feeling.*
 - [x] Recipes tab: library, search, generate/import dialogs, detail w/ modify/favorite/delete
 - [x] AI memory core (pulled forward from 1E): `getChefContext`/`writeMemory`
 
-### 1C Plan Tab 🔨 — detail + acceptance criteria in [scope-1C.md](scope-1C.md)
+### 1C Plan Tab ✅ — detail + acceptance criteria in [scope-1C.md](scope-1C.md)
 - [x] Items 1–11: intent capture, streaming, review/confirm, cards, sheets, chef chat, modify affordance, regenerate, mid-week, week-wrapped, feedback→memory (machine-verified, 30 E2E green)
-- [ ] Item 12: chip/action quality (prompt hardened S18 — verify on fresh generations)
-- [ ] Item 13: generation variety (7×-grilled-salad miss — prompt/model iteration)
-- [ ] Griffin's feedback passes complete (batch 1 done S18; more expected)
+- [x] Item 12: chip/action quality — verified S19 on real model (100% imperative chips)
+- [x] Item 13: generation variety — verified S19 (7/7 distinct dish forms)
+- [x] Griffin's feedback pass complete (batch 1, S18)
 
 ### 1D Groceries ⬜
 - [ ] Auto-generate list from confirmed plan
@@ -139,3 +139,4 @@ line here (a decision, not drift). Same for pushing R1 items out.
 | Date | Change | Why |
 |------|--------|-----|
 | 2026-07-10 | Doc created (S19). R1 boundary = solo-user MVP; S9 cuts (sharing UI, realtime, cook mode → V1.5) confirmed by Griffin. | Release-level visibility ask; reconciles master-plan text vs actual build scope |
+| 2026-07-10 (S19) | 1C → ✅ complete (2 of 6 → 3 of 6 phases done); 1D → next | All 13 1C items met; chip/variety quality verified on real model |

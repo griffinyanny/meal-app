@@ -42,8 +42,8 @@ Status: ✅ shipped & E2E-verified · 🔶 shipped, quality iteration open · �
 | 9 | **Mid-week state** | Confirmed + days elapsed → tonight highlighted, "EARLIER THIS WEEK" with thumbs, "COMING UP," chef link. | ✅ (W1) |
 | 10 | **Week wrapped / elapsed state** | All days past → recap + thumbs ("that's a wrap") or stale-draft variant; "Plan next week →." Never the nonsensical mid-week view. | ✅ (E1–E4) |
 | 11 | **Feedback → chef memory** | Thumbs on past meals persist and feed generation context. | ✅ (E2) |
-| 12 | **Chip/action quality** | Chips are verb-first imperative ACTIONS someone would actually tap ("Make it spicier"), never bare attributes ("light", "iron-rich"), never a quality the dish already has. Modify never bolts request wording onto titles. | 🔶 prompt hardened S18 — verify on fresh generations |
-| 13 | **Generation variety** | A generated week varies protein, cuisine, AND dish form. (S18 counterexample: 7× "Grilled ___ Salad.") | 🔶 open — prompt/model iteration |
+| 12 | **Chip/action quality** | Chips are verb-first imperative ACTIONS someone would actually tap ("Make it spicier"), never bare attributes ("light", "iron-rich"), never a quality the dish already has. Modify never bolts request wording onto titles. | ✅ verified S19 (real-model gen, 3 requests: 100% imperative chips; attributes correctly moved to tags) |
+| 13 | **Generation variety** | A generated week varies protein, cuisine, AND dish form. (S18 counterexample: 7× "Grilled ___ Salad.") | ✅ verified S19 (7/7 distinct dish forms across 3 requests; grill-request correctly localized grilling to the weekend) |
 
 **E2E coverage:** 30 specs green (`npm run test:e2e`); catalog in `docs/test-plan.md`. Items 12–13 are AI-output quality — verified by fresh generations + Griffin's eye, not E2E (the harness mocks the model).
 
@@ -66,10 +66,16 @@ Status: ✅ shipped & E2E-verified · 🔶 shipped, quality iteration open · �
 
 ---
 
-## Open scope questions
+## Exit status
 
-1. **Does item 12/13 quality gate 1C exit?** Recommendation: yes for chips (12 — it's the "AI feels like a chef" bet), no for variety (13 — track it, iterate through 1D).
-2. **Talk-to-Chef pills auto-send on tap** (backlog, S15) — small, in the spirit of item 6. Pull into 1C or defer?
+**1C exit criteria are MET (S19).** All 13 in-scope items ✅; Griffin's feedback pass
+complete (batch 1, S18); the two AI-quality items (12/13) verified on the real model.
+Deferred items are logged with destinations (above). Ready to close 1C → 1D.
+
+## Open scope questions (resolved / carried)
+
+1. ~~Does item 12/13 quality gate 1C exit?~~ RESOLVED S19 — both verified good on the real model; not a blocker.
+2. **Talk-to-Chef pills auto-send on tap** (backlog, S15) — small. NOT pulled into 1C; carried to the backlog (revisit if it resurfaces in use).
 
 ## Scope change log
 
@@ -77,3 +83,4 @@ Status: ✅ shipped & E2E-verified · 🔶 shipped, quality iteration open · �
 |------|--------|-----|
 | 2026-07-10 | Doc created (S18); items 12–13 added to scope as quality criteria | Griffin's feedback pass surfaced chip/variety quality as blocking the "feels right" bar |
 | 2026-07-10 | Structural action model + move-day explicitly moved OUT (were implicit in Figma State 5) | Griffin deferred; needs its own design pass |
+| 2026-07-10 (S19) | Items 12 + 13 verified on the real model → 1C exit criteria met | Real-gen check (3 requests): imperative chips + varied weeks confirmed the S18 prompt fix landed |
