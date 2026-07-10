@@ -164,12 +164,18 @@ export function scopedRequest(text: string, meal: DisplayMeal): string {
   return `${text} — for ${meal.dayName.toLowerCase()}'s ${meal.title ?? "dinner"}.`;
 }
 
+// dayName is stored ALL-CAPS for the card eyebrow labels ("TUESDAY"); user-
+// facing prose needs the proper noun ("Tuesday").
+export function dayTitle(dayName: string): string {
+  return dayName.charAt(0) + dayName.slice(1).toLowerCase();
+}
+
 // The chef-voice line shown in the in-place pending state while a modify runs.
 // Day-level contextual (always correct) rather than parsing the free-text
 // request — a scoped change names its day; a whole-week change stays general.
 export function workingLabel(scope: DisplayMeal | null): string {
   if (!scope) return "Reworking your week…";
-  return `Reworking ${scope.dayName.toLowerCase()}'s dinner…`;
+  return `Reworking ${dayTitle(scope.dayName)}'s dinner…`;
 }
 
 // True when every day in a plan is already in the past — the week has fully

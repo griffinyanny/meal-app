@@ -43,8 +43,11 @@ test("M1 - inline chip: in-place working state then highlighted new content, no 
 
   await cardChip(page, date, "Make it spicier").click();
 
-  // Working in place on the card; no sheet opened.
-  await expect(card.getByText(/^Reworking /)).toBeVisible();
+  // Working in place on the card; no sheet opened. Asserts the exact copy —
+  // the day is a proper noun ("Reworking Tuesday's…", not "tuesday's").
+  await expect(
+    card.getByText(`Reworking ${utcWeekday(date)}'s dinner…`)
+  ).toBeVisible();
   await expect(sheetContent(page)).toBeHidden();
 
   // New content lands with the highlight ring (ring clears after ~1.6s).
@@ -71,7 +74,7 @@ test("M2 - sheet action: sheet stays open pending, then closes onto the changed 
   await expect(action).toBeDisabled();
 
   // On success the sheet closes onto the changed (now-highlighted) card.
-  await expect(sheetContent(page)).toBeHidden({ timeout: 5_000 });
+  await expect(sheetContent(page)).toBeHidden({ timeout: 10_000 });
   await expect(mealCard(page, date).getByText(REWORKED)).toBeVisible();
 });
 
@@ -92,7 +95,7 @@ test("M3 - meal-scoped chat changes ONLY that day (scope anchor)", async ({
 
   // Only the targeted day changes.
   await expect(mealCard(page, date).getByText(REWORKED)).toBeVisible({
-    timeout: 6_000,
+    timeout: 10_000,
   });
   await expect(page.getByText(REWORKED)).toHaveCount(1);
 });
@@ -107,7 +110,7 @@ test("M4 - whole-week chat → ack pill that scrolls to the first changed day", 
     .fill("make this week lighter");
   await page.getByRole("button", { name: "Send to chef" }).click();
 
-  await expect(ackPill(page)).toBeVisible({ timeout: 6_000 });
+  await expect(ackPill(page)).toBeVisible({ timeout: 10_000 });
   await expect(ackPill(page)).toContainText("lightened up two dinners");
 
   // Whole-week mock reworks offsets 1 & 3; ack scrolls to the first (offset 1).
@@ -125,7 +128,7 @@ test("M5 - modify feedback is bottom-anchored, never a top-of-page toast", async
     .fill("make this week lighter");
   await page.getByRole("button", { name: "Send to chef" }).click();
 
-  await expect(ackPill(page)).toBeVisible({ timeout: 6_000 });
+  await expect(ackPill(page)).toBeVisible({ timeout: 10_000 });
   const box = await ackPill(page).boundingBox();
   const vh = page.viewportSize()!.height;
   // Bottom-anchored pill, not a top toast the scrolled-down user can't see.
@@ -161,6 +164,6 @@ test("M7 - eating out clears that day to a de-emphasized 'Eating out' card", asy
   await page.getByRole("button", { name: "Send to chef" }).click();
 
   await expect(mealCard(page, target.date).getByText("Eating out")).toBeVisible({
-    timeout: 6_000,
+    timeout: 10_000,
   });
 });

@@ -4,6 +4,18 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Per-phase scope docs (`docs/scope-<phase>.md`) + a session scope ritual** (2026-07-10, Session 18)
+- Every phase gets a scope contract: milestone goal, in-scope features with acceptance criteria, explicit out-of-scope with destinations, and a scope change log. Session protocol now opens with a scope check (goal, done vs remaining, items awaiting a call) and closes by updating the doc. Nothing gets built that isn't in the scope doc; scope changes are fine but land as change-log lines, not drift.
+- Rationale: Griffin flagged a visibility gap — a strategy layer (roadmap/master plan) and a session layer (whats-next) existed, but nothing in between showed the comprehensive picture of a milestone, so scope lived in his memory + Figma briefs. Contributing factor discovered same session: the meal-app master plan (and 3 other plan files) had been accidentally deleted from `~/.claude/plans/` (uncommitted working-tree deletions — recoverable via git). Chose a file-based scope doc over Linear: two-person shop, docs are read by Claude every session, tickets fragment scope. Linear is the graduation path if parallel workstreams make files fail.
+- First instance: `docs/scope-1C.md` (Plan tab), seeded from the S18 built-vs-planned inventory.
+
+**Plan/modify prompt hardening: chips are verb-first actions; titles never echo the request** (2026-07-10, Session 18)
+- Chips must be imperative, tappable ACTIONS ("Make it spicier"), never bare attributes ("light", "iron-rich" — those belong in tags), and never offer a quality the dish already has. Modify may not bolt the request's wording onto a title ("Iron-Rich Grilled Steak Salad" banned — change the dish, acknowledge in chefResponse). Prompt tests pin all three rules (deliberate-review guard per ai-pipelines rule).
+- Rationale: Griffin's live plan showed fresh generations still drift to attribute chips (confirming the S15 hypothesis), and a chip tap produced a literal retitle. Chips render as full-width action buttons in the expanded sheet, so a bare adjective reads especially badly.
+- Verification note: AI-output quality verifies on fresh generations over time, not E2E (harness uses fixtures). If drift persists: few-shot examples, then a stronger model for plan tasks.
+
+---
+
 ### E2E Testing Harness (Session 17, 2026-07-09)
 
 **AI mock lives server-side at the model layer, NOT Playwright `page.route`** (2026-07-09)

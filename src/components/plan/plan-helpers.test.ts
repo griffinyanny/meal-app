@@ -1,14 +1,18 @@
 import { describe, it, expect } from "vitest";
 import {
+  dayTitle,
   isPlanElapsed,
   scopedRequest,
   workingLabel,
   type DisplayMeal,
 } from "./plan-helpers";
 
+// dayName is ALL-CAPS in production (see WEEKDAYS) — tests must match, or a
+// stray toLowerCase() looks correct against title-case fixtures (the exact
+// masking that shipped the lowercase "Reworking sunday's dinner…" bug).
 function meal(overrides: Partial<DisplayMeal> = {}): DisplayMeal {
   return {
-    dayName: "Sunday",
+    dayName: "SUNDAY",
     relative: null,
     timeframe: "upcoming",
     slotType: "recipe",
@@ -35,7 +39,7 @@ describe("scopedRequest", () => {
   });
 
   it("should lowercase the day name so it reads naturally mid-sentence", () => {
-    const result = scopedRequest("make it vegetarian", meal({ dayName: "Thursday" }));
+    const result = scopedRequest("make it vegetarian", meal({ dayName: "THURSDAY" }));
     expect(result).toContain("for thursday's");
   });
 
@@ -51,12 +55,20 @@ describe("scopedRequest", () => {
   });
 });
 
+// User-facing prose renders the ALL-CAPS eyebrow day as a proper noun.
+describe("dayTitle", () => {
+  it("should title-case an all-caps day name", () => {
+    expect(dayTitle("TUESDAY")).toBe("Tuesday");
+    expect(dayTitle("SUNDAY")).toBe("Sunday");
+  });
+});
+
 // The in-place pending state names the day being changed (always correct)
 // rather than parsing the free-text request into a verb.
 describe("workingLabel", () => {
-  it("should name the day for a scoped modify", () => {
-    expect(workingLabel(meal({ dayName: "Tuesday" }))).toBe(
-      "Reworking tuesday's dinner…"
+  it("should name the day as a proper noun for a scoped modify", () => {
+    expect(workingLabel(meal({ dayName: "TUESDAY" }))).toBe(
+      "Reworking Tuesday's dinner…"
     );
   });
 

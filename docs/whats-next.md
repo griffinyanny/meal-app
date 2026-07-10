@@ -1,8 +1,39 @@
 # What's Next
 
-Last updated: 2026-07-09 (Session 17)
+Last updated: 2026-07-10 (Session 18)
 
-## Exact Status (Session 17 — E2E harness Phase 1 + manual pass)
+## Exact Status (Session 18 — Plan-tab feedback triage, part 1)
+- **Griffin's feedback pass on the Plan tab has begun.** Batch 1 (mid-week state) triaged
+  and the "now" items are FIXED: lowercase-day bug (`dayTitle()` + tightened tests) and
+  the chip-quality prompt hardening (verb-first actions, no bare attributes, no title
+  echoing — see decisions.md 2026-07-10). Product items logged in idea-backlog Incoming
+  (structural action model, move-a-meal, variety miss).
+- **`docs/scope-1C.md` now exists** — the milestone scope contract (13 features w/
+  acceptance criteria, out-of-scope table, change log). Session protocol updated: open
+  every session with a scope check against it, close by updating it. This answers
+  Griffin's S18 visibility concern; keep the ritual.
+- Gauntlet green (176/176). E2E: **30/30 green** on the final full-suite run (one M3
+  flake under machine load earlier in the session; modify timeouts bumped 6s→10s).
+
+## ▶ Next session
+1. **Scope check first** (new protocol): read `docs/scope-1C.md`, restate what's left.
+2. **Continue Griffin's feedback batches** — same triage discipline (bug/quality → fix
+   now + E2E; product → discuss + log; visual → polish backlog).
+3. **Verify chip quality on a fresh generation** (scope item 12) — regenerate a real
+   plan, check chips are imperative and titles natural. If still drifting: few-shot
+   examples, then consider a stronger model for plan tasks (scope item 13 variety too).
+4. **Griffin's open calls** (scope-1C.md): does chip quality gate 1C exit? Pull
+   Talk-to-Chef pill auto-send into 1C? Restore the 4 deleted `~/.claude/plans/` files
+   (incl. the meal-app + FFOS master plans) — `git -C ~/.claude restore <paths>`, needs
+   his go-ahead since it's outside this repo.
+
+## ⭐ Griffin's calls (carry-over + new)
+1. **Plan-file restore** (above) — recommend yes for the two master plans at minimum.
+2. **Scope-1C open questions** — chip-quality gate + pill auto-send.
+3. **Optional:** enable the Playwright MCP (~10 min) so Claude can drive a live browser
+   in-session for exploratory checks. Complements the harness.
+
+## Prior status (Session 17 — E2E harness Phase 1 + manual pass)
 - **E2E harness built and green.** Playwright + server-side AI mock + auth bypass
   + DB seeding + a debug HUD. Plan-tab catalog now automated end to end except the
   low-risk G/R/W generate/review rows: D1-D7, RG1-RG5, M1-M7, **E1-E4 (elapsed),
@@ -23,23 +54,10 @@ Last updated: 2026-07-09 (Session 17)
 - **What's left for you: the taste pass** (does the plan read well, do chips sound
   like imperatives, does it *feel* right). Mechanics are machine-verified.
 
-## ▶ Next session — Plan-tab (1C) feedback triage
-Griffin will bring overall feedback on the whole Plan tab. The job is TRIAGE, not blind fixing:
-- **bug / correctness** → fix now, add/extend an E2E spec (`.claude/rules/plan-e2e.md`).
-- **quality / friction** (rough edges, bad chip phrasing, awkward sticky bar) → fix now or near-term.
-- **product change** (flow/behavior) → decide with Griffin, log in decisions.md.
-- **visual polish** → do NOT do now → append to the polish backlog for the post-V1 design-system pass (see decision 2026-07-09).
-Read first: this file, `docs/test-plan.md`, `docs/decisions.md` (esp. the 2026-07-09 polish decision), and `src/components/plan/`. Dev server `PORT=3001 npm run dev`; debug HUD toggles with **Cmd/Ctrl+Shift+D** (copyable state blob). Run `npm run test:e2e` after Plan-tab changes.
-
-## ⭐ Griffin's calls
-1. ~~**D7 finding — background scroll.**~~ RESOLVED — Griffin accepted: he wants
-   both a scrollable background AND click-outside. D7 spec flipped to assert the
-   page is NOT scroll-locked. (Mobile caveat: on a real phone a touch-drag on the
-   scrim may be captured; confirm on-device when convenient.)
-2. **Functional/taste review of the Plan tab** — mechanics are verified; I'd value
-   your eye on whether it *feels* right. Dev server + signin snippet below.
-3. **Optional:** enable the Playwright MCP (~10 min) so I can also drive a live
-   browser in-session for exploratory checks. Complements the harness.
+*(S17's "Next session — feedback triage" brief executed in S18; the triage rules now
+live in the session protocol + `docs/scope-1C.md`. D7 background-scroll: RESOLVED,
+Griffin accepted scrollable background + click-outside; mobile touch-drag caveat —
+confirm on-device when convenient.)*
 
 ## Prior status (Session 16, still relevant)
 - **Phase**: Phase 1C (Plan Tab) — the design-led build pass is COMPLETE. All three Session 15 backlog items built (regenerate entry point, "AI is working" affordance, drawer dismissal), a high-effort dual review found + fixed 4 correctness bugs, and the gauntlet + production build are green (173/173 tests, +6 this session).

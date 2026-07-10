@@ -4,6 +4,26 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 18 — 2026-07-10 (Plan-tab feedback triage, part 1 + scope visibility system)
+
+### What happened
+- **Griffin's Plan-tab feedback pass began** (mid-week state, live plan). Batch triaged per the S17 plan: bug/quality → fixed now; product → logged; nothing built untriaged.
+- **Fixed: lowercase day in user-facing prose (bug).** "Reworking sunday's dinner…" and the scoped-chat headline "Change sunday's dinner" — `workingLabel()`/`chatHeadline` lowercased the ALL-CAPS `dayName`. New `dayTitle()` helper renders the proper noun ("Sunday"). The unit test had masked it by feeding title-case fixtures; factory now uses realistic ALL-CAPS input (comment explains the masking), and M1's E2E assertion pins the exact copy.
+- **Fixed: chip quality (prompt hardening).** Griffin's fresh plan had attribute chips ("plant-based", "light", "iron-rich") — confirming the S15 open question: gpt-4.1-mini drifts despite imperative examples. Deliberate prompt change (chef-system.ts): chips must be verb-first ACTIONS; bare attributes banned with wrong-examples; never offer a quality the dish already has; modify titles never echo the request wording (the "Iron-Rich Grilled Steak Salad" failure). Prompt tests pin all three rules. Verifies on fresh generations, not E2E.
+- **Logged as product (not built):** expanded-card structural action model (move day / servings / cook now / grocery — matches the Figma State-5 brief), move-a-meal-to-another-day (Griffin deferred), and a NEW finding: **generation variety miss** — Griffin's week was 7× "Grilled ___ Salad" despite the variety rule. All in idea-backlog Incoming.
+- **Built the missing scope layer.** Griffin flagged a visibility gap: roadmap (too coarse) + whats-next (too granular) with nothing showing the comprehensive milestone picture. Created **`docs/scope-1C.md`** — milestone goal, definition of done, 13 in-scope features w/ acceptance criteria + status, explicit out-of-scope table, open questions, scope change log. Session protocol amended (CLAUDE.md): every session opens with a scope check and closes by updating the scope doc. Chose files over Linear (two-person shop; Claude reads docs every session; Linear is the graduation path). Decision logged.
+- **Discovered + flagged: 4 plan files accidentally deleted from `~/.claude/plans/`** — including the meal-app master plan (`purrfect-hatching-ladybug.md`) and the FFOS master plan. Uncommitted working-tree deletions in the `~/.claude` git repo — fully recoverable (`git restore`), but the restore touches files outside this project so it's parked for Griffin's go-ahead. Explains part of the visibility gap (CLAUDE.md's strategy-layer references were dead links).
+- **E2E robustness:** first full run flaked on M3 (modify resolved >6s under machine load — build + gauntlet + dev server competing; M4 passed at 5.7s of a 6s budget). Rerun green. Bumped modify-resolution timeouts 6s→10s (assertions unchanged; mock latency isn't the thing under test).
+
+### Verification
+- Gauntlet green: lint + typecheck + **176/176** unit tests (+3: dayTitle, chip rule, title guard).
+- Full E2E: 29 passed + M3 machine-load flake → modify spec rerun 8/8 green → final full-suite rerun kicked off post-timeout-bump (result in whats-next).
+
+### Still open from Griffin's batch
+- Feedback pass is PART 1 — Griffin said "everything I see wrong with it"; more batches may follow.
+- Chip/variety quality (scope items 12–13) verify on fresh generations — needs a real regeneration to judge.
+- Open scope calls for Griffin in scope-1C.md: does chip quality gate 1C exit? Pull pill-auto-send into 1C?
+
 ## Session 17 — 2026-07-09 (E2E testing harness — Phase 1)
 
 ### What happened

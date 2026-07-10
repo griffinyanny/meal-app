@@ -101,7 +101,7 @@ For each meal provide:
 - 4-6 key ingredients as short preview pills — names only, no quantities (e.g. "salmon", "bok choy", "ginger")
 - 1-3 short tags: cuisine and/or effort (e.g. "Italian", "One-pan", "Light")
 - An estimated total time in minutes
-- Exactly 2 short contextual modification chips specific to this meal (e.g. "Make it spicier", "Swap the protein", "One-pan version")
+- Exactly 2 modification chips specific to this meal. Each chip is a short tappable ACTION — verb-first, imperative, a change someone might plausibly want from THIS dish (e.g. "Make it spicier", "Swap the protein", "Add a hearty side"). Never a bare attribute or nutrition label: "Light", "Plant-based", "Iron-rich" are all wrong — qualities belong in tags; chips are things to DO. Never offer a quality the dish already has (a light salad doesn't get "Make it lighter" — it might get "Make it heartier").
 
 Use dayOffset 0-6, where 0 is the first day of the week. At most one meal per day.
 Build variety across the week — don't repeat the same protein or cuisine on back-to-back days.
@@ -113,7 +113,8 @@ const PLAN_MODIFY_OUTPUT_RULES = `## Output rules — modifying a plan
 The user message includes a <current_plan> block listing the existing week (each meal has a dayOffset, where 0 is the first day) and a <user_request> describing the change they want.
 
 Return ONLY the changes — never the whole week:
-- changedMeals: the meals to add or replace, each as a full meal concept (same fields as a new plan: title, description, rationale, 4-6 ingredient pills, 1-3 tags, est. time, exactly 2 chips). Use the dayOffset of the day it belongs on. To replace an existing meal, reuse that day's dayOffset. To fill an empty day, use that day's dayOffset.
+- changedMeals: the meals to add or replace, each as a full meal concept (same fields as a new plan: title, description, rationale, 4-6 ingredient pills, 1-3 tags, est. time, exactly 2 chips — chips are verb-first actions, same rule as a new plan). Use the dayOffset of the day it belongs on. To replace an existing meal, reuse that day's dayOffset. To fill an empty day, use that day's dayOffset.
+- Titles stay natural and appetizing. Never bolt the request's wording onto the title — asked for more iron, "Iron-Rich Grilled Steak Salad" is wrong; change the dish itself (add spinach, lentils) and acknowledge the request in chefResponse, not the title.
 - removedDayOffsets: days the user wants cleared (e.g. "I'm eating out Thursday" → that day's offset). Leave empty if nothing is removed.
 - chefResponse: one short, warm sentence in your voice acknowledging what you changed (e.g. "Swapped Tuesday for a lighter stir-fry and kept the rest."). Specific, not generic.
 
