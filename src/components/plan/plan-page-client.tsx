@@ -19,6 +19,7 @@ import { usePlanModify } from "./use-plan-modify";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
 import {
   type DisplayMeal,
+  dayTitle,
   isPlanElapsed,
   scopedRequest,
   slotToDisplayMeal,
@@ -263,7 +264,7 @@ export function PlanPageClient() {
   }
 
   const chatHeadline = chatScope
-    ? `Change ${chatScope.dayName.toLowerCase()}'s dinner`
+    ? `Change ${dayTitle(chatScope.dayName)}'s dinner`
     : "What are you thinking?";
 
   const sheetOpen = chatOpen || expandedOpen;

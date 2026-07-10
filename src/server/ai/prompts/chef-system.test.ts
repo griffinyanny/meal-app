@@ -49,6 +49,13 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("chefSummary");
   });
 
+  it("should require chips to be verb-first actions, never bare attributes", () => {
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("verb-first");
+    expect(prompt).toContain("Never a bare attribute");
+    expect(prompt).toContain("Never offer a quality the dish already has");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });
@@ -61,6 +68,12 @@ describe("buildPlanModifySystemPrompt", () => {
     expect(prompt).toContain("changedMeals");
     expect(prompt).toContain("removedDayOffsets");
     expect(prompt).toContain("chefResponse");
+  });
+
+  it("should forbid bolting the request's wording onto meal titles", () => {
+    const prompt = buildPlanModifySystemPrompt();
+    expect(prompt).toContain("Never bolt the request's wording onto the title");
+    expect(prompt).toContain("verb-first");
   });
 
   it("should reuse the chef role and food-safety rules", () => {
