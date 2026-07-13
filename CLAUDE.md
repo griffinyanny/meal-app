@@ -98,7 +98,7 @@ Plans live in `docs/plans/` at three levels. See `docs/plans/README.md` for the 
 ## Key Project Files
 
 ### Master Plan (strategic roadmap)
-- **`~/.claude/plans/purrfect-hatching-ladybug.md`** — The strategic roadmap for the project. Contains product strategy, phased roadmap (V1-V4), technical research findings, Figma operating model, feature details, and validation approach. **Refreshed at phase boundaries, not session-by-session.** For session-level state (what's in flight, what's next, what got decided this week), use the `docs/` files below. See "Document roles" in Session Protocol.
+- **`~/.claude/plans/purrfect-hatching-ladybug.md`** — The strategic roadmap for the project. Contains product strategy, phased roadmap (V1-V4), technical research findings, feature details, and validation approach (the design operating model it describes is superseded — see `docs/design/design-workflow.md`). **Refreshed at phase boundaries, not session-by-session.** For session-level state (what's in flight, what's next, what got decided this week), use the `docs/` files below. See "Document roles" in Session Protocol.
 
 ### Tracking & Context (read these to restore context)
 - `docs/scope-v1.md` — **Release 1 scope hub**: phase spine (1A–1F) w/ milestones + dates, per-phase checklists, release DoD, explicit out-of-scope, post-MVP gate + V1.5 preview, change log. Linked at every session start.
@@ -123,14 +123,11 @@ Plans live in `docs/plans/` at three levels. See `docs/plans/README.md` for the 
 - `reference/grocery-notes-research.md` — Academic/behavioral research on grocery shopping and meal planning. Reference for understanding user behavior.
 - `docs/technical-research.md` — Our own technical research (LLM capabilities, grocery APIs, cost analysis)
 
-### Figma Operating Model
-- Claude Code = source of truth for all product context
-- Figma = design workspace (wireframes, prototypes, UI iteration)
-- Figma MCP Server = bridge (Claude Code reads/writes Figma via MCP)
-- Figma Make = AI prompt-to-prototype tool within Figma (3,000 credits/month on Pro)
-- Workflow: Claude Code drafts specs and Figma Make prompts -> Griffin generates in Figma Make -> reviews/iterates -> Claude Code reads approved designs via MCP
-- Setup: `claude plugin install figma@claude-plugins-official`, authenticate via `/mcp`
-- Full operating model details in the master plan
+### Design Operating Model — Claude Design (canonical: `docs/design/design-workflow.md`)
+- Claude Code = source of truth + build. **Claude Design** (claude.ai/design) = Griffin's visual iteration surface; it reads our design system straight from code.
+- Two-way bridge: **Code→Design** via the `DesignSync` tool (syncs `docs/design/system/**` to the `Meal App Design System` project, id `eb7a2cae-e0e4-4931-af36-a5ff8995ad53`); **Design→Code** via `mcp__plugin_vercel_vercel__import-claude-design-from-url` (fallback: WebFetch the URL, then `DesignSync.get_file`).
+- **The gate (do this every time work is visual):** explicitly OFFER Griffin a design pass — with a recommendation, what it buys, and where returns diminish. Never silently skip, never auto-run. New surfaces = strong recommendation; in-pattern additions = lean skip (visual-qa catches drift). Griffin decides.
+- Superseded the Figma Make model (2026-07-13). Figma MCP stays registered as an escape hatch only. Full loop, re-sync rule, and the 1F boundary are in `docs/design/design-workflow.md`.
 
 ### When to reference research:
 - Making any product decision about feature scope or priority → check competitor synthesis

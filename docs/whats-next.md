@@ -1,18 +1,21 @@
 # What's Next
 
-Last updated: 2026-07-10 (Session 19)
+Last updated: 2026-07-13 (Session 20)
 
 ## ▶ NEXT SESSION — kick off Phase 1D (Groceries), in PLAN MODE
 **Copy-paste kickoff prompt:**
 > Resume meal app — kick off Phase 1D (Groceries) in plan mode: inventory the existing
 > grocery skeleton, decide the ingredient-merge architecture (deterministic vs AI vs
-> hybrid), and design the plan→list→shop flow live (no Figma), landing a `docs/scope-1D.md`.
-> Start by reading `docs/scope-v1.md` and `reference/grocery-notes-research.md`.
+> hybrid), write the Groceries Claude Design brief, and land a `docs/scope-1D.md`.
+> Start by reading `docs/scope-v1.md`, `docs/design/design-workflow.md`, and
+> `reference/grocery-notes-research.md`.
 
-- **Design LIVE, not Figma** (decided S19): Groceries is a solved genre (categorized list,
-  check-off, add, staples, export); the hard decisions are the merge behavior + data flow,
-  worked out better live against real data. Design-system polish is deferred to 1F anyway.
-  Use ux-design-critic for the 1-2 novel bits (merge reconciliation, staples surfacing).
+- **Design pass via Claude Design — STRONG RECOMMENDATION** (supersedes the S19 "design
+  live, no Figma" call; Claude Design adopted S20, `docs/design/design-workflow.md`).
+  Groceries is a new surface → run the gate: Claude writes the Groceries brief (states:
+  list / merge-review / staples; OPEN = merge-review UI; SETTLED = system vocabulary) →
+  Griffin generates 2-3 directions in Claude Design (inherits the DS project) → import →
+  build. The merge-review UI is the novel bit worth iterating; the rest inherits the system.
 - **1D starting material:** a partial skeleton already exists — `grocery` schema
   (`src/server/db/schema/grocery.ts`) + a router with `addItem`/`checkItem`/`removeItem`
   (`src/server/trpc/routers/grocery.ts`), but NO plan→list generation and NO merging.

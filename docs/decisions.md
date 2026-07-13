@@ -4,6 +4,14 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Claude Design supersedes Figma Make as the design iteration tool** (2026-07-13, Session 20)
+- Claude Design (Anthropic, claude.ai/design) becomes the default design partner; the Figma Make operating model (2026-03-29, above) is retired. Canonical workflow: `docs/design/design-workflow.md`.
+- Rationale: our design system lives in CODE (globals.css + shipped components), which Claude Design reads directly — collapsing the Figma 4-hop dance (Claude writes Make prompt → Griffin pastes → generates → Claude reads via MCP → re-implements) to 1 hop (Griffin iterates against our real system → hands a URL back → Claude builds). No designer on the team, so Figma's pixel-precision tooling was unused cost. Figma shares dropped ~7% on Claude Design's launch — the market read it as a direct challenge; for a code-is-the-product, no-designer team the fit is stronger still.
+- **Mechanics:** Code→Design via the `DesignSync` tool (project `Meal App Design System`, id `eb7a2cae-e0e4-4931-af36-a5ff8995ad53`, synced from `docs/design/system/**`); Design→Code via `import-claude-design-from-url` (Vercel plugin).
+- **The gate (how Claude uses it):** whenever work is visual, Claude OFFERS a design pass with a recommendation + what it buys + where returns diminish — never silent-skip, never auto-run. New surfaces = strong recommend; in-pattern additions = lean skip (visual-qa catches drift). Griffin decides. (His directive, 2026-07-13.)
+- **Boundary:** this does NOT define the design system — the deliberate 1F design-system pass (2026-07-09 decision) stands; the DS project is a descriptive snapshot of shipped vocabulary, and 1F will run IN Claude Design then re-sync.
+- **Fallback ladder:** Claude Design → inline Artifact mock (real tokens) → Figma MCP escape hatch (registration retained, not removed). Retire Figma after 1D proves the loop.
+
 **Release tracking: file-based hub-and-spoke; Linear deferred with explicit graduation triggers** (2026-07-10, Session 19)
 - `docs/scope-v1.md` is the Release 1 hub (phase spine 1A–1F, per-phase checklists, release DoD, out-of-scope, post-MVP gate); `docs/scope-<phase>.md` is the active phase's detail spoke. The hub is linked at every session start with a ≤6-line scope check (release position, roadmap position on the V1→V4 arc, deltas, open calls). Anti-sprawl: the hub changes only on status flips/scope changes/DoD progress; phase docs carry the churn.
 - **Linear explicitly considered and deferred.** Its case: kanban/mobile views, notifications, proper issue states. Files' case: Claude reads docs natively every session (no dual bookkeeping), git-versioned history, single stakeholder, zero new tooling. **Graduation triggers that flip this decision:** a second human contributor; >2 concurrent workstreams; Griffin wanting mobile/notification visibility into progress; backlog-grooming pain (~100+ active items). If triggered: mirror the hub into a Linear project (phases = milestones, features = issues; one-time MCP auth).
@@ -88,7 +96,7 @@ All confirmed product and technical decisions. Each entry includes the decision,
 - Rationale: Griffin recognizes the feature brain dump is already large. Discipline is key for a long-running build.
 - How to apply: Check Griffin (and ourselves) on scope creep. Every feature proposal gets asked: "Is this making the core flow better, or is it scope creep?"
 
-**Figma as design tool with MCP integration** (2026-03-29, refined 2026-03-30)
+**Figma as design tool with MCP integration** (2026-03-29, refined 2026-03-30) — ⚠️ SUPERSEDED 2026-07-13 by "Claude Design supersedes Figma Make" (below); kept as historical record.
 - Figma Make for wireframing and prototype generation from text prompts
 - Figma MCP Server to bridge Claude Code (context) and Figma (design)
 - **Operating model (researched 2026-03-30)**: Claude Code = brain (all product context). Figma Make = design hand. `Guidelines.md` = bridge document.

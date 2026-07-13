@@ -1,6 +1,6 @@
-# Guidelines — Meal App (Design System Spec)
+# Guidelines — Meal App (Figma Make Bridge Doc)
 
-> **How to use this file**: The written design-system spec. Synced into the Claude Design project (`docs/design/system/spec.md`) so generated prototypes inherit it, and used as grounding by the visual-QA rubric. Pair it with a per-screen brief (e.g. `brief-plan.md`) for each new surface. (Design workflow: `docs/design/design-workflow.md`. Was the Figma Make bridge doc pre-2026-07-13.)
+> **How to use this file**: Paste this entire document into the Figma Make code editor (Guidelines tab) before generating. Reuse across every Make session. Pair it with a per-screen brief (e.g. `brief-plan.md`) for each generation.
 
 ---
 
@@ -182,7 +182,7 @@ Anti-references (do not emulate): Cooklist, Mealime, Samsung Food, PlateJoy, gen
 
 ## 9. Per-screen brief format
 
-Every design-generation pass pairs this Guidelines.md with a screen-specific brief. The brief tells the design tool:
+Every Figma Make generation pairs this Guidelines.md with a screen-specific brief. The brief will tell Make:
 - What screen this is and what tab it lives in
 - The state(s) to design (e.g., "Sunday morning fresh week" vs "Wednesday evening mid-week")
 - Content/data to populate the screen with (so Make doesn't invent generic placeholders)

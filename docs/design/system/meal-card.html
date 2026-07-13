@@ -1,0 +1,28 @@
+<!-- @dsCard group="Components" -->
+<!-- The SHIPPED MealCard anatomy (src/components/plan/meal-card.tsx). The signature component. -->
+<style>
+  body{background:#0E0E10;color:#F5F5F7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:24px;max-width:430px}
+  h1{font-size:13px;font-weight:500;letter-spacing:.1em;color:#8E8E93;margin:0 0 14px}
+  .card{background:rgba(34,34,42,.60);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.06);border-radius:21px;padding:16px;margin-bottom:14px}
+  .eyebrow{font-size:11px;font-weight:500;letter-spacing:.1em;color:#8E8E93}
+  .title{font-size:17px;font-weight:600;line-height:1.35;margin-top:4px}
+  .rationale{font-size:13px;line-height:1.35;color:rgba(58,134,255,.9);margin-top:6px}
+  .meta{font-size:12px;color:#8E8E93;margin-top:8px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .chip{font-size:12px;color:rgba(245,245,247,.9);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);border-radius:999px;padding:5px 12px}
+  .eatout{opacity:.5}
+</style>
+<h1>MEAL CARD — SHIPPED ANATOMY</h1>
+<div class="card" style="box-shadow:0 0 0 1px rgba(58,134,255,.30)">
+  <div class="eyebrow">WEDNESDAY · TONIGHT</div>
+  <div class="title">Miso-Glazed Salmon with Bok Choy</div>
+  <div class="rationale">Fresh fish right after Sunday shopping — best window. <span style="color:rgba(58,134,255,.6)">→</span></div>
+  <div class="meta">35 min · serves 2 · Asian · Light</div>
+  <div class="chips"><span class="chip">Make it spicier</span><span class="chip">Swap the protein</span></div>
+</div>
+<p style="font-size:11px;color:#8E8E93;font-family:ui-monospace,monospace">tonight = primary/30 ring · chips are verb-first ACTIONS (never attributes) · whole card is the tap target · rationale carries the chef's voice in primary/90</p>
+<div class="card eatout">
+  <div class="eyebrow">THURSDAY</div>
+  <div style="font-size:14px;color:#8E8E93;margin-top:2px">Eating out</div>
+</div>
+<p style="font-size:11px;color:#8E8E93;font-family:ui-monospace,monospace">eating-out / skip = 50% opacity, no chips, not tappable</p>

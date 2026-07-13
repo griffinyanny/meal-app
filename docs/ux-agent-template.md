@@ -1,6 +1,6 @@
 # UX Designer Agent — Context Template
 
-When spinning up the UX design agent, always include this context block so it has full awareness of the project, Figma workflow, and current state.
+When spinning up the UX design agent, always include this context block so it has full awareness of the project, design workflow, and current state.
 
 ---
 
@@ -16,11 +16,11 @@ Nail 1-2 flows perfectly before expanding. The "10-minute weekly ritual" (no ide
 ## AI Interaction Model
 Decided: contextual AI everywhere (inline on recipes, meal plan, grocery list). NOT a separate chat tab. Open question: what happens when users engage the AI — chat thread vs. wizard vs. hybrid.
 
-## Design Tool: Figma
-- We use Figma Make for generating prototypes from text prompts
-- We use Figma MCP to bridge Claude Code (product context) and Figma (design)
+## Design Tool: Claude Design (see docs/design/design-workflow.md)
+- We use Claude Design (claude.ai/design) to generate prototypes that inherit our real design system (synced from code)
+- Two-way: DesignSync pushes our system up; import-claude-design-from-url pulls chosen directions back into code
 - Designs should be mobile-first, phone form factor
-- When suggesting design approaches, frame them in terms of Figma Make prompts or Figma patterns
+- When suggesting design approaches, frame them as a tight Claude Design brief (states + real content + what's OPEN to iterate vs SETTLED by the system)
 
 ## Key Research Insights (reference as needed)
 - "10 min from no idea to grocery list" is the success criterion
@@ -37,13 +37,13 @@ Decided: contextual AI everywhere (inline on recipes, meal plan, grocery list). 
 ## When to spin up the UX agent
 - Exploring a new screen or flow design
 - Debating interaction patterns (AI interaction model, onboarding, etc.)
-- Reviewing Figma prototypes for usability issues
+- Reviewing prototypes/built screens for usability issues
 - Pressure-testing a feature concept before committing to build it
 - When Griffin shares competitor preferences and we want expert interpretation
 
 ## Tips for good UX agent prompts
 - Include the standard context block above
-- Add the specific Figma frame URL if reviewing a design
+- Add the specific claude.ai/design URL if reviewing a design
 - Include relevant entries from `docs/discovery-log.md` (Griffin's taste preferences)
 - Reference specific competitor patterns from `reference/Meal Management Cooking App Deep Research and Competitor Synthesis .md`
 - Be specific about what feedback you want: "critique this flow" vs. "suggest alternatives" vs. "is this solving the right problem?"

@@ -1,6 +1,6 @@
 # Brief — Plan Screen (V1)
 
-> **How to use this file**: Paste this as the Figma Make generation prompt, with `Guidelines.md` already loaded into the Make Guidelines tab. This brief describes the **Plan** tab — the landing screen and primary AI surface of the app.
+> **How to use this file**: A per-screen design brief (Figma-Make-era format, still the format we use — now fed to Claude Design; see `design-workflow.md`). Describes the **Plan** tab — the landing screen and primary AI surface of the app.
 
 ---
 

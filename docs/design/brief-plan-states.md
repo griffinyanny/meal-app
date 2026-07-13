@@ -1,6 +1,6 @@
 # Briefs — Plan Screen States (V1)
 
-> **How to use this file**: Each state below is a separate Figma Make prompt. Copy ONE state at a time into Make, with `Guidelines.md` already loaded into the Make Guidelines tab. Generate each as its own frame. Phone form factor: 430px wide, ~932px tall, dark mode only.
+> **How to use this file**: The per-state brief format (Figma-Make-era; now fed to Claude Design — see `design-workflow.md`). Each state is a separate generation prompt. Phone form factor: 430px wide, ~932px tall, dark mode only. This file's format is the template for future per-surface briefs.
 
 ---
 
