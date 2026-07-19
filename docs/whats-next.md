@@ -2,13 +2,16 @@
 
 Last updated: 2026-07-19 (Session 21)
 
-## ⚙️ Griffin's one-time setup before the 1D design pass (his manual claude.ai actions)
-The Claude Design workflow was refined S21 with the FFOS-proven model (see design-workflow.md).
-Before the Groceries design pass, Griffin does this ONCE in the claude.ai UI:
-1. Create ONE plain project in claude.ai/design for meal-app (the whole app lives here over time).
+## ⚙️ Griffin's one-time Claude Design setup — happens DURING 1D, once the brief exists
+The project kickoff and the first generation are the SAME motion. Sequence inside the 1D session:
+Claude writes `docs/design/surfaces/groceries/brief.md` FIRST → THEN Griffin, in the claude.ai UI:
+1. Create ONE **fresh plain project** in claude.ai/design for meal-app (the whole app accrues here).
+   NOT the pushed "Meal App Design System" DesignSync project — that's dormant; don't build on it.
 2. Enable its **GitHub connector** pointed at the meal-app repo.
-3. Paste `docs/design/PROJECT-CONTEXT.md` in as the project's read-me-first context.
-(The separate DesignSync "Meal App Design System" project from S20 is now dormant — we don't need it.)
+3. Paste `docs/design/PROJECT-CONTEXT.md` in as the read-me-first context.
+4. (Recommended 2-min de-risk) generate ONE warmup screen ("the Plan weekly-review screen in this
+   system") to confirm the glass system actually inherits — THEN feed the Groceries brief.
+Don't create the project in a vacuum before the brief; there's nothing to do with an empty project.
 
 ## ▶ NEXT SESSION — kick off Phase 1D (Groceries), in PLAN MODE
 **Copy-paste kickoff prompt:**
