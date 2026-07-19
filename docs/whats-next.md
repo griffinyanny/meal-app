@@ -1,21 +1,30 @@
 # What's Next
 
-Last updated: 2026-07-13 (Session 20)
+Last updated: 2026-07-19 (Session 21)
+
+## ⚙️ Griffin's one-time setup before the 1D design pass (his manual claude.ai actions)
+The Claude Design workflow was refined S21 with the FFOS-proven model (see design-workflow.md).
+Before the Groceries design pass, Griffin does this ONCE in the claude.ai UI:
+1. Create ONE plain project in claude.ai/design for meal-app (the whole app lives here over time).
+2. Enable its **GitHub connector** pointed at the meal-app repo.
+3. Paste `docs/design/PROJECT-CONTEXT.md` in as the project's read-me-first context.
+(The separate DesignSync "Meal App Design System" project from S20 is now dormant — we don't need it.)
 
 ## ▶ NEXT SESSION — kick off Phase 1D (Groceries), in PLAN MODE
 **Copy-paste kickoff prompt:**
 > Resume meal app — kick off Phase 1D (Groceries) in plan mode: inventory the existing
 > grocery skeleton, decide the ingredient-merge architecture (deterministic vs AI vs
-> hybrid), write the Groceries Claude Design brief, and land a `docs/scope-1D.md`.
-> Start by reading `docs/scope-v1.md`, `docs/design/design-workflow.md`, and
+> hybrid), write the Groceries Claude Design brief in `docs/design/surfaces/groceries/brief.md`,
+> and land a `docs/scope-1D.md`. Start by reading `docs/scope-v1.md`,
+> `docs/design/design-workflow.md`, `docs/design/PROJECT-CONTEXT.md`, and
 > `reference/grocery-notes-research.md`.
 
-- **Design pass via Claude Design — STRONG RECOMMENDATION** (supersedes the S19 "design
-  live, no Figma" call; Claude Design adopted S20, `docs/design/design-workflow.md`).
-  Groceries is a new surface → run the gate: Claude writes the Groceries brief (states:
-  list / merge-review / staples; OPEN = merge-review UI; SETTLED = system vocabulary) →
-  Griffin generates 2-3 directions in Claude Design (inherits the DS project) → import →
-  build. The merge-review UI is the novel bit worth iterating; the rest inherits the system.
+- **Design pass via Claude Design — STRONG RECOMMENDATION** (new surface; supersedes the S19
+  "design live" call). Loop: Claude writes `docs/design/surfaces/groceries/brief.md` (states:
+  list / merge-review / staples; OPEN = merge-review UI; SETTLED = system vocabulary) → Griffin
+  generates 2-3 directions in the meal-app project → shares the URL → Claude imports via
+  `DesignSync.get_file(projectId from URL, path)` → saves down → builds. Merge-review UI is the
+  novel bit worth iterating; the rest inherits the system via GitHub connector + PROJECT-CONTEXT.
 - **1D starting material:** a partial skeleton already exists — `grocery` schema
   (`src/server/db/schema/grocery.ts`) + a router with `addItem`/`checkItem`/`removeItem`
   (`src/server/trpc/routers/grocery.ts`), but NO plan→list generation and NO merging.

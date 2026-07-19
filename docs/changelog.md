@@ -4,6 +4,57 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 21 — 2026-07-19 (Claude Design workflow refined from FFOS learnings)
+
+### What happened
+- Griffin has been running Claude Design in FFOS and it got ahead of meal-app's setup. Pulled
+  FFOS's canonical design docs (`design-workflow.md`, `PROJECT-CONTEXT.md`) and ported the proven
+  pieces back — meal-app was the origin, but FFOS battle-tested the mechanics.
+- **Round-trip SOLVED (the open item from S20):** `import-claude-design-from-url` REJECTS the
+  pasted `claude.ai/design` app URL (Cloudflare-gated, wants a raw claudeusercontent.com bundle).
+  Working method = `DesignSync.get_file(projectId parsed from the URL, path="<name>.dc.html", +→space)`
+  → extract `content` → save to the surface folder. Fixed the wrong primary in design-workflow.md.
+- **Structure = ONE plain app project** (Griffin's instinct, FFOS-proven): one plain-type Claude
+  Design project for the whole app, GitHub-connected, carrying PROJECT-CONTEXT + all design chats
+  as accruing memory. NOT per-screen; surfaces separated on the Claude Code side under
+  `docs/design/surfaces/<surface>/`. The separate DesignSync design-system project (S20) is now
+  dormant/optional — "we don't need that."
+- **New: `docs/design/PROJECT-CONTEXT.md`** — the read-me-first product+tokens distillation. Captures
+  a real difference: meal-app HAS a bespoke glass system worth protecting (unlike FFOS's near-stock
+  shadcn), so its context is richer/more prescriptive.
+- **Answered Griffin's design-system question:** NOT baked, deliberately — real vocabulary today but
+  the deliberate consolidation is the 1F pass; the Claude Design loop is the living venue to evolve
+  it, PROJECT-CONTEXT is the living token pin.
+- Rewrote design-workflow.md; set up `docs/design/surfaces/`; updated both CLAUDE.md pointers,
+  decisions.md (S21 refinement), the recall memory, and the 1D kickoff.
+
+### Verification
+- Docs-only; no product code. Round-trip mechanic is FFOS-verified. Griffin's one-time setup (create
+  app project + GitHub connector + paste PROJECT-CONTEXT) is staged in whats-next; the loop gets
+  exercised for real at 1D Groceries.
+
+## Session 20 — 2026-07-13 (Claude Design adopted as default design partner)
+
+### What happened
+- Evaluated Claude Design (Anthropic Labs, launched 2026-04-17) vs the Figma Make loop and adopted it
+  as the default design partner. Rationale: the design system lives in CODE, which Claude Design reads
+  directly, collapsing the Figma 4-hop dance to 1 hop; no designer on the team, so Figma's pixel tools
+  were unused cost. Decision logged in decisions.md.
+- Built the design workflow: `docs/design/design-workflow.md` (roles, the "always offer a design pass"
+  gate, per-pass loop, fallback ladder, 1F boundary). Built an 8-card DS bundle (`docs/design/system/`)
+  from shipped tokens and pushed it to a Claude Design design-system project via the `DesignSync` tool.
+  (Both the bundle-push approach and the round-trip were refined in S21 — see above.)
+- Retired the Figma operating model everywhere it was a live instruction: rewrote the ux-design-critic
+  agent (global) to Claude-Design-first, reframed Guidelines.md + brief headers, updated both CLAUDE.md
+  files, annotated the old Figma decision + master-plan section as superseded, added a global pointer +
+  recall memory. Figma MCP kept as a dormant escape hatch.
+- The design-pass gate (Griffin's directive): whenever work is visual, OFFER a pass with a
+  recommendation + what it buys + where returns diminish; never silent-skip, never auto-run.
+
+### Verification
+- Docs/agent-only. Bundle pushed + verified via `DesignSync.list_files`; agent frontmatter validated.
+- Left open (→ answered S21): the design→code round-trip channel, and the project-structure model.
+
 ## Session 19 — 2026-07-10 (Release-scope system, master-plan restore, 1C closed)
 
 *Continued directly from S18 (same day); split here because the work shifted from

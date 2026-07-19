@@ -124,8 +124,8 @@ Plans live in `docs/plans/` at three levels. See `docs/plans/README.md` for the 
 - `docs/technical-research.md` — Our own technical research (LLM capabilities, grocery APIs, cost analysis)
 
 ### Design Operating Model — Claude Design (canonical: `docs/design/design-workflow.md`)
-- Claude Code = source of truth + build. **Claude Design** (claude.ai/design) = Griffin's visual iteration surface; it reads our design system straight from code.
-- Two-way bridge: **Code→Design** via the `DesignSync` tool (syncs `docs/design/system/**` to the `Meal App Design System` project, id `eb7a2cae-e0e4-4931-af36-a5ff8995ad53`); **Design→Code** via `mcp__plugin_vercel_vercel__import-claude-design-from-url` (fallback: WebFetch the URL, then `DesignSync.get_file`).
+- Claude Code = source of truth + build. **Claude Design** (claude.ai/design) = Griffin's visual iteration surface; it reads our design system straight from code. **ONE plain app project for the whole app** (GitHub-connected + `docs/design/PROJECT-CONTEXT.md`); surfaces separated on the Claude Code side under `docs/design/surfaces/<surface>/`.
+- Two-way bridge: **Code→Design** = Claude Design's native GitHub connector + PROJECT-CONTEXT. **Design→Code** (round-trip SOLVED via FFOS): `import-from-url` rejects the pasted app URL — use `DesignSync.get_file(projectId parsed from the URL, path="<name>.dc.html")`, extract `content`, save to the surface folder. Never paste the generated `.dc.html`.
 - **The gate (do this every time work is visual):** explicitly OFFER Griffin a design pass — with a recommendation, what it buys, and where returns diminish. Never silently skip, never auto-run. New surfaces = strong recommendation; in-pattern additions = lean skip (visual-qa catches drift). Griffin decides.
 - Superseded the Figma Make model (2026-07-13). Figma MCP stays registered as an escape hatch only. Full loop, re-sync rule, and the 1F boundary are in `docs/design/design-workflow.md`.
 
