@@ -1,45 +1,38 @@
 # What's Next
 
-Last updated: 2026-07-19 (Session 21)
+Last updated: 2026-07-20 (Session 22)
 
-## ⚙️ Griffin's one-time Claude Design setup — happens DURING 1D, once the brief exists
-The project kickoff and the first generation are the SAME motion. Sequence inside the 1D session:
-Claude writes `docs/design/surfaces/groceries/brief.md` FIRST → THEN Griffin, in the claude.ai UI:
-1. Create ONE **fresh plain project** in claude.ai/design for meal-app (the whole app accrues here).
-   NOT the pushed "Meal App Design System" DesignSync project — that's dormant; don't build on it.
-2. Enable its **GitHub connector** pointed at the meal-app repo.
-3. Paste `docs/design/PROJECT-CONTEXT.md` in as the read-me-first context.
-4. (Recommended 2-min de-risk) generate ONE warmup screen ("the Plan weekly-review screen in this
-   system") to confirm the glass system actually inherits — THEN feed the Groceries brief.
-Don't create the project in a vacuum before the brief; there's nothing to do with an empty project.
-
-## ▶ NEXT SESSION — kick off Phase 1D (Groceries), in PLAN MODE
+## ▶ NEXT SESSION — continue Phase 1D (Groceries), Slice A
 **Copy-paste kickoff prompt:**
-> Resume meal app — kick off Phase 1D (Groceries) in plan mode: inventory the existing
-> grocery skeleton, decide the ingredient-merge architecture (deterministic vs AI vs
-> hybrid), write the Groceries Claude Design brief in `docs/design/surfaces/groceries/brief.md`,
-> and land a `docs/scope-1D.md`. Start by reading `docs/scope-v1.md`,
-> `docs/design/design-workflow.md`, `docs/design/PROJECT-CONTEXT.md`, and
-> `reference/grocery-notes-research.md`.
+> Resume meal app — continue Phase 1D (Groceries), Slice A. Authoritative plan:
+> `~/.claude/plans/rippling-herding-glacier.md`; phase scope: `docs/scope-1D.md`. Slice 0 (docs)
+> + Slice A schema/invalidation are done + committed (`3101fca`, migration 0004 applied). Build the
+> rest of Slice A: the `plan.hydrateSlot` mutation (reuse the `generate-recipe` task; idempotent,
+> CAS on `slot.updatedAt`); the day-1-first client hydration walker in Plan review (shimmer→ready on
+> cards, tap-to-prioritize); the `RecipeView` extraction from `src/components/recipes/recipe-detail.tsx`
+> + the meal-sheet recipe upgrade (writing→full→failed); the `recipe-generate` E2E fixture in
+> `e2e-mock.ts`; and the `recipe.get` null-vs-NOT_FOUND alignment. Close Slice A with the existing
+> 30 Plan E2E specs green (hydration touches Plan review). ⚠️ If DB calls fail with "tenant not
+> found," the Supabase project auto-paused — resume it in the dashboard, then
+> `set -a; . ./.env.local; set +a` before any `db:*` command.
 
-- **Design pass via Claude Design — STRONG RECOMMENDATION** (new surface; supersedes the S19
-  "design live" call). Loop: Claude writes `docs/design/surfaces/groceries/brief.md` (states:
-  list / merge-review / staples; OPEN = merge-review UI; SETTLED = system vocabulary) → Griffin
-  generates 2-3 directions in the meal-app project → shares the URL → Claude imports via
-  `DesignSync.get_file(projectId from URL, path)` → saves down → builds. Merge-review UI is the
-  novel bit worth iterating; the rest inherits the system via GitHub connector + PROJECT-CONTEXT.
-- **1D starting material:** a partial skeleton already exists — `grocery` schema
-  (`src/server/db/schema/grocery.ts`) + a router with `addItem`/`checkItem`/`removeItem`
-  (`src/server/trpc/routers/grocery.ts`), but NO plan→list generation and NO merging.
-  Behavioral research: `reference/grocery-notes-research.md`. The 1D planning pass should
-  do the built-vs-planned inventory first (same exercise that made 1C legible).
-- **The hard/risky part = AI ingredient merging** ("2 cups + 1 cup broth = 3 cups";
-  "scallions" = "green onions"). Master plan calls it the hardest V1 problem. Settle the
-  architecture before building. Note: an `ingredient-normalize` AI task is already stubbed
-  in the model config (`src/server/ai/config.ts`).
-- **Carry-in open questions for 1D** (from open-questions.md): free-form vs structured
-  list entry (#1); `recipe.get` null-vs-NOT_FOUND consistency (#3, small, do during a 1D
-  router touch). Extend the E2E harness to Groceries as the tab matures.
+- **Read first:** `~/.claude/plans/rippling-herding-glacier.md` (reconciled 2026-07-20 — the single
+  source of truth; supersedes `resume-meal-app-sorted-reddy.md` + its architecture memo) and
+  `docs/scope-1D.md`. The `decisions.md` 2026-07-20 entry carries the 12 reconciliation decisions.
+- **Architecture:** plan-time hydration (recipes hydrate in the background during review — the wife
+  reads full recipe detail while evaluating; confirm is near-instant) → grocery list is a
+  **projection** = aggregate(confirmed plan's recipes) + manual + staples → **hybrid merge** (AI
+  canonicalizes names/categories, deterministic code does the arithmetic + **under-merges**).
+- **Design is DONE + imported:** `docs/design/surfaces/groceries/imported.dc.html` (projectId
+  `8bc73bfa-9683-4b44-ab06-40da9ec78590`, `Groceries.dc.html`). Build Slices C/D against it. Baked-in
+  decisions: **inline merge-review + under-merge**, **one-zone check-off** (checked → bottom "GOT IT"
+  zone), **Grouped↔manual reorder**, **Talk-to-Chef grocery sheet** (secondary NL add).
+- **Slice order:** A (hydration spine — schema ✅, invalidation ✅, mutation+walker+RecipeView next) →
+  B (`grocery.generate` + `ingredient-normalize` task + the pure deterministic aggregator) →
+  C (list UI) → D (staples + Talk-to-Chef NL task + Recipes-tab reorg) → wrap (E2E extend +
+  merge-quality eval + code-review + visual-qa + deploy).
+- **Trimmed OUT of 1D** (design later): mid-week resync + ack pill + `mergeOverrides`; bespoke
+  empty/error states (empty = zero-item list + add row; error = reuse Plan's stream-error card).
 
 ## Exact Status (end of Session 19 — 1C CLOSED, scope system stood up)
 - **Phase 1C (Plan tab) is COMPLETE.** 3 of 6 phases done. All 13 scope-1C items met;

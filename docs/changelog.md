@@ -4,6 +4,36 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 22 — 2026-07-20 (1D reconciled; build started — Slice 0 + Slice A schema/invalidation)
+
+### What happened
+- **Reconciled two 1D plans.** Griffin had forgotten he'd already planned 1D (the LOCKED, more-thorough
+  `~/.claude/plans/resume-meal-app-sorted-reddy.md` — 4 decision rounds + system-architect + ux-design-critic,
+  held pending the new design workflow) when S21 re-derived a thinner one. The conflict was one axis:
+  **when recipes hydrate.** Resolved to **plan-time hydration** (background during plan review — the wife
+  reads full recipe detail while evaluating; confirm is near-instant) over confirm-time expand. sorted-reddy
+  adopted as the base. New authoritative plan: **`~/.claude/plans/rippling-herding-glacier.md`**.
+- **Imported the finished Groceries design from Claude Design** (projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`,
+  `Groceries.dc.html`, saved to `docs/design/surfaces/groceries/imported.dc.html`). Resolved decisions:
+  **merge-review = inline + under-merge** (uncertain merges shown inline, no forced action; aggregator errs
+  toward NOT merging genuinely-different items); **one-zone check-off** (checked items drop to a bottom "GOT IT"
+  zone); **Grouped↔manual reorder** + **Talk-to-Chef grocery sheet** (secondary NL add) adopted into 1D.
+  **Trimmed out of 1D:** mid-week resync + its ack pill + `mergeOverrides`, and bespoke empty/error states.
+- **Slice 0 done — docs reconciled** to plan-time architecture: rewrote decisions.md, scope-1D.md,
+  brief.md→as-built, scope-v1 changelog, resolved open-questions #1 (free-form add).
+- **Slice A started — schema + invalidation (green, committed `3101fca`):** schema deltas across
+  plans/recipes/grocery + **migration 0004 applied** (all 8 columns verified). Fixed the latent
+  `toSlotValues` stale-recipe bug in `plan.modify` (changed meal → null `recipeId` + `recipeStatus:"stale"`;
+  removed → `none`) + regression test. Typecheck + lint + 177 unit tests green.
+- **Infra gotcha:** the Supabase project was **paused** (free-tier inactivity) — resume in the dashboard
+  before DB work; migrations need the env loaded (`set -a; . ./.env.local`) and use `npm run db:migrate`.
+
+### Next
+- **Finish Slice A** (the meatier half): `plan.hydrateSlot` mutation, the day-1-first client hydration
+  walker in Plan review, `RecipeView` extraction from `recipe-detail.tsx` + the meal-sheet recipe upgrade,
+  the `recipe-generate` E2E fixture, and the `recipe.get` null-vs-NOT_FOUND alignment — then the existing
+  30 Plan E2E specs must stay green (hydration touches Plan review).
+
 ## Session 21 — 2026-07-19 (Claude Design workflow refined from FFOS learnings)
 
 ### What happened
