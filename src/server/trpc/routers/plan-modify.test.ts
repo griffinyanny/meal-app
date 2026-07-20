@@ -243,6 +243,58 @@ describe("planRouter.modify", () => {
     expect(result.changedDates).toEqual(["2026-07-08"]);
   });
 
+  it("should invalidate a changed slot's recipe (null recipeId + stale status) so it re-hydrates", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.query.mealPlans.findFirst.mockResolvedValueOnce(existingPlan);
+    // A slot that already carries a hydrated recipe.
+    db.__selectResults.set(mealPlanSlots, [
+      { ...existingSlot, recipeId: "99999999-9999-4999-8999-999999999999", recipeStatus: "ready" },
+    ]);
+    mockModifyPlan.mockResolvedValueOnce({
+      chefResponse: "Swapped it.",
+      changedMeals: [
+        {
+          dayOffset: 0,
+          slotType: "recipe",
+          title: "New Burgers",
+          description: "Juicy grilled burgers",
+          rationale: null,
+          ingredientPreview: [],
+          tags: [],
+          estTimeMinutes: 20,
+          servings: null,
+          chips: [],
+        },
+      ],
+      removedDayOffsets: [],
+    });
+
+    let setPayload: Record<string, unknown> | undefined;
+    db.transaction.mockImplementationOnce(async (cb) => {
+      const tx = {
+        update: vi.fn(() => {
+          const chain = makeMutationChain();
+          chain.set = vi.fn((v: Record<string, unknown>) => {
+            setPayload = v;
+            return chain;
+          });
+          return chain;
+        }),
+        insert: vi.fn(() => makeMutationChain()),
+      };
+      return cb(tx);
+    });
+
+    const caller = planRouter.createCaller(buildCtx(db, makeUser("user-invalidate")));
+    await caller.modify({ request: "Swap Monday's dinner for burgers" });
+
+    // The changed meal must drop its now-stale recipe and be marked for re-hydration.
+    // Without this the slot keeps a recipe whose title no longer matches (the latent
+    // toSlotValues bug fixed for Phase 1D — decisions.md 2026-07-20).
+    expect(setPayload).toBeDefined();
+    expect(setPayload).toMatchObject({ recipeId: null, recipeStatus: "stale" });
+  });
+
   it("should reject with TOO_MANY_REQUESTS once the household's daily AI budget is exhausted", async () => {
     db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
     db.__insertReturning.set(aiUsageDaily, [{ calls: 151 }]);

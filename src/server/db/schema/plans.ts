@@ -62,6 +62,14 @@ export const mealPlanSlots = pgTable(
     recipeId: uuid("recipe_id").references(() => recipes.id, {
       onDelete: "set null",
     }),
+    // Lifecycle of the slot's full recipe (hydrated lazily in the background during
+    // plan review). "stale" is set by plan.modify so a changed meal re-hydrates.
+    // See decisions.md "Phase 1D Groceries architecture" (2026-07-20).
+    recipeStatus: text("recipe_status", {
+      enum: ["none", "hydrating", "ready", "stale"],
+    })
+      .notNull()
+      .default("none"),
     slotType: text("slot_type", {
       enum: ["recipe", "eating_out", "skip", "leftover"],
     })

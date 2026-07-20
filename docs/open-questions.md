@@ -60,7 +60,7 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ### Free-Form vs. Structured List Entry
 **Question**: How do users add items to the grocery list? A structured catalog (pick from ingredients) helps with normalization, merging, and nutrition data — but adds friction vs. just typing "milk." Free-text entry is fast but harder to normalize. A dual mode feels like odd CX. What's the right solve?
-**Status**: Open. Needs design exploration in Phase 0.
+**Status**: RESOLVED (Session 22, 2026-07-20). **Free-form + AI tidy.** Type anything → optimistic insert → background AI categorize/dedupe. No structured catalog picker (that's the V1.5+/Instacart-era evolution; 1D builds only the canonical `name` vs `rawName` seam). Confirmed by the imported Groceries design. See `decisions.md` (2026-07-20) + `scope-1D.md`.
 **Raised**: Session 2 (2026-03-29)
 
 ### AI-First Preferences vs. Static Settings UI

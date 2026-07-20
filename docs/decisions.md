@@ -4,6 +4,58 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Phase 1D Groceries architecture — plan-time hydration + hybrid merge (reconciled)** (2026-07-20, Session 22)
+- **Supersedes** the 2026-07-19 "expand-then-hydrate at confirm" entry that briefly sat here. That was a
+  thinner re-derivation written when the earlier, more-thorough 1D plan (`~/.claude/plans/resume-meal-app-sorted-reddy.md`,
+  2026-07-13, 4 decision rounds + system-architect + ux-design-critic) had been forgotten. The two plans
+  were reconciled 2026-07-20; the authoritative plan is now `~/.claude/plans/rippling-herding-glacier.md`
+  and the architecture memo `~/.claude/plans/resume-meal-app-sorted-reddy-agent-ab9e5e211025b4d32.md`.
+- **The grocery list is a deterministic PROJECTION** (architect's organizing idea):
+  `list = aggregate(recipes of the confirmed plan) + manual items + active staples`, re-runnable. In 1D it
+  runs at confirm and re-runs only on retry; mid-week resync (re-running on a plan change) is deferred.
+- **Recipes hydrate at PLAN TIME, in the background during review** (NOT at confirm) — client-orchestrated
+  per-slot `plan.hydrateSlot` mutations, day-1-first, tap-to-prioritize, resumable, with a confirm-time
+  server sweep for stragglers. Reason (the originating product insight): the wife wants to read full recipe
+  detail *while evaluating* the proposed week; this also makes the list near-instant at confirm. Chosen over
+  confirm-time batch-expand (which put a ~15s wait on the signature confirm tap and dropped the during-review
+  recipe read). No `waitUntil`, no queue (over-engineering for ~7 calls while the user watches).
+- **Hydrated recipes are real `recipes` rows** tagged `sourceType:"plan_generated"` + `sourcePlanId` (FK,
+  cascade-cleans on plan replacement; detaches on favorite/cook). `plan.modify` must null `recipeId` + mark
+  the slot `recipeStatus:"stale"` (fixes a latent bug: `toSlotValues` at `plan-types.ts:171` doesn't carry
+  `recipeId`). Recipes-tab organizes by memory tier (cooked / deliberate library / plan drafts), derived
+  from `isFavorite` + `lastCookedAt` + slot dates — no explicit "I cooked it" ever required.
+- **Merge = HYBRID**: one batched `ingredient-normalize` AI call (canonical name, category, numeric qty,
+  canonical unit + confidence) + a **pure deterministic aggregator** that does ALL the arithmetic (the
+  2026-05-26 "code always in control; LLM never does the math" rule). Pure-deterministic dies on the
+  semantic long tail; pure-AI would do arithmetic on a shopping list. The aggregator **under-merges** —
+  when items are genuinely different (cherry ≠ roma tomatoes), it keeps them separate rather than merging-
+  then-flagging.
+- **Merge-review = INLINE** (Griffin's call): uncertain merges carry an amber dot in the live list; tap to
+  expand the per-meal breakdown + "Split into separate items". **No required user action** — because the
+  aggregator under-merges, every surviving merge is high-confidence and the dot means only "I summed this
+  across meals, verify the count if you like." Rejected the review-pass overlay and the double-check strip
+  (both make the user act on something usually-correct → alert fatigue).
+- **Design (imported from Claude Design, projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`,
+  `Groceries.dc.html`, saved to `docs/design/surfaces/groceries/imported.dc.html`).** As-built adds three
+  things now IN 1D: **section reorder + item drag + a full manual/"notepad" mode** (Grouped↔Ungrouped
+  toggle), and a **grocery "Talk to the Chef" sheet** (natural-language add/query) as a **secondary** add
+  path (text quick-add is primary). Quick-add is top + bottom inline rows, NOT a bar docked above the tab
+  bar → the earlier "blessed exception to the no-bottom-bar rule" carve-out is unnecessary.
+- **Check-off = ONE ZONE** (Griffin's call): checking an item removes it from its section and drops it into
+  a single collapsible "GOT IT" zone at the bottom. Not strike-in-place, not per-section sinking.
+- **Deferred out of 1D** (Griffin's calls, keep MVP tight): **mid-week resync** (list update on a mid-week
+  plan modify) + its ack pill + already-bought handling + the `mergeOverrides` persistence layer (inline
+  "split" becomes a direct `grocery_items` edit instead); a **bespoke empty state** (the empty state is just
+  the normal list with zero items + the add row); a **bespoke error state** (minimal retry reusing Plan's
+  existing stream-error card). Also deferred per prior plan: buy-unit/package layer (fast-follow gated on a
+  merge-quality eval), catalog/brand memory/autocomplete (V1.5+/Instacart; 1D builds only the canonical
+  `name` vs `rawName` seam).
+- **Schema deltas**: `meal_plan_slots.recipeStatus`; `recipes.sourceType += plan_generated` + `sourcePlanId`
+  (reuse existing `lastCookedAt` for the cooked-harvest stamp — no new `cookedAt`); `grocery_lists.generationStatus`
+  + `generationError` + `organizeMode` + `aisleOrder`; `grocery_items.sources` jsonb (multi-provenance;
+  keep `sourceRecipeId` for back-compat) + `packageLabel` (dormant until the buy-unit fast-follow). Full
+  detail + build slices in `~/.claude/plans/rippling-herding-glacier.md`.
+
 **Claude Design supersedes Figma Make as the design iteration tool** (2026-07-13, Session 20)
 - Claude Design (Anthropic, claude.ai/design) becomes the default design partner; the Figma Make operating model (2026-03-29, above) is retired. Canonical workflow: `docs/design/design-workflow.md`.
 - Rationale: our design system lives in CODE (globals.css + shipped components), which Claude Design reads directly — collapsing the Figma 4-hop dance (Claude writes Make prompt → Griffin pastes → generates → Claude reads via MCP → re-implements) to 1 hop (Griffin iterates against our real system → hands a URL back → Claude builds). No designer on the team, so Figma's pixel-precision tooling was unused cost. Figma shares dropped ~7% on Claude Design's launch — the market read it as a direct challenge; for a code-is-the-product, no-designer team the fit is stronger still.

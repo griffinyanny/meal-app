@@ -93,6 +93,13 @@ export const planRouter = router({
               .set({
                 mealType: "dinner",
                 ...toSlotValues(meal),
+                // The old recipe no longer matches this changed meal — drop it and
+                // mark the slot for re-hydration. toSlotValues does NOT carry recipeId,
+                // so without this a modified slot would keep a stale recipe. The old
+                // plan_generated recipe orphans and cascades away with the plan.
+                // See decisions.md "Phase 1D Groceries architecture" (2026-07-20).
+                recipeId: null,
+                recipeStatus: "stale",
                 feedback: null,
                 updatedAt: new Date(),
               })
@@ -127,6 +134,8 @@ export const planRouter = router({
               chips: [],
               rationale: null,
               recipeId: null,
+              // Non-cookable slots skip hydration — reset to "none", not "stale".
+              recipeStatus: "none",
               feedback: null,
               updatedAt: new Date(),
             })

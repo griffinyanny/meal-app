@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#08080a;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#F5F5F7;}
+  a{color:#3A86FF;text-decoration:none;}
+  a:hover{color:#5c9bff;}
+  .om-scroll::-webkit-scrollbar{width:0;height:0;}
+  .om-scroll{scrollbar-width:none;-ms-overflow-style:none;}
+  @keyframes shimmer-bar{0%{background-position:-150% 0;}100%{background-position:250% 0;}}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,14px);}to{opacity:1;transform:translate(-50%,0);}}
+  @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  @keyframes veilIn{from{opacity:0;}to{opacity:1;}}
+  @keyframes rowIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</helmet>
+<div style="min-height:100vh;width:100%;background:radial-gradient(1100px 700px at 22% -8%, rgba(58,134,255,.10), transparent 60%), radial-gradient(900px 600px at 108% 40%, rgba(94,92,230,.08), transparent 55%), #08080a;display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;justify-content:center;padding:44px 28px 80px;">
+
+  <!-- ===================== PHONE ===================== -->
+  <div style="flex:0 0 auto;position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.05), inset 0 0 0 2px rgba(255,255,255,.03);">
+    <div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0E0E10;">
+
+      <div style="position:absolute;inset:0;background:radial-gradient(600px 380px at 80% -6%, rgba(58,134,255,.12), transparent 62%);pointer-events:none;z-index:0;"></div>
+
+      <!-- status bar -->
+      <div style="position:absolute;top:0;left:0;right:0;height:54px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px;">
+        <span style="font-size:15px;font-weight:600;letter-spacing:.2px;">9:41</span>
+        <div style="position:absolute;left:50%;top:11px;transform:translateX(-50%);width:118px;height:32px;background:#000;border-radius:20px;"></div>
+        <div style="display:flex;align-items:center;gap:7px;">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#F5F5F7"></rect><rect x="5" y="4" width="3" height="8" rx="1" fill="#F5F5F7"></rect><rect x="10" y="1.5" width="3" height="10.5" rx="1" fill="#F5F5F7"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="#F5F5F7"></rect></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M8.5 2.5c2.3 0 4.4.9 6 2.4l1.4-1.5A11 11 0 0 0 8.5.5 11 11 0 0 0 1.1 3.4L2.5 4.9A8.5 8.5 0 0 1 8.5 2.5Z" fill="#F5F5F7"></path><path d="M8.5 6c1.2 0 2.3.5 3.1 1.3l1.4-1.5A7 7 0 0 0 8.5 4a7 7 0 0 0-4.5 1.8l1.4 1.5A4.5 4.5 0 0 1 8.5 6Z" fill="#F5F5F7"></path><circle cx="8.5" cy="10" r="1.6" fill="#F5F5F7"></circle></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="#F5F5F7" stroke-opacity=".45" fill="none"></rect><rect x="3" y="3" width="16" height="7" rx="1.5" fill="#F5F5F7"></rect><rect x="23.5" y="4.5" width="1.6" height="4" rx=".8" fill="#F5F5F7" fill-opacity=".5"></rect></svg>
+        </div>
+      </div>
+
+      <!-- SCROLL CONTENT -->
+      <div class="om-scroll" style="position:absolute;inset:0;overflow-y:auto;z-index:10;padding:54px 0 200px;">
+
+        <!-- ============ BUILDING (first-run intro only) ============ -->
+        <sc-if value="{{ isBuilding }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:40px 22px 0;">
+            <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#8E8E93;margin:0 0 14px;">GROCERIES</p>
+            <h1 style="font-size:26px;font-weight:700;line-height:1.15;margin:0 0 6px;">Pulling together your list</h1>
+            <p style="font-size:14px;color:#8E8E93;margin:0 0 26px;">From your 6 dinners this week.</p>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+              <sc-for list="{{ buildSteps }}" as="step" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="{{ step.dotStyle }}"></span>
+                  <span style="{{ step.textStyle }}">{{ step.label }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="height:2px;border-radius:2px;margin-top:30px;background:rgba(255,255,255,.06);overflow:hidden;">
+              <div style="height:100%;width:100%;background:linear-gradient(90deg,transparent,rgba(58,134,255,.75),transparent);background-size:200% 100%;animation:shimmer-bar 1.2s ease-in-out infinite;"></div>
+            </div>
+            <div style="margin-top:34px;display:flex;flex-direction:column;gap:12px;opacity:.5;">
+              <div style="height:64px;border-radius:21px;background:rgba(34,34,42,.5);"></div>
+              <div style="height:64px;border-radius:21px;background:rgba(34,34,42,.35);"></div>
+              <div style="height:64px;border-radius:21px;background:rgba(34,34,42,.22);"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ LIST HEADER ============ -->
+        <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:34px 22px 0;">
+            <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#8E8E93;margin:0 0 10px;">GROCERIES · THIS WEEK</p>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <h1 style="font-size:26px;font-weight:700;line-height:1.15;margin:0;">Your list</h1>
+              <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto;">
+                <span style="font-size:13px;color:#8E8E93;">{{ checkedCount }} / {{ total }}</span>
+                <sc-if value="{{ showClearChecked }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ clearCheckedAction }}" style="background:none;border:none;color:rgba(58,134,255,.9);font-size:13px;font-weight:600;cursor:pointer;padding:0;">Clear checked</button>
+                </sc-if>
+              </div>
+            </div>
+            <div style="height:6px;border-radius:6px;margin-top:14px;background:rgba(255,255,255,.07);overflow:hidden;">
+              <div style="{{ progressBarStyle }}"></div>
+            </div>
+            <sc-if value="{{ allChecked }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:14px;padding:12px 15px;border-radius:14px;background:rgba(48,209,88,.12);border:1px solid rgba(48,209,88,.32);display:flex;align-items:center;gap:11px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                <span style="font-size:13.5px;font-weight:600;color:#F5F5F7;">List complete — your 6 dinners are covered.</span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <!-- ============ ORGANIZE CONTROL ============ -->
+        <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:16px 22px 0;display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;gap:4px;padding:3px;border-radius:11px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);">
+              <button type="button" onClick="{{ org.aisle }}" style="{{ orgAisleStyle }}">Grouped</button>
+              <button type="button" onClick="{{ org.manual }}" style="{{ orgManualStyle }}">Ungrouped</button>
+            </div>
+            
+          </div>
+        </sc-if>
+
+        <!-- ============ ADD ROW (TOP) ============ -->
+        <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+          <div style="margin:16px 22px 0;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(34,34,42,.6);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.08);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3A86FF" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+            <input value="{{ topText }}" onInput="{{ onTopInput }}" onKeyDown="{{ onTopKey }}" placeholder="Add an item…" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#F5F5F7;font-size:14.5px;font-family:inherit;">
+            <button type="button" onClick="{{ openChef }}" title="Talk to the Chef" style="width:34px;height:34px;border-radius:10px;background:rgba(58,134,255,.16);border:none;display:flex;align-items:center;justify-content:center;flex:0 0 auto;cursor:pointer;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3A86FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a5 5 0 0 0-5 5c0 1.5.6 2.5 1.3 3.3.5.6.7 1 .7 1.7v1h6v-1c0-.7.2-1.1.7-1.7C17.4 10.5 18 9.5 18 8a5 5 0 0 0-5-5Z"></path><path d="M9 18h6M10 21h4"></path></svg>
+            </button>
+          </div>
+        </sc-if>
+
+        <!-- ============ STAPLES PILLS ============ -->
+        <sc-if value="{{ showStaplesRow }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:16px;">
+            <p style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#8E8E93;margin:0 0 10px;padding:0 22px;">QUICK ADD · YOUR STAPLES</p>
+            <div class="om-scroll" style="display:flex;gap:9px;overflow-x:auto;padding:0 22px 2px;">
+              <sc-for list="{{ staples }}" as="s" hint-placeholder-count="6">
+                <button type="button" onClick="{{ s.add }}" style="flex:0 0 auto;display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:22px;background:rgba(34,34,42,.6);border:1px solid rgba(255,255,255,.08);color:#F5F5F7;font-size:13.5px;font-weight:500;cursor:pointer;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3A86FF" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                  {{ s.name }}
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ REVIEW BANNER (merge b) ============ -->
+        <sc-if value="{{ showReviewBanner }}" hint-placeholder-val="{{ false }}">
+          <div style="margin:20px 22px 0;padding:14px 16px;border-radius:16px;background:rgba(58,134,255,.10);border:1px solid rgba(58,134,255,.28);display:flex;align-items:center;gap:13px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3A86FF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h10M7 12h6M7 16h8"></path><rect x="3" y="3" width="18" height="18" rx="4"></rect></svg>
+            <div style="flex:1;min-width:0;">
+              <p style="font-size:13.5px;font-weight:600;margin:0;line-height:1.3;">I combined {{ mergedCount }} ingredients</p>
+              <p style="font-size:12px;color:#8E8E93;margin:2px 0 0;">across your 6 dinners</p>
+            </div>
+            <button type="button" onClick="{{ openReview }}" style="padding:8px 14px;border-radius:11px;background:#3A86FF;color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;">Review</button>
+          </div>
+        </sc-if>
+
+        <!-- ============ DOUBLE-CHECK STRIP (merge c) ============ -->
+        <sc-if value="{{ showDoubleCheck }}" hint-placeholder-val="{{ false }}">
+          <div style="margin:20px 22px 0;padding:14px 16px;border-radius:16px;background:rgba(255,159,10,.09);border:1px solid rgba(255,159,10,.28);">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px;">
+              <span style="width:7px;height:7px;border-radius:50%;background:#FF9F0A;"></span>
+              <p style="font-size:13px;font-weight:600;margin:0;">Double-check {{ uncertainCount }} combined {{ uncertainNoun }}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ uncertainItems }}" as="u" hint-placeholder-count="2">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="flex:1;min-width:0;">
+                    <p style="font-size:13.5px;font-weight:500;margin:0;">{{ u.name }} <span style="color:#8E8E93;font-weight:400;">{{ u.qty }}</span></p>
+                    <p style="font-size:11.5px;color:#8E8E93;margin:2px 0 0;line-height:1.3;">{{ u.reason }}</p>
+                  </div>
+                  <button type="button" onClick="{{ u.keep }}" style="padding:6px 11px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#F5F5F7;font-size:12px;font-weight:600;cursor:pointer;">Keep</button>
+                  <button type="button" onClick="{{ u.split }}" style="padding:6px 11px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,.1);color:#8E8E93;font-size:12px;font-weight:600;cursor:pointer;">Split</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ THE LIST ============ -->
+        <sc-if value="{{ showList }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:8px 22px 0;">
+            <sc-for list="{{ sections }}" as="group" hint-placeholder-count="4">
+              <div style="margin-top:26px;">
+                <sc-if value="{{ group.showHeader }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ group.headerStyle }}" draggable="{{ group.reorderable }}" onDragStart="{{ group.dragStart }}" onDragEnter="{{ group.dragEnter }}" onDragOver="{{ group.dragOver }}" onDragEnd="{{ group.dragEnd }}">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <sc-if value="{{ group.reorderable }}" hint-placeholder-val="{{ false }}">
+                        <svg style="cursor:grab;" width="15" height="15" viewBox="0 0 24 24" fill="#8E8E93"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+                      </sc-if>
+                      <p style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#8E8E93;margin:0;">{{ group.name }}</p>
+                    </div>
+                    <span style="font-size:11px;color:rgba(142,142,147,.6);">{{ group.count }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ group.showItems }}" hint-placeholder-val="{{ true }}">
+                <div style="border-radius:21px;overflow:hidden;background:rgba(34,34,42,.6);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.06);">
+                  <sc-for list="{{ group.items }}" as="item" hint-placeholder-count="3">
+                    <div style="{{ item.wrapStyle }}" draggable="{{ item.draggable }}" onDragStart="{{ item.dragStart }}" onDragEnter="{{ item.dragEnter }}" onDragOver="{{ item.dragOver }}" onDragEnd="{{ item.dragEnd }}">
+                      <sc-if value="{{ item.dividerBefore }}" hint-placeholder-val="{{ false }}">
+                        <p style="font-size:10.5px;font-weight:600;letter-spacing:1px;color:rgba(142,142,147,.5);margin:0;padding:9px 15px 3px;">GOT IT</p>
+                      </sc-if>
+                      <div style="{{ item.rowStyle }}">
+                        <span onClick="{{ item.toggleCheck }}" style="{{ item.boxStyle }}">
+                          <sc-if value="{{ item.checked }}" hint-placeholder-val="{{ false }}">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                          </sc-if>
+                        </span>
+                        <div style="flex:1;min-width:0;">
+                          <sc-if value="{{ item.editName }}" hint-placeholder-val="{{ false }}">
+                            <input value="{{ item.editText }}" onInput="{{ item.onEditInput }}" onKeyDown="{{ item.onEditKey }}" onBlur="{{ item.onEditBlur }}" autoFocus="{{ true }}" style="{{ item.nameEditStyle }}">
+                          </sc-if>
+                          <sc-if value="{{ item.showNameText }}" hint-placeholder-val="{{ true }}">
+                            <p onClick="{{ item.onNameTap }}" style="{{ item.nameStyle }}">{{ item.name }}<sc-if value="{{ item.showDot }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#FF9F0A;margin-left:7px;vertical-align:middle;"></span></sc-if></p>
+                          </sc-if>
+                          <sc-if value="{{ item.showMeta }}" hint-placeholder-val="{{ false }}">
+                            <p style="{{ item.metaStyle }}">{{ item.meta }}</p>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{ item.editQty }}" hint-placeholder-val="{{ false }}">
+                          <input value="{{ item.editText }}" onInput="{{ item.onEditInput }}" onKeyDown="{{ item.onEditKey }}" onBlur="{{ item.onEditBlur }}" autoFocus="{{ true }}" placeholder="qty" style="{{ item.qtyEditStyle }}">
+                        </sc-if>
+                        <sc-if value="{{ item.showQtyText }}" hint-placeholder-val="{{ true }}">
+                          <span onClick="{{ item.onQtyTap }}" style="{{ item.qtyStyle }}">{{ item.qtyLabel }}</span>
+                        </sc-if>
+                        <sc-if value="{{ item.showChevron }}" hint-placeholder-val="{{ false }}">
+                          <svg onClick="{{ item.expand }}" style="{{ item.chevStyle }}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+                        </sc-if>
+                      </div>
+                      <sc-if value="{{ item.expanded }}" hint-placeholder-val="{{ false }}">
+                        <div style="padding:2px 15px 14px 48px;animation:rowIn .18s ease;">
+                          <sc-if value="{{ item.uncertain }}" hint-placeholder-val="{{ false }}">
+                            <p style="font-size:12px;color:#FF9F0A;margin:0 0 8px;line-height:1.4;">{{ item.reason }}</p>
+                          </sc-if>
+                          <sc-for list="{{ item.meals }}" as="m" hint-placeholder-count="3">
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;">
+                              <span style="font-size:12.5px;color:#C7C7CC;">{{ m.name }}</span>
+                              <span style="font-size:12px;color:#8E8E93;">{{ m.part }}</span>
+                            </div>
+                          </sc-for>
+                          <button type="button" onClick="{{ item.splitAction }}" style="margin-top:9px;padding:6px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#F5F5F7;font-size:12px;font-weight:600;cursor:pointer;">Split into separate items</button>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </sc-for>
+
+            <!-- ADD: QUICK INLINE ROW (BOTTOM) -->
+            <div style="margin-top:20px;">
+              <sc-if value="{{ quickActive }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:16px;background:rgba(34,34,42,.7);border:1px solid rgba(58,134,255,.5);">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3A86FF" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                  <input value="{{ quickText }}" onInput="{{ onQuickInput }}" onKeyDown="{{ onQuickKey }}" autoFocus="{{ true }}" placeholder="Add an item — I'll sort it" style="flex:1;min-width:0;background:transparent;border:none;outline:none;color:#F5F5F7;font-size:14.5px;font-family:inherit;">
+                  <button type="button" onClick="{{ submitQuick }}" style="width:30px;height:30px;border-radius:50%;background:#3A86FF;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+                  </button>
+                </div>
+                <p style="font-size:11.5px;color:#8E8E93;margin:8px 4px 0;">Enter keeps going for a quick run.</p>
+              </sc-if>
+              <sc-if value="{{ quickIdle }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ activateQuick }}" style="width:100%;display:flex;align-items:center;gap:11px;padding:14px 16px;border-radius:16px;background:transparent;border:1px dashed rgba(255,255,255,.16);color:#8E8E93;font-size:14px;font-weight:500;cursor:pointer;text-align:left;">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                  Add an item
+                </button>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ============ GOT IT ZONE (checked: one zone) ============ -->
+        <sc-if value="{{ showGotItZone }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:26px 22px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px;">
+              <button type="button" onClick="{{ toggleGotIt }}" style="display:flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;">
+                <p style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#8E8E93;margin:0;">GOT IT · {{ gotItCount }}</p>
+                <svg style="{{ gotItChevStyle }}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <button type="button" onClick="{{ clearCheckedAction }}" style="background:none;border:none;color:rgba(58,134,255,.9);font-size:12px;font-weight:600;cursor:pointer;padding:0;">Clear</button>
+            </div>
+            <sc-if value="{{ gotItOpen }}" hint-placeholder-val="{{ true }}">
+              <div style="margin-top:10px;border-radius:21px;overflow:hidden;background:rgba(34,34,42,.4);border:1px solid rgba(255,255,255,.05);">
+                <sc-for list="{{ gotItItems }}" as="item" hint-placeholder-count="3">
+                  <div onClick="{{ item.tap }}" style="display:flex;align-items:center;gap:13px;padding:12px 15px;cursor:pointer;border-top:1px solid rgba(255,255,255,.05);">
+                    <span style="width:22px;height:22px;border-radius:7px;background:#3A86FF;display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+                    </span>
+                    <span style="flex:1;font-size:14.5px;color:#8E8E93;text-decoration:line-through;">{{ item.name }}</span>
+                    <span style="font-size:12.5px;color:rgba(142,142,147,.6);">{{ item.qty }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+      </div><!-- /scroll -->
+
+      <!-- ============ TAB BAR ============ -->
+      <nav style="position:absolute;bottom:0;left:0;right:0;z-index:35;height:84px;padding-bottom:18px;background:rgba(26,26,30,.72);backdrop-filter:blur(24px) saturate(180%);border-top:1px solid rgba(255,255,255,.06);border-radius:22px 22px 0 0;">
+        <div style="display:flex;align-items:center;justify-content:space-around;height:66px;padding:0 8px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#8E8E93;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span style="font-size:10px;font-weight:500;">Plan</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#8E8E93;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+            <span style="font-size:10px;font-weight:500;">Recipes</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#3A86FF;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+            <span style="font-size:10px;font-weight:600;">Groceries</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:3px;color:#8E8E93;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span style="font-size:10px;font-weight:500;">You</span>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(255,255,255,.28);"></div>
+      </nav>
+
+      <!-- ============ TOAST ============ -->
+      <sc-if value="{{ toastVisible }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;bottom:118px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;padding:11px 18px;border-radius:14px;background:rgba(26,26,30,.96);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 40px -10px rgba(0,0,0,.8);animation:toastIn .26s cubic-bezier(.2,.9,.3,1);white-space:nowrap;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>
+          <span style="font-size:13.5px;font-weight:500;color:#F5F5F7;">{{ toast }}</span>
+        </div>
+      </sc-if>
+
+      <!-- ============ REVIEW OVERLAY (merge b) ============ -->
+      <sc-if value="{{ reviewOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeReview }}" style="position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.55);animation:veilIn .2s ease;"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:71;max-height:78%;display:flex;flex-direction:column;border-radius:26px 26px 46px 46px;background:rgba(26,26,30,.98);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.09);animation:sheetUp .3s cubic-bezier(.2,.9,.3,1);">
+          <div style="padding:18px 22px 10px;">
+            <div style="width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);margin:0 auto 16px;"></div>
+            <h2 style="font-size:19px;font-weight:700;margin:0;">{{ mergedCount }} items combined</h2>
+            <p style="font-size:13px;color:#8E8E93;margin:5px 0 0;">Kept merged unless you split them. Tap to check my work.</p>
+          </div>
+          <div class="om-scroll" style="flex:1;overflow-y:auto;padding:6px 22px 6px;">
+            <sc-for list="{{ mergedItems }}" as="m" hint-placeholder-count="5">
+              <div style="padding:14px 0;border-top:1px solid rgba(255,255,255,.06);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="flex:1;min-width:0;">
+                    <p style="font-size:15px;font-weight:600;margin:0;">{{ m.name }} <span style="color:#8E8E93;font-weight:400;font-size:13px;">{{ m.qty }}</span><sc-if value="{{ m.showDot }}" hint-placeholder-val="{{ false }}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#FF9F0A;margin-left:7px;vertical-align:middle;"></span></sc-if></p>
+                    <p style="font-size:12px;color:#8E8E93;margin:3px 0 0;">{{ m.provenance }}</p>
+                  </div>
+                  <div style="{{ m.pillStyle }}">{{ m.pillLabel }}</div>
+                  <button type="button" onClick="{{ m.toggleSplit }}" style="{{ m.btnStyle }}">{{ m.btnLabel }}</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="padding:14px 22px 30px;border-top:1px solid rgba(255,255,255,.06);">
+            <button type="button" onClick="{{ closeReview }}" style="width:100%;padding:14px;border-radius:14px;background:#3A86FF;color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;">Looks good</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ============ TALK TO CHEF SHEET ============ -->
+      <sc-if value="{{ chefOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeChef }}" style="position:absolute;inset:0;z-index:70;background:rgba(0,0,0,.55);animation:veilIn .2s ease;"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;z-index:71;border-radius:26px 26px 46px 46px;background:rgba(26,26,30,.98);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(255,255,255,.09);animation:sheetUp .3s cubic-bezier(.2,.9,.3,1);padding:18px 20px 32px;">
+          <div style="width:38px;height:5px;border-radius:3px;background:rgba(255,255,255,.18);margin:0 auto 16px;"></div>
+          <h2 style="font-size:18px;font-weight:700;margin:0 0 14px;">What else do you need?</h2>
+          <div class="om-scroll" style="display:flex;gap:8px;overflow-x:auto;margin:0 -20px 14px;padding:0 20px 2px;">
+            <sc-for list="{{ chefPills }}" as="p" hint-placeholder-count="4">
+              <button type="button" onClick="{{ p.pick }}" style="flex:0 0 auto;padding:9px 14px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(245,245,247,.9);font-size:13.5px;cursor:pointer;white-space:nowrap;">{{ p.label }}</button>
+            </sc-for>
+          </div>
+          <div style="position:relative;">
+            <textarea value="{{ chefText }}" onInput="{{ onChefInput }}" placeholder="Tell me what you're out of, or a meal to shop for…" rows="3" style="width:100%;resize:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px 52px 13px 14px;color:#F5F5F7;font-size:15px;font-family:inherit;outline:none;min-height:88px;"></textarea>
+            <button type="button" onClick="{{ submitChef }}" style="{{ chefSendStyle }}">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+            </button>
+          </div>
+          <sc-if value="{{ chefWorking }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;">
+              <p style="font-size:13px;color:rgba(58,134,255,.92);margin:0;">Reading your list and combining…</p>
+              <div style="height:2px;border-radius:2px;margin-top:8px;background:rgba(255,255,255,.06);overflow:hidden;"><div style="height:100%;width:100%;background:linear-gradient(90deg,transparent,rgba(58,134,255,.75),transparent);background-size:200% 100%;animation:shimmer-bar 1.2s ease-in-out infinite;"></div></div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- ===================== CONTROL PANEL ===================== -->
+  <div style="flex:0 0 auto;width:300px;position:sticky;top:44px;padding:22px;border-radius:24px;background:rgba(26,26,30,.72);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(255,255,255,.08);">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#8E8E93;margin:0 0 4px;">PROTOTYPE CONTROLS</p>
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 18px;">Groceries · Phase 1D</h2>
+
+    <p style="font-size:12px;font-weight:600;color:#C7C7CC;margin:0 0 4px;">One living list <span style="color:#8E8E93;font-weight:400;">· no modes</span></p>
+    <p style="font-size:11.5px;color:#8E8E93;margin:0 0 8px;line-height:1.4;">Edit, check off, reorder, and add all in one view — like a notepad.</p>
+    <button type="button" onClick="{{ replayBuild }}" style="width:100%;padding:9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#C7C7CC;font-size:12px;font-weight:600;cursor:pointer;margin-bottom:20px;">Replay build intro</button>
+
+    <p style="font-size:12px;font-weight:600;color:#C7C7CC;margin:0 0 4px;">Organize <span style="color:#8E8E93;font-weight:400;">· your store order</span></p>
+    <p style="font-size:11.5px;color:#8E8E93;margin:0 0 8px;line-height:1.4;">{{ orgDesc }}</p>
+    <div style="display:flex;gap:6px;margin-bottom:20px;">
+      <button type="button" onClick="{{ org.aisle }}" style="{{ ctrl.orgAisle }}">Grouped</button>
+      <button type="button" onClick="{{ org.manual }}" style="{{ ctrl.orgManual }}">Ungrouped</button>
+    </div>
+
+    <p style="font-size:12px;font-weight:600;color:#C7C7CC;margin:0 0 4px;">Merge review <span style="color:#8E8E93;font-weight:400;">· the centerpiece</span></p>
+    <p style="font-size:11.5px;color:#8E8E93;margin:0 0 8px;line-height:1.4;">{{ mergeDesc }}</p>
+    <div style="display:flex;gap:6px;margin-bottom:20px;">
+      <button type="button" onClick="{{ merge.a }}" style="{{ ctrl.mergeA }}">a · Inline</button>
+      <button type="button" onClick="{{ merge.b }}" style="{{ ctrl.mergeB }}">b · Pass</button>
+      <button type="button" onClick="{{ merge.c }}" style="{{ ctrl.mergeC }}">c · Silent</button>
+    </div>
+
+    <p style="font-size:12px;font-weight:600;color:#C7C7CC;margin:0 0 4px;">Checked items <span style="color:#8E8E93;font-weight:400;">· in-store</span></p>
+    <p style="font-size:11.5px;color:#8E8E93;margin:0 0 8px;line-height:1.4;">{{ checkDesc }} <span style="color:rgba(58,134,255,.9);">Tap a checkbox to see it.</span></p>
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <button type="button" onClick="{{ chk.place }}" style="{{ ctrl.chkPlace }}">In place</button>
+      <button type="button" onClick="{{ chk.aisle }}" style="{{ ctrl.chkAisle }}">Per aisle</button>
+      <button type="button" onClick="{{ chk.zone }}" style="{{ ctrl.chkZone }}">One zone</button>
+    </div>
+
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);">
+      <button type="button" onClick="{{ resetDemo }}" style="width:100%;padding:9px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:#8E8E93;font-size:12px;font-weight:600;cursor:pointer;">Reset list</button>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:940},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3A86FF&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#3A86FF&quot;,&quot;#FF9F0A&quot;,&quot;#30D158&quot;,&quot;#5E5CE6&quot;]}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.uid = 100;
+    const items = this.seed();
+    this.state = {
+      building: false,
+      mergeMode: 'a',
+      checkedMode: 'place',
+      organizeMode: 'aisle',
+      reorderAisles: false,
+      aisleOrder: this.ORDER().slice(),
+      manualOrder: this.initialManual(items),
+      items,
+      expandedId: null,
+      editing: null,
+      editText: '',
+      dismissed: {},
+      dragId: null,
+      dragKind: null,
+      collapseSections: false,
+      reviewOpen: false,
+      chefOpen: false,
+      chefText: '',
+      chefWorking: false,
+      quickActive: false,
+      quickText: '',
+      topText: '',
+      gotItOpen: true,
+      toast: null,
+      buildStep: 0,
+    };
+    this._timers = [];
+  }
+
+  componentWillUnmount() { this._timers.forEach(clearTimeout); }
+
+  CATS() {
+    return {
+      produce: 'Produce', meat: 'Meat', seafood: 'Seafood', dairy: 'Dairy & eggs',
+      bakery: 'Bakery', frozen: 'Frozen', pantry: 'Pantry', spices: 'Spices & oils',
+      beverages: 'Beverages', household: 'Household', other: 'Other',
+    };
+  }
+  ORDER() { return ['produce','meat','seafood','dairy','bakery','frozen','pantry','spices','beverages','household','other']; }
+
+  initialManual(items) {
+    const out = [];
+    this.ORDER().forEach(cat => items.filter(i => i.category === cat).forEach(i => out.push(i.id)));
+    return out;
+  }
+
+  seed() {
+    const it = (o) => ({ id: ++this.uid, checked: false, sourceType: 'recipe', mealCount: 1, meals: [], uncertain: false, reason: '', qty: '', ...o });
+    return [
+      it({ name: 'Garlic', qty: '2 heads', category: 'produce', mealCount: 4, meals: [{name:'Miso-Glazed Salmon',part:'2 cloves'},{name:'Shrimp Pasta',part:'4 cloves'},{name:'Ribeye & Tomatoes',part:'2 cloves'},{name:'Herb Roast Chicken',part:'1 head'}] }),
+      it({ name: 'Lemon', qty: '4', category: 'produce', mealCount: 3, uncertain: true, reason: 'Combined 2 whole + juice + zest across 3 dinners — check the count.', meals: [{name:'Miso-Glazed Salmon',part:'1, for zest'},{name:'Shrimp Pasta',part:'2, juiced'},{name:'Herb Roast Chicken',part:'1, halved'}] }),
+      it({ name: 'Yellow onion', qty: '3', category: 'produce', mealCount: 2, meals: [{name:'Sausage & Peppers',part:'2'},{name:'Herb Roast Chicken',part:'1'}] }),
+      it({ name: 'Tomatoes', qty: '2 pints', category: 'produce', mealCount: 2, uncertain: true, reason: 'Merged cherry (Ribeye) + roma (Sausage & Peppers) — different types.', meals: [{name:'Ribeye & Tomatoes',part:'1 pint cherry'},{name:'Sausage & Peppers',part:'3 roma'}] }),
+      it({ name: 'Broccoli', qty: '1 lb', category: 'produce' , meals:[{name:'Chicken Thighs',part:'1 lb'}]}),
+      it({ name: 'Bell peppers', qty: '3', category: 'produce', meals:[{name:'Sausage & Peppers',part:'3'}] }),
+      it({ name: 'Flat-leaf parsley', qty: '1 bunch', category: 'produce', mealCount: 2, meals: [{name:'Shrimp Pasta',part:'handful'},{name:'Herb Roast Chicken',part:'handful'}] }),
+      it({ name: 'Carrots', qty: '1 lb', category: 'produce', meals:[{name:'Herb Roast Chicken',part:'1 lb'}] }),
+
+      it({ name: 'Chicken thighs', qty: '6', category: 'meat', meals:[{name:'Chicken Thighs & Broccoli',part:'6, bone-in'}] }),
+      it({ name: 'Whole chicken', qty: '1 (4 lb)', category: 'meat', meals:[{name:'Herb Roast Chicken',part:'1 whole'}] }),
+      it({ name: 'Italian sausage', qty: '1 lb', category: 'meat', meals:[{name:'Sausage & Peppers',part:'1 lb'}] }),
+      it({ name: 'Ribeye steaks', qty: '2', category: 'meat', meals:[{name:'Ribeye & Tomatoes',part:'2, 1-inch'}] }),
+
+      it({ name: 'Salmon fillets', qty: '2', category: 'seafood', meals:[{name:'Miso-Glazed Salmon',part:'2, skin-on'}] }),
+      it({ name: 'Large shrimp', qty: '1 lb', category: 'seafood', meals:[{name:'Shrimp Pasta',part:'1 lb, peeled'}] }),
+
+      it({ name: 'Unsalted butter', qty: '1 lb', category: 'dairy', sourceType: 'staple', mealCount: 3, meals: [{name:'Shrimp Pasta',part:'3 tbsp'},{name:'Herb Roast Chicken',part:'2 tbsp'},{name:'Staple',part:'on hand'}] }),
+      it({ name: 'Parmesan', qty: '6 oz', category: 'dairy', meals:[{name:'Shrimp Pasta',part:'6 oz, grated'}] }),
+      it({ name: 'Heavy cream', qty: '1 cup', category: 'dairy', meals:[{name:'Shrimp Pasta',part:'1 cup'}] }),
+
+      it({ name: 'Spaghetti', qty: '1 lb', category: 'pantry', meals:[{name:'Shrimp Pasta',part:'1 lb'}] }),
+      it({ name: 'White miso paste', qty: '1 jar', category: 'pantry', meals:[{name:'Miso-Glazed Salmon',part:'3 tbsp'}] }),
+      it({ name: 'Chicken broth', qty: '1 qt', category: 'pantry', meals:[{name:'Herb Roast Chicken',part:'1 qt'}] }),
+      it({ name: 'Olive oil', qty: '', category: 'spices', sourceType: 'staple', meals:[{name:'Staple',part:'restock'}] }),
+      it({ name: 'Kosher salt', qty: '', category: 'spices', sourceType: 'staple', meals:[{name:'Staple',part:'on hand'}] }),
+      it({ name: 'Red pepper flakes', qty: '1 jar', category: 'spices', meals:[{name:'Shrimp Pasta',part:'pinch'}] }),
+    ];
+  }
+
+  // ---------- helpers ----------
+  toast(msg) {
+    this.setState({ toast: msg });
+    const t = setTimeout(() => this.setState({ toast: null }), 2200);
+    this._timers.push(t);
+  }
+  catFor(name) {
+    const n = name.toLowerCase();
+    const map = [
+      ['produce', ['apple','banana','avocado','lettuce','spinach','tomato','onion','pepper','lemon','lime','herb','cilantro','garlic','potato','carrot','broccoli','kale','berr','grape','cucumber']],
+      ['dairy', ['milk','cheese','yogurt','egg','butter','cream']],
+      ['meat', ['chicken','beef','pork','steak','sausage','bacon','turkey','ground']],
+      ['seafood', ['fish','salmon','shrimp','tuna','cod']],
+      ['bakery', ['bread','bagel','tortilla','bun','roll']],
+      ['frozen', ['frozen','ice cream','pizza']],
+      ['beverages', ['coffee','tea','juice','soda','water','wine','beer']],
+      ['household', ['paper','towel','soap','detergent','trash','foil','wrap','sponge']],
+      ['spices', ['salt','pepper','oil','vinegar','spice','cumin','paprika']],
+    ];
+    for (const [cat, kws] of map) if (kws.some(k => n.includes(k))) return cat;
+    return 'other';
+  }
+  addItem(name, category, sourceType) {
+    const item = { id: ++this.uid, name, qty: '', category: category || this.catFor(name), sourceType: sourceType || 'manual', mealCount: 1, meals: [], uncertain: false, reason: '', checked: false };
+    this.setState(s => ({ items: [...s.items, item], manualOrder: [...s.manualOrder, item.id] }));
+    return item;
+  }
+
+  // ---------- inline editing ----------
+  beginEdit(id, field) {
+    const item = this.state.items.find(i => i.id === id);
+    if (!item) return;
+    this.setState({ editing: { id, field }, editText: field === 'qty' ? (item.qty || '') : item.name });
+  }
+  changeEdit(v) { this.setState({ editText: v }); }
+  commitEdit() {
+    const e = this.state.editing;
+    if (!e) return;
+    const v = this.state.editText.trim();
+    this.setState(s => ({
+      items: s.items.map(i => i.id === e.id ? { ...i, [e.field]: e.field === 'name' ? (v || i.name) : v } : i),
+      editing: null, editText: '',
+    }));
+  }
+  cancelEdit() { this.setState({ editing: null, editText: '' }); }
+
+  // ---------- organize / reorder ----------
+  setOrganize(mode) { this.setState({ organizeMode: mode, reorderAisles: false, editing: null }); }
+  toggleReorder() { this.setState(s => ({ reorderAisles: !s.reorderAisles })); }
+  moveBefore(arr, id, overId) {
+    const a = arr.slice();
+    const from = a.indexOf(id);
+    if (from < 0) return arr;
+    a.splice(from, 1);
+    let to = a.indexOf(overId);
+    if (to < 0) to = a.length;
+    a.splice(to, 0, id);
+    return a;
+  }
+  onDragStart(kind, id) {
+    this.setState({ dragId: id, dragKind: kind });
+    if (kind === 'aisle') { const t = setTimeout(() => this.setState({ collapseSections: true }), 0); this._timers.push(t); }
+  }
+  onDragEnter(kind, overId) {
+    const { dragId, dragKind } = this.state;
+    if (dragId == null || dragKind !== kind || dragId === overId) return;
+    if (kind === 'item') this.setState(s => ({ manualOrder: this.moveBefore(s.manualOrder, dragId, overId) }));
+    else this.setState(s => ({ aisleOrder: this.moveBefore(s.aisleOrder, dragId, overId) }));
+  }
+  onDragEnd() { this.setState({ dragId: null, dragKind: null, collapseSections: false }); }
+
+  // ---------- checking / clearing ----------
+  toggleCheck(id) { this.setState(s => ({ items: s.items.map(i => i.id === id ? { ...i, checked: !i.checked } : i) })); }
+  clearChecked() {
+    this.setState(s => {
+      const keep = s.items.filter(i => !i.checked);
+      const keepIds = new Set(keep.map(i => i.id));
+      return { items: keep, manualOrder: s.manualOrder.filter(id => keepIds.has(id)) };
+    });
+    this.toast('Cleared checked items');
+  }
+
+  // ---------- build intro (replayable) ----------
+  runBuild() {
+    this._timers.forEach(clearTimeout); this._timers = [];
+    this.setState({ building: true, buildStep: 0 });
+    [1,2,3,4].forEach((n) => {
+      const t = setTimeout(() => this.setState({ buildStep: n }), n * 650);
+      this._timers.push(t);
+    });
+    const done = setTimeout(() => this.setState({ building: false }), 4 * 650 + 500);
+    this._timers.push(done);
+  }
+
+  // ---------- interactions ----------
+  toggleExpand(id) { this.setState(s => ({ expandedId: s.expandedId === id ? null : id })); }
+  resolveUncertain(id) { this.setState(s => ({ items: s.items.map(i => i.id === id ? { ...i, uncertain: false } : i) })); }
+  splitUncertain(id) { this.resolveUncertain(id); this.toast('Split into separate items'); }
+  splitMerge(id) {
+    this.setState(s => ({ items: s.items.map(i => i.id === id ? { ...i, mealCount: 1, uncertain: false } : i), expandedId: null }));
+    this.toast('Split into separate items');
+  }
+
+  submitTop() {
+    const t = this.state.topText.trim();
+    if (!t) return;
+    this.addItem(t, this.catFor(t), 'manual');
+    this.setState({ topText: '' });
+    this.toast('Added ' + t);
+  }
+  submitQuick() {
+    const t = this.state.quickText.trim();
+    if (!t) return;
+    this.addItem(t, this.catFor(t), 'manual');
+    this.setState({ quickText: '' });
+    this.toast('Added ' + t);
+  }
+  submitChef() {
+    const t = this.state.chefText.trim();
+    if (!t || this.state.chefWorking) return;
+    this.setState({ chefWorking: true });
+    const parsed = this.parseChef(t);
+    const done = setTimeout(() => {
+      parsed.forEach(p => this.addItem(p.name, p.category, 'manual'));
+      this.setState({ chefWorking: false, chefOpen: false, chefText: '' });
+      this.toast('Added ' + parsed.length + ' items');
+    }, 1300);
+    this._timers.push(done);
+  }
+  parseChef(t) {
+    const s = t.toLowerCase();
+    if (s.includes('taco')) return [{name:'Ground beef',category:'meat'},{name:'Tortillas',category:'bakery'},{name:'Shredded cheese',category:'dairy'},{name:'Salsa',category:'pantry'},{name:'Avocados',category:'produce'}];
+    if (s.includes('coffee') || s.includes('out of')) return [{name:'Coffee beans',category:'beverages'},{name:'Paper towels',category:'household'}];
+    if (s.includes('breakfast')) return [{name:'Eggs',category:'dairy'},{name:'Bacon',category:'meat'},{name:'Bread',category:'bakery'}];
+    const parts = t.split(/,| and /i).map(x => x.trim()).filter(Boolean).slice(0, 5);
+    return parts.length ? parts.map(p => ({ name: p.charAt(0).toUpperCase() + p.slice(1), category: this.catFor(p) })) : [{ name: t, category: this.catFor(t) }];
+  }
+
+  // ---------- render ----------
+  renderVals() {
+    const s = this.state;
+    const accent = this.props.accent || '#3A86FF';
+    const CATS = this.CATS();
+
+    const segBase = { flex: 1, padding: '8px 4px', borderRadius: 9, fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'center', transition: 'all .15s', lineHeight: 1.1 };
+    const on = { ...segBase, background: accent, color: '#fff', border: '1px solid ' + accent };
+    const off = { ...segBase, background: 'rgba(255,255,255,.04)', color: '#8E8E93', border: '1px solid rgba(255,255,255,.08)' };
+    const seg = (b) => b ? on : off;
+
+    const pillBase = { padding: '6px 14px', borderRadius: 9, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', border: 'none', transition: 'all .15s' };
+    const pillOn = { ...pillBase, background: accent, color: '#fff' };
+    const pillOff = { ...pillBase, background: 'transparent', color: '#8E8E93' };
+
+    const decorate = (item, opts = {}) => {
+      const strike = item.checked;
+      const mergeableInline = s.mergeMode === 'a' && item.mealCount > 1;
+      const expanded = s.expandedId === item.id && item.mealCount > 1;
+      const editingName = s.editing && s.editing.id === item.id && s.editing.field === 'name';
+      const editingQty = s.editing && s.editing.id === item.id && s.editing.field === 'qty';
+
+      let meta = '';
+      if (s.mergeMode === 'a') {
+        if (item.mealCount > 1) meta = item.mealCount + ' dinners';
+        else if (item.sourceType === 'staple') meta = 'staple';
+        else if (item.sourceType === 'manual') meta = 'added by you';
+      }
+      const showMeta = meta.length > 0;
+
+      const box = {
+        width: 22, height: 22, borderRadius: 7, flex: '0 0 auto', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: item.checked ? '1px solid ' + accent : '1.5px solid rgba(255,255,255,.28)',
+        background: item.checked ? accent : 'transparent', transition: 'all .15s',
+      };
+
+      const dragging = s.dragId === item.id && s.dragKind === 'item';
+
+      return {
+        id: item.id,
+        name: item.name,
+        checked: item.checked,
+        uncertain: item.uncertain,
+        reason: item.reason,
+        meals: item.meals,
+        expanded,
+        showDot: item.uncertain && s.mergeMode === 'a',
+        showChevron: mergeableInline,
+        showMeta,
+        meta,
+        dividerBefore: !!opts.dividerBefore,
+        draggable: !!opts.drag && !editingName && !editingQty,
+        dragStart: () => this.onDragStart('item', item.id),
+        dragEnter: () => this.onDragEnter('item', item.id),
+        dragOver: (e) => { if (opts.drag) e.preventDefault(); },
+        dragEnd: () => this.onDragEnd(),
+        toggleCheck: () => this.toggleCheck(item.id),
+        expand: () => this.toggleExpand(item.id),
+        splitAction: () => this.splitMerge(item.id),
+        editName: editingName,
+        editQty: editingQty,
+        showNameText: !editingName,
+        showQtyText: !editingQty,
+        editText: s.editText,
+        onNameTap: () => this.beginEdit(item.id, 'name'),
+        onQtyTap: () => this.beginEdit(item.id, 'qty'),
+        onEditInput: (e) => this.changeEdit(e.target.value),
+        onEditKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.commitEdit(); } else if (e.key === 'Escape') { this.cancelEdit(); } },
+        onEditBlur: () => this.commitEdit(),
+        qtyLabel: item.qty || 'qty',
+        wrapStyle: { borderTop: opts.first ? 'none' : '1px solid rgba(255,255,255,.05)', opacity: dragging ? 0.4 : 1 },
+        rowStyle: { display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', opacity: item.checked ? 0.5 : 1, transition: 'opacity .2s', cursor: opts.drag ? 'grab' : 'default' },
+        boxStyle: box,
+        nameStyle: { fontSize: 14.5, fontWeight: 500, margin: 0, color: '#F5F5F7', textDecoration: strike ? 'line-through' : 'none', cursor: 'text' },
+        nameEditStyle: { fontSize: 14.5, fontWeight: 500, color: '#F5F5F7', background: 'rgba(58,134,255,.12)', border: 'none', borderRadius: 6, padding: '3px 6px', outline: 'none', width: '100%', fontFamily: 'inherit' },
+        metaStyle: { fontSize: 11.5, color: item.uncertain ? '#FF9F0A' : '#8E8E93', margin: '2px 0 0' },
+        qtyStyle: { fontSize: 13, color: item.qty ? '#8E8E93' : 'rgba(142,142,147,.45)', flex: '0 0 auto', textDecoration: strike ? 'line-through' : 'none', cursor: 'text', padding: '3px 6px', borderRadius: 6, background: 'rgba(255,255,255,.04)' },
+        qtyEditStyle: { fontSize: 13, color: '#F5F5F7', background: 'rgba(58,134,255,.12)', border: 'none', borderRadius: 6, padding: '3px 6px', outline: 'none', width: 72, textAlign: 'right', fontFamily: 'inherit', flex: '0 0 auto' },
+        chevStyle: { transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flex: '0 0 auto', cursor: 'pointer' },
+      };
+    };
+
+    const byId = new Map(s.items.map(i => [i.id, i]));
+    const seq = s.manualOrder.filter(id => byId.has(id));
+    s.items.forEach(i => { if (!seq.includes(i.id)) seq.push(i.id); });
+    const baseItems = seq.map(id => byId.get(id));
+    const draggingSection = s.collapseSections;
+
+    let gotItItems = null;
+    let workingItems = baseItems;
+    if (s.checkedMode === 'zone') {
+      gotItItems = baseItems.filter(i => i.checked);
+      workingItems = baseItems.filter(i => !i.checked);
+    }
+
+    let sections = [];
+    if (s.organizeMode === 'manual') {
+      sections = [{
+        key: 'manual', name: null, showHeader: false, count: workingItems.length,
+        reorderable: false, showItems: true, headerStyle: {}, dragStart: () => {}, dragEnter: () => {}, dragOver: (e) => {}, dragEnd: () => {},
+        items: workingItems.map((i, idx) => decorate(i, { first: idx === 0, drag: true })),
+      }];
+    } else {
+      sections = s.aisleOrder.map(cat => {
+        let its = workingItems.filter(i => i.category === cat);
+        if (!its.length) return null;
+        let firstCheckedIdx = -1;
+        if (s.checkedMode === 'aisle') {
+          const un = its.filter(i => !i.checked);
+          const ch = its.filter(i => i.checked);
+          firstCheckedIdx = ch.length ? un.length : -1;
+          its = [...un, ...ch];
+        }
+        const reorderable = true;
+        const dragging = s.dragId === cat && s.dragKind === 'aisle';
+        return {
+          key: cat, name: CATS[cat], showHeader: true, count: its.length,
+          reorderable,
+          showItems: !draggingSection,
+          headerStyle: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 4px 10px', opacity: dragging ? 0.4 : 1, cursor: 'grab' },
+          dragStart: () => this.onDragStart('aisle', cat),
+          dragEnter: () => this.onDragEnter('aisle', cat),
+          dragOver: (e) => { e.preventDefault(); },
+          dragEnd: () => this.onDragEnd(),
+          items: its.map((i, idx) => decorate(i, { first: idx === 0, drag: true, dividerBefore: s.checkedMode === 'aisle' && idx === firstCheckedIdx && firstCheckedIdx >= 0 })),
+        };
+      }).filter(Boolean);
+    }
+
+    const total = s.items.length;
+    const checkedCount = s.items.filter(i => i.checked).length;
+    const remaining = total - checkedCount;
+    const pct = total ? Math.round((checkedCount / total) * 100) : 0;
+
+    const mergedRaw = s.items.filter(i => i.mealCount > 1);
+    const uncertainRaw = s.items.filter(i => i.uncertain);
+    const mergedItems = mergedRaw.map(i => ({
+      name: i.name, qty: i.qty, showDot: i.uncertain,
+      provenance: 'From ' + i.meals.map(m => m.name).slice(0,3).join(', '),
+      pillLabel: 'Merged', pillStyle: { fontSize: 11, fontWeight: 600, color: accent, padding: '4px 9px', borderRadius: 8, background: 'rgba(58,134,255,.12)', flex: '0 0 auto' },
+      btnLabel: 'Split', btnStyle: { padding: '6px 11px', borderRadius: 10, background: 'transparent', border: '1px solid rgba(255,255,255,.14)', color: '#8E8E93', fontSize: 12, fontWeight: 600, cursor: 'pointer', flex: '0 0 auto' },
+      toggleSplit: () => this.splitMerge(i.id),
+    }));
+    const uncertainItems = uncertainRaw.map(i => ({
+      name: i.name, qty: i.qty, reason: i.reason,
+      keep: () => this.resolveUncertain(i.id),
+      split: () => this.splitUncertain(i.id),
+    }));
+
+    const stepLabels = ['Reviewing your 6 dinners', 'Combining shared ingredients', 'Pulling in your staples', 'Sorting by aisle'];
+    const buildSteps = stepLabels.map((label, i) => {
+      const done = s.buildStep > i;
+      const active = s.buildStep === i;
+      return {
+        label,
+        dotStyle: done
+          ? { width: 18, height: 18, borderRadius: '50%', flex: '0 0 auto', background: accent }
+          : active
+            ? { width: 18, height: 18, borderRadius: '50%', flex: '0 0 auto', border: '2px solid ' + accent }
+            : { width: 18, height: 18, borderRadius: '50%', flex: '0 0 auto', border: '2px solid rgba(255,255,255,.14)' },
+        textStyle: { fontSize: 14.5, color: done ? '#F5F5F7' : active ? '#F5F5F7' : '#8E8E93', fontWeight: active ? 600 : 400 },
+      };
+    });
+
+    const stapleDefs = [
+      { name: 'Whole milk', category: 'dairy' }, { name: 'Eggs', category: 'dairy' },
+      { name: 'Coffee beans', category: 'beverages' }, { name: 'Bananas', category: 'produce' },
+      { name: 'Paper towels', category: 'household' }, { name: 'Greek yogurt', category: 'dairy' },
+    ];
+    const staples = stapleDefs.filter(d => !s.dismissed[d.name]).map(d => ({
+      name: d.name,
+      add: () => { this.addItem(d.name, d.category, 'staple'); this.setState(st => ({ dismissed: { ...st.dismissed, [d.name]: true } })); this.toast('Added ' + d.name); },
+    }));
+
+    const chefPillDefs = ['Add taco night', "I'm out of coffee", 'Something for breakfast', 'Snacks for the week'];
+    const chefPills = chefPillDefs.map(l => ({ label: l, pick: () => this.setState({ chefText: l }) }));
+
+    const mergeDescMap = {
+      a: 'The list is the review — provenance inline, tap any combined item to see the breakdown and split it.',
+      b: 'One review pass — glance at just the merges, keep or split, then dismiss.',
+      c: 'Silent merge — clean list, only the uncertain combines surface for a double-check.',
+    };
+    const checkDescMap = {
+      place: 'Checked items cross out and dim where they are — aisle order never shifts.',
+      aisle: 'Checked items sink under a "Got it" divider inside each aisle.',
+      zone: 'Everything checked collapses into one "Got it" zone at the very bottom.',
+    };
+    const orgDescMap = {
+      aisle: 'Grouped by aisle \u2014 drag any section into your store\u2019s order.',
+      manual: 'One flat list, no groups \u2014 drag any ingredient into the exact order you want.',
+    };
+
+    return {
+      isBuilding: s.building,
+      showList: !s.building,
+      allChecked: total > 0 && checkedCount === total,
+
+      checkedCount, total, remaining,
+      progressBarStyle: { height: '100%', width: pct + '%', background: accent, borderRadius: 6, transition: 'width .3s ease' },
+      showClearChecked: checkedCount > 0,
+      clearCheckedAction: () => this.clearChecked(),
+
+      org: { aisle: () => this.setOrganize('aisle'), manual: () => this.setOrganize('manual') },
+      orgAisleStyle: s.organizeMode === 'aisle' ? pillOn : pillOff,
+      orgManualStyle: s.organizeMode === 'manual' ? pillOn : pillOff,
+      reorderHint: s.organizeMode === 'manual' ? 'Drag any item to reorder' : 'Drag a section to reorder',
+
+      showReviewBanner: s.mergeMode === 'b',
+      showDoubleCheck: s.mergeMode === 'c' && uncertainRaw.length > 0,
+      mergedCount: mergedRaw.length,
+      mergedItems,
+      uncertainItems,
+      uncertainCount: uncertainRaw.length,
+      uncertainNoun: uncertainRaw.length === 1 ? 'item' : 'items',
+      reviewOpen: s.reviewOpen,
+      openReview: () => this.setState({ reviewOpen: true }),
+      closeReview: () => this.setState({ reviewOpen: false }),
+
+      topText: s.topText,
+      onTopInput: (e) => this.setState({ topText: e.target.value }),
+      onTopKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.submitTop(); } },
+
+      showStaplesRow: staples.length > 0,
+      staples,
+
+      openChef: () => this.setState({ chefOpen: true }),
+      closeChef: () => this.setState({ chefOpen: false, chefText: '' }),
+      chefOpen: s.chefOpen,
+      chefText: s.chefText,
+      chefWorking: s.chefWorking,
+      chefPills,
+      onChefInput: (e) => this.setState({ chefText: e.target.value }),
+      submitChef: () => this.submitChef(),
+      chefSendStyle: { position: 'absolute', bottom: 10, right: 10, width: 36, height: 36, borderRadius: '50%', background: s.chefText.trim() ? accent : 'rgba(255,255,255,.12)', border: 'none', cursor: s.chefText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' },
+
+      quickActive: s.quickActive,
+      quickIdle: !s.quickActive,
+      quickText: s.quickText,
+      activateQuick: () => this.setState({ quickActive: true }),
+      onQuickInput: (e) => this.setState({ quickText: e.target.value }),
+      onQuickKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.submitQuick(); } },
+      submitQuick: () => this.submitQuick(),
+
+      showGotItZone: s.checkedMode === 'zone' && checkedCount > 0,
+      gotItItems: gotItItems ? gotItItems.map(i => ({ name: i.name, qty: i.qty, tap: () => this.toggleCheck(i.id) })) : [],
+      gotItCount: gotItItems ? gotItItems.length : 0,
+      gotItOpen: s.gotItOpen,
+      toggleGotIt: () => this.setState(st => ({ gotItOpen: !st.gotItOpen })),
+      gotItChevStyle: { transform: s.gotItOpen ? 'rotate(180deg)' : 'none', transition: 'transform .2s' },
+
+      sections,
+      buildSteps,
+
+      replayBuild: () => this.runBuild(),
+      resetDemo: () => { this._timers.forEach(clearTimeout); this._timers = []; const items = this.seed(); this.setState({ items, manualOrder: this.initialManual(items), aisleOrder: this.ORDER().slice(), organizeMode: 'aisle', reorderAisles: false, building: false, expandedId: null, editing: null, editText: '', quickActive: false, quickText: '', topText: '', dismissed: {}, reviewOpen: false, chefOpen: false, chefText: '', toast: null }); },
+
+      toast: s.toast, toastVisible: !!s.toast,
+
+      merge: { a: () => this.setState({ mergeMode: 'a', reviewOpen: false }), b: () => this.setState({ mergeMode: 'b', expandedId: null }), c: () => this.setState({ mergeMode: 'c', expandedId: null }) },
+      chk: { place: () => this.setState({ checkedMode: 'place' }), aisle: () => this.setState({ checkedMode: 'aisle' }), zone: () => this.setState({ checkedMode: 'zone' }) },
+      ctrl: {
+        orgAisle: seg(s.organizeMode === 'aisle'), orgManual: seg(s.organizeMode === 'manual'),
+        mergeA: seg(s.mergeMode === 'a'), mergeB: seg(s.mergeMode === 'b'), mergeC: seg(s.mergeMode === 'c'),
+        chkPlace: seg(s.checkedMode === 'place'), chkAisle: seg(s.checkedMode === 'aisle'), chkZone: seg(s.checkedMode === 'zone'),
+      },
+      orgDesc: orgDescMap[s.organizeMode],
+      mergeDesc: mergeDescMap[s.mergeMode],
+      checkDesc: checkDescMap[s.checkedMode],
+    };
+  }
+}
+</script>
+</body>
+</html>

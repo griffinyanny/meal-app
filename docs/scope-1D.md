@@ -1,0 +1,132 @@
+# Phase 1D Scope — Groceries
+
+> **What this document is.** The phase-level scope contract: the settled architecture, in-scope
+> features with acceptance criteria, explicit deferrals, and a change log. The release-level view
+> lives in [scope-v1.md](scope-v1.md) (the hub — start there); this is its 1D spoke. Griffin owns
+> scope; Claude builds against it — nothing gets built that isn't here, and scope changes land as
+> change-log lines, not drift.
+>
+> **Execution plan (authoritative, deeper than this doc):** `~/.claude/plans/rippling-herding-glacier.md`
+> (reconciled 2026-07-20) + the architecture memo `~/.claude/plans/resume-meal-app-sorted-reddy-agent-ab9e5e211025b4d32.md`.
+
+**Created:** 2026-07-19 (S21) · **Reconciled:** 2026-07-20 (S22) · **Milestone:** Phase 1D, M4, part of V1 "The 10-Minute Weekly Ritual"
+**Phase status:** 🔨 Planning done (architecture reconciled, design imported + built-against) → Slice 0 (docs) in progress
+
+---
+
+## Milestone goal
+
+**M4: a confirmed plan produces a usable grocery list.** Closes the north-star loop — "I have no idea
+what to cook" → "my grocery list is ready" — end to end for the first time. Confirm a week on Plan and a
+**merged, categorized, quantity-summed, shoppable list** falls out with no manual sync step. Ingredient
+merging ("2 cups + 1 cup broth = 3 cups"; "scallions" = "green onions") is the hard V1 problem 1D solves.
+
+**Definition of done for 1D:**
+1. Every in-scope feature below meets its acceptance criteria (machine-verified where mechanical).
+2. **Merge quality holds on a real week/model** — canonical quantity sums + semantic canonicalization come
+   out correct, with the aggregator **under-merging** genuinely-different items rather than mis-merging.
+   Griffin judges (the soft criterion, like 1C's chip/variety gate).
+3. The full loop runs under 10 minutes on a real week (idea → plan → hydrate-in-review → confirm → list).
+4. Groceries has E2E coverage (harness extended); gauntlet + build green.
+
+---
+
+## Architecture (settled — the reason for the planning pass)
+
+**The list is a deterministic projection:** `list = aggregate(recipes of the confirmed plan) + manual
+items + active staples`. It runs at **confirm** (re-runs only on **retry** in 1D; mid-week resync deferred).
+
+**Recipes hydrate at plan time, in the background during review** (client-orchestrated per-slot
+`plan.hydrateSlot`, day-1-first, tap-to-prioritize, resumable, + a confirm-time server sweep). Reason: the
+wife wants full recipe detail while evaluating the week, and it makes the list near-instant at confirm.
+Hydrated recipes are real `recipes` rows (`sourceType:"plan_generated"` + `sourcePlanId`).
+
+**Merge = hybrid**: one batched `ingredient-normalize` AI call (canonical name, category, numeric qty,
+canonical unit + confidence) + a **pure, unit-tested deterministic aggregator** that does all the
+arithmetic and **under-merges** (different type/form ⇒ separate lines). **No LLM arithmetic** (2026-05-26
+rule). **Merge-review = inline**: uncertain merges carry an amber dot → tap to expand the per-meal
+breakdown + split. No required user action. Full rationale + the 12 reconciliation decisions live in the
+plan file and `decisions.md` (2026-07-20 entry).
+
+---
+
+## In scope — with acceptance criteria
+
+Status: ✅ shipped & verified · 🔶 in progress · ⬜ not built
+
+| # | Feature | Acceptance criteria | Status |
+|---|---------|--------------------|--------|
+| 1 | **Background hydration (plan-time)** | Plan review hydrates slots into full recipes via `plan.hydrateSlot` (reuses 1B `generate-recipe`), day-1-first, tap-to-prioritize; idempotent (skip `ready`, CAS on `updatedAt`); resumable from `plan.current`; card shows shimmer→ready. Non-cookable slots skip. Failure is non-fatal (falls back to preview pills). | ⬜ |
+| 2 | **Modify-invalidation fix** | `plan.modify` nulls `recipeId` + sets `recipeStatus:"stale"` on every changed meal (fixes the latent `toSlotValues` bug, `plan-types.ts:171`); stale slots re-hydrate. Regression test proves a modified slot loses its old `recipeId`. | ⬜ |
+| 3 | **Meal-sheet recipe upgrade** | Expanded meal sheet shows a hydration-aware recipe section (writing→full→failed) via an extracted presentational `RecipeView` (from `recipe-detail.tsx`), reused inline — the wife's during-review need. | ⬜ |
+| 4 | **Confirm → list generation** | `plan.confirm` = fast status flip + creates `grocery_lists(pending)`. Idempotent `grocery.generate` runs sweep→normalize→aggregate→write (checkpointed `generationStatus`), producing `grocery_items` with quantity, unit, category, `sources` provenance. Tab polls; phase-named loading copy. | ⬜ |
+| 5 | **AI ingredient-normalize task** | New AI task (reserved config slot) → per-line `{canonicalName, category, numericQty, canonicalUnit, confidence}`. Zod strict-mode, prompt snapshot-tested, graceful fallback. Returns NO summed quantities. | ⬜ |
+| 6 | **Deterministic aggregator** | Pure function: parses qty strings (fractions, ranges, "pinch"→unquantified), sums by canonical group + unit, and **under-merges** (different type/form ⇒ separate). Heavily unit-tested; the correctness core. **No LLM arithmetic.** | ⬜ |
+| 7 | **The list UI (categorized) + organize toggle** | Built from the imported design: category-grouped glass rows; **Grouped ↔ Ungrouped/manual ("notepad") toggle**, with **section reorder + item drag** persisted (`organizeMode`, `aisleOrder`, item `position`). | ⬜ |
+| 8 | **Inline merge-review** | Uncertain merges show an amber dot; tap the row → per-meal breakdown + "Split into separate items" (split = direct `grocery_items` edit). No banner/strip/overlay, no forced action. | ⬜ |
+| 9 | **Check-off (one zone)** | Checking removes the item from its section and drops it into a single collapsible bottom **"GOT IT"** zone. Progress bar + quiet "List complete" banner. Persists; survives refresh. | ⬜ |
+| 10 | **Quick-add (free-form)** | Top add-row + bottom inline add-row: type anything (incl. `household`) → optimistic insert → background AI tidy (categorize) → animate into section; dedupe pill on duplicates; no autocomplete in 1D. Resolves open-question #1 toward free-form. | ⬜ |
+| 11 | **Talk-to-the-Chef sheet (secondary)** | Grocery NL add/query sheet ("add stuff for tacos", "what am I out of") backed by a new NL→list-ops AI task (Zod-validated ops, never trust AI item IDs). Secondary to the text quick-add. | ⬜ |
+| 12 | **Staples chip row** | "YOUR STAPLES" horizontal chip row, tap-to-add; `staple_items` CRUD (schema exists, no router yet) + active/inactive. | ⬜ |
+| 13 | **Clipboard export** | Plain-text export of the current list (grouped, with quantities). The V1 "get it out of the app" fallback (no retailer integration). | ⬜ |
+| 14 | **Recipes-tab organization** | Cooked / deliberate-library / plan-drafts tiers derived from `isFavorite` + `lastCookedAt` + slot dates (no explicit "I cooked it"); search reaches everything; favoriting = promote; drafts clean up with their plan. Tight-budget fallback: fold cooked to top of "Your recipes" with a badge. | ⬜ |
+| 15 | **Schema + provenance** | Migrations for all deltas (below) + RLS CI assertions on new tables/columns. `sources` jsonb authoritative; `sourceRecipeId` kept for back-compat. | ⬜ |
+| 16 | **E2E: extend harness to Groceries** | New specs: generation states, one-zone check-off, quick-add + dedupe, reorder persistence. Seed states + deterministic mock fixtures for the two new AI tasks. A feature isn't done until its mechanics are covered. | ⬜ |
+| 17 | **Carry-in: recipe.get consistency** | Align `recipe.get` null-vs-NOT_FOUND (open-question #3) during a 1D router touch. | ⬜ |
+
+**Schema deltas:** `meal_plan_slots.recipeStatus`; `recipes.sourceType += "plan_generated"` + `sourcePlanId`
+(reuse existing `lastCookedAt` for the cooked-harvest stamp); `grocery_lists.generationStatus` +
+`generationError` + `organizeMode` + `aisleOrder`; `grocery_items.sources` jsonb + `packageLabel` (dormant).
+
+**Quality note (like 1C 12–13):** merge quality (5, 6, 8) verifies on *real* generations + Griffin's eye,
+not E2E — the harness mocks the model. E2E covers mechanics.
+
+---
+
+## Build sequence (slices — each ends green: lint + typecheck + unit; E2E where covered)
+
+- **Slice 0 — Reconcile docs + save the imported design** *(in progress).*
+- **Slice A — Hydration spine** (#1–3, schema for slots+recipes, `e2e-mock` fixture, recipe.get carry-in).
+- **Slice B — List generation + the merge** (#4–6, schema for grocery_lists+grocery_items, normalize task,
+  the aggregator, tab states + polling).
+- **Slice C — The shoppable list** (#7–10, #13 — builds the imported design: organize toggle + reorder,
+  inline merge-review, one-zone check-off, quick-add, export).
+- **Slice D — Staples + Talk-to-Chef + Recipes tab** (#11, #12, #14).
+- **Slice 5 — Wrap** (#16, merge-quality eval on the real model, `/code-review` + `/visual-qa`, doc pass, deploy).
+
+Backend (A/B) has no design dependency; the imported design drives C/D.
+
+---
+
+## Explicitly OUT of 1D scope
+
+| Item | Where it lives | Why deferred |
+|------|---------------|--------------|
+| **Mid-week resync** (list update on a mid-week plan modify) + ack pill + already-bought + `mergeOverrides` | Later (design + build) | Griffin's call — keep the MVP tight; `grocery.generate` stays idempotent for retry regardless |
+| **Bespoke empty + error states** | Later design pass | Empty = zero-item list + add row; error = minimal reuse of Plan's stream-error card |
+| Buy-unit / package layer ("1 carton (32 oz) — you need 3 cups") | Fast-follow, gated on the merge-quality eval | A plain number is never wrong; a wrong pack size breaks trust |
+| Catalog + brand memory ("Bounty") + autocomplete | V1.5+/Instacart era | 1D builds only the canonical `name` vs `rawName` seam |
+| Retailer cart / checkout / aisle-map / barcode | V2 | Needs partnerships/APIs; V1 exports plain text |
+| Light pantry ("what I have" / auto-subtract) | V1.5 | Staples ≠ pantry |
+| Shopping mode · passive staple detection · multi-select combine · recipe variant clustering | Backlog | Post-core-loop |
+| Unit-conversion engine (cups↔grams) | Backlog | 1D sums same-unit; mixed units listed separately |
+| Cost/price estimates · nutrition roll-up | V3 | No pricing/health layer yet |
+
+---
+
+## Open scope questions (carried / resolved)
+
+1. ~~Free-form vs. structured list entry~~ **RESOLVED (S22)** → free-form + AI tidy (quick-add), per the IA
+   decision and the as-built design. (Was open-questions #1.)
+2. **Staples auto-include vs. offer** — offered via the chip row (tap-to-add), not auto-added (no pantry in
+   V1). Confirmed by the design; auto-add-with-dismiss graduates to V1.5.
+3. **`recipe.get` null-vs-NOT_FOUND** (open-questions #3) — align during a 1D router touch (Slice A).
+
+---
+
+## Scope change log
+
+| Date | Change | Why |
+|------|--------|-----|
+| 2026-07-19 (S21) | Doc created at 1D kickoff (confirm-time expand + hybrid merge). | Planning pass; settle the hard V1 problem before building. |
+| 2026-07-20 (S22) | **Reconciled** with the pre-existing locked plan (`resume-meal-app-sorted-reddy.md`, forgotten at S21) → **plan-time hydration** supersedes confirm-time; adopted the projection model, the imported Claude Design (inline merge-review + Grouped/manual reorder + Talk-to-Chef sheet + one-zone check-off); **trimmed** mid-week resync, bespoke empty/error, and `mergeOverrides` out of 1D. | Griffin surfaced the older, more-thorough plan (architect + design-critic consulted) + completed the design in Claude Design; the two plans were merged into `rippling-herding-glacier.md`. |
