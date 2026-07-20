@@ -9,6 +9,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import { households } from "./households";
+import { mealPlans } from "./plans";
 import { z } from "zod";
 
 export const ingredientSchema = z.object({
@@ -48,10 +49,22 @@ export const recipes = pgTable(
     cookTimeMinutes: integer("cook_time_minutes"),
     totalTimeMinutes: integer("total_time_minutes"),
     sourceType: text("source_type", {
-      enum: ["ai_generated", "url_import", "manual", "modification"],
+      enum: [
+        "ai_generated",
+        "url_import",
+        "manual",
+        "modification",
+        "plan_generated",
+      ],
     }).notNull(),
     sourceUrl: text("source_url"),
     parentRecipeId: uuid("parent_recipe_id"),
+    // Set when a recipe is hydrated for a plan slot. Cascades away when the plan is
+    // deleted/replaced (draft cleanup); nulled on graduation (favorite/cook) so the
+    // recipe survives. See decisions.md "Phase 1D Groceries architecture" (2026-07-20).
+    sourcePlanId: uuid("source_plan_id").references(() => mealPlans.id, {
+      onDelete: "cascade",
+    }),
     ingredients: jsonb("ingredients").$type<Ingredient[]>().notNull(),
     steps: jsonb("steps").$type<Step[]>().notNull(),
     generationPrompt: text("generation_prompt"),
@@ -70,5 +83,6 @@ export const recipes = pgTable(
   (table) => [
     index("recipes_household_id_idx").on(table.householdId),
     index("recipes_parent_recipe_id_idx").on(table.parentRecipeId),
+    index("recipes_source_plan_id_idx").on(table.sourcePlanId),
   ]
 );

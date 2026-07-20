@@ -6,6 +6,7 @@ import {
   boolean,
   integer,
   timestamp,
+  jsonb,
   index,
 } from "drizzle-orm/pg-core";
 import { households } from "./households";
@@ -31,6 +32,21 @@ export const groceryCategorySchema = z.enum(GROCERY_CATEGORIES);
 
 export type GroceryCategory = z.infer<typeof groceryCategorySchema>;
 
+// Persisted section order (category keys in the user's store/aisle order) for the
+// "Grouped" organize mode.
+export const aisleOrderSchema = z.array(groceryCategorySchema);
+
+// Multi-recipe provenance for a merged grocery item. recipeTitle is denormalized so
+// the breakdown sheet renders without a join. See decisions.md (2026-07-20).
+export const groceryItemSourceSchema = z.object({
+  recipeId: z.string().uuid(),
+  recipeTitle: z.string(),
+  qty: z.string(),
+  unit: z.string(),
+});
+
+export type GroceryItemSource = z.infer<typeof groceryItemSourceSchema>;
+
 export const groceryLists = pgTable(
   "grocery_lists",
   {
@@ -46,6 +62,27 @@ export const groceryLists = pgTable(
     })
       .notNull()
       .default("draft"),
+    // Projection lifecycle: the Groceries tab polls this while non-terminal and drives
+    // chef-voice loading copy from the phase name. See decisions.md (2026-07-20).
+    generationStatus: text("generation_status", {
+      enum: [
+        "pending",
+        "hydrating",
+        "normalizing",
+        "aggregating",
+        "ready",
+        "error",
+      ],
+    })
+      .notNull()
+      .default("pending"),
+    generationError: text("generation_error"),
+    organizeMode: text("organize_mode", {
+      enum: ["grouped", "manual"],
+    })
+      .notNull()
+      .default("grouped"),
+    aisleOrder: jsonb("aisle_order").$type<string[]>().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -81,6 +118,12 @@ export const groceryItems = pgTable(
     sourceRecipeId: uuid("source_recipe_id").references(() => recipes.id, {
       onDelete: "set null",
     }),
+    // Authoritative multi-recipe provenance (a merged item spans several recipes).
+    // sourceRecipeId is kept as the primary source for back-compat. Zod:
+    // groceryItemSourceSchema. See decisions.md (2026-07-20).
+    sources: jsonb("sources").$type<GroceryItemSource[]>().default([]),
+    // Buy-unit display string ("1 carton (32 oz)"), dormant until the buy-unit fast-follow.
+    packageLabel: text("package_label"),
     isChecked: boolean("is_checked").notNull().default(false),
     checkedBy: uuid("checked_by"),
     position: integer("position").notNull().default(0),
