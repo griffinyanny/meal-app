@@ -10,10 +10,12 @@ import { eq, and, desc } from "drizzle-orm";
 import { generateGroceryList } from "./grocery-generate";
 import { groceryItemMutations } from "./grocery-item-mutations";
 import { groceryOrganizeMutations } from "./grocery-organize";
+import { groceryTalkMutations } from "./grocery-talk";
 
 export const groceryRouter = router({
   ...groceryItemMutations,
   ...groceryOrganizeMutations,
+  ...groceryTalkMutations,
 
   current: protectedProcedure.query(async ({ ctx }) => {
     const list = await ctx.db.query.groceryLists.findFirst({
@@ -84,6 +86,10 @@ export const groceryRouter = router({
         listId: z.string().uuid(),
         name: z.string().min(1).max(200),
         category: groceryCategorySchema.default("other"),
+        // "staple" when the item came from a tap on the staples chip row; the
+        // provenance drives the row's "staple" meta (itemMeta) and is otherwise
+        // treated like a manual item (both survive a list regeneration).
+        sourceType: z.enum(["manual", "staple"]).default("manual"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -106,7 +112,7 @@ export const groceryRouter = router({
           name: input.name,
           rawName: input.name,
           category: input.category,
-          sourceType: "manual",
+          sourceType: input.sourceType,
         })
         .returning();
 

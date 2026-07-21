@@ -25,11 +25,18 @@ export interface SeedGroceryItem {
   position: number;
 }
 
+export interface SeedStaple {
+  name: string;
+  category: string;
+  isActive: boolean;
+}
+
 export interface SeedGrocerySpec {
   generationStatus: "ready" | "normalizing" | "error" | "pending";
   generationError: string | null;
   organizeMode: "grouped" | "manual";
   items: SeedGroceryItem[];
+  staples: SeedStaple[];
 }
 
 const RECIPE_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -90,20 +97,38 @@ function readyItems(): SeedGroceryItem[] {
   ];
 }
 
+// Active staples for the chip row. "garlic" is deliberately also on the ready
+// list (readyItems), so a spec can prove an already-added staple is hidden from
+// the row while off-list staples ("olive oil", "eggs") show as chips.
+function readyStaples(): SeedStaple[] {
+  return [
+    { name: "olive oil", category: "spices", isActive: true },
+    { name: "eggs", category: "dairy", isActive: true },
+    { name: "garlic", category: "produce", isActive: true },
+  ];
+}
+
 export function buildGrocerySpec(state: GroceryState): SeedGrocerySpec {
   switch (state) {
     case "GROCERY_READY":
-      return { generationStatus: "ready", generationError: null, organizeMode: "grouped", items: readyItems() };
+      return {
+        generationStatus: "ready",
+        generationError: null,
+        organizeMode: "grouped",
+        items: readyItems(),
+        staples: readyStaples(),
+      };
     case "GROCERY_GENERATING":
-      return { generationStatus: "normalizing", generationError: null, organizeMode: "grouped", items: [] };
+      return { generationStatus: "normalizing", generationError: null, organizeMode: "grouped", items: [], staples: [] };
     case "GROCERY_ERROR":
       return {
         generationStatus: "error",
         generationError: "The chef couldn't reach the pantry.",
         organizeMode: "grouped",
         items: [],
+        staples: [],
       };
     case "GROCERY_PENDING":
-      return { generationStatus: "pending", generationError: null, organizeMode: "grouped", items: [] };
+      return { generationStatus: "pending", generationError: null, organizeMode: "grouped", items: [], staples: [] };
   }
 }

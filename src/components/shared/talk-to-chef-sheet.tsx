@@ -20,10 +20,17 @@ export interface TalkToChefSheetProps {
   suggestions: string[];
   headline: string;
   initialText?: string;
+  placeholder?: string;
   workingLabel?: string;
   modifyError?: string | null;
+  // The chef's reply after a successful submit (e.g. a query-only ask like
+  // "what am I out of"). Shown in-sheet so the answer isn't lost on close.
+  resultMessage?: string | null;
 }
 
+// Shared natural-language "talk to the chef" bottom sheet. Presentational: it
+// owns only the draft text; the caller owns the submit/mutation. Used by both the
+// Plan tab (modify the week) and the Groceries tab (add/query the list).
 export function TalkToChefSheet({
   open,
   onOpenChange,
@@ -32,8 +39,10 @@ export function TalkToChefSheet({
   suggestions,
   headline,
   initialText,
+  placeholder,
   workingLabel,
   modifyError,
+  resultMessage,
 }: TalkToChefSheetProps) {
   const [text, setText] = useState(initialText ?? "");
   const [prevOpen, setPrevOpen] = useState(open);
@@ -66,7 +75,7 @@ export function TalkToChefSheet({
         <DrawerHeader className="text-left pr-12">
           <DrawerTitle className="text-lg">{headline}</DrawerTitle>
           <DrawerDescription className="sr-only">
-            Tell your chef what you&apos;re thinking for the week.
+            Tell your chef what you&apos;re thinking.
           </DrawerDescription>
         </DrawerHeader>
 
@@ -91,7 +100,7 @@ export function TalkToChefSheet({
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="Tell me what you're thinking this week…"
+              placeholder={placeholder ?? "Tell me what you're thinking this week…"}
               rows={3}
               autoFocus
               disabled={isSubmitting}
@@ -122,7 +131,7 @@ export function TalkToChefSheet({
           </div>
 
           {/* Pending stays IN the open sheet (closes on success, not on submit)
-              so a whole-week request never feels like it did nothing. */}
+              so a request never feels like it did nothing. */}
           {isSubmitting ? (
             <div aria-live="polite">
               <p className="text-sm text-primary/90">
@@ -130,10 +139,14 @@ export function TalkToChefSheet({
               </p>
               <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
             </div>
+          ) : modifyError ? (
+            <p className="text-sm text-destructive/90" role="alert">
+              {modifyError}
+            </p>
           ) : (
-            modifyError && (
-              <p className="text-sm text-destructive/90" role="alert">
-                {modifyError}
+            resultMessage && (
+              <p className="text-sm text-primary/90" aria-live="polite">
+                {resultMessage}
               </p>
             )
           )}

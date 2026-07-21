@@ -52,6 +52,7 @@ export interface MockDb {
     householdMembers: { findFirst: ReturnType<typeof vi.fn> };
     groceryLists: { findFirst: ReturnType<typeof vi.fn> };
     groceryItems: { findFirst: ReturnType<typeof vi.fn> };
+    stapleItems: { findFirst: ReturnType<typeof vi.fn> };
   };
   select: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
@@ -78,6 +79,7 @@ export function createMockDb(): MockDb {
       householdMembers: { findFirst: vi.fn() },
       groceryLists: { findFirst: vi.fn() },
       groceryItems: { findFirst: vi.fn() },
+      stapleItems: { findFirst: vi.fn() },
     },
     select: vi.fn(() => makeSelectChain(selectResults)),
     update: vi.fn((t: unknown) => makeWriteChain(t, updateReturning)),
