@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eq, and, desc } from "drizzle-orm";
 import type { User } from "@supabase/supabase-js";
 import { planRouter } from "./plan";
-import { mealPlans, mealPlanSlots } from "@/server/db/schema";
+import { mealPlans, mealPlanSlots, groceryLists } from "@/server/db/schema";
 import type { Context } from "../init";
 
 // Covers planRouter's non-AI procedures: current, confirm, feedback. See
@@ -50,6 +50,7 @@ interface MockDb {
     householdMembers: { findFirst: ReturnType<typeof vi.fn> };
     mealPlans: { findFirst: ReturnType<typeof vi.fn> };
     mealPlanSlots: { findFirst: ReturnType<typeof vi.fn> };
+    groceryLists: { findFirst: ReturnType<typeof vi.fn> };
   };
   select: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
@@ -66,6 +67,7 @@ function createMockDb(): MockDb {
       householdMembers: { findFirst: vi.fn() },
       mealPlans: { findFirst: vi.fn() },
       mealPlanSlots: { findFirst: vi.fn() },
+      groceryLists: { findFirst: vi.fn() },
     },
     select: vi.fn(() => makeSelectChain(selectResults)),
     update: vi.fn(() => makeMutationChain(state.__updateReturning)),
@@ -189,6 +191,37 @@ describe("planRouter.confirm", () => {
     expect(chain.where).toHaveBeenCalledWith(
       and(eq(mealPlans.id, PLAN_ID), eq(mealPlans.householdId, "household-1"))
     );
+  });
+
+  it("creates a pending grocery list when the plan has none yet", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.__updateReturning = [{ id: PLAN_ID, status: "confirmed" }];
+    db.query.groceryLists.findFirst.mockResolvedValueOnce(undefined);
+
+    const caller = planRouter.createCaller(buildCtx(db, mockUser));
+    await caller.confirm({ planId: PLAN_ID });
+
+    const insertChain = db.insert.mock.results[0].value as Chain;
+    expect(db.insert).toHaveBeenCalledWith(groceryLists);
+    expect(insertChain.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        householdId: "household-1",
+        mealPlanId: PLAN_ID,
+        status: "draft",
+        generationStatus: "pending",
+      })
+    );
+  });
+
+  it("does not create a second list when one already exists (re-confirm)", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.__updateReturning = [{ id: PLAN_ID, status: "confirmed" }];
+    db.query.groceryLists.findFirst.mockResolvedValueOnce({ id: "existing-list" });
+
+    const caller = planRouter.createCaller(buildCtx(db, mockUser));
+    await caller.confirm({ planId: PLAN_ID });
+
+    expect(db.insert).not.toHaveBeenCalled();
   });
 });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { router, protectedProcedure } from "../init";
+import { router, protectedProcedure, aiProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
 import {
   groceryLists,
@@ -7,6 +7,7 @@ import {
   groceryCategorySchema,
 } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { generateGroceryList } from "./grocery-generate";
 
 export const groceryRouter = router({
   current: protectedProcedure.query(async ({ ctx }) => {
@@ -30,6 +31,20 @@ export const groceryRouter = router({
 
     return { ...list, items };
   }),
+
+  // Build (or retry) the projection for a pending/errored draft list. The
+  // Groceries tab fires this when it lands on a `pending` list; idempotent and
+  // race-safe (see generateGroceryList). AI-calling → rate-limited/budgeted.
+  generate: aiProcedure
+    .input(z.object({ listId: z.string().uuid() }))
+    .mutation(({ ctx, input }) =>
+      generateGroceryList({
+        db: ctx.db,
+        householdId: ctx.householdId,
+        userId: ctx.user.id,
+        listId: input.listId,
+      })
+    ),
 
   checkItem: protectedProcedure
     .input(

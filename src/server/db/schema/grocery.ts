@@ -14,23 +14,15 @@ import { mealPlans } from "./plans";
 import { recipes } from "./recipes";
 import { z } from "zod";
 
-export const GROCERY_CATEGORIES = [
-  "produce",
-  "dairy",
-  "meat",
-  "seafood",
-  "bakery",
-  "frozen",
-  "pantry",
-  "spices",
-  "beverages",
-  "household",
-  "other",
-] as const;
-
-export const groceryCategorySchema = z.enum(GROCERY_CATEGORIES);
-
-export type GroceryCategory = z.infer<typeof groceryCategorySchema>;
+// The aisle taxonomy lives in a client-safe module (no Drizzle import) so the
+// Groceries UI can share it; re-exported here so `@/server/db/schema` consumers
+// are unchanged.
+export {
+  GROCERY_CATEGORIES,
+  groceryCategorySchema,
+  type GroceryCategory,
+} from "@/lib/grocery-categories";
+import { GROCERY_CATEGORIES, groceryCategorySchema } from "@/lib/grocery-categories";
 
 // Persisted section order (category keys in the user's store/aisle order) for the
 // "Grouped" organize mode.
