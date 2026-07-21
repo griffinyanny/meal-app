@@ -100,7 +100,31 @@ generate/review rows. D3 — the pointer-lockup regression — is verified sound
 
 ---
 
+## GR — Groceries tab (Phase 1D Slice C, Session 25)
+
+The shoppable list. Grocery items are seeded directly to named states
+(`GROCERY_READY` / `GROCERY_GENERATING` / `GROCERY_ERROR` / `GROCERY_PENDING`) so the
+mechanics are deterministic; quick-add's tidy runs through the real
+`ingredient-normalize` AI mock. Spec: `tests/e2e/specs/groceries.spec.ts`.
+
+| ID | Pre | Steps | Expected | Status |
+|----|-----|-------|----------|--------|
+| GR1 | GROCERY_GENERATING | Open Groceries | Phase-named generating copy ("Sorting your ingredients…"); the list is hidden | 🟢 |
+| GR2 | GROCERY_ERROR | Open Groceries | Error card ("The chef got stuck…") + "Try again" (reuses Plan's stream-error card) | 🟢 |
+| GR3 | GROCERY_PENDING | Open Groceries | Fires generate once, polls, resolves to the ready list + add row | 🟢 |
+| GR4 | GROCERY_READY | Check an item's checkbox | Item leaves its section → the single bottom GOT IT zone; progress advances; persists across reload | 🟢 |
+| GR5 | GROCERY_READY | Quick-add "Tomatoes"; then quick-add an existing item | New row inserts (optimistic + AI tidy); a duplicate shows the dedupe pill, no second row | 🟢 |
+| GR6 | GROCERY_READY | Toggle Grouped → Ungrouped, reload | Sections collapse to a flat list; the mode persists across reload | 🟢 |
+| GR7 | GROCERY_READY | Drag a section by its grip, reload | Aisle order changes and persists (`aisleOrder`) across reload | 🟢 |
+
+**Full suite: 37 passing** (30 Plan + 7 Groceries), 0 findings. Merge quality
+(canonical sums, under-merge correctness) is a wrap-time real-model check + Griffin's
+taste pass — the harness mocks the model.
+
+---
+
 ## Not yet cataloged (future)
 - Recipes tab (Phase 1B) flows — capture/import/generate/modify/versioning.
-- Groceries tab (Phase 1D) — once built.
+- Groceries — Talk-to-the-Chef sheet + staples chip row (Slice D); merge-review split
+  and inline edit interactions (unit-covered; add E2E if they regress).
 - Auth: login loop / chunked-cookie regression (see whats-next).

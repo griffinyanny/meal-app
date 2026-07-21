@@ -4,6 +4,38 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Slice C build decisions — the shoppable list** (2026-07-21, Session 25)
+- **Drag-reorder uses `@dnd-kit`, touch-first — NOT the design's native HTML5 drag** (Griffin's call). Native
+  HTML5 drag works on a desktop mouse but is effectively dead on touch, and this is a phone-first app. `@dnd-kit`
+  drives reorder off a long-press-to-lift → drag → drop gesture (`TouchSensor` delay 200ms + `PointerSensor`
+  distance 8 + `KeyboardSensor` for a11y) — the same interaction the eventual native app will have. **Griffin's
+  framing:** build toward the phone; web is secondary and will be rebuilt for a good web experience later, so
+  emulate the phone behavior now. `@dnd-kit` is the app's ONE drag solution going forward (reusable by any tab).
+- **"Same architecture across the whole app" is a hard requirement** (Griffin). Slice C introduces **zero new
+  patterns** beyond `@dnd-kit`: tRPC mutations (household-scoped, Zod, co-located tests), an optimistic-update
+  hook modeled 1:1 on Plan's `use-plan-modify`, vaul for sheets, the `.glass-*` utilities, the shared category
+  taxonomy. The grocery tab stays architecturally identical to Plan.
+- **The Groceries design is NOT a new "design language" — it inherits the existing system** (same tokens, glass
+  rows, eyebrow headers, glass tab bar, bottom sheets). What's genuinely new is grocery-*specific* interaction
+  (one-zone check-off, inline merge-review), which is surface-specific, not app-wide. Griffin's related instinct
+  is valid though: this is the highest-fidelity surface built so far, so a deliberate **"refresh Plan (and
+  Recipes) visuals to the current bar"** pass is worthwhile — logged for **1F (polish/QA)**, NOT Slice C. (Recipes
+  gets reorganized in Slice D and You-tab is built in 1E, so Plan is really the only tab needing a dedicated
+  visual refresh.)
+- **Quick-add tidy = client keyword guess + background AI refine.** The optimistic insert uses an instant
+  client-side category guess (`guessCategory`, keyword map) so the item lands with no latency; a background
+  `tidyItem` (`aiProcedure` reusing `ingredient-normalize` on one line) then refines category + canonical name.
+  Non-fatal — a normalize miss leaves the item as typed. Honors the "background AI tidy" spec at ~one cheap
+  gpt-4.1-mini call per manually-typed item. **Dedupe = client-side exact-name check + pill**; canonical/AI
+  dedupe ("scallions" == "green onions") is deferred (V1.5, the catalog era).
+- **`splitItem` = un-merge into one line per source, a direct `grocery_items` edit.** A multi-source row splits
+  into N rows, each named after the item with that source's own qty/unit (parsed via the aggregator's
+  `parseQuantity`), `sources` = the single source. No `mergeOverrides` — consistent with mid-week resync being
+  deferred (#10). Single-source items are a no-op.
+- **Router split for the 300-line rule.** The 7 new mutations live in `grocery-item-mutations.ts` +
+  `grocery-organize.ts` as plain procedure objects spread into `groceryRouter`, so client call paths stay flat
+  (`trpc.grocery.editItem`) while each file stays small. Shared test harness extracted to `grocery-test-utils.ts`.
+
 **Slice B build decisions — the hybrid merge, resolving "no LLM arithmetic"** (2026-07-20, Session 24)
 - **The AI's normalize outputs are GROUPING KEYS, never arithmetic.** The plan listed `numericQty` in the
   `ingredient-normalize` output *and* said the aggregator does the qty-string parsing with "no LLM arithmetic"

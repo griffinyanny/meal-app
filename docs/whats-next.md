@@ -2,42 +2,55 @@
 
 Last updated: 2026-07-20 (Session 24)
 
-## ▶ NEXT SESSION — Phase 1D (Groceries), Slice C (the shoppable list UI)
+## ▶ NEXT SESSION — Phase 1D (Groceries), Slice D (staples + Talk-to-Chef + Recipes-tab reorg)
 **Copy-paste kickoff prompt:**
-> Resume meal app — Phase 1D Slice C (the shoppable list). Backend is done (Slice B, S24): `plan.confirm`
-> creates the pending list, `grocery.generate` builds the merged/categorized projection (the pure under-merge
-> aggregator + the `ingredient-normalize` task), and the Groceries tab already polls + renders
-> generating/ready/error. Now build the **as-built design** at `docs/design/surfaces/groceries/imported.dc.html`
-> (projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`): the categorized glass-row list; the **Grouped↔Ungrouped
-> ("notepad") toggle** with section reorder + item drag (persist `organizeMode` + `aisleOrder` + item
-> `position`); **inline merge-review** (amber dot when `sources.length > 1` → tap the row → per-meal breakdown
-> + "Split into separate items" as a direct `grocery_items` edit); **one-zone check-off** (checked item → the
-> single collapsible bottom "GOT IT" zone) + progress bar + quiet completion banner; **quick-add** (top +
-> bottom inline rows, optimistic insert → background AI tidy → animate into section, dedupe pill); **clipboard
-> export** (grouped plain text). Empty = zero-item list + add row. **Extend the E2E harness to Groceries**
-> (generation states, one-zone check-off, quick-add + dedupe, reorder persistence). Plan:
-> `~/.claude/plans/rippling-herding-glacier.md`; scope: `docs/scope-1D.md`.
+> Resume meal app — Phase 1D Slice D. Slice C is done (S25): the shoppable list is live — grouped↔ungrouped
+> organize toggle with `@dnd-kit` touch-first drag-reorder (sections + items, persisted), inline merge-review
+> (amber dot + per-meal breakdown + `splitItem`), one-zone GOT IT check-off + progress + completion banner,
+> quick-add (optimistic + `tidyItem` AI categorize + client dedupe pill), clipboard export; 7 new grocery
+> mutations + the optimistic `use-grocery-mutations` hook; GR1–GR7 E2E. Now build Slice D: (1) **"YOUR STAPLES"
+> chip row** (tap-to-add; `staple_items` CRUD router — table exists, no router yet — + active/inactive); (2)
+> **the Talk-to-the-Chef grocery sheet** (brain icon → NL add/query) backed by a **new NL→list-ops AI task**
+> (snapshot-tested prompt + E2E fixture + Zod-validated ops — never trust AI-returned item IDs, validate
+> against the household's list); (3) **Recipes-tab organization** (cooked / deliberate-library / plan-drafts
+> tiers from `isFavorite` + `lastCookedAt` + slot dates; search reaches everything; favoriting = promote;
+> tight-budget fallback = fold cooked to the top of "Your recipes" with a badge). The add-row already has a
+> spot for the brain icon (omitted in C). Plan: `~/.claude/plans/rippling-herding-glacier.md`; scope:
+> `docs/scope-1D.md` (features #11, #12, #14).
 > ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the dashboard,
 > then `set -a; . ./.env.local; set +a` before any `db:*` command.
 
-- **No NEW design pass needed** — the Groceries design is already imported; Slice C *builds* it (visual-qa at
-  wrap catches drift). **Design-independent alternative** if you'd rather skip UI this session: **Slice D's
-  Talk-to-Chef NL→list-ops AI task** (new AI task + snapshot prompt + E2E fixture + Zod-validated ops, never
-  trust AI-returned item IDs) — backend-shaped like Slice B.
-- **Slice B recap (done S24):** the projection pipeline is built + unit-verified. `grocery.generate`
-  (idempotent CAS on `generationStatus`, checkpointed phases, transactional replace of `sourceType:"recipe"`
-  items) consumes the hydrated recipes and writes merged `grocery_items` with `sources` provenance. The
-  aggregator **under-merges** (different name/unit/low-confidence ⇒ separate rows) and does all arithmetic in
-  pure code (the AI only supplies grouping keys). **Amber = `sources.length > 1`** — Slice C renders it.
-- **Key files (Slice B):** `src/server/grocery/aggregate.ts` (the pure under-merge core + parser),
-  `src/server/ai/tasks/ingredient-normalize.ts` + `src/server/ai/prompts/ingredient-normalize.ts` (the task +
-  snapshot-tested prompt), `src/server/trpc/routers/grocery-generate.ts` (orchestration),
-  `src/components/groceries/groceries-page-client.tsx` (the tab), `src/lib/grocery-categories.ts` (client-safe
-  taxonomy).
+- **Design note:** Slice D's staples chip row + Talk-to-Chef sheet are both in the imported design
+  (`docs/design/surfaces/groceries/imported.dc.html`) — build against it, no new design pass. **Recipes-tab**
+  reorg has NO imported design; if you want a design pass on it, OFFER Griffin one first (new-ish surface).
+  **Design-independent alternative** if skipping UI: the Talk-to-Chef **NL→list-ops AI task** is backend-shaped
+  (new task + snapshot prompt + E2E fixture + Zod ops), buildable without design.
+- **Slice C recap (done S25):** the whole shoppable list. Key files: `src/components/groceries/` (grocery-list,
+  grocery-section, grocery-row, organize-toggle, add-item-row, got-it-zone, grocery-list-header,
+  use-grocery-mutations, grocery-format, grocery-export), `src/server/trpc/routers/grocery-item-mutations.ts` +
+  `grocery-organize.ts` (the 7 mutations), `src/lib/grocery-categories.ts` (`CATEGORY_LABELS` + `guessCategory`).
+  E2E: `tests/e2e/specs/groceries.spec.ts` + `tests/e2e/app/grocery-seed-states.ts` + `seedGroceryState`.
+- **Griffin's taste pass is owed on Slice C** (see below) — the mechanics are machine-verified; his pass is
+  scoped to taste (does the merged list read trustworthy, is the merge-review legible without nagging, does
+  quick-add feel instant, does the built list match the imported design).
 - **Not yet run on the real model:** merge quality (canonical sums + under-merge correct on a real week) is a
-  wrap-time real-gen check + Griffin's taste pass; the E2E harness mocks the model.
-- **Trimmed OUT of 1D** (design later): mid-week resync + ack pill + `mergeOverrides`; bespoke empty/error
-  states (empty = zero-item list + add row; error = reuse Plan's stream-error card, already wired in Slice B).
+  wrap-time (Slice 5) real-gen check + Griffin's taste pass; the E2E harness mocks the model.
+- **Still deferred (design later):** mid-week resync + ack pill + `mergeOverrides`; bespoke empty/error states;
+  **1F visual-refresh of Plan** to the Groceries fidelity bar (logged in idea-backlog, S25).
+
+## Exact Status (end of Session 25 — Phase 1D Slice C complete)
+- **Phase 1D (Groceries): Slice 0 ✅ + A ✅ + B ✅ + Slice C ✅.** The shoppable list is built and
+  machine-verified against the imported design. Features #7–10, #13, #16 met. Built: 7 grocery mutations
+  (`editItem`/`splitItem`/`clearChecked`/`tidyItem` + `setOrganizeMode`/`reorderSections`/`reorderItems`), the
+  optimistic `use-grocery-mutations` hook, the full UI (grouped↔manual toggle + `@dnd-kit` touch-first
+  drag-reorder, inline merge-review, one-zone check-off + progress + banner, quick-add + dedupe, export), and
+  GR1–GR7 E2E + grocery seed states. **248 unit + 37 E2E green**; lint + typecheck clean.
+- **Next:** Slice D (staples + Talk-to-Chef + Recipes-tab reorg) — see the kickoff prompt above. Then Slice 5
+  wrap (merge-quality eval on the real model + `/code-review` + `/visual-qa` on the new surfaces + doc pass +
+  deploy).
+- 3 of 6 R1 phases done (1A/1B/1C); 1D in progress (Slices 0/A/B/C done, D + wrap remain).
+
+
 
 ## Exact Status (end of Session 24 — Phase 1D Slice B complete)
 - **Phase 1D (Groceries): Slice 0 ✅ + Slice A ✅ + Slice B ✅.** A confirmed plan now produces a merged,

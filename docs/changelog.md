@@ -4,6 +4,52 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 25 — 2026-07-21 (Slice C complete — the shoppable list UI)
+
+### What happened
+Built Phase 1D Slice C: the imported Groceries design is now a working, shoppable list. The Slice B backend
+(generate → merged `grocery_items`) already produced the data; this session made it interactive.
+
+- **7 new grocery mutations**, split across two files to hold the 300-line router rule and spread back into
+  `groceryRouter` (client still calls `trpc.grocery.*`): `grocery-item-mutations.ts` (`editItem`, `splitItem`,
+  `clearChecked`, `tidyItem`) + `grocery-organize.ts` (`setOrganizeMode`, `reorderSections`, `reorderItems`).
+  All household-scoped, Zod-validated, co-located tests. `splitItem` un-merges a multi-source row into one
+  line per originating recipe (each with that recipe's own qty, parsed by the aggregator's `parseQuantity`) —
+  a direct `grocery_items` edit, no `mergeOverrides` (mid-week resync stays deferred). `tidyItem` is an
+  `aiProcedure` reusing `ingredient-normalize` on one line to categorize a quick-added item (non-fatal).
+- **Optimistic `use-grocery-mutations` hook**, modeled 1:1 on Plan's pattern (cancel → `setData` → invalidate
+  on settle, rollback on error). Check-off, add, edit, reorder, clear feel instant; add uses a temp-id → real
+  swap then fires the background tidy; split re-fetches (1→N is too structural to patch).
+- **The shoppable UI** (component-split to stay under 300 lines): `grocery-list` (orchestrator + DnD),
+  `grocery-list-header` (eyebrow + progress bar + quiet completion banner + Copy/export), `organize-toggle`,
+  `grocery-section` (sortable aisle), `grocery-row` (checkbox, amber merge dot when `sources.length > 1`,
+  inline name/qty edit, expand → per-meal breakdown + "Split into separate items"), `add-item-row` (top +
+  bottom quick-add), `got-it-zone` (the one-zone check-off drop). New client helpers in
+  `grocery-categories.ts` (`CATEGORY_LABELS`, `guessCategory`), `grocery-format.ts`, `grocery-export.ts`.
+- **Drag-reorder = `@dnd-kit`, touch-first** (`PointerSensor` distance 8 + `TouchSensor` long-press delay 200
+  + `KeyboardSensor`). Sections reorder in grouped mode (persist `aisleOrder`), items reorder in manual mode
+  (persist `position`). Chosen over the design's native HTML5 drag because that's dead on touch and this is a
+  phone-first app — `@dnd-kit` becomes the app's one drag solution going forward (Griffin's call, see below).
+- **Quick-add**: instant client keyword category guess → optimistic insert → background `tidyItem` refine;
+  client-side exact-name **dedupe pill**. **Export**: grouped plain text to the clipboard (the V1 fallback).
+- **E2E extended to Groceries**: `wipe()` now clears grocery tables; new grocery seed states
+  (`GROCERY_READY/GENERATING/ERROR/PENDING`) + `seedGroceryState`; `groceries.spec.ts` GR1–GR7 (generation
+  states, one-zone check-off + persistence, quick-add + dedupe, organize-mode + section-reorder persistence).
+  GR7 caught a real test race — `page.reload()` aborting the in-flight persist — fixed with `waitForResponse`
+  (the reorder itself persists correctly; not a product bug).
+- **Green**: 248 unit (+24) + 37 E2E (30 Plan unchanged + 7 Groceries). Verified the rendered screens against
+  the imported design (grouped, checked/one-zone, ungrouped) — faithful.
+
+### Decisions (see decisions.md, 2026-07-21)
+- **Drag = `@dnd-kit`, touch-first** (Griffin: build toward the phone gesture the native app will use; web is
+  secondary and gets rebuilt later). **Same architecture across the app** is a hard requirement — Slice C adds
+  zero new patterns beyond `@dnd-kit`; everything else reuses tRPC + the Plan optimistic pattern + vaul + glass.
+- **The Groceries design is not a "new design language"** — it inherits the existing system. But it's the
+  highest-fidelity surface we have, so a **"refresh Plan (+ Recipes) visuals to this bar"** pass is logged for
+  **1F** (idea-backlog). Not Slice C scope.
+- **Quick-add tidy** = client guess + background AI refine, non-fatal; dedupe is a client exact-name check (AI
+  canonical dedupe deferred). **Talk-to-Chef (#11) + staples (#12) + Recipes-tab reorg (#14) are Slice D.**
+
 ## Session 24 — 2026-07-20 (Slice B complete — list generation + the hybrid merge)
 
 ### What happened

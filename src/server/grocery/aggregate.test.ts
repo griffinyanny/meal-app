@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   parseQuantity,
+  parseQtyText,
+  numberFromQty,
   aggregateIngredients,
   type NormalizedLine,
 } from "./aggregate";
@@ -200,5 +202,53 @@ describe("aggregateIngredients — ordering", () => {
       line({ canonicalName: "milk", category: "dairy", canonicalUnit: "cup" }),
     ]);
     expect(items.map((i) => i.category)).toEqual(["produce", "dairy", "pantry"]);
+  });
+});
+
+// The inline quantity editor (editItem) passes a combined "number + unit" string.
+// Fractions, unicode fractions and ranges must survive the glued-on unit — the
+// regression the code review caught: "1½ cups" must not silently become "1 cups".
+describe("parseQtyText — inline quantity editing", () => {
+  it("should split a whole number and its unit", () => {
+    expect(parseQtyText("2 heads")).toEqual({ quantity: 2, unit: "heads" });
+  });
+
+  it("should keep a unicode fraction when a unit is attached", () => {
+    expect(parseQtyText("1½ cups")).toEqual({ quantity: 1.5, unit: "cups" });
+  });
+
+  it("should keep a bare unicode fraction (not blank the item)", () => {
+    expect(parseQtyText("½ cup")).toEqual({ quantity: 0.5, unit: "cup" });
+  });
+
+  it("should read a mixed number with a unit", () => {
+    expect(parseQtyText("1 1/2 cups")).toEqual({ quantity: 1.5, unit: "cups" });
+  });
+
+  it("should take the higher end of a range with a unit", () => {
+    expect(parseQtyText("2-3 lbs")).toEqual({ quantity: 3, unit: "lbs" });
+  });
+
+  it("should handle a 'to' range with a unit", () => {
+    expect(parseQtyText("2 to 3 lbs")).toEqual({ quantity: 3, unit: "lbs" });
+  });
+
+  it("should store a plain number with no unit", () => {
+    expect(parseQtyText("3")).toEqual({ quantity: 3, unit: null });
+  });
+
+  it("should store no amount for empty or non-numeric text", () => {
+    expect(parseQtyText("")).toEqual({ quantity: null, unit: null });
+    expect(parseQtyText("as needed")).toEqual({ quantity: null, unit: null });
+  });
+});
+
+describe("numberFromQty", () => {
+  it("should read a number and null for no amount", () => {
+    expect(numberFromQty("2")).toBe(2);
+    expect(numberFromQty("1 1/2")).toBe(1.5);
+    expect(numberFromQty("2-3")).toBe(3);
+    expect(numberFromQty("a pinch")).toBeNull();
+    expect(numberFromQty("")).toBeNull();
   });
 });
