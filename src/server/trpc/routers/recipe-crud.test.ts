@@ -109,6 +109,32 @@ describe("recipeRouter.favorite", () => {
       and(eq(recipes.id, RECIPE_ID), eq(recipes.householdId, "household-1"))
     );
   });
+
+  it("promotes a plan draft on favorite=true by nulling sourcePlanId", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.__updateReturning = [{ id: RECIPE_ID, isFavorite: true, sourcePlanId: null }];
+
+    const caller = recipeRouter.createCaller(buildCtx(db, mockUser));
+    await caller.favorite({ id: RECIPE_ID, isFavorite: true });
+
+    const chain = db.update.mock.results[0].value as Chain;
+    expect(chain.set).toHaveBeenCalledWith(
+      expect.objectContaining({ isFavorite: true, sourcePlanId: null })
+    );
+  });
+
+  it("does not touch sourcePlanId when unfavoriting", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.__updateReturning = [{ id: RECIPE_ID, isFavorite: false }];
+
+    const caller = recipeRouter.createCaller(buildCtx(db, mockUser));
+    await caller.favorite({ id: RECIPE_ID, isFavorite: false });
+
+    const chain = db.update.mock.results[0].value as Chain;
+    const setArg = chain.set.mock.calls[0][0] as Record<string, unknown>;
+    expect(setArg.isFavorite).toBe(false);
+    expect("sourcePlanId" in setArg).toBe(false);
+  });
 });
 
 describe("recipeRouter.delete", () => {

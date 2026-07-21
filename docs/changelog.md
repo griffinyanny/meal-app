@@ -4,6 +4,116 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 28 — 2026-07-21 (Slice 5 WRAP — 1D CLOSED + shipped to prod)
+
+### What happened
+Ran the full Phase 1D wrap and closed the phase. All in-scope features were already built (S22–S27); this session
+was the quality gauntlet + the real-model soft-DoD gate + deploy.
+
+**1. Code review (Slice C/D diff, 47 src files, high effort).** 5 findings, none blocking. Dismissed a
+data-loss candidate (verified `grocery-generate.ts` scopes the regen delete to `sourceType:"recipe"`, so
+manual/staple items survive a retry — the code comment is accurate). Fixed 3 (→ bug-tracker Resolved):
+grocery-row name-edit was a bare `<p onClick>` (a11y → keyboard-accessible `<button>`); manual reorder renumbered
+only unchecked items (→ renumbers the whole list); `commitEdit` double-fired on Enter (→ `handledRef` guard).
+The 2 low findings (guessCategory compound-word misfire; harvest-writes-in-`recipe.list`) → bug-tracker Open.
+
+**2. Real-model merge-quality eval (soft DoD #2 — Griffin's eye).** A throwaway `tsx` script (1C precedent, since
+deleted) ran the true production path on the live model: 7 real dinners → 7 real recipes → 70 ingredient lines →
+the real `ingredient-normalize` call → the pure aggregator → 49 merged items. **PASSED (Griffin signed off):**
+9/9 merge sums hand-verified exact (garlic 3+4+4+4+3=18 cloves; salt 3.25 tsp; olive oil 7 tbsp…); the hard
+canonicalization worked (**scallions + green onion → merged**); **zero mis-merges** (red vs yellow onion,
+olive/vegetable/sesame oil, lemon vs lime juice all correctly separate). NL→ops also clean (taco night added the
+right 5 items; "what am I out of" returned no ops; "remove the milk" resolved the ref safely). Blemishes are
+safe under-merges (duplicate salt/pepper "to taste" lines, carrot lb+cup) → bug-tracker BUG-002 (buy-unit
+fast-follow).
+
+**3. A real risk the eval surfaced → generation-architecture rethink (BUG-004).** The single batched normalize for
+a full 7-dinner week took **37.7s** — over the 30s one-shot AI timeout — so a full week could error. **Stopgap
+shipped:** per-call timeout override on `generateStructured`; `ingredient-normalize` now gets the 60s stream-tier
+bound (tested). **But** perceived generation time is too high regardless (Griffin: even 15s is too long on a
+loading screen), so we're doing a **material generation-architecture rethink as the next focus** — direction
+locked: **(#1) normalize incrementally during plan review** (each recipe normalizes as it hydrates → confirm runs
+only the instant pure aggregate) **+ (#5) progressive/legible loading**, with **(#3) ingredient caching** as the
+compounding follow-up. Open to a more creative approach in the design pass. Sequence: 1D ships now on the stopgap;
+the rethink is its own planning session. (Current flow, for reference: plan-gen = concepts only → per-slot
+`hydrateSlot` recipes in the background during review → one big normalize+aggregate at confirm = the pinch.)
+
+**4. New: a parked-bug tracker system** (Griffin's ask — no more bugs rotting in a backlog). `docs/bug-tracker.md`:
+every parked defect gets an id + repro + severity + "address by" target + open/closed status, reviewed every
+session. Wired into the session-end protocol in CLAUDE.md; saved as a standing (cross-project) preference.
+
+**5. Visual QA — extended the capture harness to Groceries + Recipes** (it was Plan-tab only). New Layer-A capture
+specs (`groceries.capture.ts` + `recipes.capture.ts` + their `*-facts.ts`), `capture-runtime` gained a
+`useHud:false` flag for tabs without a debug-HUD section, and `playwright.capture.config.ts` now globs all
+`*.capture.ts` (excludes `-live`). Captured 11 states (6 Groceries + 5 Recipes), read every PNG, critiqued
+against the rubric. **Gate PASSED: 0 blockers, 0 high.** Everything renders faithfully to the imported design.
+Non-gating: the Recipes double bottom-bar (logged taste-watch) + the minimal error void (scope-deferred).
+
+**6. Verification.** 294 unit + **51 E2E** green; lint + typecheck clean; the 10-minute loop runs end to end on a
+real week (idea → plan → hydrate → confirm → list) — confirmed via the eval's real-model pipeline run.
+
+### Result
+**Phase 1D (Groceries) is COMPLETE — 4 of 6 R1 phases done.** Merged to prod. Next: the generation-architecture
+rethink (planning session — see whats-next).
+
+---
+
+## Session 27 — 2026-07-21 (Slice D COMPLETE — the Recipes-tab reorg #14 + cooked-signal harvest)
+
+### What happened
+Imported the chosen Recipes-tab design from Claude Design and built the reorg in real components, plus the
+cooked-signal harvest it depends on. **Slice D is now complete** (all three features: #11, #12, #14). 294 unit
++ 51 E2E green (first-ever Recipes E2E coverage); lint + typecheck clean; prod build compiles.
+
+**Design chosen (direction "d", the invented one).** Not the three-shelves default — a hybrid: a horizontal
+`RECENTLY COOKED` strip up top, a segmented `All · Favorites · Cooked` control over the deliberate library
+(paginated, 5 + "Show N more"), a collapsed-by-default `FROM YOUR PLANS` shelf, and a floating bottom toolbar
+(search pill + a circular ＋ that opens Generate / Import URL). Imported via `DesignSync.get_file`, archived at
+`docs/design/surfaces/recipes/imported.dc.html` (URL + projectId recorded in the brief).
+
+- **Cooked-signal harvest** (`src/server/recipes/harvest-cooked.ts`). A recipe is cooked when it's the recipe
+  of a **confirmed plan slot whose date has passed**. Runs **lazily on `recipe.list`** (not at confirm — the
+  slot dates are still in the future then, and there's no scheduler): an idempotent, guarded `UPDATE` stamps
+  `lastCookedAt` to the max past-slot date only when newer than what's stored, so the many list refetches per
+  session write nothing once caught up. Wrapped in try/catch in `recipe.list` (non-fatal — the list must render).
+  Stamps at **noon-UTC** of the cooked day so the card's "Cooked Jul 12" survives timezone formatting. 5 unit tests.
+- **Cook = graduation (harvest also detaches).** A plan recipe that gets cooked but was never favorited would
+  otherwise keep its `sourcePlanId` and **cascade away when the plan is replaced**, losing cooked history. So the
+  harvest also nulls `sourcePlanId` when it stamps — matching the recipes-schema "nulled on graduation
+  (favorite/**cook**)" contract. Cooked history is durable.
+- **Favoriting = promote (`recipe.favorite`).** Favoriting a plan draft nulls its `sourcePlanId` in the same
+  `UPDATE`, detaching it so it survives plan replacement. Only on favorite=true; unfavoriting never re-attaches.
+  The client patches optimistically (nulls `sourcePlanId` locally) → the card jumps to the library with a
+  one-shot highlight ring + a "Moved to Your recipes" toast. 2 unit tests.
+- **Draft signal = `sourcePlanId != null`, not `sourceType`.** The mock flips `source:'plan'→'ai'` on promote;
+  in real data that would discard honest provenance. Instead the ephemeral-membership discriminator is the
+  cascade FK itself (`sourcePlanId`). `sourceType` stays truthful; `plan_generated` now maps to "AI" on the
+  card (fixes the old fall-through-to-"Manual" bug the brief flagged). Nothing keyed drafts off `sourceType`
+  (verified: only plan-hydrate writes `sourcePlanId`, only the FK cascades), so this is safe.
+- **UI, real components.** New: `recipes/types.ts` (shared row type + `isPlanDraft`/`formatCookedDate`/
+  `recipeMeta`), `cooked-strip.tsx`, `recipe-filters.tsx`, `plan-drafts-shelf.tsx`, `recipe-toolbar.tsx`
+  (floating search + ＋ popover), rewritten `recipe-card.tsx` (row layout, draft/cooked badges, promote ring)
+  and `recipe-library.tsx` (orchestrator: partition → tiers, search as a flat cross-tier mode, promote/toast).
+  Search reaches every tier (the existing `recipe.search` already spans all household recipes); typing switches
+  the tiered view to a flat result list. All files < 300 lines.
+- **"+" menu = Generate / Import URL only.** The mock's toast also lists "Add manually," but no manual-entry
+  flow exists and it's out of 1D scope; dropped it (logged in idea-backlog).
+- **E2E: first Recipes coverage.** `recipe-seed-states.ts` (RECIPES_LIBRARY / RECIPES_COOKED_HARVEST /
+  RECIPES_EMPTY) + `seedRecipeState` (+ `wipe` now clears recipes). `recipes.spec.ts` RC1–RC10: tiers render,
+  Favorites/Cooked filters, pagination, drafts fold/unfold, **favorite-promote (detach persists across reload)**,
+  **search reaches drafts**, the ＋ menu, **the harvest driven end to end through a past confirmed slot**, empty state.
+- **Visual check.** Drove the built tab in the harness + eyeballed screenshots (tiers, cooked badges, blue
+  "PLAN DRAFT" badge, ＋ popover). One fix: bumped the library/search bottom padding (`pb-24`→`pb-40`) so the
+  last draft cards clear the floating toolbar + tab bar on a full scroll.
+
+### For Griffin (taste review — mechanics are machine-verified)
+- **The double bottom bar.** Faithful to the chosen design, the floating search/＋ toolbar sits just above the
+  tab bar. On a 430px phone that's two stacked bars at the bottom — worth your on-device eye (logged as a
+  taste-watch in idea-backlog). Everything else is low-risk.
+- **Does the tier split read right?** Cooked strip + segmented library + folded drafts — does it feel calm and
+  obvious, or is the cooked-in-two-places (strip AND filter) redundant to you?
+- Not yet run on the real model (wrap-time, Slice 5): hydration/merge/NL-ops quality — the harness mocks the AI.
+
 ## Session 26 — 2026-07-21 (Slice D — staples + Talk-to-the-Chef; Recipes reorg design kicked off)
 
 ### What happened

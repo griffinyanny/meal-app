@@ -8,23 +8,38 @@ import { parseRecipeUrl, RecipeFetchError } from "@/server/ai/tasks/parse-recipe
 import { modifyRecipe } from "@/server/ai/tasks/modify-recipe";
 import { getChefContext } from "@/server/ai/memory";
 import { toDbIngredients, toDbSteps } from "@/server/ai/tasks/types";
+import { harvestCookedRecipes } from "@/server/recipes/harvest-cooked";
 
 export const recipeRouter = router({
   list: protectedProcedure
     .input(
       z
         .object({
-          limit: z.number().min(1).max(50).default(20),
+          // The Recipes tab partitions this one list into tiers (library /
+          // drafts / cooked) client-side, so it needs the full household
+          // collection, not a page. V1 household scale is dozens; a generous
+          // cap keeps a pathological account from unbounded reads.
+          limit: z.number().min(1).max(500).default(200),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
+      // Lazy cooked-signal harvest: stamp lastCookedAt from any past confirmed
+      // slot before reading, so the Cooked tier is current on tab load. Guarded
+      // + idempotent (see harvest-cooked.ts). Non-fatal — the list must render
+      // even if the backfill hiccups.
+      try {
+        await harvestCookedRecipes(ctx.db, ctx.householdId);
+      } catch (err) {
+        console.error("[recipe.list] cooked harvest failed (non-fatal)", err);
+      }
+
       const items = await ctx.db
         .select()
         .from(recipes)
         .where(eq(recipes.householdId, ctx.householdId))
         .orderBy(desc(recipes.createdAt))
-        .limit(input?.limit ?? 20);
+        .limit(input?.limit ?? 200);
 
       return { items };
     }),
@@ -204,7 +219,17 @@ export const recipeRouter = router({
     .mutation(async ({ ctx, input }) => {
       const [updated] = await ctx.db
         .update(recipes)
-        .set({ isFavorite: input.isFavorite, updatedAt: new Date() })
+        .set({
+          isFavorite: input.isFavorite,
+          // Favoriting PROMOTES a plan draft into the deliberate library:
+          // detach it from its plan (null sourcePlanId) so it survives the plan
+          // being replaced/deleted instead of cascading away. A draft is a row
+          // that still has a sourcePlanId; nulling it is exactly "keep this one."
+          // Only on favorite=true; unfavoriting never re-attaches. (scope-1D #14;
+          // matches the recipes-schema "nulled on graduation" comment.)
+          ...(input.isFavorite ? { sourcePlanId: null } : {}),
+          updatedAt: new Date(),
+        })
         .where(
           and(
             eq(recipes.id, input.id),

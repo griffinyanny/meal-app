@@ -1,231 +1,373 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { RecipeCard } from "./recipe-card";
+import { CookedStrip } from "./cooked-strip";
+import { RecipeFilters, type RecipeFilter } from "./recipe-filters";
+import { PlanDraftsShelf } from "./plan-drafts-shelf";
+import { RecipeToolbar } from "./recipe-toolbar";
 import { GenerateRecipeDialog } from "./generate-recipe-dialog";
 import { ImportRecipeDialog } from "./import-recipe-dialog";
-import { Input } from "@/components/ui/input";
+import { isPlanDraft, type RecipeListItem } from "./types";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Link2, Search } from "lucide-react";
+
+const PAGE_SIZE = 5;
 
 export function RecipeLibrary() {
   const router = useRouter();
+  const utils = trpc.useUtils();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [filter, setFilter] = useState<RecipeFilter>("all");
+  const [showAll, setShowAll] = useState(false);
+  const [foldPlans, setFoldPlans] = useState(true);
+  const [promotedId, setPromotedId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const promoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Debounce the search input so we fire one query after typing settles,
-  // not one per keystroke.
+  // Debounce search so we fire one query after typing settles.
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const utils = trpc.useUtils();
-  const recipesQuery = trpc.recipe.list.useQuery();
+  useEffect(() => () => {
+    if (promoteTimer.current) clearTimeout(promoteTimer.current);
+  }, []);
+
+  const listQuery = trpc.recipe.list.useQuery();
   const searchResults = trpc.recipe.search.useQuery(
     { query: debouncedQuery },
     { enabled: debouncedQuery.length > 0 }
   );
 
   const favoriteMutation = trpc.recipe.favorite.useMutation({
-    // Per-item optimistic update. We flip only the one recipe in both caches
-    // (rather than snapshotting/restoring the whole list), so concurrent
-    // toggles on different recipes can't clobber each other, and rollback
-    // always targets the exact item that failed — independent of search state.
+    // Per-item optimistic patch in both caches so concurrent toggles on
+    // different recipes can't clobber each other. Favoriting a plan draft also
+    // detaches it locally (sourcePlanId → null) so it jumps to the library at once.
     onMutate: async ({ id, isFavorite }) => {
       const searchKey = debouncedQuery ? { query: debouncedQuery } : null;
       await utils.recipe.list.cancel();
       if (searchKey) await utils.recipe.search.cancel(searchKey);
-
-      setItemFavorite(id, isFavorite, searchKey);
+      patchItem(id, isFavorite, searchKey);
       return { id, isFavorite, searchKey };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx) setItemFavorite(ctx.id, !ctx.isFavorite, ctx.searchKey);
+    onError: (_e, _v, ctx) => {
+      if (ctx) patchItem(ctx.id, !ctx.isFavorite, ctx.searchKey, true);
     },
-    onSettled: (_data, _err, _vars, ctx) => {
+    onSettled: (_d, _e, _v, ctx) => {
       utils.recipe.list.invalidate();
       if (ctx?.searchKey) utils.recipe.search.invalidate(ctx.searchKey);
     },
   });
 
-  function setItemFavorite(
+  function patchItem(
     id: string,
     isFavorite: boolean,
-    searchKey: { query: string } | null
+    searchKey: { query: string } | null,
+    rollback = false
   ) {
+    // On a real favorite (not a rollback), promoting a draft detaches it.
+    const apply = (r: RecipeListItem): RecipeListItem =>
+      r.id !== id
+        ? r
+        : {
+            ...r,
+            isFavorite,
+            sourcePlanId: !rollback && isFavorite ? null : r.sourcePlanId,
+          };
     utils.recipe.list.setData(undefined, (old) =>
-      old
-        ? {
-            ...old,
-            items: old.items.map((r) =>
-              r.id === id ? { ...r, isFavorite } : r
-            ),
-          }
-        : old
+      old ? { ...old, items: old.items.map(apply) } : old
     );
     if (searchKey) {
-      utils.recipe.search.setData(searchKey, (old) =>
-        old?.map((r) => (r.id === id ? { ...r, isFavorite } : r))
-      );
+      utils.recipe.search.setData(searchKey, (old) => old?.map(apply));
     }
   }
 
-  const isSearching = searchQuery.length > 0;
-  const recipes = isSearching
-    ? searchResults.data ?? []
-    : recipesQuery.data?.items ?? [];
-  const isLoading = isSearching
-    ? searchResults.isLoading ||
-      searchResults.isFetching ||
-      debouncedQuery !== searchQuery
-    : recipesQuery.isLoading;
-  const isError = isSearching ? searchResults.isError : recipesQuery.isError;
-
-  function handleRecipeClick(id: string) {
-    router.push(`/recipes/${id}`);
+  function handleFavorite(id: string, isFavorite: boolean) {
+    const target = listQuery.data?.items.find((r) => r.id === id);
+    const wasDraft = target ? isPlanDraft(target) : false;
+    favoriteMutation.mutate({ id, isFavorite });
+    if (isFavorite && wasDraft) {
+      setPromotedId(id);
+      setToast("Moved to Your recipes");
+      if (promoteTimer.current) clearTimeout(promoteTimer.current);
+      promoteTimer.current = setTimeout(() => {
+        setPromotedId(null);
+        setToast(null);
+      }, 1800);
+    }
   }
 
-  function handleRecipeCreated(recipeId: string) {
-    router.push(`/recipes/${recipeId}`);
-  }
+  const openRecipe = (id: string) => router.push(`/recipes/${id}`);
+  const onCreated = (id: string) => router.push(`/recipes/${id}`);
+
+  const isSearching = searchQuery.trim().length > 0;
 
   return (
-    <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <Input
-          placeholder="Search your recipes..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 bg-white/5 border-white/8"
+    <>
+      {isSearching ? (
+        <SearchResults
+          results={searchResults.data ?? []}
+          isLoading={
+            searchResults.isLoading ||
+            searchResults.isFetching ||
+            debouncedQuery !== searchQuery
+          }
+          isError={searchResults.isError}
+          onRetry={() => searchResults.refetch()}
+          onFavorite={handleFavorite}
+          onOpen={openRecipe}
         />
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 glass-card border-white/8"
-          onClick={() => setGenerateOpen(true)}
-        >
-          <Sparkles className="size-3.5" />
-          Generate
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 glass-card border-white/8"
-          onClick={() => setImportOpen(true)}
-        >
-          <Link2 className="size-3.5" />
-          Import URL
-        </Button>
-      </div>
-
-      {/* Recipe grid */}
-      {isLoading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass-card p-4 h-28 animate-pulse opacity-30"
-            />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="glass-card p-8 flex flex-col items-center text-center space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Couldn&apos;t load your recipes
-          </p>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              isSearching ? searchResults.refetch() : recipesQuery.refetch()
-            }
-          >
-            Try again
-          </Button>
-        </div>
-      ) : recipes.length === 0 ? (
-        <EmptyState
-          isSearching={isSearching}
+      ) : (
+        <TieredView
+          items={listQuery.data?.items ?? []}
+          isLoading={listQuery.isLoading}
+          isError={listQuery.isError}
+          onRetry={() => listQuery.refetch()}
+          filter={filter}
+          onFilterChange={(f) => {
+            setFilter(f);
+            setShowAll(false);
+          }}
+          showAll={showAll}
+          onShowAll={() => setShowAll(true)}
+          foldPlans={foldPlans}
+          onToggleFold={() => setFoldPlans((v) => !v)}
+          promotedId={promotedId}
+          onFavorite={handleFavorite}
+          onOpen={openRecipe}
           onGenerate={() => setGenerateOpen(true)}
           onImport={() => setImportOpen(true)}
         />
-      ) : (
-        <div className="space-y-3">
-          {recipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              id={recipe.id}
-              title={recipe.title}
-              description={recipe.description}
-              totalTimeMinutes={recipe.totalTimeMinutes}
-              servings={recipe.servings}
-              sourceType={recipe.sourceType}
-              isFavorite={recipe.isFavorite}
-              tags={recipe.tags}
-              onFavorite={(id, isFavorite) =>
-                favoriteMutation.mutate({ id, isFavorite })
-              }
-              onClick={handleRecipeClick}
-            />
-          ))}
+      )}
+
+      {toast && (
+        <div
+          role="status"
+          data-testid="recipe-toast"
+          className="fixed left-1/2 -translate-x-1/2 z-50 bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] glass-sheet rounded-full px-4 py-2 text-xs font-medium shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
+        >
+          {toast}
         </div>
       )}
+
+      <RecipeToolbar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onGenerate={() => setGenerateOpen(true)}
+        onImport={() => setImportOpen(true)}
+      />
 
       <GenerateRecipeDialog
         open={generateOpen}
         onOpenChange={setGenerateOpen}
-        onSuccess={handleRecipeCreated}
+        onSuccess={onCreated}
       />
       <ImportRecipeDialog
         open={importOpen}
         onOpenChange={setImportOpen}
-        onSuccess={handleRecipeCreated}
+        onSuccess={onCreated}
+      />
+    </>
+  );
+}
+
+type TieredViewProps = {
+  items: RecipeListItem[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  filter: RecipeFilter;
+  onFilterChange: (f: RecipeFilter) => void;
+  showAll: boolean;
+  onShowAll: () => void;
+  foldPlans: boolean;
+  onToggleFold: () => void;
+  promotedId: string | null;
+  onFavorite: (id: string, isFavorite: boolean) => void;
+  onOpen: (id: string) => void;
+  onGenerate: () => void;
+  onImport: () => void;
+};
+
+function TieredView({
+  items,
+  isLoading,
+  isError,
+  onRetry,
+  filter,
+  onFilterChange,
+  showAll,
+  onShowAll,
+  foldPlans,
+  onToggleFold,
+  promotedId,
+  onFavorite,
+  onOpen,
+  onGenerate,
+  onImport,
+}: TieredViewProps) {
+  if (isLoading) return <LoadingSkeleton />;
+  if (isError) return <ErrorCard onRetry={onRetry} />;
+  if (items.length === 0)
+    return <EmptyLibrary onGenerate={onGenerate} onImport={onImport} />;
+
+  const lib = items.filter((r) => !isPlanDraft(r));
+  const drafts = items.filter(isPlanDraft);
+  const favs = lib.filter((r) => r.isFavorite);
+  const cooked = lib
+    .filter((r) => r.lastCookedAt != null)
+    .sort(
+      (a, b) =>
+        new Date(b.lastCookedAt as Date).getTime() -
+        new Date(a.lastCookedAt as Date).getTime()
+    );
+
+  const list = filter === "fav" ? favs : filter === "cooked" ? cooked : lib;
+  const shown = showAll ? list : list.slice(0, PAGE_SIZE);
+  const rest = list.length - shown.length;
+
+  return (
+    <div className="space-y-5 pb-40">
+      <CookedStrip recipes={cooked} onOpen={onOpen} />
+
+      <RecipeFilters
+        active={filter}
+        counts={{ all: lib.length, fav: favs.length, cooked: cooked.length }}
+        onChange={onFilterChange}
+      />
+
+      {shown.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {filter === "fav"
+            ? "No favorites yet — tap the heart on a recipe to keep it here."
+            : "Nothing cooked yet."}
+        </p>
+      ) : (
+        <div className="space-y-3" data-testid="library-list">
+          {shown.map((r) => (
+            <RecipeCard
+              key={r.id}
+              recipe={r}
+              badge={r.lastCookedAt ? "cooked" : null}
+              promoted={promotedId === r.id}
+              onFavorite={onFavorite}
+              onClick={onOpen}
+            />
+          ))}
+          {rest > 0 && (
+            <button
+              type="button"
+              onClick={onShowAll}
+              data-testid="show-more"
+              className="w-full text-center text-xs text-primary py-2 cursor-pointer"
+            >
+              Show {rest} more
+            </button>
+          )}
+        </div>
+      )}
+
+      <PlanDraftsShelf
+        drafts={drafts}
+        collapsed={foldPlans}
+        onToggle={onToggleFold}
+        promotedId={promotedId}
+        onFavorite={onFavorite}
+        onOpen={onOpen}
       />
     </div>
   );
 }
 
-type EmptyStateProps = {
-  isSearching: boolean;
-  onGenerate: () => void;
-  onImport: () => void;
+type SearchResultsProps = {
+  results: RecipeListItem[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+  onFavorite: (id: string, isFavorite: boolean) => void;
+  onOpen: (id: string) => void;
 };
 
-function EmptyState({ isSearching, onGenerate, onImport }: EmptyStateProps) {
-  if (isSearching) {
-    return (
-      <div className="glass-card p-8 flex flex-col items-center text-center">
+function SearchResults({
+  results,
+  isLoading,
+  isError,
+  onRetry,
+  onFavorite,
+  onOpen,
+}: SearchResultsProps) {
+  return (
+    <div className="space-y-3 pb-40">
+      <p className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
+        Search results
+      </p>
+      {isLoading ? (
+        <LoadingSkeleton />
+      ) : isError ? (
+        <ErrorCard onRetry={onRetry} />
+      ) : results.length === 0 ? (
         <p className="text-sm text-muted-foreground">No recipes found</p>
-      </div>
-    );
-  }
+      ) : (
+        results.map((r) => (
+          <RecipeCard
+            key={r.id}
+            recipe={r}
+            badge={r.lastCookedAt ? "cooked" : isPlanDraft(r) ? "draft" : null}
+            onFavorite={onFavorite}
+            onClick={onOpen}
+          />
+        ))
+      )}
+    </div>
+  );
+}
 
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass-card p-4 h-20 animate-pulse opacity-30" />
+      ))}
+    </div>
+  );
+}
+
+function ErrorCard({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="glass-card p-8 flex flex-col items-center text-center space-y-3">
+      <p className="text-sm text-muted-foreground">Couldn&apos;t load your recipes</p>
+      <Button size="sm" variant="outline" onClick={onRetry}>
+        Try again
+      </Button>
+    </div>
+  );
+}
+
+function EmptyLibrary({
+  onGenerate,
+  onImport,
+}: {
+  onGenerate: () => void;
+  onImport: () => void;
+}) {
   return (
     <div className="glass-card p-8 flex flex-col items-center text-center space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Your recipe library is empty
-      </p>
+      <p className="text-sm text-muted-foreground">Your recipe library is empty</p>
       <p className="text-xs text-muted-foreground/60">
         Ask your chef to generate something, or import a recipe from the web.
       </p>
       <div className="flex gap-2">
         <Button size="sm" onClick={onGenerate}>
-          <Sparkles className="size-3.5" />
           Generate
         </Button>
         <Button size="sm" variant="outline" onClick={onImport}>
-          <Link2 className="size-3.5" />
           Import
         </Button>
       </div>

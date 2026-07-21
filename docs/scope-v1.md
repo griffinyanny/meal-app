@@ -47,7 +47,7 @@ interaction rate · list quality.
 | **1A** Foundation | Scaffold, schema+RLS, auth, tab shell, deploy | M1: deployed app, login, tabs, DB writes | ✅ | 2026-05-27 (1 day) | [changelog S10](changelog.md) |
 | **1B** AI Core + Recipes | AI service layer, chef prompt, recipe pipelines + tab | M2: generate/import/modify/browse end-to-end | ✅ | 2026-05-27 (1 day) | [changelog S11](changelog.md) |
 | **1C** Plan Tab | The signature "AI generates your week" experience | M3: full plan loop — generate→review→confirm→modify→wrap | ✅ | 2026-07-06 → 07-10 | [scope-1C.md](scope-1C.md) |
-| **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | 🔨 building — planning done, architecture set | 2026-07-10 → | [scope-1D.md](scope-1D.md) |
+| **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | ✅ | 2026-07-10 → 07-21 | [scope-1D.md](scope-1D.md) |
 | **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | ⬜ | — | scope doc at phase start |
 | **1F** Polish / Production Readiness | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
 
@@ -75,15 +75,16 @@ reusable for 1D–1F). Dates exist so pace is visible, not a feeling.*
 - [x] Item 13: generation variety — verified S19 (7/7 distinct dish forms)
 - [x] Griffin's feedback pass complete (batch 1, S18)
 
-### 1D Groceries ⬜
-- [ ] Auto-generate list from confirmed plan
-- [ ] AI ingredient merging/normalization ("2 cups + 1 cup chicken broth = 3 cups" — the hard V1 problem)
-- [ ] Free-form manual add (type anything) + non-food household items
-- [ ] Check-off interface for in-store use
-- [ ] Category grouping (produce, dairy, meat, pantry, frozen, household)
-- [ ] "Staples" recurring-items list
-- [ ] Export to clipboard (plain-text fallback)
-- [ ] Carry-ins: resolve free-form vs structured entry (open-questions #1); recipe.get null-vs-NOT_FOUND consistency; extend E2E harness to Groceries
+### 1D Groceries ✅ (closed S28 — 2026-07-21; shipped to prod)
+- [x] Auto-generate list from confirmed plan
+- [x] AI ingredient merging/normalization ("2 cups + 1 cup chicken broth = 3 cups" — the hard V1 problem). **Merge quality verified on the real model (soft DoD #2), Griffin signed off: exact sums, scallions==green-onion canonicalization, zero mis-merges.**
+- [x] Free-form manual add (type anything) + non-food household items
+- [x] Check-off interface for in-store use (one-zone GOT IT)
+- [x] Category grouping (produce, dairy, meat, pantry, frozen, household) + grouped↔manual reorder
+- [x] "Staples" recurring-items list (chip row, offered not auto-added)
+- [x] Export to clipboard (plain-text fallback)
+- [x] Carry-ins: free-form entry resolved (open-questions #1); recipe.get null-vs-NOT_FOUND consistency; E2E harness extended to Groceries (GR1–GR11) + Recipes (RC1–RC10); Talk-to-Chef NL→ops; Recipes-tab reorg; visual-QA capture harness extended to Groceries + Recipes
+- ⏭ **Fast-follows (tracked, not in 1D):** generation-architecture rethink to cut perceived list-gen latency (BUG-004, next focus); buy-unit/merge-consolidation (BUG-002); mid-week resync + bespoke empty/error states (deferred by scope)
 
 ### 1E You Tab + Memory ⬜
 - [ ] AI-guided onboarding interview (conversational, not forms)
@@ -143,3 +144,4 @@ line here (a decision, not drift). Same for pushing R1 items out.
 | 2026-07-13 (S20) | Claude Design adopted as default design partner (replaces Figma Make); design-pass gate added to the workflow | Design system lives in code → Claude Design reads it directly; 1D Groceries is the first trial. See decisions.md + `docs/design/design-workflow.md` |
 | 2026-07-19 (S21) | 1D kicked off: ingredient-merge architecture decided (expand-then-hybrid-merge); `scope-1D.md` + Groceries design brief landed; 1D → 🔨 building | Planning pass (same exercise that made 1C legible); settle the hard V1 problem's architecture before building |
 | 2026-07-20 (S22) | 1D **reconciled** with a pre-existing locked plan (forgotten at S21): **plan-time hydration** supersedes confirm-time; adopted the projection model + the imported Claude Design (inline merge-review, Grouped/manual reorder, Talk-to-Chef sheet, one-zone check-off); **trimmed** mid-week resync + bespoke empty/error + `mergeOverrides` out of 1D. Authoritative plan: `~/.claude/plans/rippling-herding-glacier.md`. | Griffin surfaced the older, more-thorough plan (architect + design-critic consulted) and had completed the Groceries design in Claude Design |
+| 2026-07-21 (S28) | **1D → ✅ complete (4 of 6 phases done); shipped to prod.** Wrap: code review (3 fixes), **merge quality PASSED the real-model soft DoD** (Griffin's eye), `/visual-qa` capture harness extended to Groceries + Recipes (gate passed), 60s normalize stopgap. **Next: generation-architecture rethink** (a planning session — cut perceived list-gen latency; BUG-004). New: a parked-bug tracker (`docs/bug-tracker.md`). | All in-scope 1D features met + machine-verified; the one soft gate (merge on a real week) cleared; the slow-generation risk is stopgapped + scheduled as the next focus |

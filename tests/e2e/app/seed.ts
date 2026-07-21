@@ -16,6 +16,7 @@ import { readTestContext, type TestContext } from "./test-context";
 import { env, TEST_HOUSEHOLD_NAME } from "./env";
 import { buildSeedSpec, type PlanState, type SeedOptions } from "./seed-states";
 import { buildGrocerySpec, type GroceryState } from "./grocery-seed-states";
+import { buildRecipeSpec, type RecipeState } from "./recipe-seed-states";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
@@ -57,6 +58,12 @@ async function wipe(db: Db, ctx: TestContext): Promise<void> {
   await db
     .delete(schema.mealPlanSlots)
     .where(eq(schema.mealPlanSlots.householdId, ctx.householdId));
+  // Recipes before plans: a plan-draft recipe's sourcePlanId cascades from plans,
+  // and slots (deleted above) reference recipes via recipeId. Clearing recipes
+  // explicitly keeps the Recipes-tab specs deterministic.
+  await db
+    .delete(schema.recipes)
+    .where(eq(schema.recipes.householdId, ctx.householdId));
   await db
     .delete(schema.mealPlans)
     .where(eq(schema.mealPlans.householdId, ctx.householdId));
@@ -208,6 +215,66 @@ export async function seedGroceryState(state: GroceryState): Promise<{ listId: s
     }
 
     return { listId: list.id };
+  } finally {
+    await close();
+  }
+}
+
+// Resets the test household, then materializes a named Recipes-tab state: an
+// optional plan (for drafts / the cooked-harvest source), the recipes, and any
+// past confirmed slots. Insert order respects FKs: plan → recipes → slots.
+export async function seedRecipeState(state: RecipeState): Promise<void> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    const spec = buildRecipeSpec(state);
+
+    if (spec.plan) {
+      await db.insert(schema.mealPlans).values({
+        id: spec.plan.id,
+        householdId: ctx.householdId,
+        weekStart: spec.plan.weekStart,
+        status: spec.plan.status,
+        confirmedAt: spec.plan.status === "confirmed" ? new Date() : null,
+      });
+    }
+
+    if (spec.recipes.length > 0) {
+      await db.insert(schema.recipes).values(
+        spec.recipes.map((r) => ({
+          id: r.id,
+          householdId: ctx.householdId,
+          title: r.title,
+          description: r.description,
+          sourceType: r.sourceType,
+          sourcePlanId: r.sourcePlanId,
+          isFavorite: r.isFavorite,
+          lastCookedAt: r.lastCookedAt ? new Date(r.lastCookedAt) : null,
+          totalTimeMinutes: r.totalTimeMinutes,
+          servings: r.servings,
+          tags: r.tags,
+          ingredients: [],
+          steps: [],
+        }))
+      );
+    }
+
+    if (spec.plan && spec.slots.length > 0) {
+      await db.insert(schema.mealPlanSlots).values(
+        spec.slots.map((s) => ({
+          householdId: ctx.householdId,
+          planId: spec.plan!.id,
+          mealType: "dinner" as const,
+          slotType: "recipe" as const,
+          date: s.date,
+          recipeId: s.recipeId,
+          recipeStatus: "ready" as const,
+        }))
+      );
+    }
   } finally {
     await close();
   }

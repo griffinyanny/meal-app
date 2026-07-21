@@ -4,6 +4,41 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Phase 1D closed + wrap decisions** (2026-07-21, Session 28)
+- **Merge quality PASSED the soft DoD (#2) on the real model** (Griffin's eye). Sums exact, semantic
+  canonicalization right (scallions == green onion), zero mis-merges (under-merge holds). 1D's hard V1 problem is
+  solved for V1. Duplicate under-merge lines (salt/pepper "to taste", carrot lb+cup) accepted → buy-unit
+  fast-follow (BUG-002).
+- **Generation-architecture rethink is the next focus** (material, its own planning session). Direction locked:
+  **normalize incrementally during plan review (#1)** so confirm runs only the instant pure aggregate, **+
+  progressive/legible loading (#5)**, with **ingredient caching (#3)** as the follow-up. Trigger: a full-week
+  normalize measured at 37.7s > the 30s timeout, and perceived confirm latency is too high regardless. Open to a
+  more creative approach in the design pass. **Stopgap shipped 1D:** `ingredient-normalize` gets a per-call 60s
+  (stream-tier) timeout so a full week doesn't error. Tracked as BUG-004.
+- **Parked-bug tracker instituted** (`docs/bug-tracker.md`). Every parked defect = a tracked, reproducible,
+  closeable entry (id + repro + severity + "address by" + status), reviewed each session. Distinct from
+  idea-backlog (features) and open-questions (decisions). Wired into the session-end protocol. A standing rule.
+- **Visual-QA capture harness extended to Groceries + Recipes** (was Plan-only). Layer-A capture specs +
+  ground-truth facts per surface; `useHud:false` for tabs without a debug-HUD section. The visual layer now
+  guards these surfaces against regressions, same as Plan.
+
+**Recipes-tab reorg build decisions (#14)** (2026-07-21, Session 27)
+- **Cooked harvest = lazy-on-read in `recipe.list`** (my call). "Confirmed slot whose date has passed" can't be
+  stamped at plan.confirm (dates are future then) and there's no scheduler, so the harvest runs when the Recipes
+  tab loads. Idempotent + guarded (only writes when the max past-slot date is newer than the stored
+  `lastCookedAt`), non-fatal (try/catch — the list must render). Own tested function (`harvest-cooked.ts`).
+- **Cook is a graduation → the harvest detaches too.** Stamping `lastCookedAt` also nulls `sourcePlanId`. Reason:
+  a cooked-but-unfavorited plan recipe would otherwise cascade away when its plan is replaced, losing cooked
+  history. Matches the recipes-schema "nulled on graduation (favorite/cook)" contract. *(Cooked history is durable.)*
+- **Draft signal = `sourcePlanId != null`, not `sourceType`** (my call, deviates from the mock). The mock flips
+  `source:'plan'→'ai'` on promote; real data keeps `sourceType` as honest provenance and uses the cascade FK
+  (`sourcePlanId`) as the ephemeral-membership discriminator. Promote = null it. `plan_generated` maps to "AI" on
+  the card (fixes the fall-through-to-"Manual" bug). Safe: nothing else keys drafts off `sourceType`.
+- **Search-results presentation = flat, cross-tier** (resolves the brief's open question). A query switches the
+  tiered view to one flat ranked list spanning all tiers (`recipe.search` already reaches every household recipe).
+- **"+" create menu = Generate / Import URL only.** "Add manually" (in the mock's toast) has no flow and is out
+  of 1D scope; deferred to the backlog.
+
 **Slice D build decisions — staples + Talk-to-the-Chef** (2026-07-21, Session 26)
 - **Cooked signal = auto from a past confirmed plan slot** (Griffin). `lastCookedAt` existed but nothing wrote
   it, so the Recipes reorg's "cooked" tier had no data source. Decision: a recipe is cooked when it is the

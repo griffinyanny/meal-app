@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { Check, ChevronDown, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,17 +41,23 @@ export function GroceryRow({
   const [editing, setEditing] = useState<"name" | "qty" | null>(null);
   const [editText, setEditText] = useState("");
   const [expanded, setExpanded] = useState(false);
+  // Guards against a double-commit: pressing Enter (or Escape) unmounts the input,
+  // whose onBlur would otherwise fire commitEdit a second time from the prior
+  // render's closure. Set once the edit session is handled; reset on beginEdit.
+  const handledRef = useRef(false);
 
   const merged = (item.sources?.length ?? 0) > 1;
   const meta = itemMeta(item);
   const qtyLabel = formatQty(item.quantity, item.unit);
 
   function beginEdit(field: "name" | "qty") {
+    handledRef.current = false;
     setEditing(field);
     setEditText(field === "name" ? capitalizeName(item.name) : qtyLabel);
   }
   function commitEdit() {
-    if (!editing) return;
+    if (!editing || handledRef.current) return;
+    handledRef.current = true;
     const value = editText.trim();
     if (editing === "name") {
       if (value) onEdit(item.id, { name: value });
@@ -65,6 +71,8 @@ export function GroceryRow({
       e.preventDefault();
       commitEdit();
     } else if (e.key === "Escape") {
+      // Cancel: mark handled so the unmount blur doesn't commit the discarded text.
+      handledRef.current = true;
       setEditing(null);
     }
   }
@@ -116,19 +124,21 @@ export function GroceryRow({
               className="w-full rounded-md bg-primary/15 px-1.5 py-0.5 text-[15px] font-medium outline-none"
             />
           ) : (
-            <p
+            <button
+              type="button"
               onClick={() => beginEdit("name")}
-              className="cursor-text text-[15px] font-medium leading-snug"
+              aria-label={`Edit ${capitalizeName(item.name)}`}
+              className="block w-full cursor-text text-left text-[15px] font-medium leading-snug"
             >
               {capitalizeName(item.name)}
               {merged && (
                 <span
                   className="ml-1.5 inline-block size-1.5 rounded-full bg-[#FF9F0A] align-middle"
                   data-testid="grocery-merge-dot"
-                  aria-label="Combined across meals"
+                  aria-hidden="true"
                 />
               )}
-            </p>
+            </button>
           )}
           {meta && editing !== "name" && (
             <p

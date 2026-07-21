@@ -1,5 +1,17 @@
 # Recipes tab (Phase 1D, Slice D) — design brief (TO-GENERATE)
 
+> **IMPORTED & BUILT (S27, 2026-07-21).** Chosen design pulled via
+> `DesignSync.get_file` and archived at `imported.dc.html` (this folder).
+> - **URL:** https://claude.ai/design/p/8bc73bfa-9683-4b44-ab06-40da9ec78590?file=Recipes.dc.html
+> - **projectId:** `8bc73bfa-9683-4b44-ab06-40da9ec78590` · **file:** `Recipes.dc.html`
+> - **Direction chosen:** (d), the invented one — a cooked STRIP + a segmented
+>   `All · Favorites · Cooked` library + a collapsed `FROM YOUR PLANS` shelf +
+>   a floating search/＋ toolbar. Built in real components S27 (see `docs/changelog.md`).
+> - **Build deviations from the literal mock** (all in changelog): draft signal =
+>   `sourcePlanId != null` (not a source-flip, keeps provenance); cooked harvest =
+>   lazy-on-read in `recipe.list`; cook is a graduation (harvest detaches too);
+>   "Add manually" dropped from the ＋ menu (no manual-entry flow in 1D).
+
 > **This is a to-generate brief — the design does NOT exist yet.** The Recipes tab is the plainest
 > surface in the app and has never had a design pass. Slice D reorganizes it, so we design it properly
 > first (new surface + open IA = strong-recommend per the design-pass gate). Feed this to the meal-app

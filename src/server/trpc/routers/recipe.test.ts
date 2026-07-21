@@ -13,8 +13,10 @@ const RECIPE_ID = "11111111-1111-4111-8111-111111111111";
 
 type Chain = PromiseLike<unknown> & {
   from: ReturnType<typeof vi.fn>;
+  innerJoin: ReturnType<typeof vi.fn>;
   where: ReturnType<typeof vi.fn>;
   orderBy: ReturnType<typeof vi.fn>;
+  groupBy: ReturnType<typeof vi.fn>;
   limit: ReturnType<typeof vi.fn>;
 };
 
@@ -25,8 +27,12 @@ function makeSelectChain(resultsByTable: Map<unknown, unknown[]>): Chain {
     table = t;
     return chain;
   });
+  chain.innerJoin = vi.fn(() => chain);
   chain.where = vi.fn(() => chain);
   chain.orderBy = vi.fn(() => chain);
+  // Terminal for the harvest's grouped slot query (recipe.list runs the cooked
+  // harvest before its own read). Resolves by the from() table, like `then`.
+  chain.groupBy = vi.fn(() => Promise.resolve(resultsByTable.get(table) ?? []));
   chain.limit = vi.fn(() => chain);
   chain.then = ((resolve: (v: unknown) => void, reject?: (e: unknown) => void) =>
     Promise.resolve(resultsByTable.get(table) ?? []).then(resolve, reject)) as Chain["then"];
@@ -98,10 +104,12 @@ describe("recipeRouter.list", () => {
     const result = await caller.list();
 
     expect(result).toEqual({ items: rows });
-    const chain = db.select.mock.results[0].value as Chain;
+    // recipe.list runs the cooked harvest (its own select) first, then the
+    // library read — so the read is the last select chain.
+    const chain = db.select.mock.results.at(-1)!.value as Chain;
     expect(chain.where).toHaveBeenCalledWith(eq(recipes.householdId, "household-1"));
     expect(chain.orderBy).toHaveBeenCalledWith(desc(recipes.createdAt));
-    expect(chain.limit).toHaveBeenCalledWith(20);
+    expect(chain.limit).toHaveBeenCalledWith(200);
   });
 });
 
