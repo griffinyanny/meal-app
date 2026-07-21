@@ -8,7 +8,15 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { MessageCircle } from "lucide-react";
-import { type DisplayMeal, metaLine, scopedRequest } from "./plan-helpers";
+import { trpc } from "@/lib/trpc";
+import { RecipeView } from "@/components/recipes/recipe-view";
+import {
+  type DisplayMeal,
+  type HydrationView,
+  isCookable,
+  metaLine,
+  scopedRequest,
+} from "./plan-helpers";
 
 export interface ExpandedMealSheetProps {
   meal: DisplayMeal | null;
@@ -19,6 +27,8 @@ export interface ExpandedMealSheetProps {
   isModifying: boolean;
   workingLabel?: string;
   modifyError?: string | null;
+  // Background hydration view for this meal — drives the failed fallback.
+  hydration?: HydrationView;
 }
 
 export function ExpandedMealSheet({
@@ -30,6 +40,7 @@ export function ExpandedMealSheet({
   isModifying,
   workingLabel,
   modifyError,
+  hydration,
 }: ExpandedMealSheetProps) {
   // Always render the Drawer so vaul can transition closed→open cleanly on the
   // first tap. Content is conditional inside.
@@ -55,6 +66,7 @@ export function ExpandedMealSheet({
             isModifying={isModifying}
             workingLabel={workingLabel}
             modifyError={modifyError}
+            hydration={hydration}
           />
         )}
       </DrawerContent>
@@ -69,6 +81,7 @@ interface ExpandedMealContentProps {
   isModifying: boolean;
   workingLabel?: string;
   modifyError?: string | null;
+  hydration?: HydrationView;
 }
 
 function ExpandedMealContent({
@@ -78,6 +91,7 @@ function ExpandedMealContent({
   isModifying,
   workingLabel,
   modifyError,
+  hydration,
 }: ExpandedMealContentProps) {
   const meta = metaLine(meal);
   const label = [meal.dayName, meal.relative ?? "DINNER"]
@@ -116,18 +130,7 @@ function ExpandedMealContent({
       <div className="space-y-5 px-4 pb-8">
         {meta && <p className="text-xs text-muted-foreground">{meta}</p>}
 
-        {meal.ingredientPreview.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {meal.ingredientPreview.map((ing) => (
-              <span
-                key={ing}
-                className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-xs text-foreground/80"
-              >
-                {ing}
-              </span>
-            ))}
-          </div>
-        )}
+        <MealRecipeSection meal={meal} hydration={hydration} />
 
         <div className="space-y-2">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -175,5 +178,88 @@ function ExpandedMealContent({
         )}
       </div>
     </>
+  );
+}
+
+function PreviewPills({ meal }: { meal: DisplayMeal }) {
+  if (meal.ingredientPreview.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {meal.ingredientPreview.map((ing) => (
+        <span
+          key={ing}
+          className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-xs text-foreground/80"
+        >
+          {ing}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// The recipe area of the sheet, hydration-aware: the full recipe once it's
+// ready, a "writing" shimmer over the plan-preview pills while it generates, and
+// a graceful fall back to the pills if hydration failed or the recipe is gone.
+// This is the wife's during-review need — real recipe detail while she evaluates.
+function MealRecipeSection({
+  meal,
+  hydration,
+}: {
+  meal: DisplayMeal;
+  hydration?: HydrationView;
+}) {
+  const ready = meal.recipeStatus === "ready" && !!meal.recipeId;
+  const recipeQuery = trpc.recipe.get.useQuery(
+    { id: meal.recipeId ?? "" },
+    { enabled: ready, staleTime: 5 * 60_000 }
+  );
+
+  if (!isCookable(meal.slotType)) return null;
+
+  if (ready) {
+    if (recipeQuery.data) return <RecipeView recipe={recipeQuery.data} />;
+    if (recipeQuery.isError) {
+      return (
+        <div className="space-y-2">
+          <PreviewPills meal={meal} />
+          <p className="text-xs text-muted-foreground">
+            Couldn&apos;t load the full recipe right now.
+          </p>
+        </div>
+      );
+    }
+    // recipe is ready in the DB; the fetch is in flight.
+    return (
+      <div aria-live="polite">
+        <PreviewPills meal={meal} />
+        <div className="shimmer-bar mt-3 h-0.5 w-full rounded-full" />
+      </div>
+    );
+  }
+
+  // Not ready. Hydration failed → fall back to the preview honestly; otherwise
+  // it's still being written.
+  if (hydration === "failed") {
+    return (
+      <div className="space-y-2">
+        <PreviewPills meal={meal} />
+        <p className="text-xs text-muted-foreground">
+          The full recipe didn&apos;t come together — here&apos;s the plan preview.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3" aria-live="polite">
+      <PreviewPills meal={meal} />
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary/60"
+        />
+        Writing the full recipe…
+      </div>
+    </div>
   );
 }

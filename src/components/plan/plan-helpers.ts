@@ -2,6 +2,15 @@ import type { SlotType } from "@/lib/plan-schema";
 
 export type Timeframe = "past" | "tonight" | "upcoming";
 
+// Lifecycle of a slot's full (hydrated) recipe. Mirrors the DB enum on
+// meal_plan_slots.recipeStatus. See decisions.md "Phase 1D Groceries" (2026-07-20).
+export type RecipeStatus = "none" | "hydrating" | "ready" | "stale";
+
+// Client-side view of a slot's hydration, for the card indicator. Folds "queued"
+// and "in progress" into one "writing" (every pending recipe shimmers until it
+// lands) and adds a session-local "failed". Produced by usePlanHydration.
+export type HydrationView = "idle" | "writing" | "ready" | "failed";
+
 // A normalized meal for rendering, derived from either a persisted DB slot or a
 // streamed partial AI meal. Streamed meals have no id/date/feedback yet.
 export interface DisplayMeal {
@@ -20,6 +29,9 @@ export interface DisplayMeal {
   servings: number | null;
   chips: string[];
   feedback: "thumbs_up" | "thumbs_down" | null;
+  // Background hydration: the linked full recipe (once ready) and its lifecycle.
+  recipeId: string | null;
+  recipeStatus: RecipeStatus;
 }
 
 export interface PlanSlot {
@@ -35,6 +47,8 @@ export interface PlanSlot {
   servings: number | null;
   rationale: string | null;
   feedback: "thumbs_up" | "thumbs_down" | null;
+  recipeId: string | null;
+  recipeStatus: RecipeStatus;
 }
 
 const WEEKDAYS = [
@@ -98,6 +112,8 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
     servings: slot.servings,
     chips: slot.chips ?? [],
     feedback: slot.feedback,
+    recipeId: slot.recipeId,
+    recipeStatus: slot.recipeStatus,
   };
 }
 
@@ -142,6 +158,8 @@ export function streamedMealToDisplay(
     servings: meal.servings ?? null,
     chips: (meal.chips ?? []).filter((s): s is string => typeof s === "string"),
     feedback: null,
+    recipeId: null,
+    recipeStatus: "none",
   };
 }
 

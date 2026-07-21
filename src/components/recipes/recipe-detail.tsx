@@ -12,15 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import {
-  ArrowLeft,
-  Heart,
-  Clock,
-  Users,
-  Pencil,
-  Trash2,
-  GitBranch,
-} from "lucide-react";
+import { RecipeView } from "./recipe-view";
+import { ArrowLeft, Heart, Pencil, Trash2 } from "lucide-react";
 
 export type RecipeDetailProps = {
   id: string;
@@ -151,107 +144,8 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
         </div>
       </div>
 
-      {/* Title + meta */}
-      <div>
-        <h1 className="text-xl font-bold tracking-tight">{recipe.title}</h1>
-        {recipe.description && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {recipe.description}
-          </p>
-        )}
-        <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-          {recipe.totalTimeMinutes && (
-            <span className="flex items-center gap-1">
-              <Clock className="size-3" />
-              {recipe.totalTimeMinutes} min
-            </span>
-          )}
-          {recipe.servings && (
-            <span className="flex items-center gap-1">
-              <Users className="size-3" />
-              {recipe.servings} servings
-            </span>
-          )}
-          {recipe.parentRecipeId && (
-            <span className="flex items-center gap-1 text-primary">
-              <GitBranch className="size-3" />
-              Modified
-            </span>
-          )}
-        </div>
-        {recipe.sourceUrl && (
-          <a
-            href={recipe.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary mt-1 inline-block hover:underline"
-          >
-            View original source
-          </a>
-        )}
-      </div>
-
-      {/* Ingredients */}
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Ingredients
-        </h2>
-        <ul className="space-y-2">
-          {recipe.ingredients.map((ing, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="shrink-0 size-1.5 rounded-full bg-primary mt-1.5" />
-              <span>
-                <span className="text-foreground">
-                  {ing.qty} {ing.unit}
-                </span>{" "}
-                <span className="text-foreground font-medium">{ing.item}</span>
-                {ing.notes && (
-                  <span className="text-muted-foreground"> ({ing.notes})</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Steps */}
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Steps
-        </h2>
-        <ol className="space-y-4">
-          {recipe.steps.map((step) => (
-            <li key={step.number} className="flex gap-3 text-sm">
-              <span className="shrink-0 size-6 rounded-full bg-white/5 flex items-center justify-center text-xs font-medium text-muted-foreground">
-                {step.number}
-              </span>
-              <div>
-                <p className="text-foreground leading-relaxed">{step.text}</p>
-                {step.durationMinutes && (
-                  <span className="text-xs text-primary mt-1 inline-flex items-center gap-1">
-                    <Clock className="size-3" />
-                    {step.durationMinutes} min
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      {/* Tags */}
-      {recipe.tags && recipe.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {recipe.tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Title + meta + ingredients + steps + tags (shared presentational body) */}
+      <RecipeView recipe={recipe} showHeader />
 
       {/* Modify dialog */}
       <Dialog open={modifyOpen} onOpenChange={setModifyOpen}>

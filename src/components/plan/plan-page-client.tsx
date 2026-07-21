@@ -16,6 +16,7 @@ import { ModifyStatusPills } from "./modify-status-pills";
 import { TalkToChefSheet } from "./talk-to-chef-sheet";
 import { ExpandedMealSheet } from "./expanded-meal-sheet";
 import { usePlanModify } from "./use-plan-modify";
+import { usePlanHydration } from "./use-plan-hydration";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
 import {
   type DisplayMeal,
@@ -50,7 +51,9 @@ export function PlanPageClient() {
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatScope, setChatScope] = useState<DisplayMeal | null>(null);
-  const [expandedMeal, setExpandedMeal] = useState<DisplayMeal | null>(null);
+  // Track the expanded meal by id (not a frozen snapshot) so the sheet reflects
+  // live changes — a recipe finishing hydration flips writing→full in place.
+  const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
   const [expandedOpen, setExpandedOpen] = useState(false);
 
   // Regenerate flow: routes back through the intent-capture screen so a new
@@ -152,8 +155,11 @@ export function PlanPageClient() {
 
   function openExpanded(meal: DisplayMeal) {
     clearError();
-    setExpandedMeal(meal);
+    setExpandedMealId(meal.id ?? null);
     setExpandedOpen(true);
+    // Jump this meal's recipe to the front of the hydration walk so it's ready
+    // fastest for the sheet the user just opened.
+    prioritize(meal.id);
   }
 
   function startOver() {
@@ -170,10 +176,34 @@ export function PlanPageClient() {
   // draft is always a reviewable week, regardless of the calendar.
   const showMidweek = isConfirmed && hasPast;
 
+  // Background recipe hydration runs whenever a real plan is on screen for review
+  // (draft) or mid-week — not during streaming, the intent screen, or a fully
+  // elapsed week (nothing left to cook).
+  const hydrationEnabled =
+    !!plan &&
+    persistedMeals.length > 0 &&
+    !isStreaming &&
+    !intentMode &&
+    !isElapsed;
+  const { hydrationByDate, prioritize } = usePlanHydration(
+    persistedMeals,
+    hydrationEnabled
+  );
+
+  // The live expanded meal, resolved from the current plan each render.
+  const expandedMeal = useMemo(
+    () =>
+      expandedMealId
+        ? persistedMeals.find((m) => m.id === expandedMealId) ?? null
+        : null,
+    [expandedMealId, persistedMeals]
+  );
+
   const cardAffordance = {
     pendingDate: pending?.date ?? null,
     pendingLabel: pending?.label ?? "",
     changedDates,
+    hydrationByDate,
   };
 
   function renderBody() {
@@ -304,11 +334,15 @@ export function PlanPageClient() {
     changedDates,
     ack,
     modifyError: modifyError?.message ?? null,
+    hydrationEnabled,
+    hydrationByDate,
     slots: persistedMeals.map((m) => ({
       date: m.date,
       timeframe: m.timeframe,
       slotType: m.slotType,
       title: m.title,
+      recipeStatus: m.recipeStatus,
+      recipeId: m.recipeId,
     })),
   }));
 
@@ -366,6 +400,9 @@ export function PlanPageClient() {
         workingLabel={pending?.label}
         modifyError={
           modifyError?.source === "expanded" ? modifyError.message : null
+        }
+        hydration={
+          expandedMeal?.date ? hydrationByDate[expandedMeal.date] : undefined
         }
       />
     </div>
