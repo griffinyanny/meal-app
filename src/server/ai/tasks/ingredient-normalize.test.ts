@@ -155,7 +155,9 @@ describe("normalizeIngredients", () => {
     const out = await normalizeIngredients([inputLine({ index: 0, item: "olive oil", unit: "tbsp" })]);
 
     expect(mockGenerateStructured).toHaveBeenCalledWith(
-      expect.objectContaining({ task: "ingredient-normalize" })
+      // Large full-week batches get the stream-tier (60s) timeout, not the 30s
+      // default, so a real week's list generation doesn't time out.
+      expect.objectContaining({ task: "ingredient-normalize", timeoutMs: 60_000 })
     );
     expect(out[0].canonicalName).toBe("olive oil");
   });

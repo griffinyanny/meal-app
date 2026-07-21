@@ -1,41 +1,62 @@
 # What's Next
 
-Last updated: 2026-07-21 (Session 27)
+Last updated: 2026-07-21 (Session 28)
 
-## ▶ NEXT SESSION — Phase 1D Slice 5 (WRAP), then close 1D
-**Slice D is complete** (S27: Recipes reorg #14 + cooked harvest; 294 unit + 51 E2E green). All in-scope 1D
-features are built. What remains is the **wrap**: the real-model merge-quality eval (the one soft DoD criterion
-the harness can't cover — it mocks the AI), a code review, a visual-QA pass on the new surfaces, and deploy.
+## ▶ NEXT SESSION — Generation-architecture rethink (a PLANNING session)
+**Phase 1D is CLOSED and shipped to prod (S28).** The next focus is a **material rethink of grocery-list
+generation to cut perceived latency** — a **planning/design session, not a build session.** (Griffin: even 15s on
+a loading screen is too long; a full-week normalize measured **37.7s**. The direction is locked but stay open to a
+more creative approach.) Tracked as **BUG-004** in `docs/bug-tracker.md`.
+
+**⭐ Model recommendation: Opus 4.8 (most capable) + plan mode + the `system-architect` agent.** This is
+sophisticated, cross-cutting architecture reasoning — hydration timing, an AI-call pipeline, caching, and the UX
+of perceived latency — so use the strongest model, open in plan mode, and consult `system-architect` before
+locking the approach. *(Reason: architecture depth matters more than speed here.)*
+
+**The decided direction (S28) — the plan should design + sequence these, and pressure-test alternatives:**
+1. **Normalize incrementally during plan review (#1)** — as each recipe hydrates in the background during review,
+   normalize its lines and cache them on the slot, so **confirm runs only the instant pure aggregate** (moves the
+   ~37s off the critical path into the review window the user already spends).
+2. **Progressive / legible loading (#5)** — stream the list in as sections resolve; let the user act on
+   already-merged items while the rest lands. (Griffin likes a *little* visible loading — it explains the work.)
+3. **Ingredient caching (#3)** — memoize canonical normalization (household/global) so repeat items skip the AI.
+   The compounding follow-up.
 
 **Copy-paste kickoff prompt:**
-> Resume meal app — Phase 1D Slice 5 (WRAP), to close 1D. All in-scope 1D features are built + machine-verified
-> (294 unit + 51 E2E green as of S27; Recipes reorg + cooked harvest shipped). Run the wrap: (1) **merge-quality
-> real-model eval** — generate a real week (idea → plan → hydrate → confirm → list) on the live model and judge
-> the grocery merge by eye (canonical quantity sums correct, semantic canonicalization right, aggregator
-> *under-merges* rather than mis-merges) — this is 1D's soft DoD criterion (#2), like 1C's chip/variety gate;
-> also spot-check NL→ops quality ("add stuff for tacos"). (2) `/code-review` across the Slice C/D diff. (3)
-> `/visual-qa` on the new surfaces (Groceries + the Recipes reorg). (4) Confirm the 10-min loop runs end to end
-> on a real week. (5) Doc pass + deploy to prod. Scope: `docs/scope-1D.md` (DoD near the top); plan:
-> `~/.claude/plans/rippling-herding-glacier.md`.
+> Resume meal app — **planning session** for the generation-architecture rethink (BUG-004): cut the perceived
+> latency of grocery-list generation. Phase 1D is closed + in prod. Open in **plan mode** and consult the
+> **system-architect** agent before locking anything. Current flow: plan-gen produces meal *concepts* only →
+> per-slot `plan.hydrateSlot` generates full recipes in the background during review → at confirm,
+> `grocery.generate` runs ONE batched `ingredient-normalize` (~37s on a full week) + the pure aggregate = the
+> pinch. Decided direction (stay open to better): (1) normalize each recipe incrementally as it hydrates during
+> review + cache on the slot, so confirm is just the instant aggregate; (2) progressive/legible loading; (3)
+> ingredient caching as the follow-up. Key files: `src/server/trpc/routers/grocery-generate.ts`,
+> `src/server/trpc/routers/plan-hydrate.ts`, `src/components/plan/use-plan-hydration.ts`,
+> `src/server/ai/tasks/ingredient-normalize.ts`, `src/server/grocery/aggregate.ts`. Deliver a sequenced build
+> plan (phases + risks + test strategy). A 60s normalize stopgap already shipped so nothing errors today. Read
+> `docs/bug-tracker.md` (BUG-004) + `docs/decisions.md` (S28) first.
 > ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the dashboard,
 > then `set -a; . ./.env.local; set +a` before any `db:*` command.
 
-*(No design-independent alternative needed — the wrap needs no new design; `/visual-qa` uses the already-imported
-designs.)*
+*(This is a planning session, so no design pass is needed to start — but the loading-treatment (#5) piece will
+want a design pass once the approach is chosen.)*
 
-- **Slice D S27 recap.** New: `src/server/recipes/harvest-cooked.ts` (cooked harvest, lazy-on-read in
-  `recipe.list`, non-fatal); `recipe.favorite` now detaches `sourcePlanId` on promote. UI rebuilt in real
-  components: `src/components/recipes/{types.ts,cooked-strip.tsx,recipe-filters.tsx,plan-drafts-shelf.tsx,recipe-toolbar.tsx}`
-  + rewritten `recipe-card.tsx` + `recipe-library.tsx`. E2E: `recipe-seed-states.ts` + `seedRecipeState` (wipe
-  now clears recipes) + `recipes.spec.ts` RC1–RC10. Design archived at `docs/design/surfaces/recipes/imported.dc.html`.
-- **Owed to Griffin — taste pass** (carried): Slice C, the Slice D Groceries pieces (staples row, Talk-to-Chef),
-  AND the Recipes reorg — does the tier split read calm? Is the **double bottom-bar** (floating toolbar over the
-  tab bar) too heavy on a phone? (idea-backlog taste-watch.) Mechanics are machine-verified.
-- **Not yet run on the real model:** merge quality + NL→ops quality + hydration faithfulness — all wrap-time
-  real-gen checks; the harness mocks the model.
+## Exact Status (end of Session 28 — Phase 1D CLOSED, shipped to prod)
+- **Phase 1D (Groceries) is COMPLETE — 4 of 6 R1 phases done; merged to prod.** Wrap: code review (3 fixes),
+  **merge quality PASSED the real-model soft DoD (#2), Griffin signed off**, visual-QA capture harness extended to
+  Groceries + Recipes (gate: 0 blockers / 0 high), 60s normalize stopgap. 294 unit + 51 E2E green; lint +
+  typecheck clean.
+- **Merge eval result:** 9/9 sums exact, scallions==green-onion canonicalization worked, zero mis-merges; NL→ops
+  clean. The hard V1 problem is solved for V1.
+- **Next:** generation-architecture rethink (planning session, BUG-004) — see the kickoff + model reco above.
+- **Owed to Griffin — taste pass** (carried, non-blocking): Slice C/D Groceries + the Recipes reorg — does the
+  tier split read calm? Is the **double bottom-bar** (floating toolbar over the tab bar) too heavy on a phone?
+  Mechanics AND pixels are machine-verified (visual-QA gate passed).
+- **Parked bugs** (`docs/bug-tracker.md`): BUG-004 (generation latency — next), BUG-002 (merge duplicate lines →
+  buy-unit fast-follow), BUG-001 (guessCategory compound-word misfire), BUG-003 (harvest writes in `recipe.list`).
 - **Still deferred (design later):** mid-week resync + ack pill + `mergeOverrides`; bespoke empty/error states;
-  **1F visual-refresh of Plan** to the Groceries fidelity bar (idea-backlog, S25); **manual recipe entry** (the
-  ＋ menu's dropped "Add manually", idea-backlog S27).
+  **1F visual-refresh of Plan** to the Groceries fidelity bar; **manual recipe entry** (the ＋ menu's dropped "Add
+  manually").
 
 ## Exact Status (end of Session 27 — Phase 1D Slice D COMPLETE)
 - **Slice D done: #11 Talk-to-Chef ✅ + #12 staples ✅ (S26) + #14 Recipes reorg ✅ (S27).** The chosen Claude

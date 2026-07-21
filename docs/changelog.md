@@ -4,6 +4,60 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 28 — 2026-07-21 (Slice 5 WRAP — 1D CLOSED + shipped to prod)
+
+### What happened
+Ran the full Phase 1D wrap and closed the phase. All in-scope features were already built (S22–S27); this session
+was the quality gauntlet + the real-model soft-DoD gate + deploy.
+
+**1. Code review (Slice C/D diff, 47 src files, high effort).** 5 findings, none blocking. Dismissed a
+data-loss candidate (verified `grocery-generate.ts` scopes the regen delete to `sourceType:"recipe"`, so
+manual/staple items survive a retry — the code comment is accurate). Fixed 3 (→ bug-tracker Resolved):
+grocery-row name-edit was a bare `<p onClick>` (a11y → keyboard-accessible `<button>`); manual reorder renumbered
+only unchecked items (→ renumbers the whole list); `commitEdit` double-fired on Enter (→ `handledRef` guard).
+The 2 low findings (guessCategory compound-word misfire; harvest-writes-in-`recipe.list`) → bug-tracker Open.
+
+**2. Real-model merge-quality eval (soft DoD #2 — Griffin's eye).** A throwaway `tsx` script (1C precedent, since
+deleted) ran the true production path on the live model: 7 real dinners → 7 real recipes → 70 ingredient lines →
+the real `ingredient-normalize` call → the pure aggregator → 49 merged items. **PASSED (Griffin signed off):**
+9/9 merge sums hand-verified exact (garlic 3+4+4+4+3=18 cloves; salt 3.25 tsp; olive oil 7 tbsp…); the hard
+canonicalization worked (**scallions + green onion → merged**); **zero mis-merges** (red vs yellow onion,
+olive/vegetable/sesame oil, lemon vs lime juice all correctly separate). NL→ops also clean (taco night added the
+right 5 items; "what am I out of" returned no ops; "remove the milk" resolved the ref safely). Blemishes are
+safe under-merges (duplicate salt/pepper "to taste" lines, carrot lb+cup) → bug-tracker BUG-002 (buy-unit
+fast-follow).
+
+**3. A real risk the eval surfaced → generation-architecture rethink (BUG-004).** The single batched normalize for
+a full 7-dinner week took **37.7s** — over the 30s one-shot AI timeout — so a full week could error. **Stopgap
+shipped:** per-call timeout override on `generateStructured`; `ingredient-normalize` now gets the 60s stream-tier
+bound (tested). **But** perceived generation time is too high regardless (Griffin: even 15s is too long on a
+loading screen), so we're doing a **material generation-architecture rethink as the next focus** — direction
+locked: **(#1) normalize incrementally during plan review** (each recipe normalizes as it hydrates → confirm runs
+only the instant pure aggregate) **+ (#5) progressive/legible loading**, with **(#3) ingredient caching** as the
+compounding follow-up. Open to a more creative approach in the design pass. Sequence: 1D ships now on the stopgap;
+the rethink is its own planning session. (Current flow, for reference: plan-gen = concepts only → per-slot
+`hydrateSlot` recipes in the background during review → one big normalize+aggregate at confirm = the pinch.)
+
+**4. New: a parked-bug tracker system** (Griffin's ask — no more bugs rotting in a backlog). `docs/bug-tracker.md`:
+every parked defect gets an id + repro + severity + "address by" target + open/closed status, reviewed every
+session. Wired into the session-end protocol in CLAUDE.md; saved as a standing (cross-project) preference.
+
+**5. Visual QA — extended the capture harness to Groceries + Recipes** (it was Plan-tab only). New Layer-A capture
+specs (`groceries.capture.ts` + `recipes.capture.ts` + their `*-facts.ts`), `capture-runtime` gained a
+`useHud:false` flag for tabs without a debug-HUD section, and `playwright.capture.config.ts` now globs all
+`*.capture.ts` (excludes `-live`). Captured 11 states (6 Groceries + 5 Recipes), read every PNG, critiqued
+against the rubric. **Gate PASSED: 0 blockers, 0 high.** Everything renders faithfully to the imported design.
+Non-gating: the Recipes double bottom-bar (logged taste-watch) + the minimal error void (scope-deferred).
+
+**6. Verification.** 294 unit + **51 E2E** green; lint + typecheck clean; the 10-minute loop runs end to end on a
+real week (idea → plan → hydrate → confirm → list) — confirmed via the eval's real-model pipeline run.
+
+### Result
+**Phase 1D (Groceries) is COMPLETE — 4 of 6 R1 phases done.** Merged to prod. Next: the generation-architecture
+rethink (planning session — see whats-next).
+
+---
+
 ## Session 27 — 2026-07-21 (Slice D COMPLETE — the Recipes-tab reorg #14 + cooked-signal harvest)
 
 ### What happened

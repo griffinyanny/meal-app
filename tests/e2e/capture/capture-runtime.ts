@@ -48,6 +48,11 @@ export interface CaptureRunMeta {
   layer: string;
   sectionKey: string;
   viewport: { width: number; height: number };
+  // Whether this tab publishes a debug-HUD section to poll before each shot.
+  // Only Plan does; set false for tabs without one (Groceries/Recipes) so we
+  // don't click the global HUD toggle — a click that a state's open drawer scrim
+  // would intercept and hang on. Defaults to true.
+  useHud?: boolean;
 }
 
 // Turn on the debug HUD for this context (mirrors debug-hud.spec.ts). Must run
@@ -158,7 +163,8 @@ async function captureOne(
   page: Page,
   def: CaptureStateDef,
   runDir: string,
-  sectionKey: string
+  sectionKey: string,
+  useHud: boolean
 ): Promise<ManifestEntry> {
   const screenshot = `${def.id}.png`;
   try {
@@ -174,7 +180,9 @@ async function captureOne(
         .waitFor({ state: "visible", timeout: 15_000 });
     }
 
-    const section = await waitForHudSection(page, sectionKey, def.expectedState);
+    const section = useHud
+      ? await waitForHudSection(page, sectionKey, def.expectedState)
+      : null;
     const assertedState =
       section && typeof section.derivedState === "string"
         ? (section.derivedState as string)
@@ -222,10 +230,11 @@ export async function captureStates(
   runDir: string,
   meta: CaptureRunMeta
 ): Promise<ManifestEntry[]> {
-  await enableHud(page);
+  const useHud = meta.useHud !== false;
+  if (useHud) await enableHud(page);
   const entries: ManifestEntry[] = [];
   for (const def of defs) {
-    entries.push(await captureOne(page, def, runDir, meta.sectionKey));
+    entries.push(await captureOne(page, def, runDir, meta.sectionKey, useHud));
   }
   writeManifest(runDir, meta, entries);
   return entries;

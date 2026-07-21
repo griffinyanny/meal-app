@@ -153,7 +153,14 @@ mechanics are deterministic; the cooked harvest runs server-side on list load. S
 
 ---
 
+## Visual-QA capture coverage (Layer A — `playwright.capture.config.ts`)
+The capture harness (Claude reads the PNGs, critiques vs `docs/design/visual-qa-rubric.md`) now covers three tabs:
+- **Plan** — `plan.capture.ts` (5 states; HUD-verified).
+- **Groceries** — `groceries.capture.ts` (S28): ready-grouped, generating, error, manual-mode, checked-GOT-IT, chef-sheet. No HUD section → `useHud:false`, gated on readyText + facts.
+- **Recipes** — `recipes.capture.ts` (S28): library, cooked-filter, drafts-expanded, create-menu, empty.
+S28 gate: 0 blockers, 0 high across all 11 Groceries+Recipes states.
+
 ## Not yet cataloged (future)
 - 1B recipe flows — capture / import / generate / modify (the AI-calling recipe mutations).
-- Groceries — merge-review split and inline edit interactions (unit-covered; add E2E if they regress).
+- Groceries — item drag-reorder (manual mode) + merge-review split interactions (unit-covered; add E2E if they regress).
 - Auth: login loop / chunked-cookie regression (see whats-next).
