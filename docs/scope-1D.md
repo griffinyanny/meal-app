@@ -10,7 +10,7 @@
 > (reconciled 2026-07-20) + the architecture memo `~/.claude/plans/resume-meal-app-sorted-reddy-agent-ab9e5e211025b4d32.md`.
 
 **Created:** 2026-07-19 (S21) · **Reconciled:** 2026-07-20 (S22) · **Milestone:** Phase 1D, M4, part of V1 "The 10-Minute Weekly Ritual"
-**Phase status:** 🔨 Slice 0 ✅ + **Slice A ✅ (hydration spine complete, S23)** → Slice B (list generation + merge) next
+**Phase status:** 🔨 Slice 0 ✅ + Slice A ✅ + **Slice B ✅ (list generation + hybrid merge, S24)** → Slice C (the shoppable list UI) next
 
 ---
 
@@ -59,9 +59,9 @@ Status: ✅ shipped & verified · 🔶 in progress · ⬜ not built
 | 1 | **Background hydration (plan-time)** | Plan review hydrates slots into full recipes via `plan.hydrateSlot` (reuses 1B `generate-recipe`), day-1-first, tap-to-prioritize; idempotent (skip `ready`, **CAS on the `recipeStatus` column** — not `updatedAt`, see decisions.md S23); resumable from `plan.current`; card shows shimmer→ready. Non-cookable + past slots skip. Failure is non-fatal (falls back to preview pills). | ✅ |
 | 2 | **Modify-invalidation fix** | `plan.modify` nulls `recipeId` + sets `recipeStatus:"stale"` on every changed meal (fixes the latent `toSlotValues` bug); stale slots re-hydrate. Covered by the plan-modify regression tests. | ✅ |
 | 3 | **Meal-sheet recipe upgrade** | Expanded meal sheet shows a hydration-aware recipe section (writing→full→failed) via an extracted presentational `RecipeView` (from `recipe-detail.tsx`), reused inline — the wife's during-review need. Sheet reads the live slot by id, so writing→full flips in place. | ✅ |
-| 4 | **Confirm → list generation** | `plan.confirm` = fast status flip + creates `grocery_lists(pending)`. Idempotent `grocery.generate` runs sweep→normalize→aggregate→write (checkpointed `generationStatus`), producing `grocery_items` with quantity, unit, category, `sources` provenance. Tab polls; phase-named loading copy. | ⬜ |
-| 5 | **AI ingredient-normalize task** | New AI task (reserved config slot) → per-line `{canonicalName, category, numericQty, canonicalUnit, confidence}`. Zod strict-mode, prompt snapshot-tested, graceful fallback. Returns NO summed quantities. | ⬜ |
-| 6 | **Deterministic aggregator** | Pure function: parses qty strings (fractions, ranges, "pinch"→unquantified), sums by canonical group + unit, and **under-merges** (different type/form ⇒ separate). Heavily unit-tested; the correctness core. **No LLM arithmetic.** | ⬜ |
+| 4 | **Confirm → list generation** | `plan.confirm` = fast status flip + creates `grocery_lists(pending)`. Idempotent `grocery.generate` runs sweep→normalize→aggregate→write (checkpointed `generationStatus`), producing `grocery_items` with quantity, unit, category, `sources` provenance. Tab polls; phase-named loading copy. | ✅ (S24; the shoppable UI is #7/Slice C — Slice B renders a plain grouped list) |
+| 5 | **AI ingredient-normalize task** | New AI task (reserved config slot) → per-line `{canonicalName, category, numericQty, canonicalUnit, confidence}`. Zod strict-mode, prompt snapshot-tested, graceful fallback. Returns NO summed quantities. | ✅ (S24) |
+| 6 | **Deterministic aggregator** | Pure function: parses qty strings (fractions, ranges, "pinch"→unquantified), sums by canonical group + unit, and **under-merges** (different type/form ⇒ separate). Heavily unit-tested; the correctness core. **No LLM arithmetic.** | ✅ (S24; 22 aggregator unit tests) |
 | 7 | **The list UI (categorized) + organize toggle** | Built from the imported design: category-grouped glass rows; **Grouped ↔ Ungrouped/manual ("notepad") toggle**, with **section reorder + item drag** persisted (`organizeMode`, `aisleOrder`, item `position`). | ⬜ |
 | 8 | **Inline merge-review** | Uncertain merges show an amber dot; tap the row → per-meal breakdown + "Split into separate items" (split = direct `grocery_items` edit). No banner/strip/overlay, no forced action. | ⬜ |
 | 9 | **Check-off (one zone)** | Checking removes the item from its section and drops it into a single collapsible bottom **"GOT IT"** zone. Progress bar + quiet "List complete" banner. Persists; survives refresh. | ⬜ |
@@ -87,8 +87,10 @@ not E2E — the harness mocks the model. E2E covers mechanics.
 
 - **Slice 0 — Reconcile docs + save the imported design** *(✅ S22).*
 - **Slice A — Hydration spine** (#1–3, #15 schema, #17 recipe.get) *(✅ S23 — `plan.hydrateSlot` + walker + `RecipeView` + meal-sheet upgrade + `recipe-generate` fixture; 185 unit + 30 E2E green).*
-- **Slice B — List generation + the merge** (#4–6, schema for grocery_lists+grocery_items, normalize task,
-  the aggregator, tab states + polling).
+- **Slice B — List generation + the merge** (#4–6) *(✅ S24 — the pure `aggregate.ts` under-merge core, the
+  `ingredient-normalize` task + snapshot-tested prompt + E2E fixture, `grocery.generate` orchestration
+  (idempotent CAS + checkpointed phases + transactional replace), `plan.confirm`→pending list, Groceries tab
+  generating/ready/error states + polling; 224 unit green).*
 - **Slice C — The shoppable list** (#7–10, #13 — builds the imported design: organize toggle + reorder,
   inline merge-review, one-zone check-off, quick-add, export).
 - **Slice D — Staples + Talk-to-Chef + Recipes tab** (#11, #12, #14).
@@ -132,3 +134,4 @@ Backend (A/B) has no design dependency; the imported design drives C/D.
 | 2026-07-19 (S21) | Doc created at 1D kickoff (confirm-time expand + hybrid merge). | Planning pass; settle the hard V1 problem before building. |
 | 2026-07-20 (S22) | **Reconciled** with the pre-existing locked plan (`resume-meal-app-sorted-reddy.md`, forgotten at S21) → **plan-time hydration** supersedes confirm-time; adopted the projection model, the imported Claude Design (inline merge-review + Grouped/manual reorder + Talk-to-Chef sheet + one-zone check-off); **trimmed** mid-week resync, bespoke empty/error, and `mergeOverrides` out of 1D. | Griffin surfaced the older, more-thorough plan (architect + design-critic consulted) + completed the design in Claude Design; the two plans were merged into `rippling-herding-glacier.md`. |
 | 2026-07-20 (S23) | **Slice A complete** — features #1–3, #15, #17 ✅. CAS token corrected to the `recipeStatus` column (not `updatedAt`); `recipe.get` resolved by rule (queries null / mutations throw). No scope change — build progress. | Hydration spine built + verified (185 unit + 30 E2E green). |
+| 2026-07-20 (S24) | **Slice B complete** — features #4–6 ✅. Two build clarifications, no scope change: (a) resolved the `numericQty`/"no LLM arithmetic" overlap — the AI's normalize outputs are grouping keys only (a wrong key can only under-merge, never mis-merge); all arithmetic is pure code, `numericQty` is a solo-only fallback. (b) The amber merge-review dot is derived from `sources.length > 1` (no new column) — faithful to #6 and keeps migration 0004 unchanged. | Hybrid merge built + verified (224 unit green). |

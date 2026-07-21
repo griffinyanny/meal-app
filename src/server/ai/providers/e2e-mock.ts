@@ -19,6 +19,7 @@ import type { AITask } from "../config";
 import {
   buildGenerationFixture,
   buildModificationFixture,
+  buildNormalizeFixture,
   buildRecipeFixture,
   parseMockDirectives,
 } from "./e2e-mock-fixtures";
@@ -91,7 +92,9 @@ async function mockGenerate(task: AITask, options: LanguageModelV3CallOptions) {
       ? buildModificationFixture(text)
       : task === "recipe-generate"
         ? buildRecipeFixture(text)
-        : null;
+        : task === "ingredient-normalize"
+          ? buildNormalizeFixture(text)
+          : null;
 
   if (fixture === null) {
     throw new Error(

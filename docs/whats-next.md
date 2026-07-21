@@ -1,46 +1,56 @@
 # What's Next
 
-Last updated: 2026-07-20 (Session 23)
+Last updated: 2026-07-20 (Session 24)
 
-## ▶ NEXT SESSION — continue Phase 1D (Groceries), Slice B
+## ▶ NEXT SESSION — Phase 1D (Groceries), Slice C (the shoppable list UI)
 **Copy-paste kickoff prompt:**
-> Resume meal app — continue Phase 1D (Groceries), Slice B (list generation + the merge). Authoritative
-> plan: `~/.claude/plans/rippling-herding-glacier.md`; phase scope: `docs/scope-1D.md`. Slice 0 + Slice A
-> are done + committed (hydration spine: `plan.hydrateSlot` + walker + `RecipeView` + meal-sheet upgrade;
-> 185 unit + 30 E2E green). Build Slice B: `plan.confirm` creates `grocery_lists(status:draft,
-> generationStatus:pending)`; the idempotent `grocery.generate` (sweep stragglers → `ingredient-normalize`
-> → deterministic aggregate → transactional write of `sourceType:"recipe"` items → `ready`; checkpointed
-> `generationStatus`; `error` + minimal retry via Plan's stream-error card); the new `ingredient-normalize`
-> AI task (reserved config slot — returns per-line `{canonicalName, category, numericQty, canonicalUnit,
-> confidence}`, NO summed quantities; snapshot-tested prompt + `e2e-mock` fixture); and **the pure,
-> heavily unit-tested deterministic aggregator** incl. the **under-merge** rule (#6) as first-class tested
-> behaviour (fractions/ranges/"pinch"→unquantified, unit compatibility, canonical grouping — NO LLM
-> arithmetic). Groceries tab states (generating/ready/error) + polling. Backend has no design dependency.
-> ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the
-> dashboard, then `set -a; . ./.env.local; set +a` before any `db:*` command.
+> Resume meal app — Phase 1D Slice C (the shoppable list). Backend is done (Slice B, S24): `plan.confirm`
+> creates the pending list, `grocery.generate` builds the merged/categorized projection (the pure under-merge
+> aggregator + the `ingredient-normalize` task), and the Groceries tab already polls + renders
+> generating/ready/error. Now build the **as-built design** at `docs/design/surfaces/groceries/imported.dc.html`
+> (projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`): the categorized glass-row list; the **Grouped↔Ungrouped
+> ("notepad") toggle** with section reorder + item drag (persist `organizeMode` + `aisleOrder` + item
+> `position`); **inline merge-review** (amber dot when `sources.length > 1` → tap the row → per-meal breakdown
+> + "Split into separate items" as a direct `grocery_items` edit); **one-zone check-off** (checked item → the
+> single collapsible bottom "GOT IT" zone) + progress bar + quiet completion banner; **quick-add** (top +
+> bottom inline rows, optimistic insert → background AI tidy → animate into section, dedupe pill); **clipboard
+> export** (grouped plain text). Empty = zero-item list + add row. **Extend the E2E harness to Groceries**
+> (generation states, one-zone check-off, quick-add + dedupe, reorder persistence). Plan:
+> `~/.claude/plans/rippling-herding-glacier.md`; scope: `docs/scope-1D.md`.
+> ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the dashboard,
+> then `set -a; . ./.env.local; set +a` before any `db:*` command.
 
-- **Read first:** `~/.claude/plans/rippling-herding-glacier.md` (reconciled 2026-07-20 — the single
-  source of truth; supersedes `resume-meal-app-sorted-reddy.md` + its architecture memo) and
-  `docs/scope-1D.md`. The `decisions.md` 2026-07-20 entries carry the 12 reconciliation decisions + the
-  Slice A build decisions (CAS token, `recipe.get` convention).
-- **Slice A recap (done S23):** hydration is client-orchestrated during Plan review via `plan.hydrateSlot`
-  (`plan-hydrate.ts` service, status-column CAS, conditional write-back) + the `use-plan-hydration` walker.
-  The grocery projection Slice B builds on top consumes the hydrated `recipes` rows (`sourceType:
-  "plan_generated"`, linked via `meal_plan_slots.recipeId` when `recipeStatus:"ready"`).
-- **Architecture:** plan-time hydration (recipes hydrate in the background during review — the wife
-  reads full recipe detail while evaluating; confirm is near-instant) → grocery list is a
-  **projection** = aggregate(confirmed plan's recipes) + manual + staples → **hybrid merge** (AI
-  canonicalizes names/categories, deterministic code does the arithmetic + **under-merges**).
-- **Design is DONE + imported:** `docs/design/surfaces/groceries/imported.dc.html` (projectId
-  `8bc73bfa-9683-4b44-ab06-40da9ec78590`, `Groceries.dc.html`). Build Slices C/D against it. Baked-in
-  decisions: **inline merge-review + under-merge**, **one-zone check-off** (checked → bottom "GOT IT"
-  zone), **Grouped↔manual reorder**, **Talk-to-Chef grocery sheet** (secondary NL add).
-- **Slice order:** A (hydration spine — schema ✅, invalidation ✅, mutation+walker+RecipeView next) →
-  B (`grocery.generate` + `ingredient-normalize` task + the pure deterministic aggregator) →
-  C (list UI) → D (staples + Talk-to-Chef NL task + Recipes-tab reorg) → wrap (E2E extend +
-  merge-quality eval + code-review + visual-qa + deploy).
-- **Trimmed OUT of 1D** (design later): mid-week resync + ack pill + `mergeOverrides`; bespoke
-  empty/error states (empty = zero-item list + add row; error = reuse Plan's stream-error card).
+- **No NEW design pass needed** — the Groceries design is already imported; Slice C *builds* it (visual-qa at
+  wrap catches drift). **Design-independent alternative** if you'd rather skip UI this session: **Slice D's
+  Talk-to-Chef NL→list-ops AI task** (new AI task + snapshot prompt + E2E fixture + Zod-validated ops, never
+  trust AI-returned item IDs) — backend-shaped like Slice B.
+- **Slice B recap (done S24):** the projection pipeline is built + unit-verified. `grocery.generate`
+  (idempotent CAS on `generationStatus`, checkpointed phases, transactional replace of `sourceType:"recipe"`
+  items) consumes the hydrated recipes and writes merged `grocery_items` with `sources` provenance. The
+  aggregator **under-merges** (different name/unit/low-confidence ⇒ separate rows) and does all arithmetic in
+  pure code (the AI only supplies grouping keys). **Amber = `sources.length > 1`** — Slice C renders it.
+- **Key files (Slice B):** `src/server/grocery/aggregate.ts` (the pure under-merge core + parser),
+  `src/server/ai/tasks/ingredient-normalize.ts` + `src/server/ai/prompts/ingredient-normalize.ts` (the task +
+  snapshot-tested prompt), `src/server/trpc/routers/grocery-generate.ts` (orchestration),
+  `src/components/groceries/groceries-page-client.tsx` (the tab), `src/lib/grocery-categories.ts` (client-safe
+  taxonomy).
+- **Not yet run on the real model:** merge quality (canonical sums + under-merge correct on a real week) is a
+  wrap-time real-gen check + Griffin's taste pass; the E2E harness mocks the model.
+- **Trimmed OUT of 1D** (design later): mid-week resync + ack pill + `mergeOverrides`; bespoke empty/error
+  states (empty = zero-item list + add row; error = reuse Plan's stream-error card, already wired in Slice B).
+
+## Exact Status (end of Session 24 — Phase 1D Slice B complete)
+- **Phase 1D (Groceries): Slice 0 ✅ + Slice A ✅ + Slice B ✅.** A confirmed plan now produces a merged,
+  categorized grocery list end to end (the M4 mechanic). Built: the pure `aggregate.ts` under-merge core (22
+  unit tests), the `ingredient-normalize` AI task + snapshot-tested prompt + E2E fixture, `grocery.generate`
+  orchestration (idempotent CAS + checkpointed phases + transactional replace), `plan.confirm`→pending list,
+  and the Groceries tab (poll + generating/ready/error + one-shot generate trigger). **224 unit green**; lint +
+  typecheck clean.
+- **Next:** Slice C (the shoppable list UI) — see the kickoff prompt above. Then Slice D (staples +
+  Talk-to-Chef + Recipes-tab reorg) → wrap (E2E extend + merge-quality eval + code-review + visual-qa +
+  deploy).
+- 3 of 6 R1 phases done (1A/1B/1C); 1D in progress. R1 boundary = solo-user MVP (sharing/realtime/cook mode →
+  V1.5). Post-MVP gate unchanged.
 
 ## Exact Status (end of Session 23 — Phase 1D Slice A complete)
 - **Phase 1D (Groceries): Slice 0 ✅ + Slice A ✅.** The hydration spine is built + machine-verified:

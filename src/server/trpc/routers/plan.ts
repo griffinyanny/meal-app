@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, aiProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
-import { mealPlans, mealPlanSlots } from "@/server/db/schema";
+import { mealPlans, mealPlanSlots, groceryLists } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getChefContext, writeMemory } from "@/server/ai/memory";
 import { modifyPlan } from "@/server/ai/tasks/modify-plan";
@@ -193,6 +193,26 @@ export const planRouter = router({
 
       if (!updated) {
         throw new TRPCError({ code: "NOT_FOUND" });
+      }
+
+      // Create the pending grocery list for this plan. Confirm stays fast — a
+      // status flip + an empty draft list; the Groceries tab does the actual
+      // projection (grocery.generate). Guarded so a second confirm can't spawn a
+      // duplicate list (grocery.current returns the newest, which would otherwise
+      // re-trigger generation). See decisions.md "Phase 1D" (2026-07-20).
+      const existingList = await ctx.db.query.groceryLists.findFirst({
+        where: and(
+          eq(groceryLists.mealPlanId, input.planId),
+          eq(groceryLists.householdId, ctx.householdId)
+        ),
+      });
+      if (!existingList) {
+        await ctx.db.insert(groceryLists).values({
+          householdId: ctx.householdId,
+          mealPlanId: input.planId,
+          status: "draft",
+          generationStatus: "pending",
+        });
       }
 
       return updated;

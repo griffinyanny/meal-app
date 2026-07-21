@@ -4,6 +4,54 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 24 — 2026-07-20 (Slice B complete — list generation + the hybrid merge)
+
+### What happened
+Built Phase 1D Slice B: a confirmed plan's hydrated recipes now become a merged, categorized grocery list.
+The schema (`grocery_lists`/`grocery_items`) already existed (migration 0004, S22), so this was the
+generation pipeline + the merge, no new migration.
+
+- **The deterministic aggregator** (`src/server/grocery/aggregate.ts`) — the correctness core. A pure
+  function that parses each recipe line's own quantity string (fractions, mixed numbers, unicode ½, ranges,
+  "a pinch"→unquantified) and sums same-`(canonicalName, canonicalUnit)` lines. **Under-merges** by design:
+  different name, different unit, or a low-confidence line ⇒ separate rows (cherry ≠ roma tomatoes; cups ≠
+  tbsp). **22 unit tests** cover the parser edge cases and every merge/under-merge branch.
+- **`ingredient-normalize` AI task** (`src/server/ai/tasks/ingredient-normalize.ts` + prompt) — one batched
+  call returning per-line `{canonicalName, category, canonicalUnit, numericQty, confidence}`. **Semantics
+  only, no arithmetic.** Strict-mode Zod, category coerced to the enum, robust `reconcileNormalized`
+  post-processing (one clean line per input even if the model drifts). **Snapshot-tested system prompt** +
+  9 tests.
+- **`grocery.generate` orchestration** (`src/server/trpc/routers/grocery-generate.ts`) — idempotent + race-safe
+  (the `generationStatus` column is the CAS token, same trick as Slice A): claim `pending|error → hydrating`,
+  sweep straggler slots, `normalizing` (the AI call), `aggregating` (pure), then a **transactional replace of
+  only `sourceType:"recipe"` items** (retries + any manual/staple items coexist) → `ready`. Failure records
+  `generationError` and returns (status is the one error channel). 6 state-machine tests.
+- **`plan.confirm`** now also creates the `grocery_lists(pending)` for the plan, guarded so a re-confirm can't
+  spawn a duplicate. Stays fast — the Groceries tab does the actual projection.
+- **Groceries tab** (`groceries-page-client.tsx`) — polls `grocery.current` while non-terminal, fires
+  `grocery.generate` once on a `pending` list, and renders **generating** (phase-named chef-voice copy +
+  shimmer), **error** (reuses Plan's stream-error card + one-tap retry), and **ready** (a plain grouped list —
+  the designed list with amber dots / drag / one-zone check-off is Slice C).
+- **E2E fixture** for `ingredient-normalize` added to the deterministic AI mock, so the whole generate
+  pipeline runs under the harness with no OpenAI spend.
+- **Aisle taxonomy moved to `src/lib/grocery-categories.ts`** (client-safe) and re-exported from the schema,
+  so the UI shares the category list without pulling Drizzle into the browser bundle.
+
+### Key build decisions (full detail in decisions.md, 2026-07-20 S24)
+- **Resolved the `numericQty` / "no LLM arithmetic" overlap:** the AI's normalize outputs are grouping keys
+  only — a wrong key can only *under*-merge (safe), never mis-merge. All arithmetic is pure code; `numericQty`
+  is a solo-only fallback for lines the code parser can't read.
+- **Amber merge-review dot = `sources.length > 1`, derived at render (no new column)** — faithful to decision
+  #6, keeps migration 0004 unchanged. Slice C renders it.
+
+### Verification
+- **224 unit tests green** (was 185; +39: 22 aggregator, 9 normalize, 6 generate, 2 confirm). Lint + typecheck
+  clean.
+- **E2E suite green — 30/30** (Plan tab, incl. the confirm flow that now also creates the pending grocery
+  list; no regressions). Groceries has no E2E coverage yet — the harness extends to it in Slice C/wrap.
+
+---
+
 ## Session 23 — 2026-07-20 (Slice A complete — the hydration spine)
 
 ### What happened

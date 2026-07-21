@@ -4,6 +4,41 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Slice B build decisions — the hybrid merge, resolving "no LLM arithmetic"** (2026-07-20, Session 24)
+- **The AI's normalize outputs are GROUPING KEYS, never arithmetic.** The plan listed `numericQty` in the
+  `ingredient-normalize` output *and* said the aggregator does the qty-string parsing with "no LLM arithmetic"
+  (2026-05-26 rule) — an overlap. Resolved: `canonicalName` + `canonicalUnit` are used only to decide what
+  merges with what. The safety property this buys is the whole point of under-merge (#6): a wrong AI key can
+  at worst *fail* to merge two things (a safe separate row), never force an incorrect merge, because a bad key
+  lands in a different bucket. **All arithmetic is pure code** parsing the recipe's own quantity strings
+  (`aggregate.ts`: fractions, mixed numbers, unicode ½, ranges, "a pinch"→unquantified). The AI's `numericQty`
+  is a **fallback only** — used for a lone line whose string the code parser can't read, and such a line is
+  forced solo (confidence-gated) so its uncertain number is never summed with another. Kept in the schema per
+  scope #5 + as the seam for the future buy-unit layer.
+- **Amber = "summed across ≥2 meals," derived from `sources.length > 1` — NO new schema column.** Faithful to
+  #6 ("the amber dot only means 'I summed this across meals — verify the count if you like'"). Under-merge
+  routes uncertain lines to their own single-source rows (no amber); confident merges become multi-source rows
+  (amber). So the persisted `sources` jsonb fully encodes the rendered amber state; Slice C derives it. Avoided
+  drifting the migration-0004 schema.
+- **Same-unit-only summing; ranges → higher end.** Per the deferred unit-conversion engine, 1D groups by exact
+  `(canonicalName, canonicalUnit)` — cups vs tbsp for the same item stay two honest rows, no fake conversion.
+  A range ("2–3 cloves") resolves to the higher end (buy enough, don't come up short).
+- **`grocery.generate` is idempotent + race-safe via the `generationStatus` column as CAS token** (same trick
+  as Slice A hydration): claim `pending|error → hydrating`; a double-fire from a re-mounted tab matches 0 rows
+  and skips. `error` is claimable so retry re-runs the projection. Phases are checkpointed
+  (hydrating→normalizing→aggregating→ready) so the tab's poll drives chef-voice copy. The write **replaces only
+  `sourceType:"recipe"` items** so retries and any manual/staple items coexist. On failure the status column IS
+  the error channel (record `generationError`, return — don't throw — so failure has one representation; the tab
+  reuses Plan's stream-error card + one-tap retry).
+- **`plan.confirm` stays fast** — a status flip + an empty `grocery_lists(pending)` (guarded so a re-confirm
+  can't spawn a duplicate). The **Groceries tab** fires `grocery.generate` when it lands on a `pending` list, so
+  confirm never blocks on generation.
+- **The aisle taxonomy moved to `src/lib/grocery-categories.ts`** (client-safe, no Drizzle import) and is
+  re-exported from `@/server/db/schema`. Lets the Groceries UI share the one category list + order without
+  pulling the server schema into the browser bundle. Single source of truth, no duplication.
+
+---
+
 **Slice A build decisions — hydration CAS token + `recipe.get` convention** (2026-07-20, Session 23)
 - **Hydration CAS uses the `recipeStatus` column, not `updatedAt`** (the plan said "CAS on `slot.updatedAt`").
   `defaultNow()`/seeded rows carry sub-millisecond `timestamptz` precision that truncates to ms when read into
