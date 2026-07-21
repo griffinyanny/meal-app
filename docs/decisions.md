@@ -4,6 +4,24 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Slice A build decisions — hydration CAS token + `recipe.get` convention** (2026-07-20, Session 23)
+- **Hydration CAS uses the `recipeStatus` column, not `updatedAt`** (the plan said "CAS on `slot.updatedAt`").
+  `defaultNow()`/seeded rows carry sub-millisecond `timestamptz` precision that truncates to ms when read into
+  JS, so an `updatedAt =` equality guard would match 0 rows and hydration would silently never fire. An atomic
+  `UPDATE … WHERE recipeStatus IN ('none','stale')` is a correct CAS token (a concurrent claim re-checks the
+  just-committed row and matches 0) and the conditional write-back `WHERE recipeStatus = 'hydrating'` still
+  catches a modify that intervened mid-generate. Same guarantees, no precision footgun.
+- **`recipe.get` returns `null` on not-found; mutations throw `NOT_FOUND`** (resolves open-questions #3).
+  The inconsistency is resolved *by rule* (queries null, mutations throw), not by making `get` throw. `null`
+  is the right shape for the plan meal sheet's optional recipe fetch — a detached/deleted recipe falls back
+  gracefully instead of dropping the query into an error state. Trivially reversible if we later want uniform
+  throwing. Codified in a comment on `recipe.get`.
+- **Hydration orchestration extracted to `plan-hydrate.ts`** (not inline in the router) to keep `plan.ts`
+  under the 300-line rule and make the idempotency/CAS/write-back unit-testable without tRPC ceremony. Mirrors
+  the existing `plan-modify` split.
+
+---
+
 **Phase 1D Groceries architecture — plan-time hydration + hybrid merge (reconciled)** (2026-07-20, Session 22)
 - **Supersedes** the 2026-07-19 "expand-then-hydrate at confirm" entry that briefly sat here. That was a
   thinner re-derivation written when the earlier, more-thorough 1D plan (`~/.claude/plans/resume-meal-app-sorted-reddy.md`,

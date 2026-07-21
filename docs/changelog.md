@@ -4,6 +4,52 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 23 — 2026-07-20 (Slice A complete — the hydration spine)
+
+### What happened
+Built the rest of Phase 1D Slice A on top of S22's schema+invalidation. The plan slot's lightweight
+"meal concept" now hydrates into a real, readable recipe in the background during Plan review.
+
+- **`plan.hydrateSlot` mutation** (`aiProcedure`, reuses the 1B `generate-recipe` task). Orchestration
+  extracted to `src/server/trpc/routers/plan-hydrate.ts` (`hydrateSlotRecipe`) to keep the router under 300
+  lines and make the race-safety unit-testable. Idempotent: skips `ready`/non-cookable slots, **atomically
+  claims `none|stale → hydrating` using the status column as the CAS token**, generates, then **conditionally
+  writes back `→ ready` only if still `hydrating`** (a modify that lands mid-generate isn't clobbered — the
+  orphaned recipe cascades away via `sourcePlanId`). 8 unit tests cover idempotency, the claim, the stale
+  write-back, and non-fatal generation failure (releases the claim to `none`).
+- **CAS token = status column, not `updatedAt`** (corrected the plan): `defaultNow()` rows carry
+  sub-millisecond precision that truncates when read into JS, so an `updatedAt =` guard would never match and
+  hydration would silently never fire. The atomic status-column claim is the correct, footgun-free token.
+- **Client hydration walker** (`use-plan-hydration.ts`): walks cookable slots **day-1-first, one at a time**
+  (gentler on the AI budget than a parallel burst), **tap-to-prioritize** jumps a slot to the front, and
+  **patches each result into the plan cache** (no invalidate → no refetch storm, modify's optimistic state
+  untouched). Cards go **shimmer → ready**. Skips past days in the mid-week view (found in review — they're
+  cooked/gone and the list was projected at confirm).
+- **Meal-sheet recipe upgrade**: extracted a presentational **`RecipeView`** from `recipe-detail.tsx` (no
+  behaviour change to the recipe page) and reused it inline — the expanded sheet now shows **writing → full
+  recipe → failed-fallback** (preview pills), the wife's during-review read. Sheet tracks the expanded meal
+  by id (live), so a recipe finishing hydration flips writing→full in place.
+- **`recipe-generate` E2E fixture** added to the mock (`doGenerate`) so the walker firing in Plan review
+  doesn't error the suite.
+- **`recipe.get` alignment** (open-questions #3): kept it returning `null` and **codified the convention** —
+  *point-read queries return `null`; mutations throw `NOT_FOUND`* — which is the right shape for the meal
+  sheet's optional recipe fetch (graceful fallback, not a query error).
+
+### Verification
+- Gauntlet green: lint, typecheck, **185 unit** (+9). **30/30 Plan E2E** stay green with the walker firing
+  live in review (proves the fixture + non-disruptive cache-patch). High-effort blast-radius review run on the
+  diff: one real fix applied (past-slot hydration), two low items left as documented-acceptable (a slot stuck
+  in DB `hydrating` from a crashed session waits for the Slice-B confirm-sweep; a transient status revert that
+  self-heals on invalidate).
+- **Not yet run on the real model** — hydration quality (does the generated recipe match the concept) is a
+  wrap-time real-gen check, like 1C's chip/variety gate.
+
+### Next
+Slice B — `plan.confirm` creates the pending list, `grocery.generate` (sweep→normalize→aggregate→write), the
+new `ingredient-normalize` task, and the pure deterministic aggregator with the under-merge rule.
+
+---
+
 ## Session 22 — 2026-07-20 (1D reconciled; build started — Slice 0 + Slice A schema/invalidation)
 
 ### What happened

@@ -1,24 +1,32 @@
 # What's Next
 
-Last updated: 2026-07-20 (Session 22)
+Last updated: 2026-07-20 (Session 23)
 
-## ▶ NEXT SESSION — continue Phase 1D (Groceries), Slice A
+## ▶ NEXT SESSION — continue Phase 1D (Groceries), Slice B
 **Copy-paste kickoff prompt:**
-> Resume meal app — continue Phase 1D (Groceries), Slice A. Authoritative plan:
-> `~/.claude/plans/rippling-herding-glacier.md`; phase scope: `docs/scope-1D.md`. Slice 0 (docs)
-> + Slice A schema/invalidation are done + committed (`3101fca`, migration 0004 applied). Build the
-> rest of Slice A: the `plan.hydrateSlot` mutation (reuse the `generate-recipe` task; idempotent,
-> CAS on `slot.updatedAt`); the day-1-first client hydration walker in Plan review (shimmer→ready on
-> cards, tap-to-prioritize); the `RecipeView` extraction from `src/components/recipes/recipe-detail.tsx`
-> + the meal-sheet recipe upgrade (writing→full→failed); the `recipe-generate` E2E fixture in
-> `e2e-mock.ts`; and the `recipe.get` null-vs-NOT_FOUND alignment. Close Slice A with the existing
-> 30 Plan E2E specs green (hydration touches Plan review). ⚠️ If DB calls fail with "tenant not
-> found," the Supabase project auto-paused — resume it in the dashboard, then
-> `set -a; . ./.env.local; set +a` before any `db:*` command.
+> Resume meal app — continue Phase 1D (Groceries), Slice B (list generation + the merge). Authoritative
+> plan: `~/.claude/plans/rippling-herding-glacier.md`; phase scope: `docs/scope-1D.md`. Slice 0 + Slice A
+> are done + committed (hydration spine: `plan.hydrateSlot` + walker + `RecipeView` + meal-sheet upgrade;
+> 185 unit + 30 E2E green). Build Slice B: `plan.confirm` creates `grocery_lists(status:draft,
+> generationStatus:pending)`; the idempotent `grocery.generate` (sweep stragglers → `ingredient-normalize`
+> → deterministic aggregate → transactional write of `sourceType:"recipe"` items → `ready`; checkpointed
+> `generationStatus`; `error` + minimal retry via Plan's stream-error card); the new `ingredient-normalize`
+> AI task (reserved config slot — returns per-line `{canonicalName, category, numericQty, canonicalUnit,
+> confidence}`, NO summed quantities; snapshot-tested prompt + `e2e-mock` fixture); and **the pure,
+> heavily unit-tested deterministic aggregator** incl. the **under-merge** rule (#6) as first-class tested
+> behaviour (fractions/ranges/"pinch"→unquantified, unit compatibility, canonical grouping — NO LLM
+> arithmetic). Groceries tab states (generating/ready/error) + polling. Backend has no design dependency.
+> ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the
+> dashboard, then `set -a; . ./.env.local; set +a` before any `db:*` command.
 
 - **Read first:** `~/.claude/plans/rippling-herding-glacier.md` (reconciled 2026-07-20 — the single
   source of truth; supersedes `resume-meal-app-sorted-reddy.md` + its architecture memo) and
-  `docs/scope-1D.md`. The `decisions.md` 2026-07-20 entry carries the 12 reconciliation decisions.
+  `docs/scope-1D.md`. The `decisions.md` 2026-07-20 entries carry the 12 reconciliation decisions + the
+  Slice A build decisions (CAS token, `recipe.get` convention).
+- **Slice A recap (done S23):** hydration is client-orchestrated during Plan review via `plan.hydrateSlot`
+  (`plan-hydrate.ts` service, status-column CAS, conditional write-back) + the `use-plan-hydration` walker.
+  The grocery projection Slice B builds on top consumes the hydrated `recipes` rows (`sourceType:
+  "plan_generated"`, linked via `meal_plan_slots.recipeId` when `recipeStatus:"ready"`).
 - **Architecture:** plan-time hydration (recipes hydrate in the background during review — the wife
   reads full recipe detail while evaluating; confirm is near-instant) → grocery list is a
   **projection** = aggregate(confirmed plan's recipes) + manual + staples → **hybrid merge** (AI
@@ -33,6 +41,18 @@ Last updated: 2026-07-20 (Session 22)
   merge-quality eval + code-review + visual-qa + deploy).
 - **Trimmed OUT of 1D** (design later): mid-week resync + ack pill + `mergeOverrides`; bespoke
   empty/error states (empty = zero-item list + add row; error = reuse Plan's stream-error card).
+
+## Exact Status (end of Session 23 — Phase 1D Slice A complete)
+- **Phase 1D (Groceries): Slice 0 ✅ + Slice A ✅.** The hydration spine is built + machine-verified:
+  `plan.hydrateSlot` (`plan-hydrate.ts`, status-column CAS, conditional write-back, 8 unit tests), the
+  `use-plan-hydration` walker (day-1-first, sequential, tap-to-prioritize, cache-patch, skips past days),
+  card shimmer→ready, the extracted `RecipeView` + the meal-sheet writing→full→failed upgrade, the
+  `recipe-generate` E2E fixture, and `recipe.get` resolved by rule. **185 unit + 30 Plan E2E green.**
+- **Not yet committed at time of writing / or just committed** — see git log. **Not yet run on the real
+  model:** hydration quality (generated recipe faithful to the concept) is a wrap-time real-gen check.
+- **Next:** Slice B (list generation + the merge) — see the kickoff prompt above.
+- 3 of 6 R1 phases done (1A/1B/1C); 1D in progress. R1 boundary = solo-user MVP (sharing/realtime/cook
+  mode → V1.5). Post-MVP gate unchanged.
 
 ## Exact Status (end of Session 19 — 1C CLOSED, scope system stood up)
 - **Phase 1C (Plan tab) is COMPLETE.** 3 of 6 phases done. All 13 scope-1C items met;

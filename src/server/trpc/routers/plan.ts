@@ -6,6 +6,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { getChefContext, writeMemory } from "@/server/ai/memory";
 import { modifyPlan } from "@/server/ai/tasks/modify-plan";
 import { validateModification, toSlotValues } from "@/server/ai/tasks/plan-types";
+import { hydrateSlotRecipe } from "./plan-hydrate";
 
 // Whole days between two ISO date strings (UTC, date-only).
 function dateToOffset(weekStart: string, date: string): number {
@@ -243,4 +244,19 @@ export const planRouter = router({
 
       return updated;
     }),
+
+  // Background hydration (Phase 1D): turn one plan slot's lightweight concept
+  // into a real recipes row and link it. Client-orchestrated per slot during
+  // Plan review (see use-plan-hydration). The orchestration (idempotency, the
+  // race-safe CAS claim, conditional write-back) lives in ./plan-hydrate.
+  hydrateSlot: aiProcedure
+    .input(z.object({ slotId: z.string().uuid() }))
+    .mutation(({ ctx, input }) =>
+      hydrateSlotRecipe({
+        db: ctx.db,
+        householdId: ctx.householdId,
+        userId: ctx.user.id,
+        slotId: input.slotId,
+      })
+    ),
 });

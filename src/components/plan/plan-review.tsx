@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { BottomBar } from "./bottom-bar";
 import { MealCard } from "./meal-card";
-import { type DisplayMeal, isCookable } from "./plan-helpers";
+import { type DisplayMeal, type HydrationView, isCookable } from "./plan-helpers";
 
 export interface PlanReviewProps {
   chefSummary: string | null;
@@ -21,6 +21,8 @@ export interface PlanReviewProps {
   pendingDate: string | null;
   pendingLabel: string;
   changedDates: string[];
+  // Background recipe hydration, keyed by slot date.
+  hydrationByDate: Record<string, HydrationView>;
 }
 
 function planStats(meals: DisplayMeal[]): string {
@@ -47,6 +49,7 @@ export function PlanReview({
   pendingDate,
   pendingLabel,
   changedDates,
+  hydrationByDate,
 }: PlanReviewProps) {
   const heroRef = useRef<HTMLDivElement>(null);
   const [heroVisible, setHeroVisible] = useState(true);
@@ -111,6 +114,7 @@ export function PlanReview({
             working={pendingDate !== null && pendingDate === meal.date}
             workingLabel={pendingLabel}
             justChanged={!!meal.date && changedDates.includes(meal.date)}
+            hydration={meal.date ? hydrationByDate[meal.date] : undefined}
           />
         ))}
       </div>

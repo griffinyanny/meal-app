@@ -29,6 +29,11 @@ export const recipeRouter = router({
       return { items };
     }),
 
+  // Convention (open-questions #3, settled in 1D): point-read QUERIES return
+  // `null` on not-found / cross-household; MUTATIONS (favorite, modify, delete)
+  // throw NOT_FOUND. Returning null keeps optional reads (e.g. the plan meal
+  // sheet fetching a slot's recipe) on a graceful fallback instead of a query
+  // error state; a mutation on a missing row is a real error, so it throws.
   get: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {

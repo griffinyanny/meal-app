@@ -16,7 +16,7 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-Phase 1C: Plan Tab — the design-led build pass is COMPLETE (Session 16, 2026-07-08): regenerate/new-plan entry point (unblocks Test 8), elapsed-plan "week wrapped" state, the in-place "AI is working" affordance (reusable `usePlanModify` hook), and drawer dismissal cleanup — all built, dual-reviewed (4 correctness bugs fixed), gauntlet + production build green, 173 tests. On branch `session-15-plan-fixes`. Remaining before 1C closes: Griffin's manual verification (Test 8 + affordance + click-outside — see `docs/whats-next.md`) and the Vercel deploy refresh (`OPENAI_API_KEY` + redeploy). (Phase 1B completed 2026-05-27, Milestone M2: full recipe AI loop on Vercel AI SDK v6 + OpenAI gpt-4.1-mini.)
+Phase 1D: Groceries (M4 — a confirmed plan produces a usable grocery list). Slice 0 (docs) + Slice A (the hydration spine) COMPLETE as of Session 23: recipes hydrate in the background during Plan review (`plan.hydrateSlot` + `plan-hydrate.ts` status-column CAS, the `use-plan-hydration` walker, card shimmer→ready, the extracted `RecipeView` + meal-sheet writing→full→failed upgrade), `recipe.get` convention resolved. 185 unit + 30 Plan E2E green. **Next: Slice B** (list generation + the hybrid merge — `plan.confirm` pending list, `grocery.generate`, the `ingredient-normalize` task, the pure deterministic under-merge aggregator). Authoritative plan: `~/.claude/plans/rippling-herding-glacier.md`; scope: `docs/scope-1D.md`. (Phase 1C closed S19; 1B completed 2026-05-27, M2: full recipe AI loop on Vercel AI SDK v6 + OpenAI gpt-4.1-mini.)
 
 ---
 

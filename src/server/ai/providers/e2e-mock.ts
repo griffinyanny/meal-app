@@ -19,6 +19,7 @@ import type { AITask } from "../config";
 import {
   buildGenerationFixture,
   buildModificationFixture,
+  buildRecipeFixture,
   parseMockDirectives,
 } from "./e2e-mock-fixtures";
 
@@ -85,13 +86,19 @@ async function mockGenerate(task: AITask, options: LanguageModelV3CallOptions) {
   else await delay(latencyMs());
   if (fail) throw new MockAiError();
 
-  if (task !== "plan-modify") {
+  const fixture =
+    task === "plan-modify"
+      ? buildModificationFixture(text)
+      : task === "recipe-generate"
+        ? buildRecipeFixture(text)
+        : null;
+
+  if (fixture === null) {
     throw new Error(
       `[e2e-mock] no doGenerate fixture for task "${task}" — add one if a spec needs it.`
     );
   }
 
-  const fixture = buildModificationFixture(text);
   return {
     content: [{ type: "text" as const, text: JSON.stringify(fixture) }],
     finishReason: FINISH,

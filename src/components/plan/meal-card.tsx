@@ -1,7 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { type DisplayMeal, metaLine, isCookable } from "./plan-helpers";
+import {
+  type DisplayMeal,
+  type HydrationView,
+  metaLine,
+  isCookable,
+} from "./plan-helpers";
 
 export interface MealCardProps {
   meal: DisplayMeal;
@@ -15,6 +20,9 @@ export interface MealCardProps {
   working?: boolean;
   workingLabel?: string;
   justChanged?: boolean;
+  // Background recipe hydration state — a quiet shimmer while the full recipe is
+  // being written, gone once it's ready. Distinct from `working` (a modify).
+  hydration?: HydrationView;
 }
 
 export function MealCard({
@@ -26,6 +34,7 @@ export function MealCard({
   working,
   workingLabel,
   justChanged,
+  hydration,
 }: MealCardProps) {
   // Eating out / skip → minimal, de-emphasized card. Not tappable, but still
   // carries the scroll anchor + highlight so a modify that CLEARS a day (sets
@@ -117,22 +126,38 @@ export function MealCard({
             <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
           </div>
         ) : (
-          !compact &&
-          meal.chips.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {meal.chips.map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => onChipClick?.(chip)}
-                  disabled={!onChipClick}
-                  className="pointer-events-auto rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 transition-all hover:bg-white/10 active:scale-95 active:opacity-80 disabled:pointer-events-none disabled:cursor-default disabled:opacity-60"
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-          )
+          <>
+            {/* Quiet background-hydration hint — a pulsing dot, not the full-
+                width modify shimmer, so it reads as "recipe on its way," not
+                "the chef is changing this." Gone the moment it's ready. */}
+            {hydration === "writing" && (
+              <div
+                className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground"
+                aria-live="polite"
+              >
+                <span
+                  aria-hidden
+                  className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary/60"
+                />
+                Writing the full recipe…
+              </div>
+            )}
+            {!compact && meal.chips.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {meal.chips.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => onChipClick?.(chip)}
+                    disabled={!onChipClick}
+                    className="pointer-events-auto rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 transition-all hover:bg-white/10 active:scale-95 active:opacity-80 disabled:pointer-events-none disabled:cursor-default disabled:opacity-60"
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

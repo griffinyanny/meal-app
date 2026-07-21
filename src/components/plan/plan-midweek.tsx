@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { BottomBar } from "./bottom-bar";
 import { MealCard } from "./meal-card";
 import { PastMealRow } from "./past-meal-row";
-import { type DisplayMeal, isCookable } from "./plan-helpers";
+import { type DisplayMeal, type HydrationView, isCookable } from "./plan-helpers";
 
 export interface PlanMidweekProps {
   meals: DisplayMeal[];
@@ -19,6 +19,7 @@ export interface PlanMidweekProps {
   pendingDate: string | null;
   pendingLabel: string;
   changedDates: string[];
+  hydrationByDate: Record<string, HydrationView>;
 }
 
 export function PlanMidweek({
@@ -34,6 +35,7 @@ export function PlanMidweek({
   pendingDate,
   pendingLabel,
   changedDates,
+  hydrationByDate,
 }: PlanMidweekProps) {
   const tonight = meals.find((m) => m.timeframe === "tonight");
   const past = meals.filter((m) => m.timeframe === "past");
@@ -43,6 +45,7 @@ export function PlanMidweek({
     working: pendingDate !== null && pendingDate === meal.date,
     workingLabel: pendingLabel,
     justChanged: !!meal.date && changedDates.includes(meal.date),
+    hydration: meal.date ? hydrationByDate[meal.date] : undefined,
   });
 
   return (

@@ -10,7 +10,7 @@
 > (reconciled 2026-07-20) + the architecture memo `~/.claude/plans/resume-meal-app-sorted-reddy-agent-ab9e5e211025b4d32.md`.
 
 **Created:** 2026-07-19 (S21) · **Reconciled:** 2026-07-20 (S22) · **Milestone:** Phase 1D, M4, part of V1 "The 10-Minute Weekly Ritual"
-**Phase status:** 🔨 Planning done (architecture reconciled, design imported + built-against) → Slice 0 (docs) in progress
+**Phase status:** 🔨 Slice 0 ✅ + **Slice A ✅ (hydration spine complete, S23)** → Slice B (list generation + merge) next
 
 ---
 
@@ -56,9 +56,9 @@ Status: ✅ shipped & verified · 🔶 in progress · ⬜ not built
 
 | # | Feature | Acceptance criteria | Status |
 |---|---------|--------------------|--------|
-| 1 | **Background hydration (plan-time)** | Plan review hydrates slots into full recipes via `plan.hydrateSlot` (reuses 1B `generate-recipe`), day-1-first, tap-to-prioritize; idempotent (skip `ready`, CAS on `updatedAt`); resumable from `plan.current`; card shows shimmer→ready. Non-cookable slots skip. Failure is non-fatal (falls back to preview pills). | ⬜ |
-| 2 | **Modify-invalidation fix** | `plan.modify` nulls `recipeId` + sets `recipeStatus:"stale"` on every changed meal (fixes the latent `toSlotValues` bug, `plan-types.ts:171`); stale slots re-hydrate. Regression test proves a modified slot loses its old `recipeId`. | ⬜ |
-| 3 | **Meal-sheet recipe upgrade** | Expanded meal sheet shows a hydration-aware recipe section (writing→full→failed) via an extracted presentational `RecipeView` (from `recipe-detail.tsx`), reused inline — the wife's during-review need. | ⬜ |
+| 1 | **Background hydration (plan-time)** | Plan review hydrates slots into full recipes via `plan.hydrateSlot` (reuses 1B `generate-recipe`), day-1-first, tap-to-prioritize; idempotent (skip `ready`, **CAS on the `recipeStatus` column** — not `updatedAt`, see decisions.md S23); resumable from `plan.current`; card shows shimmer→ready. Non-cookable + past slots skip. Failure is non-fatal (falls back to preview pills). | ✅ |
+| 2 | **Modify-invalidation fix** | `plan.modify` nulls `recipeId` + sets `recipeStatus:"stale"` on every changed meal (fixes the latent `toSlotValues` bug); stale slots re-hydrate. Covered by the plan-modify regression tests. | ✅ |
+| 3 | **Meal-sheet recipe upgrade** | Expanded meal sheet shows a hydration-aware recipe section (writing→full→failed) via an extracted presentational `RecipeView` (from `recipe-detail.tsx`), reused inline — the wife's during-review need. Sheet reads the live slot by id, so writing→full flips in place. | ✅ |
 | 4 | **Confirm → list generation** | `plan.confirm` = fast status flip + creates `grocery_lists(pending)`. Idempotent `grocery.generate` runs sweep→normalize→aggregate→write (checkpointed `generationStatus`), producing `grocery_items` with quantity, unit, category, `sources` provenance. Tab polls; phase-named loading copy. | ⬜ |
 | 5 | **AI ingredient-normalize task** | New AI task (reserved config slot) → per-line `{canonicalName, category, numericQty, canonicalUnit, confidence}`. Zod strict-mode, prompt snapshot-tested, graceful fallback. Returns NO summed quantities. | ⬜ |
 | 6 | **Deterministic aggregator** | Pure function: parses qty strings (fractions, ranges, "pinch"→unquantified), sums by canonical group + unit, and **under-merges** (different type/form ⇒ separate). Heavily unit-tested; the correctness core. **No LLM arithmetic.** | ⬜ |
@@ -70,9 +70,9 @@ Status: ✅ shipped & verified · 🔶 in progress · ⬜ not built
 | 12 | **Staples chip row** | "YOUR STAPLES" horizontal chip row, tap-to-add; `staple_items` CRUD (schema exists, no router yet) + active/inactive. | ⬜ |
 | 13 | **Clipboard export** | Plain-text export of the current list (grouped, with quantities). The V1 "get it out of the app" fallback (no retailer integration). | ⬜ |
 | 14 | **Recipes-tab organization** | Cooked / deliberate-library / plan-drafts tiers derived from `isFavorite` + `lastCookedAt` + slot dates (no explicit "I cooked it"); search reaches everything; favoriting = promote; drafts clean up with their plan. Tight-budget fallback: fold cooked to top of "Your recipes" with a badge. | ⬜ |
-| 15 | **Schema + provenance** | Migrations for all deltas (below) + RLS CI assertions on new tables/columns. `sources` jsonb authoritative; `sourceRecipeId` kept for back-compat. | ⬜ |
+| 15 | **Schema + provenance** | Migrations for all deltas (below) + RLS CI assertions on new tables/columns. `sources` jsonb authoritative; `sourceRecipeId` kept for back-compat. | ✅ (migration 0004, S22) |
 | 16 | **E2E: extend harness to Groceries** | New specs: generation states, one-zone check-off, quick-add + dedupe, reorder persistence. Seed states + deterministic mock fixtures for the two new AI tasks. A feature isn't done until its mechanics are covered. | ⬜ |
-| 17 | **Carry-in: recipe.get consistency** | Align `recipe.get` null-vs-NOT_FOUND (open-question #3) during a 1D router touch. | ⬜ |
+| 17 | **Carry-in: recipe.get consistency** | Align `recipe.get` null-vs-NOT_FOUND (open-question #3). **Resolved by rule** (S23): point-read queries return `null`, mutations throw `NOT_FOUND`; codified in a comment. | ✅ |
 
 **Schema deltas:** `meal_plan_slots.recipeStatus`; `recipes.sourceType += "plan_generated"` + `sourcePlanId`
 (reuse existing `lastCookedAt` for the cooked-harvest stamp); `grocery_lists.generationStatus` +
@@ -85,8 +85,8 @@ not E2E — the harness mocks the model. E2E covers mechanics.
 
 ## Build sequence (slices — each ends green: lint + typecheck + unit; E2E where covered)
 
-- **Slice 0 — Reconcile docs + save the imported design** *(in progress).*
-- **Slice A — Hydration spine** (#1–3, schema for slots+recipes, `e2e-mock` fixture, recipe.get carry-in).
+- **Slice 0 — Reconcile docs + save the imported design** *(✅ S22).*
+- **Slice A — Hydration spine** (#1–3, #15 schema, #17 recipe.get) *(✅ S23 — `plan.hydrateSlot` + walker + `RecipeView` + meal-sheet upgrade + `recipe-generate` fixture; 185 unit + 30 E2E green).*
 - **Slice B — List generation + the merge** (#4–6, schema for grocery_lists+grocery_items, normalize task,
   the aggregator, tab states + polling).
 - **Slice C — The shoppable list** (#7–10, #13 — builds the imported design: organize toggle + reorder,
@@ -120,7 +120,8 @@ Backend (A/B) has no design dependency; the imported design drives C/D.
    decision and the as-built design. (Was open-questions #1.)
 2. **Staples auto-include vs. offer** — offered via the chip row (tap-to-add), not auto-added (no pantry in
    V1). Confirmed by the design; auto-add-with-dismiss graduates to V1.5.
-3. **`recipe.get` null-vs-NOT_FOUND** (open-questions #3) — align during a 1D router touch (Slice A).
+3. ~~**`recipe.get` null-vs-NOT_FOUND**~~ **RESOLVED (S23)** → by rule: point-read queries return `null`,
+   mutations throw `NOT_FOUND`. Codified in a comment on `recipe.get`. (Was open-questions #3.)
 
 ---
 
@@ -130,3 +131,4 @@ Backend (A/B) has no design dependency; the imported design drives C/D.
 |------|--------|-----|
 | 2026-07-19 (S21) | Doc created at 1D kickoff (confirm-time expand + hybrid merge). | Planning pass; settle the hard V1 problem before building. |
 | 2026-07-20 (S22) | **Reconciled** with the pre-existing locked plan (`resume-meal-app-sorted-reddy.md`, forgotten at S21) → **plan-time hydration** supersedes confirm-time; adopted the projection model, the imported Claude Design (inline merge-review + Grouped/manual reorder + Talk-to-Chef sheet + one-zone check-off); **trimmed** mid-week resync, bespoke empty/error, and `mergeOverrides` out of 1D. | Griffin surfaced the older, more-thorough plan (architect + design-critic consulted) + completed the design in Claude Design; the two plans were merged into `rippling-herding-glacier.md`. |
+| 2026-07-20 (S23) | **Slice A complete** — features #1–3, #15, #17 ✅. CAS token corrected to the `recipeStatus` column (not `updatedAt`); `recipe.get` resolved by rule (queries null / mutations throw). No scope change — build progress. | Hydration spine built + verified (185 unit + 30 E2E green). |
