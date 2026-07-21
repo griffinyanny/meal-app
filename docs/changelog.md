@@ -4,6 +4,62 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 27 — 2026-07-21 (Slice D COMPLETE — the Recipes-tab reorg #14 + cooked-signal harvest)
+
+### What happened
+Imported the chosen Recipes-tab design from Claude Design and built the reorg in real components, plus the
+cooked-signal harvest it depends on. **Slice D is now complete** (all three features: #11, #12, #14). 294 unit
++ 51 E2E green (first-ever Recipes E2E coverage); lint + typecheck clean; prod build compiles.
+
+**Design chosen (direction "d", the invented one).** Not the three-shelves default — a hybrid: a horizontal
+`RECENTLY COOKED` strip up top, a segmented `All · Favorites · Cooked` control over the deliberate library
+(paginated, 5 + "Show N more"), a collapsed-by-default `FROM YOUR PLANS` shelf, and a floating bottom toolbar
+(search pill + a circular ＋ that opens Generate / Import URL). Imported via `DesignSync.get_file`, archived at
+`docs/design/surfaces/recipes/imported.dc.html` (URL + projectId recorded in the brief).
+
+- **Cooked-signal harvest** (`src/server/recipes/harvest-cooked.ts`). A recipe is cooked when it's the recipe
+  of a **confirmed plan slot whose date has passed**. Runs **lazily on `recipe.list`** (not at confirm — the
+  slot dates are still in the future then, and there's no scheduler): an idempotent, guarded `UPDATE` stamps
+  `lastCookedAt` to the max past-slot date only when newer than what's stored, so the many list refetches per
+  session write nothing once caught up. Wrapped in try/catch in `recipe.list` (non-fatal — the list must render).
+  Stamps at **noon-UTC** of the cooked day so the card's "Cooked Jul 12" survives timezone formatting. 5 unit tests.
+- **Cook = graduation (harvest also detaches).** A plan recipe that gets cooked but was never favorited would
+  otherwise keep its `sourcePlanId` and **cascade away when the plan is replaced**, losing cooked history. So the
+  harvest also nulls `sourcePlanId` when it stamps — matching the recipes-schema "nulled on graduation
+  (favorite/**cook**)" contract. Cooked history is durable.
+- **Favoriting = promote (`recipe.favorite`).** Favoriting a plan draft nulls its `sourcePlanId` in the same
+  `UPDATE`, detaching it so it survives plan replacement. Only on favorite=true; unfavoriting never re-attaches.
+  The client patches optimistically (nulls `sourcePlanId` locally) → the card jumps to the library with a
+  one-shot highlight ring + a "Moved to Your recipes" toast. 2 unit tests.
+- **Draft signal = `sourcePlanId != null`, not `sourceType`.** The mock flips `source:'plan'→'ai'` on promote;
+  in real data that would discard honest provenance. Instead the ephemeral-membership discriminator is the
+  cascade FK itself (`sourcePlanId`). `sourceType` stays truthful; `plan_generated` now maps to "AI" on the
+  card (fixes the old fall-through-to-"Manual" bug the brief flagged). Nothing keyed drafts off `sourceType`
+  (verified: only plan-hydrate writes `sourcePlanId`, only the FK cascades), so this is safe.
+- **UI, real components.** New: `recipes/types.ts` (shared row type + `isPlanDraft`/`formatCookedDate`/
+  `recipeMeta`), `cooked-strip.tsx`, `recipe-filters.tsx`, `plan-drafts-shelf.tsx`, `recipe-toolbar.tsx`
+  (floating search + ＋ popover), rewritten `recipe-card.tsx` (row layout, draft/cooked badges, promote ring)
+  and `recipe-library.tsx` (orchestrator: partition → tiers, search as a flat cross-tier mode, promote/toast).
+  Search reaches every tier (the existing `recipe.search` already spans all household recipes); typing switches
+  the tiered view to a flat result list. All files < 300 lines.
+- **"+" menu = Generate / Import URL only.** The mock's toast also lists "Add manually," but no manual-entry
+  flow exists and it's out of 1D scope; dropped it (logged in idea-backlog).
+- **E2E: first Recipes coverage.** `recipe-seed-states.ts` (RECIPES_LIBRARY / RECIPES_COOKED_HARVEST /
+  RECIPES_EMPTY) + `seedRecipeState` (+ `wipe` now clears recipes). `recipes.spec.ts` RC1–RC10: tiers render,
+  Favorites/Cooked filters, pagination, drafts fold/unfold, **favorite-promote (detach persists across reload)**,
+  **search reaches drafts**, the ＋ menu, **the harvest driven end to end through a past confirmed slot**, empty state.
+- **Visual check.** Drove the built tab in the harness + eyeballed screenshots (tiers, cooked badges, blue
+  "PLAN DRAFT" badge, ＋ popover). One fix: bumped the library/search bottom padding (`pb-24`→`pb-40`) so the
+  last draft cards clear the floating toolbar + tab bar on a full scroll.
+
+### For Griffin (taste review — mechanics are machine-verified)
+- **The double bottom bar.** Faithful to the chosen design, the floating search/＋ toolbar sits just above the
+  tab bar. On a 430px phone that's two stacked bars at the bottom — worth your on-device eye (logged as a
+  taste-watch in idea-backlog). Everything else is low-risk.
+- **Does the tier split read right?** Cooked strip + segmented library + folded drafts — does it feel calm and
+  obvious, or is the cooked-in-two-places (strip AND filter) redundant to you?
+- Not yet run on the real model (wrap-time, Slice 5): hydration/merge/NL-ops quality — the harness mocks the AI.
+
 ## Session 26 — 2026-07-21 (Slice D — staples + Talk-to-the-Chef; Recipes reorg design kicked off)
 
 ### What happened

@@ -4,6 +4,23 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Recipes-tab reorg build decisions (#14)** (2026-07-21, Session 27)
+- **Cooked harvest = lazy-on-read in `recipe.list`** (my call). "Confirmed slot whose date has passed" can't be
+  stamped at plan.confirm (dates are future then) and there's no scheduler, so the harvest runs when the Recipes
+  tab loads. Idempotent + guarded (only writes when the max past-slot date is newer than the stored
+  `lastCookedAt`), non-fatal (try/catch — the list must render). Own tested function (`harvest-cooked.ts`).
+- **Cook is a graduation → the harvest detaches too.** Stamping `lastCookedAt` also nulls `sourcePlanId`. Reason:
+  a cooked-but-unfavorited plan recipe would otherwise cascade away when its plan is replaced, losing cooked
+  history. Matches the recipes-schema "nulled on graduation (favorite/cook)" contract. *(Cooked history is durable.)*
+- **Draft signal = `sourcePlanId != null`, not `sourceType`** (my call, deviates from the mock). The mock flips
+  `source:'plan'→'ai'` on promote; real data keeps `sourceType` as honest provenance and uses the cascade FK
+  (`sourcePlanId`) as the ephemeral-membership discriminator. Promote = null it. `plan_generated` maps to "AI" on
+  the card (fixes the fall-through-to-"Manual" bug). Safe: nothing else keys drafts off `sourceType`.
+- **Search-results presentation = flat, cross-tier** (resolves the brief's open question). A query switches the
+  tiered view to one flat ranked list spanning all tiers (`recipe.search` already reaches every household recipe).
+- **"+" create menu = Generate / Import URL only.** "Add manually" (in the mock's toast) has no flow and is out
+  of 1D scope; deferred to the backlog.
+
 **Slice D build decisions — staples + Talk-to-the-Chef** (2026-07-21, Session 26)
 - **Cooked signal = auto from a past confirmed plan slot** (Griffin). `lastCookedAt` existed but nothing wrote
   it, so the Recipes reorg's "cooked" tier had no data source. Decision: a recipe is cooked when it is the

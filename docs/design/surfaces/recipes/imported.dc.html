@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#08080a;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#F5F5F7;}
+  a{color:#3A86FF;text-decoration:none;}
+  a:hover{color:#5c9bff;}
+  @keyframes rowIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+</style>
+</helmet>
+<div style="min-height:100vh;width:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(1100px 700px at 30% -8%, rgba(58,134,255,.10), transparent 60%), radial-gradient(1000px 640px at 100% 40%, rgba(94,92,230,.08), transparent 55%), #08080a;padding:48px 24px;">
+  <dc-import name="Phone" blocks="{{ blocks }}" toolbar="{{ toolbar }}" toast="{{ toast }}" toast-visible="{{ toastVisible }}" hint-size="452,902"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:540,&quot;height&quot;:940},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3A86FF&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#3A86FF&quot;,&quot;#5E5CE6&quot;,&quot;#30D158&quot;,&quot;#FF9F0A&quot;]},&quot;provenance&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;badges&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;badges&quot;,&quot;structural&quot;],&quot;section&quot;:&quot;Card provenance&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { ...this.fresh(), filter: 'all', showAll: false, foldPlans: true, promoted: null, toast: null };
+    this._timers = [];
+  }
+  componentWillUnmount() { this._timers.forEach(clearTimeout); }
+
+  fresh() {
+    const L = [
+      { id: 1, title: 'Miso-Glazed Salmon', time: 30, serv: 2, tag: 'Seafood', source: 'url', fav: true },
+      { id: 2, title: 'Sheet-Pan Chicken Thighs & Broccoli', time: 40, serv: 4, tag: 'Sheet-pan', source: 'ai' },
+      { id: 3, title: 'Shrimp Scampi Linguine', time: 25, serv: 3, tag: 'Pasta', source: 'manual', fav: true },
+      { id: 4, title: 'Herb Roast Chicken', time: 90, serv: 4, tag: 'Roast', source: 'ai', cooked: 'Jul 12' },
+      { id: 5, title: 'Sausage & Peppers', time: 35, serv: 4, tag: 'Skillet', source: 'url' },
+      { id: 6, title: 'Ribeye with Blistered Tomatoes', time: 20, serv: 2, tag: 'Steak', source: 'manual' },
+      { id: 7, title: 'Weeknight Chana Masala', time: 30, serv: 4, tag: 'Vegetarian', source: 'ai', fav: true },
+      { id: 8, title: 'Charred Broccoli Rabe Orecchiette', time: 30, serv: 3, tag: 'Pasta', source: 'url' },
+      { id: 9, title: 'Gochujang-Glazed Tofu Bowls', time: 35, serv: 2, tag: 'Bowl', source: 'plan' },
+      { id: 10, title: 'Lemon Orzo with Feta', time: 25, serv: 4, tag: 'Vegetarian', source: 'plan' },
+      { id: 11, title: 'Chicken Katsu Bowls', time: 45, serv: 2, tag: 'Bowl', source: 'plan' },
+      { id: 12, title: 'Smoky Black Bean Tacos', time: 30, serv: 4, tag: 'Tacos', source: 'plan' },
+    ];
+    const cooked = [
+      { id: 13, title: 'Thai Basil Chicken', time: 25, serv: 3, tag: 'Stir-fry', source: 'cooked', cooked: 'Jul 8' },
+      { id: 14, title: 'Beef & Broccoli Stir-Fry', time: 30, serv: 4, tag: 'Stir-fry', source: 'cooked', cooked: 'Jul 5' },
+      { id: 15, title: 'Spaghetti Carbonara', time: 25, serv: 2, tag: 'Pasta', source: 'cooked', cooked: 'Jun 30' },
+    ];
+    return { recipes: L, cooked };
+  }
+
+  accent() { return this.props.accent || '#3A86FF'; }
+  hexA(hex, a) {
+    const h = (hex || '#3A86FF').replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+  metaOf(r) { return `${r.time} min · Serves ${r.serv}` + (r.tag ? ` · ${r.tag}` : ''); }
+
+  toast(msg) {
+    this.setState({ toast: msg });
+    const t = setTimeout(() => this.setState({ toast: null }), 2200);
+    this._timers.push(t);
+  }
+
+  toggleFav(id) {
+    const r = this.state.recipes.find(x => x.id === id);
+    if (!r) return;
+    if (r.source === 'plan') {
+      this.setState(s => ({
+        recipes: s.recipes.map(x => x.id === id ? { ...x, fav: true, source: 'ai', wasDraft: true } : x),
+        promoted: id,
+      }));
+      this.toast('Moved to Your recipes');
+      const t = setTimeout(() => this.setState(s => (s.promoted === id ? { promoted: null } : {})), 1500);
+      this._timers.push(t);
+    } else {
+      this.setState(s => ({ recipes: s.recipes.map(x => x.id === id ? { ...x, fav: !x.fav } : x) }));
+    }
+  }
+
+  reset() {
+    this._timers.forEach(clearTimeout); this._timers = [];
+    this.setState({ ...this.fresh(), filter: 'all', showAll: false, foldPlans: true, promoted: null, toast: null });
+  }
+
+  // ---------- chrome ----------
+  hdr() {
+    return {
+      isHeader: true, eyebrow: 'RECIPES', showEyebrow: false, title: 'Recipes', showSearch: false, showButtons: false,
+      search: { active: false, idle: true, placeholder: '', value: '' }, buttons: [],
+    };
+  }
+  toolbarObj(opts) {
+    const a = this.accent();
+    const searchStyle = { flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px', borderRadius: 27, background: 'rgba(44,44,50,.5)', backdropFilter: 'blur(32px) saturate(180%)', WebkitBackdropFilter: 'blur(32px) saturate(180%)', border: '1px solid rgba(255,255,255,.14)', boxShadow: '0 18px 46px -14px rgba(0,0,0,.75)', cursor: 'pointer' };
+    const addStyle = { width: 54, height: 54, flex: '0 0 auto', borderRadius: 27, background: a, backdropFilter: 'blur(32px) saturate(180%)', WebkitBackdropFilter: 'blur(32px) saturate(180%)', border: '1px solid ' + this.hexA(a, 1), boxShadow: '0 18px 46px -14px ' + this.hexA(a, .55), display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' };
+    return {
+      show: true, placeholder: opts.placeholder, mic: !!opts.mic, micColor: a,
+      searchStyle, addStyle, addColor: '#fff', showAdd: opts.showAdd !== false,
+      onSearch: () => this.toast(opts.searchToast || 'Search your recipes'),
+      onAdd: () => this.toast('＋ New recipe · Generate, Import URL, or Add manually'),
+    };
+  }
+  shelf(eyebrow, count, opts = {}) {
+    return {
+      isShelfhead: true, eyebrow, count, showCount: count != null,
+      collapsible: !!opts.collapsible, collapsed: !!opts.collapsed,
+      toggleLabel: opts.collapsed ? 'Show' : 'Hide',
+      onToggle: opts.onToggle || (() => {}),
+      chevStyle: { width: 14, height: 14, transition: 'transform .2s', transform: opts.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' },
+    };
+  }
+  note(text, strong) {
+    return { isNote: true, text, noteStyle: strong
+      ? { fontSize: 10.5, fontWeight: 700, letterSpacing: '1.5px', color: 'rgba(142,142,147,.75)', margin: 0, textTransform: 'uppercase' }
+      : { fontSize: 12.5, color: '#8E8E93', margin: 0, lineHeight: 1.4 } };
+  }
+  filters(defs, active, onPick) {
+    const a = this.accent();
+    const base = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 15px', borderRadius: 11, fontSize: 13, fontWeight: 600, cursor: 'pointer' };
+    const on = { ...base, background: a, color: '#fff', border: '1px solid ' + a };
+    const off = { ...base, background: 'rgba(255,255,255,.05)', color: '#C7C7CC', border: '1px solid rgba(255,255,255,.09)' };
+    return {
+      isFilters: true,
+      chips: defs.map(d => {
+        const sel = d.key === active;
+        return { label: d.label, style: sel ? on : off, onClick: () => onPick(d.key), showCount: d.count != null, count: d.count, countStyle: { fontWeight: 600, opacity: sel ? .85 : .6 } };
+      }),
+    };
+  }
+  stripCard(r) {
+    return {
+      title: r.title, meta: `${r.time} min · Serves ${r.serv}`, onOpen: () => {}, showPill: true,
+      pill: 'Cooked ' + r.cooked,
+      pillStyle: { alignSelf: 'flex-start', fontSize: 10.5, fontWeight: 600, color: 'rgba(48,209,88,.95)', background: 'rgba(48,209,88,.13)', border: '1px solid rgba(48,209,88,.3)', padding: '2px 8px', borderRadius: 7 },
+      style: { flex: '0 0 auto', width: 216, padding: '14px 15px', borderRadius: 16, background: 'rgba(34,34,42,.5)', backdropFilter: 'blur(16px) saturate(150%)', border: '1px solid rgba(255,255,255,.06)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 8 },
+    };
+  }
+  mkCard(r, opts = {}) {
+    const a = this.accent();
+    const prov = this.props.provenance || 'badges';
+    const promoted = this.state.promoted === r.id;
+    const base = { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 18, background: 'rgba(34,34,42,.6)', backdropFilter: 'blur(16px) saturate(150%)', border: '1px solid rgba(255,255,255,.06)', cursor: 'pointer', transition: 'box-shadow .2s, border-color .2s' };
+    const cardStyle = promoted
+      ? { ...base, border: '1px solid ' + this.hexA(a, .65), boxShadow: '0 0 0 3px ' + this.hexA(a, .16), animation: 'rowIn .4s ease' }
+      : base;
+    return {
+      title: r.title, meta: this.metaOf(r), accent: a, cardStyle,
+      showFav: r.source !== 'cooked', fav: !!r.fav, notFav: !r.fav, heartClick: () => this.toggleFav(r.id),
+      heartStyle: { flex: '0 0 auto', width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, borderRadius: 17, background: 'transparent', border: 'none', cursor: 'pointer', WebkitTapHighlightColor: 'transparent' },
+      showDraft: opts.badge === 'draft' && prov === 'badges',
+      showCooked: opts.badge === 'cooked' && !!r.cooked, cookedText: r.cooked ? ('Cooked ' + r.cooked) : '',
+      showTier: false, onOpen: () => {},
+    };
+  }
+  paginate(list, showAll, onMore) {
+    const shown = showAll ? list : list.slice(0, 5);
+    const rest = list.length - shown.length;
+    const out = [{ isCards: true, items: shown.map(r => this.mkCard(r, { badge: r.cooked ? 'cooked' : '' })) }];
+    if (rest > 0) out.push({ isMore: true, label: 'Show ' + rest + ' more', onClick: onMore });
+    return out;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const R = s.recipes;
+    const lib = R.filter(r => r.source !== 'plan');
+    const drafts = R.filter(r => r.source === 'plan');
+    const favs = lib.filter(r => r.fav);
+    const libCooked = lib.filter(r => r.cooked);
+    const cookedAll = [...libCooked, ...s.cooked];
+    const list = s.filter === 'fav' ? favs : s.filter === 'cooked' ? cookedAll : lib;
+
+    const blocks = [
+      this.hdr(),
+      this.note('RECENTLY COOKED', true),
+      cookedAll.length
+        ? { isStrip: true, items: cookedAll.map(r => this.stripCard(r)) }
+        : this.note('Nothing cooked yet.'),
+      this.filters([
+        { key: 'all', label: 'All', count: lib.length },
+        { key: 'fav', label: 'Favorites', count: favs.length },
+        { key: 'cooked', label: 'Cooked', count: cookedAll.length },
+      ], s.filter, k => this.setState({ filter: k, showAll: false })),
+      ...this.paginate(list, s.showAll, () => this.setState({ showAll: true })),
+      this.shelf('FROM YOUR PLANS', drafts.length, { collapsible: true, collapsed: s.foldPlans, onToggle: () => this.setState(x => ({ foldPlans: !x.foldPlans })) }),
+    ];
+    if (!s.foldPlans) {
+      blocks.push(drafts.length
+        ? { isCards: true, items: drafts.map(r => this.mkCard(r, { badge: 'draft' })) }
+        : this.note('No plan drafts right now — they appear as your meal plan fills in.'));
+    } else {
+      blocks.push(this.note(drafts.length + ' tucked away · favorite one to keep it in Your recipes'));
+    }
+
+    return {
+      blocks,
+      toolbar: this.toolbarObj({ placeholder: 'Search recipes' }),
+      toast: s.toast, toastVisible: !!s.toast,
+    };
+  }
+}
+</script>
+</body>
+</html>

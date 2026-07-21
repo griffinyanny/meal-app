@@ -122,14 +122,38 @@ through the real AI mock (deterministic `grocery-talk` fixture). Spec:
 | GR10 | GROCERY_READY | Open the chef, pick "What am I out of?", send | Query-only: the reply shows, the list is unchanged (no ops applied) | 🟢 |
 | GR11 | GROCERY_READY | Open the chef, type "remove the garlic", send | The item's `[N]` ref resolves to the real row and it's removed (the ID-safety path) | 🟢 |
 
-**Full suite: 41 passing** (30 Plan + 11 Groceries), 0 findings. Merge quality
-(canonical sums, under-merge correctness) and NL→ops quality are wrap-time real-model
-checks + Griffin's taste pass — the harness mocks the model.
+**Groceries: 11 passing**, 0 findings. Merge quality (canonical sums, under-merge
+correctness) and NL→ops quality are wrap-time real-model checks + Griffin's taste pass
+— the harness mocks the model.
+
+---
+
+## RC — Recipes tab (Phase 1D Slice D, Session 27)
+
+The reorg. Recipes (+ an optional plan and past confirmed slots) are seeded directly to
+named states (`RECIPES_LIBRARY` / `RECIPES_COOKED_HARVEST` / `RECIPES_EMPTY`) so the tier
+mechanics are deterministic; the cooked harvest runs server-side on list load. Spec:
+`tests/e2e/specs/recipes.spec.ts`.
+
+| ID | Pre | Steps | Expected | Status |
+|----|-----|-------|----------|--------|
+| RC1 | RECIPES_LIBRARY | Open Recipes | Cooked strip (most-recent first) + segmented `All 7 / Favorites 2 / Cooked 2` + `FROM YOUR PLANS` folded ("3 tucked away") | 🟢 |
+| RC2 | RECIPES_LIBRARY | Tap "Favorites" | Only favorited library recipes show | 🟢 |
+| RC3 | RECIPES_LIBRARY | Tap "Cooked" | Cooked recipes show, each with a "Cooked …" badge | 🟢 |
+| RC4 | RECIPES_LIBRARY | (7 library recipes) | 5 shown + "Show 2 more"; tapping reveals all 7 | 🟢 |
+| RC5 | RECIPES_LIBRARY | Unfold `FROM YOUR PLANS` | Draft cards appear with a "Plan draft" badge | 🟢 |
+| RC6 | RECIPES_LIBRARY | Favorite a plan draft | Toast "Moved to Your recipes"; leaves drafts; after reload it's a favorited library recipe, not a draft (detach persisted) | 🟢 |
+| RC7 | RECIPES_LIBRARY | Search a draft's name, then a cooked recipe, then clear | Search reaches every tier (incl. folded drafts); clearing restores the tiered view | 🟢 |
+| RC8 | RECIPES_LIBRARY | Tap ＋ → Generate | The create menu opens; Generate opens the "Ask your chef" dialog | 🟢 |
+| RC9 | RECIPES_COOKED_HARVEST | Open Recipes | A recipe with a past confirmed slot (no seeded `lastCookedAt`) is harvested into the cooked strip + out of drafts; an unrelated recipe stays out | 🟢 |
+| RC10 | RECIPES_EMPTY | Open Recipes | First-run empty state ("Your recipe library is empty") | 🟢 |
+
+**Recipes: 10 passing**, 0 findings. **Full suite: 51 passing** (30 Plan + 11 Groceries
++ 10 Recipes). Taste (does the tier split read calm, the double bottom-bar) → Griffin.
 
 ---
 
 ## Not yet cataloged (future)
-- Recipes tab flows — the Slice D reorg (cooked / library / plan-drafts tiers, search,
-  favoriting = promote) once the design lands; plus 1B capture/import/generate/modify.
+- 1B recipe flows — capture / import / generate / modify (the AI-calling recipe mutations).
 - Groceries — merge-review split and inline edit interactions (unit-covered; add E2E if they regress).
 - Auth: login loop / chunked-cookie regression (see whats-next).
