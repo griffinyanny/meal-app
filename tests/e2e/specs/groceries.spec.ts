@@ -133,6 +133,86 @@ test("GR7 - dragging a section reorders the aisles and persists", async ({ page 
   await expect(section(page).first()).toHaveAttribute("data-category", firstCat!);
 });
 
+test("GR8 - a staple chip adds its item, then drops out of the row", async ({ page }) => {
+  await seedGroceryState("GROCERY_READY");
+  await page.goto("/groceries");
+  await expect(list(page)).toBeVisible();
+
+  const staples = page.getByTestId("staples-row");
+  await expect(staples).toBeVisible();
+  // Off-list staples (olive oil, eggs) show; the on-list staple (garlic) is hidden.
+  await expect(staples.getByTestId("staple-chip")).toHaveCount(2);
+  await expect(staples.getByRole("button", { name: /^garlic$/i })).toHaveCount(0);
+
+  const added = page.waitForResponse(
+    (r) => r.url().includes("addItem") && r.request().method() === "POST"
+  );
+  await staples.getByRole("button", { name: /olive oil/i }).click();
+
+  // The item lands on the list and the chip drops out of the row.
+  await expect(rowByName(page, /olive oil/i)).toBeVisible();
+  await expect(staples.getByRole("button", { name: /olive oil/i })).toHaveCount(0);
+  await added;
+});
+
+test("GR9 - Talk to the Chef adds items for a meal", async ({ page }) => {
+  await seedGroceryState("GROCERY_READY");
+  await page.goto("/groceries");
+  await expect(list(page)).toBeVisible();
+
+  await page.getByTestId("grocery-open-chef").click();
+  await page.getByRole("button", { name: "Add stuff for taco night" }).click();
+
+  const done = page.waitForResponse(
+    (r) => r.url().includes("grocery.talk") && r.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: "Send to chef" }).click();
+  await done;
+
+  // The chef's reply shows in the sheet; the items land on the list after refetch.
+  // (Match the reply text specifically — the pill/textarea both say "taco night".)
+  await expect(page.getByText(/added tortillas/i)).toBeVisible();
+  await expect(rowByName(page, /tortillas/i)).toBeVisible();
+});
+
+test("GR10 - Talk to the Chef answers a question without changing the list", async ({ page }) => {
+  await seedGroceryState("GROCERY_READY");
+  await page.goto("/groceries");
+  await expect(list(page)).toBeVisible();
+  await expect(page.getByTestId("grocery-row")).toHaveCount(4);
+
+  await page.getByTestId("grocery-open-chef").click();
+  await page.getByRole("button", { name: "What am I out of?" }).click();
+
+  const done = page.waitForResponse(
+    (r) => r.url().includes("grocery.talk") && r.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: "Send to chef" }).click();
+  await done;
+
+  await expect(page.getByText(/low on eggs and milk/i)).toBeVisible();
+  await expect(page.getByTestId("grocery-row")).toHaveCount(4); // nothing added
+});
+
+test("GR11 - Talk to the Chef removes an item by resolving its list number", async ({ page }) => {
+  await seedGroceryState("GROCERY_READY");
+  await page.goto("/groceries");
+  await expect(list(page)).toBeVisible();
+  await expect(rowByName(page, "Garlic")).toBeVisible();
+
+  await page.getByTestId("grocery-open-chef").click();
+  await page.getByPlaceholder(/what you're out of/i).fill("remove the garlic");
+
+  const done = page.waitForResponse(
+    (r) => r.url().includes("grocery.talk") && r.request().method() === "POST"
+  );
+  await page.getByRole("button", { name: "Send to chef" }).click();
+  await done;
+
+  // Garlic is gone — the model's [N] ref resolved to the real row (ID-safety path).
+  await expect(rowByName(page, "Garlic")).toHaveCount(0);
+});
+
 // Stepped pointer drag (dnd-kit PointerSensor tracks pointer events; Playwright's
 // touchscreen API is tap-only). Exceeds the 8px activation distance, then walks to
 // the target in small steps so collision detection registers the move.

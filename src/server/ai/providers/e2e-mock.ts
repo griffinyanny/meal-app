@@ -18,6 +18,7 @@ import type {
 import type { AITask } from "../config";
 import {
   buildGenerationFixture,
+  buildGroceryTalkFixture,
   buildModificationFixture,
   buildNormalizeFixture,
   buildRecipeFixture,
@@ -94,7 +95,9 @@ async function mockGenerate(task: AITask, options: LanguageModelV3CallOptions) {
         ? buildRecipeFixture(text)
         : task === "ingredient-normalize"
           ? buildNormalizeFixture(text)
-          : null;
+          : task === "grocery-talk"
+            ? buildGroceryTalkFixture(text)
+            : null;
 
   if (fixture === null) {
     throw new Error(

@@ -196,6 +196,17 @@ export async function seedGroceryState(state: GroceryState): Promise<{ listId: s
       );
     }
 
+    if (spec.staples.length > 0) {
+      await db.insert(schema.stapleItems).values(
+        spec.staples.map((s) => ({
+          householdId: ctx.householdId,
+          name: s.name,
+          category: s.category as (typeof schema.GROCERY_CATEGORIES)[number],
+          isActive: s.isActive,
+        }))
+      );
+    }
+
     return { listId: list.id };
   } finally {
     await close();

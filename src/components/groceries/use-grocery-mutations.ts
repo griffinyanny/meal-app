@@ -58,7 +58,7 @@ export function useGroceryMutations(listId: string) {
         quantity: null,
         unit: null,
         category: vars.category ?? "other",
-        sourceType: "manual",
+        sourceType: vars.sourceType ?? "manual",
         sourceRecipeId: null,
         sources: [],
         packageLabel: null,
@@ -73,14 +73,16 @@ export function useGroceryMutations(listId: string) {
       return { prev, tempId };
     },
     onError: (_e, _v, ctx) => rollback(ctx?.prev),
-    onSuccess: (real, _vars, ctx) => {
+    onSuccess: (real, vars, ctx) => {
       // Swap the temp row for the persisted one, then let the AI tidy refine its
       // category in the background (it re-homes the row to the right aisle).
       patch((old) => ({
         ...old,
         items: old.items.map((i) => (i.id === ctx?.tempId ? real : i)),
       }));
-      tidyMutation.mutate({ itemId: real.id });
+      // Staples already carry a curated category — no AI tidy needed (and no
+      // needless spend). Only free-form quick-adds get re-homed.
+      if (vars.sourceType !== "staple") tidyMutation.mutate({ itemId: real.id });
     },
   });
 
@@ -166,8 +168,11 @@ export function useGroceryMutations(listId: string) {
   return {
     toggleCheck: (itemId: string, isChecked: boolean) =>
       checkMutation.mutate({ itemId, isChecked }),
-    addItem: (name: string, category: GroceryCategory) =>
-      addMutation.mutate({ listId, name, category }),
+    addItem: (
+      name: string,
+      category: GroceryCategory,
+      sourceType: "manual" | "staple" = "manual"
+    ) => addMutation.mutate({ listId, name, category, sourceType }),
     removeItem: (itemId: string) => removeMutation.mutate({ itemId }),
     editItem: (itemId: string, patch: { name?: string; qtyText?: string }) =>
       editMutation.mutate({ itemId, ...patch }),

@@ -4,6 +4,29 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Slice D build decisions — staples + Talk-to-the-Chef** (2026-07-21, Session 26)
+- **Cooked signal = auto from a past confirmed plan slot** (Griffin). `lastCookedAt` existed but nothing wrote
+  it, so the Recipes reorg's "cooked" tier had no data source. Decision: a recipe is cooked when it is the
+  recipe of a **confirmed plan slot whose date has passed** — fully automatic, no "I cooked it" tap (matches the
+  scope's no-explicit-mark intent). The build stamps `lastCookedAt` at that moment (durable, not recomputed
+  every read). Built with the reorg, not this session. *(Feeds scope #14.)*
+- **Talk-to-Chef NL→ops ID-safety** (my design, per the plan's risk note). The `grocery-talk` model turns a
+  request into `add`/`remove` ops + a one-line reply, but **never sees or emits a database id.** It references
+  existing items only by a numbered `[N]` ref we assign in the prompt; the `grocery.talk` router resolves that
+  number to a real id from the household's OWN list and bounds-checks it. A hallucinated/out-of-range ref maps
+  to nothing and is ignored — it can't delete an unmentioned item or reach another household. Ops are add/remove
+  only (no edit/check by voice in 1D); a hard 12-op cap bounds blast radius; adds dedupe against the list.
+  Query-only asks ("what am I out of") return zero ops + the answer in the reply.
+- **Staples are OFFERED, not auto-added** (confirms scope open-Q #2). The `staples` router manages the saved set
+  (`list`/`add`/`setActive`/`remove`, add is idempotent-by-name so re-adding reactivates); the chip row shows
+  active staples **not already on the list** (tapping optimistically adds → the chip disappears — the design's
+  "dismiss" for free). A tap reuses `grocery.addItem` with the staple's curated category (no AI tidy — no
+  needless spend) and `sourceType:"staple"` provenance (which `itemMeta` already renders). The list projection
+  is untouched — staples never auto-fold into a generated list.
+- **`TalkToChefSheet` relocated to `components/shared/`** (2nd consumer). It was already fully generic; moved
+  out of `plan/` and given `placeholder` + `resultMessage` props so Groceries reuses it rather than duplicating
+  (anti-duplication). Plan's one import updated; no behavior change for Plan.
+
 **Slice C build decisions — the shoppable list** (2026-07-21, Session 25)
 - **Drag-reorder uses `@dnd-kit`, touch-first — NOT the design's native HTML5 drag** (Griffin's call). Native
   HTML5 drag works on a desktop mouse but is effectively dead on touch, and this is a phone-first app. `@dnd-kit`

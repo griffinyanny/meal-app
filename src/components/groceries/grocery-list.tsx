@@ -28,6 +28,8 @@ import { formatListForClipboard } from "./grocery-export";
 import { GroceryListHeader } from "./grocery-list-header";
 import { OrganizeToggle } from "./organize-toggle";
 import { AddItemRow } from "./add-item-row";
+import { StaplesRow } from "./staples-row";
+import { GroceryChefSheet } from "./grocery-chef-sheet";
 import { GrocerySection } from "./grocery-section";
 import { SortableGroceryRow } from "./grocery-row";
 import { GotItZone } from "./got-it-zone";
@@ -41,6 +43,7 @@ const KNOWN_CATEGORIES = new Set<string>(GROCERY_CATEGORIES);
 export function GroceryList({ list }: { list: GroceryData }) {
   const actions = useGroceryMutations(list.id);
   const [dedupeNotice, setDedupeNotice] = useState<string | null>(null);
+  const [chefOpen, setChefOpen] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -70,6 +73,10 @@ export function GroceryList({ list }: { list: GroceryData }) {
   const sectionCats = aisleOrder.filter((c) => (byCategory.get(c)?.length ?? 0) > 0);
   const flat = [...visibleItems].sort((a, b) => a.position - b.position);
 
+  // Lowercased names on the list, so the staples row can hide staples that are
+  // already added (tapping a chip grows this via the optimistic add → chip goes).
+  const onList = new Set(items.map((i) => i.name.trim().toLowerCase()));
+
   function handleAdd(name: string) {
     const norm = name.trim().toLowerCase();
     const dup = items.find((i) => i.name.trim().toLowerCase() === norm);
@@ -79,6 +86,12 @@ export function GroceryList({ list }: { list: GroceryData }) {
       return;
     }
     actions.addItem(name, guessCategory(name));
+  }
+
+  // A staple tap adds with the staple's curated category (no AI guess) and
+  // "staple" provenance. The row already hides staples on the list, so no dedupe.
+  function handleAddStaple(name: string, category: GroceryCategory) {
+    actions.addItem(name, category, "staple");
   }
 
   function handleCopy() {
@@ -114,12 +127,19 @@ export function GroceryList({ list }: { list: GroceryData }) {
 
       <OrganizeToggle mode={list.organizeMode} onChange={actions.setOrganizeMode} />
 
-      <AddItemRow variant="top" onAdd={handleAdd} data-testid="grocery-add-top" />
+      <AddItemRow
+        variant="top"
+        onAdd={handleAdd}
+        onOpenChef={() => setChefOpen(true)}
+        data-testid="grocery-add-top"
+      />
       {dedupeNotice && (
         <p className="px-1 text-[12px] text-[#FF9F0A]" data-testid="grocery-dedupe">
           {dedupeNotice}
         </p>
       )}
+
+      <StaplesRow onList={onList} onAdd={handleAddStaple} />
 
       {empty ? (
         <p className="px-1 pt-2 text-sm text-muted-foreground">
@@ -167,6 +187,12 @@ export function GroceryList({ list }: { list: GroceryData }) {
         items={checkedItems}
         onUncheck={(id) => actions.toggleCheck(id, false)}
         onClear={actions.clearChecked}
+      />
+
+      <GroceryChefSheet
+        open={chefOpen}
+        onOpenChange={setChefOpen}
+        listId={list.id}
       />
     </div>
   );

@@ -13,7 +13,7 @@ import { PlanReview } from "./plan-review";
 import { PlanMidweek } from "./plan-midweek";
 import { WeekWrappedState } from "./week-wrapped-state";
 import { ModifyStatusPills } from "./modify-status-pills";
-import { TalkToChefSheet } from "./talk-to-chef-sheet";
+import { TalkToChefSheet } from "@/components/shared/talk-to-chef-sheet";
 import { ExpandedMealSheet } from "./expanded-meal-sheet";
 import { usePlanModify } from "./use-plan-modify";
 import { usePlanHydration } from "./use-plan-hydration";

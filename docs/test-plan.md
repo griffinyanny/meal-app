@@ -100,12 +100,13 @@ generate/review rows. D3 — the pointer-lockup regression — is verified sound
 
 ---
 
-## GR — Groceries tab (Phase 1D Slice C, Session 25)
+## GR — Groceries tab (Phase 1D Slice C, Session 25; GR8–GR11 Slice D, Session 26)
 
-The shoppable list. Grocery items are seeded directly to named states
+The shoppable list. Grocery items + staples are seeded directly to named states
 (`GROCERY_READY` / `GROCERY_GENERATING` / `GROCERY_ERROR` / `GROCERY_PENDING`) so the
-mechanics are deterministic; quick-add's tidy runs through the real
-`ingredient-normalize` AI mock. Spec: `tests/e2e/specs/groceries.spec.ts`.
+mechanics are deterministic; quick-add's tidy and the Talk-to-Chef NL→ops task run
+through the real AI mock (deterministic `grocery-talk` fixture). Spec:
+`tests/e2e/specs/groceries.spec.ts`.
 
 | ID | Pre | Steps | Expected | Status |
 |----|-----|-------|----------|--------|
@@ -116,15 +117,19 @@ mechanics are deterministic; quick-add's tidy runs through the real
 | GR5 | GROCERY_READY | Quick-add "Tomatoes"; then quick-add an existing item | New row inserts (optimistic + AI tidy); a duplicate shows the dedupe pill, no second row | 🟢 |
 | GR6 | GROCERY_READY | Toggle Grouped → Ungrouped, reload | Sections collapse to a flat list; the mode persists across reload | 🟢 |
 | GR7 | GROCERY_READY | Drag a section by its grip, reload | Aisle order changes and persists (`aisleOrder`) across reload | 🟢 |
+| GR8 | GROCERY_READY (3 active staples, 1 already on list) | Tap the "Olive oil" staple chip | Off-list staples show as chips (on-list garlic hidden); tap adds the item and the chip drops out of the row | 🟢 |
+| GR9 | GROCERY_READY | Open the chef (brain), pick "Add stuff for taco night", send | NL→ops adds the meal's items; the chef's reply shows; items land on the list | 🟢 |
+| GR10 | GROCERY_READY | Open the chef, pick "What am I out of?", send | Query-only: the reply shows, the list is unchanged (no ops applied) | 🟢 |
+| GR11 | GROCERY_READY | Open the chef, type "remove the garlic", send | The item's `[N]` ref resolves to the real row and it's removed (the ID-safety path) | 🟢 |
 
-**Full suite: 37 passing** (30 Plan + 7 Groceries), 0 findings. Merge quality
-(canonical sums, under-merge correctness) is a wrap-time real-model check + Griffin's
-taste pass — the harness mocks the model.
+**Full suite: 41 passing** (30 Plan + 11 Groceries), 0 findings. Merge quality
+(canonical sums, under-merge correctness) and NL→ops quality are wrap-time real-model
+checks + Griffin's taste pass — the harness mocks the model.
 
 ---
 
 ## Not yet cataloged (future)
-- Recipes tab (Phase 1B) flows — capture/import/generate/modify/versioning.
-- Groceries — Talk-to-the-Chef sheet + staples chip row (Slice D); merge-review split
-  and inline edit interactions (unit-covered; add E2E if they regress).
+- Recipes tab flows — the Slice D reorg (cooked / library / plan-drafts tiers, search,
+  favoriting = promote) once the design lands; plus 1B capture/import/generate/modify.
+- Groceries — merge-review split and inline edit interactions (unit-covered; add E2E if they regress).
 - Auth: login loop / chunked-cookie regression (see whats-next).

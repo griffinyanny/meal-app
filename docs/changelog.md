@@ -4,6 +4,49 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 26 — 2026-07-21 (Slice D — staples + Talk-to-the-Chef; Recipes reorg design kicked off)
+
+### What happened
+Built the two design-independent Slice D features (both already in the imported Groceries design), and kicked
+off a design pass for the third (the Recipes-tab reorg, a genuinely new surface).
+
+- **Staples chip row (#12).** New `staples` tRPC router (`list`/`add`/`setActive`/`remove`; `add` is
+  idempotent-by-name → re-adding reactivates instead of duplicating), household-scoped over the existing
+  `staple_items` table (RLS already shipped in migration 0002). `StaplesRow` renders the "QUICK ADD · YOUR
+  STAPLES" row, showing active staples **not already on the list** — a tap optimistically adds the item
+  (reusing `grocery.addItem` with the staple's curated category + `sourceType:"staple"`), so the chip drops
+  out of the row on its own (the design's "dismiss", for free). No AI tidy on staple adds (curated category
+  already known → no needless spend). Staples remain **offered, not auto-added** to the projection (scope open-Q #2).
+- **Talk-to-the-Chef grocery sheet (#11).** New `grocery-talk` AI task: a free-text request → `add`/`remove`
+  ops + a one-line reply (snapshot-tested static system prompt; loose AI schema coerced to typed ops, dropping
+  anything nonsensical). New `grocery.talk` router applies the ops in a transaction. **ID-safety** (the plan's
+  risk note): the model never sees or emits a db id — it references items by a numbered `[N]` ref we assign,
+  and the router resolves it to a real id from the household's own list + bounds-checks it, so a hallucinated
+  ref is ignored. Hard 12-op cap; adds dedupe against the list; query-only asks return zero ops + the answer.
+  The brain-icon sheet reuses the **shared** `TalkToChefSheet` (relocated `plan/` → `components/shared/`, +
+  `placeholder`/`resultMessage` props) instead of a duplicate.
+- **Recipes-tab reorg (#14) — design pass kicked off, not built.** It's the plainest surface in the app (a
+  flat card list) and the reorg is a real IA change, so per the design-pass gate it gets a design pass first.
+  Wrote the brief (`docs/design/surfaces/recipes/brief.md`) + a ready-to-paste Claude Design prompt asking for
+  several tier-model directions plus one of Claude Design's own. Griffin is running it. **Cooked-signal
+  resolved** (Griffin): auto-stamp `lastCookedAt` from a past confirmed plan slot; build the harvest with the reorg.
+- **E2E extended to Slice D** (GR8–GR11): staple chip add + auto-dismiss, Talk-to-Chef add-for-a-meal,
+  query-only (no change), and remove-by-`[N]`-ref (the ID-safety path). Deterministic `grocery-talk` fixture +
+  staple seeding added to the harness.
+
+### Verification
+- **287 unit** (+29: staples router, `grocery-talk` task incl. prompt snapshot + coercion, `grocery.talk`
+  router incl. the out-of-range-ref ID-safety test) + **41 E2E** (+4 grocery) green; lint + typecheck clean.
+- Not yet on the real model: NL→ops quality (does "add stuff for tacos" pick sensible items) is a wrap-time
+  real-gen check + Griffin's taste pass — the harness mocks the model.
+
+### Owed to Griffin
+- Taste pass on Slice C (carried) + the new Slice D pieces (staples row reads right? Talk-to-Chef feels like a
+  real shortcut?). Mechanics are machine-verified.
+- The Recipes reorg build resumes when Griffin hands back the chosen design URL.
+
+---
+
 ## Session 25 — 2026-07-21 (Slice C complete — the shoppable list UI)
 
 ### What happened

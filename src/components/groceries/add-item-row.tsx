@@ -1,20 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, ArrowUp } from "lucide-react";
+import { Plus, ArrowUp, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AddItemRowProps {
   // "top" is an always-open field; "bottom" is a dashed affordance that opens on tap.
   variant: "top" | "bottom";
   onAdd: (name: string) => void;
+  // When set (top variant only), renders the "Talk to the Chef" brain button —
+  // the natural-language add/query entry point.
+  onOpenChef?: () => void;
   "data-testid"?: string;
 }
 
 // Free-form quick-add. Type anything, press Enter (or tap the arrow) to add it —
 // the item lands optimistically and an AI tidy sorts it into the right aisle. The
 // bottom variant stays open after a submit so a quick run of items keeps going.
-export function AddItemRow({ variant, onAdd, ...rest }: AddItemRowProps) {
+export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowProps) {
   const testId = rest["data-testid"];
   const [active, setActive] = useState(variant === "top");
   const [text, setText] = useState("");
@@ -73,15 +76,27 @@ export function AddItemRow({ variant, onAdd, ...rest }: AddItemRowProps) {
         data-testid={testId}
         className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
       />
-      <button
-        type="button"
-        onClick={submit}
-        disabled={!text.trim()}
-        aria-label="Add item"
-        className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
-      >
-        <ArrowUp className="size-[15px]" />
-      </button>
+      {variant === "top" && onOpenChef && !text.trim() ? (
+        <button
+          type="button"
+          onClick={onOpenChef}
+          aria-label="Talk to the chef"
+          data-testid="grocery-open-chef"
+          className="flex size-[34px] shrink-0 items-center justify-center rounded-[10px] bg-primary/15 text-primary"
+        >
+          <Brain className="size-[18px]" strokeWidth={1.8} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={submit}
+          disabled={!text.trim()}
+          aria-label="Add item"
+          className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground disabled:opacity-40"
+        >
+          <ArrowUp className="size-[15px]" />
+        </button>
+      )}
     </div>
   );
 }
