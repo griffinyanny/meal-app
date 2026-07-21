@@ -112,7 +112,13 @@ export function GroceryList({ list }: { list: GroceryData }) {
     const from = ids.indexOf(active.id as string);
     const to = ids.indexOf(over.id as string);
     if (from < 0 || to < 0) return;
-    actions.reorderItems(arrayMove(ids, from, to));
+    // Renumber the WHOLE list (reordered visible items, then checked items in
+    // their existing order) so positions stay a contiguous 0..N-1 — otherwise
+    // checked items keep stale positions and reappear out of order once unchecked.
+    const checkedIds = [...checkedItems]
+      .sort((a, b) => a.position - b.position)
+      .map((i) => i.id);
+    actions.reorderItems([...arrayMove(ids, from, to), ...checkedIds]);
   }
 
   const empty = total === 0;

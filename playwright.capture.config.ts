@@ -28,7 +28,10 @@ export default defineConfig({
     {
       name: "capture",
       dependencies: ["setup"],
-      testMatch: /plan\.capture\.ts$/,
+      // All Layer-A capture specs (plan, groceries, recipes); the Layer-B live
+      // capture (plan-live.capture.ts) is excluded — it has its own gated config.
+      testMatch: /\.capture\.ts$/,
+      testIgnore: /-live\.capture\.ts$/,
       // deviceScaleFactor 2: crisp enough to read titles/chips, ~half the pixels
       // of the behavior suite's 3x (bounds the cost of Claude reading the PNGs).
       use: { storageState: STORAGE_STATE_PATH, deviceScaleFactor: 2 },

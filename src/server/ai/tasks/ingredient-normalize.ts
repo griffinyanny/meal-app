@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { generateStructured } from "@/server/ai";
+import { AI_DEFAULTS } from "@/server/ai/config";
 import { GROCERY_CATEGORIES, groceryCategorySchema } from "@/server/db/schema";
 import type { GroceryCategory } from "@/server/db/schema";
 import {
@@ -108,6 +109,11 @@ export async function normalizeIngredients(
     system: buildIngredientNormalizeSystemPrompt(),
     prompt: buildIngredientNormalizeUserPrompt(lines),
     schema: aiNormalizeSchema,
+    // A full-week batch (~70 lines) can take ~35-40s on gpt-4.1-mini — over the
+    // 30s default — and fail the whole list generation. Give it the stream-tier
+    // ceiling as a stopgap. Real fix = the generation-architecture rethink
+    // (incremental normalize during review); see docs/bug-tracker.md BUG-004.
+    timeoutMs: AI_DEFAULTS.streamTimeoutMs,
   });
 
   return reconcileNormalized(lines, response);
