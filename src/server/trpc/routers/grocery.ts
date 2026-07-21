@@ -8,8 +8,13 @@ import {
 } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { generateGroceryList } from "./grocery-generate";
+import { groceryItemMutations } from "./grocery-item-mutations";
+import { groceryOrganizeMutations } from "./grocery-organize";
 
 export const groceryRouter = router({
+  ...groceryItemMutations,
+  ...groceryOrganizeMutations,
+
   current: protectedProcedure.query(async ({ ctx }) => {
     const list = await ctx.db.query.groceryLists.findFirst({
       where: eq(groceryLists.householdId, ctx.householdId),

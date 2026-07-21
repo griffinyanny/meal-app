@@ -15,6 +15,7 @@ import { makeSeedDb } from "../harness/seed-client";
 import { readTestContext, type TestContext } from "./test-context";
 import { env, TEST_HOUSEHOLD_NAME } from "./env";
 import { buildSeedSpec, type PlanState, type SeedOptions } from "./seed-states";
+import { buildGrocerySpec, type GroceryState } from "./grocery-seed-states";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
@@ -43,6 +44,16 @@ async function assertTestHousehold(db: Db, ctx: TestContext): Promise<void> {
 
 // Household/user-scoped wipe. Never deletes users/households/membership.
 async function wipe(db: Db, ctx: TestContext): Promise<void> {
+  // Grocery items before lists (FK), though a list delete would cascade anyway.
+  await db
+    .delete(schema.groceryItems)
+    .where(eq(schema.groceryItems.householdId, ctx.householdId));
+  await db
+    .delete(schema.groceryLists)
+    .where(eq(schema.groceryLists.householdId, ctx.householdId));
+  await db
+    .delete(schema.stapleItems)
+    .where(eq(schema.stapleItems.householdId, ctx.householdId));
   await db
     .delete(schema.mealPlanSlots)
     .where(eq(schema.mealPlanSlots.householdId, ctx.householdId));
@@ -138,6 +149,54 @@ export async function seedPlanState(
         timeframe: timeframeOf(s.date),
       })),
     };
+  } finally {
+    await close();
+  }
+}
+
+// Resets the test household, then materializes a named Groceries state: one
+// grocery_lists row (in the given generationStatus/organizeMode) plus its items.
+// Returns the created list id so specs can assert against it if needed.
+export async function seedGroceryState(state: GroceryState): Promise<{ listId: string }> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    const spec = buildGrocerySpec(state);
+    const [list] = await db
+      .insert(schema.groceryLists)
+      .values({
+        householdId: ctx.householdId,
+        status: "draft",
+        generationStatus: spec.generationStatus,
+        generationError: spec.generationError,
+        organizeMode: spec.organizeMode,
+        aisleOrder: [],
+      })
+      .returning();
+
+    if (spec.items.length > 0) {
+      await db.insert(schema.groceryItems).values(
+        spec.items.map((item) => ({
+          householdId: ctx.householdId,
+          listId: list.id,
+          name: item.name,
+          rawName: item.rawName,
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category as (typeof schema.GROCERY_CATEGORIES)[number],
+          sourceType: item.sourceType,
+          sourceRecipeId: null,
+          sources: item.sources,
+          isChecked: item.isChecked,
+          position: item.position,
+        }))
+      );
+    }
+
+    return { listId: list.id };
   } finally {
     await close();
   }

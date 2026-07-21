@@ -159,6 +159,45 @@ export function parseQuantity(raw: string): ParsedQty {
   return { kind: "unparseable" };
 }
 
+// Read a quantity string as a single number (or null if it carries no amount).
+// A thin wrapper over parseQuantity for callers that only want the count —
+// splitItem (per-source qty) and the qty-text parser below.
+export function numberFromQty(raw: string): number | null {
+  const parsed = parseQuantity(raw);
+  return parsed.kind === "exact" || parsed.kind === "range" ? parsed.value : null;
+}
+
+// Tokens that make up the numeric portion of a quantity string, so the trailing
+// remainder can be split off as the unit.
+const QTY_NUMERIC_TOKEN = /^[\d./½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞-]+$/;
+
+// Parse a user-typed quantity string (inline qty editing) into the stored
+// (quantity, unit) pair. "2 heads" → {2, "heads"}; "1 1/2 cups" → {1.5, "cups"};
+// "3" → {3, null}; "as needed"/"" → {null, null}. When there's no readable
+// number we store no amount and no unit (renders "as needed"), so an orphan unit
+// never lingers without a count.
+export function parseQtyText(raw: string): { quantity: number | null; unit: string | null } {
+  const text = (raw ?? "").trim();
+  if (!text) return { quantity: null, unit: null };
+
+  // Peel the leading numeric tokens (digits, fractions, unicode ½, a "2-3"/"2 to 3"
+  // range) off the front; the remainder is the unit. Crucially, parse the numeric
+  // part ALONE — passing the whole "1½ cups" to parseQuantity lets the glued-on
+  // unit defeat its fraction/range reading (it would fall back to the bare "1").
+  const tokens = text.split(/\s+/);
+  let i = 0;
+  while (
+    i < tokens.length &&
+    (QTY_NUMERIC_TOKEN.test(tokens[i]) || tokens[i].toLowerCase() === "to")
+  ) {
+    i++;
+  }
+  const quantity = numberFromQty(tokens.slice(0, i).join(" "));
+  if (quantity == null) return { quantity: null, unit: null };
+  const unit = tokens.slice(i).join(" ").trim() || null;
+  return { quantity, unit };
+}
+
 function roundQty(n: number): number {
   return Math.round(n * 1000) / 1000;
 }

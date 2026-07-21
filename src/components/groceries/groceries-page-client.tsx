@@ -3,10 +3,9 @@
 import { useEffect, useRef } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { GROCERY_CATEGORIES } from "@/lib/grocery-categories";
+import { GroceryList } from "./grocery-list";
 
-type GroceryList = NonNullable<RouterOutputs["grocery"]["current"]>;
-type GroceryItem = GroceryList["items"][number];
+type GroceryListData = NonNullable<RouterOutputs["grocery"]["current"]>;
 
 // generationStatus values that mean "still working" — the tab polls while in one
 // of these and shows phase-named, chef-voice copy.
@@ -19,20 +18,6 @@ const PHASE_COPY: Record<string, string> = {
   normalizing: "Sorting your ingredients…",
   aggregating: "Merging your grocery list…",
 };
-
-const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(
-  GROCERY_CATEGORIES.map((c) => [c, c.charAt(0).toUpperCase() + c.slice(1)])
-);
-
-// Slice B renders an honest, plain grouped list; the imported design (amber
-// dots, drag, one-zone check-off) lands in Slice C.
-function formatQty(quantity: number | null, unit: string | null): string {
-  if (quantity == null) return "as needed";
-  const n = Number.isInteger(quantity)
-    ? String(quantity)
-    : String(Math.round(quantity * 100) / 100);
-  return unit ? `${n} ${unit}` : n;
-}
 
 export function GroceriesPageClient() {
   const utils = trpc.useUtils();
@@ -73,8 +58,7 @@ export function GroceriesPageClient() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Groceries</h1>
+    <div className="p-4">
       <Body
         list={list}
         isLoading={currentQuery.isLoading}
@@ -89,7 +73,7 @@ export function GroceriesPageClient() {
 }
 
 interface BodyProps {
-  list: GroceryList | null | undefined;
+  list: GroceryListData | null | undefined;
   isLoading: boolean;
   isError: boolean;
   errorMessage: string | null;
@@ -132,8 +116,8 @@ function Body({ list, isLoading, isError, errorMessage, onRetry }: BodyProps) {
     return <GeneratingState label={PHASE_COPY[list.generationStatus] ?? "Working…"} />;
   }
 
-  // ready
-  return <ReadyList items={list.items} />;
+  // ready → the shoppable list
+  return <GroceryList list={list} />;
 }
 
 function GeneratingState({ label }: { label: string }) {
@@ -150,53 +134,6 @@ function GeneratingState({ label }: { label: string }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-function ReadyList({ items }: { items: GroceryItem[] }) {
-  if (items.length === 0) {
-    return (
-      <div className="glass-card p-6 flex flex-col items-center justify-center min-h-[160px] text-center">
-        <p className="text-muted-foreground text-sm">
-          Your list is empty. Add items or confirm a plan to fill it.
-        </p>
-      </div>
-    );
-  }
-
-  // Group by category in the schema's aisle order; items already arrive ordered
-  // by (category, position) from grocery.current.
-  const byCategory = new Map<string, GroceryItem[]>();
-  for (const item of items) {
-    const bucket = byCategory.get(item.category) ?? [];
-    bucket.push(item);
-    byCategory.set(item.category, bucket);
-  }
-  const orderedCategories = GROCERY_CATEGORIES.filter((c) => byCategory.has(c));
-
-  return (
-    <div className="space-y-6" data-testid="grocery-list">
-      {orderedCategories.map((category) => (
-        <section key={category} className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {CATEGORY_LABEL[category] ?? category}
-          </p>
-          <ul className="glass-card divide-y divide-border/40">
-            {byCategory.get(category)!.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center justify-between gap-3 px-4 py-3"
-              >
-                <span className="text-sm text-foreground/90">{item.name}</span>
-                <span className="text-sm text-muted-foreground shrink-0">
-                  {formatQty(item.quantity, item.unit)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
     </div>
   );
 }
