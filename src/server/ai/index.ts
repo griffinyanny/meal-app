@@ -10,6 +10,9 @@ interface GenerateStructuredOptions<T> {
   prompt: string;
   schema: Schema<T>;
   maxTokens?: number;
+  // Override the default one-shot timeout for calls whose payload is legitimately
+  // large (e.g. a full-week ingredient-normalize batch). Defaults to 30s.
+  timeoutMs?: number;
 }
 
 interface GenerateTextOptions {
@@ -48,7 +51,7 @@ export async function generateStructured<T>(
         maxRetries: 0,
         // Fresh signal per attempt (created inside the retry callback) so a
         // retried call isn't born already-aborted.
-        abortSignal: AbortSignal.timeout(AI_DEFAULTS.timeoutMs),
+        abortSignal: AbortSignal.timeout(options.timeoutMs ?? AI_DEFAULTS.timeoutMs),
       });
 
       logAICall({
