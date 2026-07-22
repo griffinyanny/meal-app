@@ -12,6 +12,7 @@ import {
   cuisinePreferencesSchema,
 } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { userTalkMutations } from "./user-talk";
 
 export const userRouter = router({
   ensureOnboarded: authedProcedure.mutation(async ({ ctx }) => {
@@ -85,6 +86,23 @@ export const userRouter = router({
     return prefs ?? null;
   }),
 
+  // Account/household basics for the You-tab footer (feature #1): display name,
+  // email, household name. One read so the footer doesn't fan out queries.
+  account: protectedProcedure.query(async ({ ctx }) => {
+    const [me, household] = await Promise.all([
+      ctx.db.query.users.findFirst({ where: eq(users.id, ctx.user.id) }),
+      ctx.db.query.households.findFirst({
+        where: eq(households.id, ctx.householdId),
+      }),
+    ]);
+
+    return {
+      displayName: me?.displayName ?? null,
+      email: me?.email ?? ctx.user.email ?? null,
+      householdName: household?.name ?? null,
+    };
+  }),
+
   updatePreferences: protectedProcedure
     .input(
       z.object({
@@ -123,6 +141,9 @@ export const userRouter = router({
           category: z
             .enum(["preference", "brand", "feedback", "behavior", "restriction"])
             .optional(),
+          // The You-tab ledger passes true so removed/dismissed memories drop out
+          // (matching getChefContext). Defaults false to preserve the raw read.
+          activeOnly: z.boolean().default(false),
         })
         .optional()
     )
@@ -133,6 +154,9 @@ export const userRouter = router({
       if (input?.category) {
         where = and(where, eq(aiMemories.category, input.category))!;
       }
+      if (input?.activeOnly) {
+        where = and(where, eq(aiMemories.isActive, true))!;
+      }
 
       return ctx.db
         .select()
@@ -141,4 +165,8 @@ export const userRouter = router({
         .orderBy(desc(aiMemories.createdAt))
         .limit(limit);
     }),
+
+  // AI-first capture (feature #5, the design hero) — free text → constraint +
+  // memory ops, with an undo payload. Implementation in ./user-talk.
+  ...userTalkMutations,
 });

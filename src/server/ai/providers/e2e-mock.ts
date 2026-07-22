@@ -21,6 +21,7 @@ import {
   buildGroceryTalkFixture,
   buildModificationFixture,
   buildNormalizeFixture,
+  buildPreferencesTalkFixture,
   buildRecipeFixture,
   parseMockDirectives,
 } from "./e2e-mock-fixtures";
@@ -97,7 +98,9 @@ async function mockGenerate(task: AITask, options: LanguageModelV3CallOptions) {
           ? buildNormalizeFixture(text)
           : task === "grocery-talk"
             ? buildGroceryTalkFixture(text)
-            : null;
+            : task === "preferences-talk"
+              ? buildPreferencesTalkFixture(text)
+              : null;
 
   if (fixture === null) {
     throw new Error(

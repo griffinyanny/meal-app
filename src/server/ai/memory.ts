@@ -40,7 +40,13 @@ export async function getChefContext(
 
   return {
     dietaryFramework: prefs?.dietaryFramework ?? undefined,
-    restrictions: (prefs?.restrictions as string[] | null) ?? [],
+    // The You tab encodes allergy weighting as a trailing "(allergy)" marker in the
+    // restriction string (a UI/capture convention). Strip it before the chef prompt
+    // sees it — it's display metadata; every restriction is an absolute avoid here
+    // regardless of the marker.
+    restrictions: ((prefs?.restrictions as string[] | null) ?? []).map((r) =>
+      r.replace(/\s*\(allergy\)\s*$/i, "").trim()
+    ),
     dislikedFoods: (prefs?.dislikes as string[] | null) ?? [],
     householdSize: prefs?.householdSize ?? 2,
     maxCookTimeMinutes: prefs?.maxCookTimeWeeknight ?? 45,

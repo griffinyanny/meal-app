@@ -8,6 +8,7 @@ export type AITask =
   | "recipe-modify"
   | "ingredient-normalize"
   | "grocery-talk"
+  | "preferences-talk"
   | "plan-generate"
   | "plan-modify"
   | "memory-extract";
@@ -18,6 +19,7 @@ const taskModelMap: Record<AITask, () => ReturnType<typeof openai>> = {
   "recipe-modify": () => openai("gpt-4.1-mini"),
   "ingredient-normalize": () => openai("gpt-4.1-mini"),
   "grocery-talk": () => openai("gpt-4.1-mini"),
+  "preferences-talk": () => openai("gpt-4.1-mini"),
   "plan-generate": () => openai("gpt-4.1-mini"),
   "plan-modify": () => openai("gpt-4.1-mini"),
   "memory-extract": () => openai("gpt-4.1-mini"),

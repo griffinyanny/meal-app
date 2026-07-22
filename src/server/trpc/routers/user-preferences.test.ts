@@ -53,6 +53,8 @@ interface MockDb {
   query: {
     householdMembers: { findFirst: ReturnType<typeof vi.fn> };
     userPreferences: { findFirst: ReturnType<typeof vi.fn> };
+    users: { findFirst: ReturnType<typeof vi.fn> };
+    households: { findFirst: ReturnType<typeof vi.fn> };
   };
   select: ReturnType<typeof vi.fn>;
   insert: ReturnType<typeof vi.fn>;
@@ -68,6 +70,8 @@ function createMockDb(): MockDb {
     query: {
       householdMembers: { findFirst: vi.fn() },
       userPreferences: { findFirst: vi.fn() },
+      users: { findFirst: vi.fn() },
+      households: { findFirst: vi.fn() },
     },
     select: vi.fn(() => makeSelectChain(selectResults)),
     insert: vi.fn((table: unknown) => makeMutationChain(table, insertReturning)),
@@ -223,5 +227,64 @@ describe("userRouter.memories", () => {
     expect(chain.where).toHaveBeenCalledWith(
       and(eq(aiMemories.householdId, "household-1"), eq(aiMemories.category, "restriction"))
     );
+  });
+
+  it("should filter to active memories only when activeOnly is set (the You-tab ledger)", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.__selectResults.set(aiMemories, []);
+
+    const caller = userRouter.createCaller(buildCtx(db, mockUser));
+    await caller.memories({ activeOnly: true });
+
+    const chain = db.select.mock.results[0].value as Chain;
+    expect(chain.where).toHaveBeenCalledWith(
+      and(eq(aiMemories.householdId, "household-1"), eq(aiMemories.isActive, true))
+    );
+  });
+});
+
+describe("userRouter.account", () => {
+  let db: MockDb;
+
+  beforeEach(() => {
+    db = createMockDb();
+  });
+
+  it("should reject an unauthenticated request", async () => {
+    const caller = userRouter.createCaller(buildCtx(db, null));
+    await expect(caller.account()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("should return display name, email, and household name", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.query.users.findFirst.mockResolvedValueOnce({
+      displayName: "Griffin",
+      email: "griffin@example.com",
+    });
+    db.query.households.findFirst.mockResolvedValueOnce({ name: "The Griffin household" });
+
+    const caller = userRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.account();
+
+    expect(result).toEqual({
+      displayName: "Griffin",
+      email: "griffin@example.com",
+      householdName: "The Griffin household",
+    });
+  });
+
+  it("should fall back to the auth email when no user row exists", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    db.query.users.findFirst.mockResolvedValueOnce(undefined);
+    db.query.households.findFirst.mockResolvedValueOnce(undefined);
+
+    const caller = userRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.account();
+
+    expect(result).toEqual({
+      displayName: null,
+      email: "griffin@example.com",
+      householdName: null,
+    });
   });
 });
