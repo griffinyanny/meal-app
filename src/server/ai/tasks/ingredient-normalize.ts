@@ -8,19 +8,15 @@ import {
   buildIngredientNormalizeUserPrompt,
   type RawIngredientLine,
 } from "@/server/ai/prompts/ingredient-normalize";
+import type { NormalizedResult } from "@/lib/normalized-ingredient";
 
 export type { RawIngredientLine };
 
-// The clean, per-line normalization the aggregator consumes. One per input line,
-// aligned by index — guaranteed by reconcileNormalized even if the model drifts.
-export interface NormalizedResult {
-  index: number;
-  canonicalName: string;
-  category: GroceryCategory;
-  canonicalUnit: string;
-  numericQty: number | null;
-  confidence: number;
-}
+// The clean, per-line normalization the aggregator consumes — one per input line,
+// aligned by index (guaranteed by reconcileNormalized even if the model drifts).
+// The shape lives in a client-safe module so the recipe row can cache it; re-exported
+// here so existing importers are unchanged.
+export type { NormalizedResult };
 
 // OpenAI strict structured outputs: every field present, no .optional() and no
 // min/max keywords. category comes back as a free string and is coerced to the

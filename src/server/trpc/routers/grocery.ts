@@ -4,9 +4,10 @@ import { TRPCError } from "@trpc/server";
 import {
   groceryLists,
   groceryItems,
+  mealPlanSlots,
   groceryCategorySchema,
 } from "@/server/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, ne, inArray } from "drizzle-orm";
 import { generateGroceryList } from "./grocery-generate";
 import { groceryItemMutations } from "./grocery-item-mutations";
 import { groceryOrganizeMutations } from "./grocery-organize";
@@ -36,7 +37,28 @@ export const groceryRouter = router({
       )
       .orderBy(groceryItems.category, groceryItems.position);
 
-    return { ...list, items };
+    // While the projection is building, count the plan's cookable slots whose
+    // recipe isn't ready yet — the tab's poll turns this into the honest
+    // "Finishing N recipes…" hint on the straggler path (BUG-004, Phase D).
+    let pendingRecipeCount = 0;
+    const building =
+      list.generationStatus === "pending" || list.generationStatus === "hydrating";
+    if (building && list.mealPlanId) {
+      const unready = await ctx.db
+        .select({ id: mealPlanSlots.id })
+        .from(mealPlanSlots)
+        .where(
+          and(
+            eq(mealPlanSlots.planId, list.mealPlanId),
+            eq(mealPlanSlots.householdId, ctx.householdId),
+            inArray(mealPlanSlots.slotType, ["recipe", "leftover"]),
+            ne(mealPlanSlots.recipeStatus, "ready")
+          )
+        );
+      pendingRecipeCount = unready.length;
+    }
+
+    return { ...list, items, pendingRecipeCount };
   }),
 
   // Build (or retry) the projection for a pending/errored draft list. The

@@ -11,7 +11,12 @@ export type GroceryState =
   | "GROCERY_READY" // a populated, ready list (interaction tests)
   | "GROCERY_GENERATING" // mid-generation (the generating UI stays put)
   | "GROCERY_ERROR" // a failed generation (Plan's error card + retry)
-  | "GROCERY_PENDING"; // fresh pending list, no plan → auto-generates to empty-ready
+  | "GROCERY_PENDING" // fresh pending list, no plan → auto-generates to empty-ready
+  | "GROCERY_PENDING_CACHED" // GR-L1: pending list + a plan whose recipes are all
+  // ready AND carry their review-time normalize cache → confirm makes zero AI
+  // calls and lands on the merged list fast (the BUG-004 win).
+  | "GROCERY_HYDRATING_STRAGGLERS"; // GR-L2: a list mid-generation (hydrating) whose
+// plan still has unready recipes → the honest "Finishing N recipes…" straggler hint.
 
 export interface SeedGroceryItem {
   name: string;
@@ -31,12 +36,50 @@ export interface SeedStaple {
   isActive: boolean;
 }
 
+// A recipe to seed alongside the list, linked to a plan slot. `normalizedIngredients`
+// (when present) is the review-time cache the confirm-time generate reads instead of
+// calling the AI — it must align 1:1 with `ingredients` (BUG-004).
+export interface SeedGroceryRecipe {
+  id: string;
+  title: string;
+  ingredients: { qty: string; unit: string; item: string }[];
+  normalizedIngredients:
+    | {
+        index: number;
+        canonicalName: string;
+        category: string;
+        canonicalUnit: string;
+        numericQty: number | null;
+        confidence: number;
+      }[]
+    | null;
+}
+
+// A plan slot to seed. `recipeId`+`recipeStatus: "ready"` = a hydrated slot; a
+// `null` recipe with `recipeStatus: "none"` = an unready straggler (drives the
+// "Finishing N recipes…" count).
+export interface SeedGrocerySlot {
+  title: string;
+  slotType: "recipe" | "leftover" | "eating_out" | "skip";
+  recipeId: string | null;
+  recipeStatus: "none" | "hydrating" | "ready" | "stale";
+}
+
+// When present, seedGroceryState also materializes a confirmed plan (+ its recipes
+// and slots) and links the list to it via mealPlanId — so confirm-time generation
+// and the straggler count have a real plan to read.
+export interface SeedGroceryPlan {
+  recipes: SeedGroceryRecipe[];
+  slots: SeedGrocerySlot[];
+}
+
 export interface SeedGrocerySpec {
-  generationStatus: "ready" | "normalizing" | "error" | "pending";
+  generationStatus: "ready" | "hydrating" | "normalizing" | "error" | "pending";
   generationError: string | null;
   organizeMode: "grouped" | "manual";
   items: SeedGroceryItem[];
   staples: SeedStaple[];
+  plan?: SeedGroceryPlan;
 }
 
 const RECIPE_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -108,6 +151,69 @@ function readyStaples(): SeedStaple[] {
   ];
 }
 
+// GR-L1 fixture: two ready recipes that share garlic, each carrying its aligned
+// review-time normalize cache. At confirm, generate reads these caches (zero AI),
+// merges the two garlic lines → one "garlic" row with 2 sources (the amber dot).
+// numericQty is null to match what the ingredient-normalize mock stores (the
+// aggregator parses the raw qty string itself) — so this cache is byte-identical
+// to what cacheSlotNormalization would write under the mock.
+function n(
+  index: number,
+  canonicalName: string,
+  category: string,
+  canonicalUnit: string
+) {
+  return { index, canonicalName, category, canonicalUnit, numericQty: null, confidence: 1 };
+}
+
+function cachedPlan(): SeedGroceryPlan {
+  return {
+    recipes: [
+      {
+        id: RECIPE_A,
+        title: "Seeded Salmon",
+        ingredients: [
+          { qty: "2", unit: "cloves", item: "garlic" },
+          { qty: "1", unit: "lb", item: "salmon" },
+        ],
+        normalizedIngredients: [
+          n(0, "garlic", "produce", "clove"),
+          n(1, "salmon", "seafood", "lb"),
+        ],
+      },
+      {
+        id: RECIPE_B,
+        title: "Seeded Pasta",
+        ingredients: [
+          { qty: "4", unit: "cloves", item: "garlic" },
+          { qty: "8", unit: "oz", item: "pasta" },
+        ],
+        normalizedIngredients: [
+          n(0, "garlic", "produce", "clove"),
+          n(1, "pasta", "pantry", "oz"),
+        ],
+      },
+    ],
+    slots: [
+      { title: "Seeded Salmon", slotType: "recipe", recipeId: RECIPE_A, recipeStatus: "ready" },
+      { title: "Seeded Pasta", slotType: "recipe", recipeId: RECIPE_B, recipeStatus: "ready" },
+    ],
+  };
+}
+
+// GR-L2 fixture: a plan with two cookable slots whose recipes haven't hydrated
+// yet (recipeStatus "none"). With the list in `hydrating`, grocery.current counts
+// these two → the "Finishing 2 recipes…" hint.
+function stragglerPlan(): SeedGroceryPlan {
+  return {
+    recipes: [],
+    slots: [
+      { title: "Straggler One", slotType: "recipe", recipeId: null, recipeStatus: "none" },
+      { title: "Straggler Two", slotType: "recipe", recipeId: null, recipeStatus: "none" },
+    ],
+  };
+}
+
 export function buildGrocerySpec(state: GroceryState): SeedGrocerySpec {
   switch (state) {
     case "GROCERY_READY":
@@ -130,5 +236,23 @@ export function buildGrocerySpec(state: GroceryState): SeedGrocerySpec {
       };
     case "GROCERY_PENDING":
       return { generationStatus: "pending", generationError: null, organizeMode: "grouped", items: [], staples: [] };
+    case "GROCERY_PENDING_CACHED":
+      return {
+        generationStatus: "pending",
+        generationError: null,
+        organizeMode: "grouped",
+        items: [],
+        staples: [],
+        plan: cachedPlan(),
+      };
+    case "GROCERY_HYDRATING_STRAGGLERS":
+      return {
+        generationStatus: "hydrating",
+        generationError: null,
+        organizeMode: "grouped",
+        items: [],
+        staples: [],
+        plan: stragglerPlan(),
+      };
   }
 }

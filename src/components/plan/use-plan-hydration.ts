@@ -35,6 +35,12 @@ export function usePlanHydration(
 ): PlanHydration {
   const utils = trpc.useUtils();
   const hydrate = trpc.plan.hydrateSlot.useMutation();
+  // Fired right after a hydrate lands (a separate, non-blocking background call) to
+  // cache that recipe's grocery normalization during review — so confirm-time list
+  // generation skips the ~37s batched normalize. Runs concurrently with the next
+  // slot's hydrate; a failure is a no-op (confirm re-normalizes that recipe). See
+  // BUG-004. It never touches the walk's activeRef/tick, so it can't stall the walk.
+  const normalize = trpc.plan.normalizeSlot.useMutation();
 
   // Slot ids that failed this session — not auto-retried (a persistently-failing
   // slot would otherwise burn budget in a loop); a manual prioritize() clears it.
@@ -99,6 +105,11 @@ export function usePlanHydration(
                 }
               : old
           );
+          // Recipe landed → cache its grocery normalization in the background. Fire
+          // and forget: don't await or block the walk (it moves on in onSettled).
+          if (res.recipeStatus === "ready" && res.recipeId) {
+            normalize.mutate({ slotId: res.slotId });
+          }
         },
         onError: () => {
           setFailed((f) => ({ ...f, [slotId]: true }));

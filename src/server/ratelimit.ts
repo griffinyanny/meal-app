@@ -42,7 +42,9 @@ export function checkRateLimit(
   return { allowed: true, retryAfterMs: 0 };
 }
 
-// Shared limit for AI-calling operations: per user, per minute.
+// Shared limit for INTERACTIVE AI-calling operations (plan generate/modify,
+// hydrate, grocery talk): per user, per minute. This is the user-visible,
+// must-succeed path — a 429 here fails something the user is watching.
 export const AI_RATE_LIMIT = { limit: 10, windowMs: 60_000 } as const;
 
 export function checkAiRateLimit(userId: string): RateLimitResult {
@@ -51,6 +53,21 @@ export function checkAiRateLimit(userId: string): RateLimitResult {
   // (double-gated) mock flag — the real limit is untouched in every other run.
   const limit = aiMockEnabled() ? 1000 : AI_RATE_LIMIT.limit;
   return checkRateLimit(`ai:${userId}`, limit, AI_RATE_LIMIT.windowMs);
+}
+
+// Separate bucket for BACKGROUND, best-effort AI fan-out — today the review-time
+// grocery normalize (BUG-004), which fires one call per hydrated recipe. Kept
+// distinct from the interactive bucket for two reasons: (1) it must never consume
+// interactive tokens and 429 a user-visible hydrate; (2) a full-week review
+// legitimately fans out ~7 (plus prioritize re-fires), which would blow the 10/min
+// interactive cap. Sized to cover a week comfortably while still bounding a runaway
+// loop. A 429 here is harmless — the caller (cacheSlotNormalization) is best-effort,
+// so the recipe just falls back to normalizing at confirm.
+export const AI_BG_RATE_LIMIT = { limit: 30, windowMs: 60_000 } as const;
+
+export function checkAiBackgroundRateLimit(userId: string): RateLimitResult {
+  const limit = aiMockEnabled() ? 1000 : AI_BG_RATE_LIMIT.limit;
+  return checkRateLimit(`ai:bg:${userId}`, limit, AI_BG_RATE_LIMIT.windowMs);
 }
 
 // Distributed daily budget, enforced in Postgres so it holds across serverless

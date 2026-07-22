@@ -113,11 +113,23 @@ function Body({ list, isLoading, isError, errorMessage, onRetry }: BodyProps) {
   }
 
   if ((GENERATING_PHASES as readonly string[]).includes(list.generationStatus)) {
-    return <GeneratingState label={PHASE_COPY[list.generationStatus] ?? "Working…"} />;
+    return <GeneratingState label={generatingLabel(list)} />;
   }
 
   // ready → the shoppable list
   return <GroceryList list={list} />;
+}
+
+// Phase copy, except the straggler path gets an honest hint that NAMES the
+// remaining work ("Finishing 3 recipes…") instead of generic shimmer copy
+// (BUG-004, Phase D). The poll refreshes pendingRecipeCount, so the number
+// counts down live as each straggler recipe lands.
+function generatingLabel(list: GroceryListData): string {
+  if (list.generationStatus === "hydrating" && list.pendingRecipeCount > 0) {
+    const n = list.pendingRecipeCount;
+    return n === 1 ? "Finishing 1 recipe…" : `Finishing ${n} recipes…`;
+  }
+  return PHASE_COPY[list.generationStatus] ?? "Working…";
 }
 
 function GeneratingState({ label }: { label: string }) {

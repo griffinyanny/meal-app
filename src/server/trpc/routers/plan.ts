@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { router, protectedProcedure, aiProcedure } from "../init";
+import { router, protectedProcedure, aiProcedure, bgAiProcedure } from "../init";
 import { TRPCError } from "@trpc/server";
 import { mealPlans, mealPlanSlots, groceryLists } from "@/server/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { getChefContext, writeMemory } from "@/server/ai/memory";
 import { modifyPlan } from "@/server/ai/tasks/modify-plan";
 import { validateModification, toSlotValues } from "@/server/ai/tasks/plan-types";
-import { hydrateSlotRecipe } from "./plan-hydrate";
+import { hydrateSlotRecipe, cacheSlotNormalization } from "./plan-hydrate";
 
 // Whole days between two ISO date strings (UTC, date-only).
 function dateToOffset(weekStart: string, date: string): number {
@@ -276,6 +276,23 @@ export const planRouter = router({
         db: ctx.db,
         householdId: ctx.householdId,
         userId: ctx.user.id,
+        slotId: input.slotId,
+      })
+    ),
+
+  // Cache the grocery normalization for one hydrated slot's recipe (Phase 1D
+  // latency fix). Fired by the review-time walker right after hydrateSlot succeeds
+  // so the ~37s batched normalize is done incrementally during review, off the
+  // confirm critical path. Best-effort + idempotent (see cacheSlotNormalization).
+  // bgAiProcedure (not aiProcedure): this background fan-out gets its own rate-limit
+  // bucket so it never 429s a user-visible hydrate, and it doesn't double-charge the
+  // daily budget the recipe-generate already counted. See BUG-004.
+  normalizeSlot: bgAiProcedure
+    .input(z.object({ slotId: z.string().uuid() }))
+    .mutation(({ ctx, input }) =>
+      cacheSlotNormalization({
+        db: ctx.db,
+        householdId: ctx.householdId,
         slotId: input.slotId,
       })
     ),
