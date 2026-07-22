@@ -99,9 +99,12 @@ describe("aggregateIngredients — merging", () => {
   });
 
   it("groups canonical names case-insensitively", () => {
+    // A non-staple item so this tests the case-insensitive grouping mechanic itself
+    // (buy-unit staples like "olive oil" collapse to an unquantified row — see the
+    // buy-unit describe block).
     const items = aggregateIngredients([
-      line({ canonicalName: "Olive Oil", rawQty: "1", canonicalUnit: "tbsp" }),
-      line({ canonicalName: "olive oil", rawQty: "2", canonicalUnit: "tbsp" }),
+      line({ canonicalName: "Chicken Broth", rawQty: "1", canonicalUnit: "cup" }),
+      line({ canonicalName: "chicken broth", rawQty: "2", canonicalUnit: "cup" }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0].quantity).toBe(3);
@@ -160,9 +163,11 @@ describe("aggregateIngredients — quantities", () => {
   });
 
   it("sums the quantified members and ignores an unquantified one in the same group", () => {
+    // Non-staple item: the mechanic under test is "an unquantified line in a merged
+    // group contributes no number." (Staples take a different path — see below.)
     const items = aggregateIngredients([
-      line({ canonicalName: "olive oil", canonicalUnit: "tbsp", rawQty: "2", recipeId: "r1" }),
-      line({ canonicalName: "olive oil", canonicalUnit: "tbsp", rawQty: "a drizzle", recipeId: "r2" }),
+      line({ canonicalName: "chicken broth", canonicalUnit: "cup", rawQty: "2", recipeId: "r1" }),
+      line({ canonicalName: "chicken broth", canonicalUnit: "cup", rawQty: "a drizzle", recipeId: "r2" }),
     ]);
     expect(items).toHaveLength(1);
     expect(items[0].quantity).toBe(2);
@@ -191,6 +196,69 @@ describe("aggregateIngredients — quantities", () => {
       line({ rawQty: "some amount", numericQty: null }),
     ]);
     expect(item.quantity).toBeNull();
+  });
+});
+
+// BUG-002: the same shoppable item split across rows because the aggregator
+// (correctly) won't merge a measured line with an unquantified one, or across
+// units. The buy-unit table consolidates a hand-picked set of items into one row.
+describe("aggregateIngredients — buy-unit consolidation (BUG-002)", () => {
+  it("collapses a staple's measured line and its 'to taste' line into one unquantified row", () => {
+    const items = aggregateIngredients([
+      line({ canonicalName: "salt", canonicalUnit: "tsp", rawQty: "3.25", category: "spices", recipeId: "r1" }),
+      line({ canonicalName: "salt", canonicalUnit: "", rawQty: "to taste", rawUnit: "", category: "spices", recipeId: "r2" }),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("salt");
+    expect(items[0].quantity).toBeNull();
+    expect(items[0].unit).toBeNull();
+    expect(items[0].sources).toHaveLength(2); // amber dot; per-meal breakdown survives
+  });
+
+  it("collapses a spice measured with a unit and with no unit into one row", () => {
+    const items = aggregateIngredients([
+      line({ canonicalName: "black pepper", canonicalUnit: "tsp", rawQty: "2.25", category: "spices", recipeId: "r1" }),
+      line({ canonicalName: "black pepper", canonicalUnit: "", rawQty: "1", rawUnit: "", category: "spices", recipeId: "r2" }),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].quantity).toBeNull(); // staple: the number is shopping noise
+  });
+
+  it("drops the noise quantity even when every staple line is measured", () => {
+    const items = aggregateIngredients([
+      line({ canonicalName: "olive oil", canonicalUnit: "tbsp", rawQty: "2", category: "spices", recipeId: "r1" }),
+      line({ canonicalName: "olive oil", canonicalUnit: "tbsp", rawQty: "1", category: "spices", recipeId: "r2" }),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].quantity).toBeNull();
+  });
+
+  it("consolidates a buy-unit item across units — sums the buy-unit, absorbs the rest", () => {
+    const items = aggregateIngredients([
+      line({ canonicalName: "carrot", canonicalUnit: "lb", rawQty: "1.5", category: "produce", recipeId: "r1" }),
+      line({ canonicalName: "carrot", canonicalUnit: "cup", rawQty: "0.5", category: "produce", recipeId: "r2" }),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe("carrot");
+    expect(items[0].quantity).toBe(1.5); // lb summed; the 0.5 cup absorbed, never converted
+    expect(items[0].unit).toBe("lb");
+    expect(items[0].sources).toHaveLength(2);
+  });
+
+  it("shows a real amount for a buy-unit item measured only in an off-unit (no blank row)", () => {
+    const [item] = aggregateIngredients([
+      line({ canonicalName: "carrot", canonicalUnit: "cup", rawQty: "0.5", category: "produce" }),
+    ]);
+    expect(item.quantity).toBe(0.5);
+    expect(item.unit).toBe("cup");
+  });
+
+  it("still under-merges an item that is NOT in the buy-unit table", () => {
+    const items = aggregateIngredients([
+      line({ canonicalName: "garlic", canonicalUnit: "clove", rawQty: "2", recipeId: "r1" }),
+      line({ canonicalName: "garlic", canonicalUnit: "tbsp", rawQty: "1", recipeId: "r2" }),
+    ]);
+    expect(items).toHaveLength(2); // the table leaves the strict default untouched
   });
 });
 

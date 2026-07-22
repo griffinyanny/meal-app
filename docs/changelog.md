@@ -4,6 +4,46 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 31 — 2026-07-22 (BUG-002 buy-unit consolidation + BUG-001 category fix; 1D fast-follow, shipped)
+
+### What happened
+A focused Groceries fast-follow on Sonnet-tier work: closed **BUG-002** (duplicate merge rows) and **BUG-001**
+(quick-add category misfire), and cleared the two deferred 300-line-rule splits. In-pattern Groceries change, no new
+surface, no schema change, no design pass. Gauntlet + full E2E + code-review, shipped.
+
+**1. BUG-002 — buy-unit consolidation (`src/server/grocery/buy-units.ts`, new).** The aggregator under-merges by
+design, so the same item split across rows (`Salt 3.25 tsp` + `Salt to taste`; `Carrot 1.5 lb` + `Carrot 0.5 cup`).
+Added a curated **buy-unit table** on top of the under-merge, keyed on the AI's `canonicalName`:
+- **Staples** (salt, pepper, oils, dried spices, vinegars) collapse to one **unquantified** row — the measured tsp is
+  shopping noise (Griffin's call: drop the number; the per-meal amounts survive in the amber-dot breakdown).
+- **Concrete buy-unit** produce (carrot→lb, onion/tomato/bell pepper→count, potato→lb, …) collapses to one row that
+  sums the buy-unit and **absorbs off-unit amounts without converting** (no fake lb↔cup math), tiebreaking to a plain
+  count so "2 carrots + 0.5 cup" shows "2", not "0.5 cup".
+- **Safety unchanged:** the table only ever *increases* merging for the named set and can **never** merge two
+  different items (a table miss = the status-quo duplicate, never a bad merge).
+
+**2. BUG-001 — `guessCategory` whole-word matching (`src/lib/grocery-categories.ts`).** Substring `includes` sent
+"watermelon"→beverages (via "water"), "butternut"→dairy, "eggplant"→dairy for ~1s before the AI tidy. Now whole-word
+(+ simple -s/-es plural), with an allowlist for the intentional `berr` stem and multiword phrases, plus added produce
+terms (watermelon/melon/squash/eggplant). A pre-existing keyword-ordering quirk (`ice cream`→dairy via "cream") is
+left alone (self-corrects via tidy). New `grocery-categories.test.ts`.
+
+**3. Two 300-line-rule splits, re-export-preserving (zero caller churn).** `aggregate.ts` (was 312) → quantity parser
+extracted to `quantity-parse.ts`, re-exported. `grocery-generate.ts` (was 313) → `collectSourcedLines` +
+`sweepStragglers` + `soloFallback` extracted to `grocery-collect.ts`. Every touched non-test file is now < 300.
+
+**4. Code review (xhigh) — found + fixed one low-severity UX-correctness edge before ship.** `finalizeBuyUnitAmount`
+would show a small preferred-unit amount and drop a larger off-unit total (e.g. carrot measured only in count + cup,
+cup listed first → "0.5 cup"); the off-unit tiebreak now prefers a plain count. No high/medium bugs (the two splits
+are byte-identical moves behind re-exports).
+
+### State
+- **Green:** lint + typecheck clean; **327 unit** (+21) + **53 E2E** pass. Groceries E2E (GR1–GR11, GR-L1/L2)
+  unaffected by the buy-unit change.
+- **BUG-002 + BUG-001 → Resolved** in `docs/bug-tracker.md`; the `grocery-generate.ts` split idea → SHIPPED in
+  idea-backlog. **BUG-003** (cooked-harvest write in `recipe.list`) remains the only open parked bug.
+- 4 of 6 R1 phases done. **Next: Phase 1E (You tab)** — see whats-next.
+
 ## Session 30 — 2026-07-21 (BUG-004 CLOSED — Phase D + real-model eval + rate-limit fix; shipped)
 
 ### What happened

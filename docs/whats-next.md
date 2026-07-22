@@ -1,37 +1,36 @@
 # What's Next
 
-Last updated: 2026-07-21 (Session 30)
+Last updated: 2026-07-22 (Session 31)
 
-## ▶ NEXT SESSION — BUG-004 is CLOSED + shipped. Pick the next R1 phase (1E You-tab) or a fast-follow.
-**BUG-004 (grocery-list latency) is done end to end and deployed.** The ~27–37s batched normalize is entirely off
-the confirm path — recipes normalize during review and cache on the recipe row; a fully-reviewed week makes zero AI
-calls at confirm (verified by the real-model eval + the E2E instrumentation line). 4 of 6 R1 phases done.
+## ▶ NEXT SESSION — BUG-002 + BUG-001 CLOSED + shipped. Groceries fast-follows are done. Start Phase 1E (You tab).
+**The Groceries fast-follow shipped (S31).** BUG-002 (duplicate merge rows) is fixed via a **buy-unit table** in the
+aggregator — staples collapse to one unquantified row, concrete buy-unit produce sums the buy-unit and absorbs
+off-units without fake conversion. BUG-001 (quick-add category misfire) is fixed via whole-word matching. Both
+300-line-rule splits (`aggregate.ts`→`quantity-parse.ts`, `grocery-generate.ts`→`grocery-collect.ts`) are done.
+327 unit + 53 E2E green. **4 of 6 R1 phases done; the only open parked bug is BUG-003** (a design smell, not a fault).
 
-**Candidate next moves (Griffin's call):**
-1. **Phase 1E — You tab** (preferences / chef memory surface). The next R1 phase; needs a scope-1E doc + likely a
-   design pass (new surface → strong design-pass recommendation). Open question #2 (AI-first prefs vs static
-   settings) resolves here.
-2. **BUG-002 buy-unit / consolidation fast-follow** (now unblocked) — the duplicate-name-line under-merge
-   (`Salt 3.25 tsp` + `Salt to taste`). A focused Groceries polish pass; could fold in BUG-001 (guessCategory
-   compound-word) and the deferred `grocery-generate.ts` split (313 > 300 lines).
-3. **Owed taste passes** (non-blocking, carried): Slice C/D Groceries + Recipes reorg read; the Recipes double
-   bottom-bar density on a phone.
+**The clear next move: Phase 1E — You tab** (preferences / chef-memory surface). It's the next R1 phase (M5: "chef
+knows you; preferences editable"). Needs a `docs/scope-1E.md` + a Claude Design pass (new surface → strong
+recommendation). Open-question #2 (AI-first prefs vs static settings) resolves here.
 
-**⭐ Model recommendation: Sonnet 5** for 1E scoping / BUG-002 fast-follow (mechanical + design-brief work). Bump to
-Opus only if 1E turns into a cross-cutting architecture decision (e.g. the prefs data model).
+**Carried, non-blocking:** the owed taste passes (Slice C/D Groceries + Recipes reorg read; Recipes double
+bottom-bar density on a phone). Fold into 1E or a 1F polish pass.
 
-**Copy-paste kickoff prompt (defaulting to 1E scoping — swap in BUG-002 if you'd rather fast-follow):**
-> Resume meal app. **BUG-004 is closed + shipped (S30)** — grocery-list latency fixed (normalize moved off the
-> confirm path to plan-review time, cached on the recipe row; real-model eval passed; rate-limit fan-out fixed via
-> `bgAiProcedure`). Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/changelog.md` (S30), and
-> `docs/decisions.md` (S30) first, then give me the ≤6-line scope check. I want to **start Phase 1E (You tab)**:
-> write `docs/scope-1E.md` (in-scope prefs/chef-memory features + acceptance criteria), resolve open-question #2
-> (AI-first preferences vs static settings) with a recommendation, and — since 1E is a new surface — OFFER a Claude
-> Design pass before building. Don't build until the scope doc + design direction are agreed.
+**⭐ Model recommendation: Sonnet 5** for 1E scoping + the design-brief work (scoping + design iteration, not
+cross-cutting architecture). Bump to Opus only if the prefs data model turns into a real architecture decision.
 
-*(Design-independent alt: if you'd rather not wait on a design pass, do the **BUG-002 buy-unit fast-follow** instead
-— it's an in-pattern Groceries change (aggregator + a buy-unit table), no new surface, and it clears two parked bugs
-plus the `grocery-generate.ts` split. Same kickoff, swap the 1E ask for "start the BUG-002 buy-unit fast-follow.")*
+**Copy-paste kickoff prompt (Phase 1E scoping — design-gated):**
+> Resume meal app. **BUG-002 + BUG-001 are closed + shipped (S31)** — Groceries buy-unit consolidation (staples →
+> one unquantified row; carrot lb+cup → one row) + quick-add whole-word categorization; both 300-line splits done.
+> Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/changelog.md` (S31), and `docs/decisions.md` (S31) first,
+> then give me the ≤6-line scope check. I want to **start Phase 1E (You tab)**: write `docs/scope-1E.md` (in-scope
+> prefs/chef-memory features + acceptance criteria), resolve open-question #2 (AI-first preferences vs static
+> settings) with a recommendation, and — since 1E is a new surface — OFFER a Claude Design pass before building.
+> Don't build until the scope doc + design direction are agreed.
+
+*(Design-independent alt: if you'd rather not open a new surface yet, knock out a carried **taste/QA pass** on the
+shipped Groceries + Recipes surfaces, or a 1F visual-refresh of Plan to the Groceries fidelity bar — both are
+in-pattern and need no design gate. Same kickoff, swap the 1E ask for the pass you want.)*
 
 ## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
 - **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review
