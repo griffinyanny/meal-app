@@ -44,7 +44,10 @@ Four tabs, four nouns, bottom glass tab bar: **Plan · Recipes · Groceries · Y
 - **Plan** (shipped, Phase 1C ✅) — landing screen, AI weekly plan, "Talk to the Chef" surface.
 - **Recipes** (shipped, Phase 1B) — cookbook, AI search/generation/import. Cook mode = later overlay.
 - **Groceries** (Phase 1D, NEXT — first Claude Design surface) — auto-synced shopping list.
-- **You** (Phase 1E) — preferences audit, household, settings. The backstop.
+- **You** (Phase 1E, NEXT — Claude Design surface) — the **trust surface**: an audit of what the chef
+  knows about you (hard constraints + a correctable memory ledger), NOT a settings form. Preferences are
+  captured by AI (onboarding interview / Talk-to-Chef / thumbs); this screen verifies + corrects. (OQ#2
+  resolved S32: AI-first capture, structured audit — split by data type. See `surfaces/you/brief.md`.)
 
 ## Register / voice (how copy reads)
 

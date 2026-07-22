@@ -48,7 +48,7 @@ interaction rate · list quality.
 | **1B** AI Core + Recipes | AI service layer, chef prompt, recipe pipelines + tab | M2: generate/import/modify/browse end-to-end | ✅ | 2026-05-27 (1 day) | [changelog S11](changelog.md) |
 | **1C** Plan Tab | The signature "AI generates your week" experience | M3: full plan loop — generate→review→confirm→modify→wrap | ✅ | 2026-07-06 → 07-10 | [scope-1C.md](scope-1C.md) |
 | **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | ✅ | 2026-07-10 → 07-21 | [scope-1D.md](scope-1D.md) |
-| **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | ⬜ | — | scope doc at phase start |
+| **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | 🔨 | 2026-07-22 (S32–S33) | [scope-1E.md](scope-1E.md) |
 | **1F** Polish / Production Readiness | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
 
 *Pace note: 1A+1B took 2 days. The 2026-05-28 → 2026-07-06 gap was life, not build. 1C
@@ -86,13 +86,13 @@ reusable for 1D–1F). Dates exist so pace is visible, not a feeling.*
 - [x] Carry-ins: free-form entry resolved (open-questions #1); recipe.get null-vs-NOT_FOUND consistency; E2E harness extended to Groceries (GR1–GR11) + Recipes (RC1–RC10); Talk-to-Chef NL→ops; Recipes-tab reorg; visual-QA capture harness extended to Groceries + Recipes
 - ⏭ **Fast-follows:** generation-architecture rethink (BUG-004) ✅ shipped S30; buy-unit/merge-consolidation (BUG-002) + quick-add category (BUG-001) ✅ shipped S31; mid-week resync + bespoke empty/error states still deferred by scope
 
-### 1E You Tab + Memory ⬜
-- [ ] AI-guided onboarding interview (conversational, not forms)
-- [ ] Preferences: dietary framework, "no list," household size, cook time, cuisines
-- [ ] Memory capture from interactions + "Got it — I'll remember that" confirmations
-- [ ] Preferences audit view (You tab) — verification surface, not primary editor
-- [ ] Blended feedback: implicit signals + lightweight explicit check-ins
-- [ ] Carry-in: resolve AI-first vs static settings (open-questions #2); extend E2E to You flows
+### 1E You Tab + Memory 🔨 (audit surface built S33; only onboarding interview remains) — detail in [scope-1E.md](scope-1E.md)
+- [ ] AI-guided onboarding interview (conversational, not forms) — **design-gated (Pass-2 not yet designed)**
+- [x] Preferences: dietary framework, "no list," household size, cook time, cuisines — **direct-editable audit surface (S33)**
+- [x] Memory capture from interactions + "Got it — I'll remember that" confirmations — **`user.talk` AI capture + undoable toasts (S33); real-model safety eval 9/9**
+- [x] Preferences audit view (You tab) — verification surface, not primary editor — **built to imported Direction A (S33)**
+- [x] Blended feedback: implicit signals surfaced ("I noticed") + dismissible (S33). *(Lightweight explicit check-ins deferred → 1F/backlog.)*
+- [x] Carry-in: AI-first vs static settings resolved (OQ#2 — hybrid); **first You E2E (Y1–Y9), 62 suite green**
 
 ### 1F Polish / Production Readiness ⬜
 - [ ] THE design-system pass (2026-07-09 decision: one system exercise — type scale, spacing, motion, component library) + polish backlog burn-down
@@ -146,3 +146,4 @@ line here (a decision, not drift). Same for pushing R1 items out.
 | 2026-07-20 (S22) | 1D **reconciled** with a pre-existing locked plan (forgotten at S21): **plan-time hydration** supersedes confirm-time; adopted the projection model + the imported Claude Design (inline merge-review, Grouped/manual reorder, Talk-to-Chef sheet, one-zone check-off); **trimmed** mid-week resync + bespoke empty/error + `mergeOverrides` out of 1D. Authoritative plan: `~/.claude/plans/rippling-herding-glacier.md`. | Griffin surfaced the older, more-thorough plan (architect + design-critic consulted) and had completed the Groceries design in Claude Design |
 | 2026-07-21 (S28) | **1D → ✅ complete (4 of 6 phases done); shipped to prod.** Wrap: code review (3 fixes), **merge quality PASSED the real-model soft DoD** (Griffin's eye), `/visual-qa` capture harness extended to Groceries + Recipes (gate passed), 60s normalize stopgap. **Next: generation-architecture rethink** (a planning session — cut perceived list-gen latency; BUG-004). New: a parked-bug tracker (`docs/bug-tracker.md`). | All in-scope 1D features met + machine-verified; the one soft gate (merge on a real week) cleared; the slow-generation risk is stopgapped + scheduled as the next focus |
 | 2026-07-22 (S31) | 1D fast-follows **BUG-002** (buy-unit merge consolidation) + **BUG-001** (quick-add category) closed + shipped; both 300-line-rule splits done. No phase-status change (fast-follow, still 4 of 6). **Next: Phase 1E.** | Cleared the two parked Groceries bugs + tech-debt splits before opening the next surface |
+| 2026-07-22 (S33) | **1E You audit surface built + verified** (→ 🔨): features #1/#2/#3/#5/#6 + AI capture (`user.talk`) + first You E2E; real-model safety eval 9/9, visual-QA + code review passed. Phase stays open — **only #4 (onboarding interview) remains, design-gated.** 5 of 6 phases in flight. | The memory loop is M5 + the trust surface; built to the imported Direction A with full mechanics + safety verification |

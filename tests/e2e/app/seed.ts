@@ -17,6 +17,7 @@ import { env, TEST_HOUSEHOLD_NAME } from "./env";
 import { buildSeedSpec, type PlanState, type SeedOptions } from "./seed-states";
 import { buildGrocerySpec, type GroceryState } from "./grocery-seed-states";
 import { buildRecipeSpec, type RecipeState } from "./recipe-seed-states";
+import { buildYouSpec, type YouState } from "./you-seed-states";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
@@ -70,6 +71,9 @@ async function wipe(db: Db, ctx: TestContext): Promise<void> {
   await db
     .delete(schema.aiMemories)
     .where(eq(schema.aiMemories.householdId, ctx.householdId));
+  await db
+    .delete(schema.userPreferences)
+    .where(eq(schema.userPreferences.householdId, ctx.householdId));
   await db
     .delete(schema.aiUsageDaily)
     .where(eq(schema.aiUsageDaily.userId, ctx.userId));
@@ -266,6 +270,52 @@ export async function seedGroceryState(state: GroceryState): Promise<{ listId: s
     }
 
     return { listId: list.id };
+  } finally {
+    await close();
+  }
+}
+
+// Resets the test household, then materializes a named You-tab state: the
+// user_preferences row (hard constraints) + the ai_memories ledger. Memories get
+// descending createdAt (spec order = display order) so the "newest first" ledger
+// and collapse-to-3 are deterministic.
+export async function seedYouState(state: YouState): Promise<void> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    const spec = buildYouSpec(state);
+
+    if (spec.preferences) {
+      await db.insert(schema.userPreferences).values({
+        userId: ctx.userId,
+        householdId: ctx.householdId,
+        dietaryFramework: spec.preferences.dietaryFramework,
+        restrictions: spec.preferences.restrictions,
+        dislikes: spec.preferences.dislikes,
+        householdSize: spec.preferences.householdSize,
+        maxCookTimeWeeknight: spec.preferences.maxCookTimeWeeknight,
+        maxCookTimeWeekend: spec.preferences.maxCookTimeWeekend,
+        cuisinePreferences: spec.preferences.cuisinePreferences,
+      });
+    }
+
+    if (spec.memories.length > 0) {
+      const base = Date.UTC(2026, 0, 10, 12, 0, 0);
+      await db.insert(schema.aiMemories).values(
+        spec.memories.map((m, i) => ({
+          householdId: ctx.householdId,
+          userId: ctx.userId,
+          content: m.content,
+          category: m.category,
+          sourceType: m.sourceType,
+          isActive: true,
+          createdAt: new Date(base - i * 60_000),
+        }))
+      );
+    }
   } finally {
     await close();
   }

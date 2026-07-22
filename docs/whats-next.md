@@ -1,36 +1,52 @@
 # What's Next
 
-Last updated: 2026-07-22 (Session 31)
+Last updated: 2026-07-22 (Session 33)
 
-## ▶ NEXT SESSION — BUG-002 + BUG-001 CLOSED + shipped. Groceries fast-follows are done. Start Phase 1E (You tab).
-**The Groceries fast-follow shipped (S31).** BUG-002 (duplicate merge rows) is fixed via a **buy-unit table** in the
-aggregator — staples collapse to one unquantified row, concrete buy-unit produce sums the buy-unit and absorbs
-off-units without fake conversion. BUG-001 (quick-add category misfire) is fixed via whole-word matching. Both
-300-line-rule splits (`aggregate.ts`→`quantity-parse.ts`, `grocery-generate.ts`→`grocery-collect.ts`) are done.
-327 unit + 53 E2E green. **4 of 6 R1 phases done; the only open parked bug is BUG-003** (a design smell, not a fault).
+## ▶ NEXT SESSION — 1E You audit surface BUILT + verified (S33). Only the onboarding interview (#4) remains, and it's DESIGN-GATED. Next move: design + build #4 to CLOSE 1E.
+**The You-tab audit surface is built, verified, and on a branch pending Griffin's taste pass** (see the taste-pass
+handoff in the S33 wrap / changelog). Shipped: #1 shell + account, #2 hard-constraint direct edit, #3 memory ledger
+(+ `memory.deactivate`/`reactivate`), #5 capture confirmation + undo, #6 implicit surfaced/dismissible, and — Griffin's
+call — the design's hero, the **AI capture task `user.talk`** (`preferences-talk` prompt + `[N]` id-safety + pure
+`applyPreferencesTalkOps`). All three inspection gaps folded in. Verified: **363 unit + 62 E2E** (first You coverage
+Y1–Y9), **real-model safety eval 9/9 (0 safety failures)**, visual-QA (0 blockers/0 high vs Direction A), code review
+(no critical; 4 findings fixed). Files: `src/components/you/*`, `src/server/trpc/routers/{memory,user-talk}.ts`,
+`src/server/ai/{prompts,tasks}/preferences-talk.ts`, `tests/e2e/specs/you.spec.ts`, `scripts/1e-preferences-talk-eval.ts`.
 
-**The clear next move: Phase 1E — You tab** (preferences / chef-memory surface). It's the next R1 phase (M5: "chef
-knows you; preferences editable"). Needs a `docs/scope-1E.md` + a Claude Design pass (new surface → strong
-recommendation). Open-question #2 (AI-first prefs vs static settings) resolves here.
+**The next move: DESIGN then BUILD the onboarding interview (#4) — the last 1E feature.** It's the Pass-2 fast-follow
+(1 direction) that inherits this audit surface's memory vocabulary: a short, **skippable** chef-led first-run
+conversation that seeds `user_preferences` + ≥1 `sourceType:'onboarding'` memory, sets an onboarding-complete flag
+(small additive schema), and hands off to the first plan. The audit surface (the destination) is now built, so the
+on-ramp design is lower-novelty. **Design-gated: it needs its Claude Design pass before the build.** When #4 ships +
+its E2E lands, **1E closes → M5 done → only 1F (polish/production-readiness) left.**
 
-**Carried, non-blocking:** the owed taste passes (Slice C/D Groceries + Recipes reorg read; Recipes double
-bottom-bar density on a phone). Fold into 1E or a 1F polish pass.
+**Reusable capture backend already exists:** `user.talk` (NL → typed prefs/memory ops with the SAFETY-eval'd prompt)
+is the same machinery the interview needs — the interview is a guided front-end over it (ask ≤4 questions, feed answers
+through the capture path, write an `onboarding` memory). So #4 is mostly the conversational UI + a distill/seed step +
+the flag, not new AI infrastructure.
 
-**⭐ Model recommendation: Sonnet 5** for 1E scoping + the design-brief work (scoping + design iteration, not
-cross-cutting architecture). Bump to Opus only if the prefs data model turns into a real architecture decision.
+**Carried, non-blocking:** owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar on a
+phone) + the You-tab taste pass from S33. **BUG-005** (app-wide `font-sans`→serif in the capture) — confirm on-device;
+if real, a one-line 1F fix. **BUG-003** (recipe.list harvest). Fold into 1F polish.
 
-**Copy-paste kickoff prompt (Phase 1E scoping — design-gated):**
-> Resume meal app. **BUG-002 + BUG-001 are closed + shipped (S31)** — Groceries buy-unit consolidation (staples →
-> one unquantified row; carrot lb+cup → one row) + quick-add whole-word categorization; both 300-line splits done.
-> Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/changelog.md` (S31), and `docs/decisions.md` (S31) first,
-> then give me the ≤6-line scope check. I want to **start Phase 1E (You tab)**: write `docs/scope-1E.md` (in-scope
-> prefs/chef-memory features + acceptance criteria), resolve open-question #2 (AI-first preferences vs static
-> settings) with a recommendation, and — since 1E is a new surface — OFFER a Claude Design pass before building.
-> Don't build until the scope doc + design direction are agreed.
+**⭐ Model recommendation: Opus 4.8** for the #4 design-brief + build — the onboarding flow is a conversational-AI
+surface (distill answers → seed prefs/memory reliably, skip logic, first-plan handoff) where capture quality matters,
+and it reuses the safety-critical `user.talk` path. (If you'd rather just do the carried polish / font fix / taste-pass
+triage instead, that's light enough for Sonnet 5.)
 
-*(Design-independent alt: if you'd rather not open a new surface yet, knock out a carried **taste/QA pass** on the
-shipped Groceries + Recipes surfaces, or a 1F visual-refresh of Plan to the Groceries fidelity bar — both are
-in-pattern and need no design gate. Same kickoff, swap the 1E ask for the pass you want.)*
+**Copy-paste kickoff prompt (Phase 1E close — onboarding interview #4, DESIGN-FIRST):**
+> Resume meal app. **The You-tab audit surface is built + verified (S33); only the onboarding interview (#4) remains to
+> close Phase 1E, and it's design-gated.** Read `docs/whats-next.md`, `docs/scope-1E.md`, `docs/scope-v1.md`, and
+> `docs/design/surfaces/you/brief.md` first, then give me the ≤6-line scope check. Then **design the onboarding
+> interview (Pass 2, 1 direction)** — write `docs/design/surfaces/onboarding/brief.md` (a short, skippable chef-led
+> first-run conversation that seeds `user_preferences` + an `onboarding` memory and hands off to the first plan,
+> inheriting the audit surface's vocabulary) and give me the Claude Design kickoff prompt. **Don't build until I've run
+> the design pass and picked a direction.** Note the `user.talk` capture backend already exists — the interview is a
+> guided front-end over it. On Opus 4.8.
+
+*(Build-independent alt: if you'd rather not wait on a design pass, triage the carried polish instead — confirm
+**BUG-005** (font/serif) on-device and one-line-fix it if real, burn down the owed taste passes (Groceries/Recipes),
+and look at **BUG-003**. Same kickoff, swap the ask for "do the carried 1F polish + bug triage; leave onboarding for a
+design pass." On Sonnet 5.)*
 
 ## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
 - **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review

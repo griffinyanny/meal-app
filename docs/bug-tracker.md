@@ -20,6 +20,7 @@
 
 | ID | Sev | Summary | Repro | Found | Address by | Status |
 |----|-----|---------|-------|-------|-----------|--------|
+| BUG-005 | 🟠 | **App-wide: `font-sans` may not resolve to Geist → serif fallback.** `layout.tsx` loads `Geist` as `--font-geist-sans`, but `globals.css` maps `--font-sans: var(--font-sans)` (self-reference, no bridge to `--font-geist-sans`). In the headless Layer-A capture, all headings/prose render in a serif fallback (every tab, not just You). May render the system sans on-device (`system-ui` in the default stack), so it could be capture-only — **needs an on-device check.** | Open any tab in the Layer-A capture (`playwright.capture.config.ts`) → headings/body are serif. On-device: unverified. | S33 (2026-07-22), You visual-QA | **Confirm on-device first.** If serif on device: one-line fix — point `--font-sans` at `var(--font-geist-sans)` in `globals.css`. Cross-cutting (all tabs) → fold into the **1F design-system pass**, not a 1E change. | `open` |
 | BUG-003 | 🟡 | **Cooked-harvest writes inside a `recipe.list` query.** `recipe.list` (a tRPC query / GET-shaped) runs `harvestCookedRecipes` — a grouped select + per-recipe UPDATEs — on every load and every favorite invalidation. Idempotent & documented, but write-work on a read path that React Query may refetch/retry. | N/A (design smell, not a user-visible fault today). | S28 (2026-07-21), Slice C/D code review (finding #5) | Revisit if/when a scheduler exists (move the harvest to a cron/confirm-time job) or if `recipe.list` perf degrades. Accepted for V1. | `open` |
 
 ---

@@ -73,7 +73,7 @@ documented public-read / service-role-write exception)?
 
 ### AI-First Preferences vs. Static Settings UI
 **Question**: Should preferences (dietary rules, brand preferences, store layout, etc.) be managed primarily through AI conversation ("I don't eat gluten anymore") rather than traditional settings screens? Griffin's instinct is yes — people want to say a thing and have it happen. But this requires training users on what's possible, and some people will want to see/verify their preferences in a structured view.
-**Status**: Open. Core tenet to explore. Could be a major differentiator or a usability risk.
+**Status**: RESOLVED (Session 32, 2026-07-22). **Hybrid — AI-first capture, structured audit, split by data type.** Capture is conversational (onboarding interview / Talk-to-Chef / implicit thumbs); the You tab is the trust/audit surface, not the primary editor. Hard constraints (dietary, allergies, household size, cook-times, cuisines) are AI-set but **always directly editable** (safety-critical); soft memory is an AI-captured, correctable ledger. Infra already reflects it (`user_preferences` + `ai_memories`). See decisions.md (S32) + `scope-1E.md` (the framing decision).
 **Raised**: Session 2 (2026-03-29)
 
 ### Avoiding the Linear Golden Path Trap

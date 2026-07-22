@@ -4,6 +4,109 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 33 — 2026-07-22 (Phase 1E You audit surface BUILT — features #1/#2/#3/#5/#6 + first You E2E)
+
+### What happened
+Built the **You-tab audit surface** against the imported Direction A (`You.dc.html`), on Opus 4.8 (the S32 kickoff
+recommended Sonnet; Griffin ran it on Opus — a new-surface UI build with a small backend delta, well within either).
+One scope fork surfaced + decided up front (see decisions.md): the design's hero is free-text "Talk to the chef,"
+which is a net-new AI capture task not in the five listed features — **Griffin chose to build the full AI capture
+now** (Option B), so `user.talk` shipped this session alongside the deterministic surface.
+
+**Shipped (scope-1E #1/#2/#3/#5/#6 + #7 E2E):**
+- **#1 shell + account** — `you-page-client` orchestrator; `user.account` query (name/email/household) → account footer.
+- **#2 hard-constraint direct edit** — safety-weighted "I never cook with" card (allergy sub-label via a `(allergy)`
+  string marker, no schema change) + soft card (dislikes / cuisines / dietary / household / cook-times). Chips remove
+  via `×`, add via a **direct inline input** (deviation from the mock, which routed Add through chat — #2 requires
+  fixing without a conversation); scalars edit via a bottom-sheet picker/stepper. All persist via existing
+  `user.updatePreferences` and immediately change `getChefContext`.
+- **#3 memory ledger** — `memory.list` reads active memories (added `activeOnly` to `user.memories`); provenance
+  labels map to `sourceType` (onboarding→"when we started" / explicit→"you told me" / implicit→"I noticed"); new
+  `memory.deactivate` + `memory.reactivate` mutations (household-scoped). Dropped `memory.edit` — edit routes to
+  Talk-to-Chef re-tell (gap #1). Softened the "I fold older notes together" microcopy (gap #3, dedup is out of 1E).
+- **#5 capture confirmation WITH undo** — a single bottom toast on every remove/add/capture with an **Undo** action
+  (gap #2). `user.talk` returns an undo payload (before-values + written/deactivated memory ids) so undo reuses
+  existing mutations, no bespoke endpoint.
+- **#6 implicit surfaced + dismissible** — implicit memories carry the "I noticed" label and dismiss via the same
+  `memory.deactivate` (reuses #3).
+- **AI capture (`user.talk`)** — `preferences-talk` AI task (snapshot-tested prompt with a load-bearing SAFETY block;
+  `[N]` memory-ref → id resolution, id-safe + household-scoped, mirroring grocery-talk). Free text → typed
+  constraint/memory ops applied in one transaction. Pure `applyPreferencesTalkOps` (dedupe, allergy-marker
+  round-trip, change-detection, undo before-values) kept out of the router for clean unit testing.
+
+**Verification (all green):**
+- Gauntlet: lint + typecheck + **363 unit** (mock-tested coerce/apply/routers, auth-checked).
+- **First-ever You E2E** (`you.spec.ts` Y1–Y9): render, restriction-remove+undo, dislike-add, household stepper,
+  memory-remove+undo, implicit dismiss, ledger expand, **Talk-to-Chef allergy capture end-to-end through the real
+  pipeline**, new-user state. Full suite **62 E2E green** (was 53; +9). Added `preferences-talk` fixture to the AI
+  mock + `YOU_RETURNING`/`YOU_NEW` seed states (and `userPreferences` to the seed wipe).
+- **Real-model safety eval** (`scripts/1e-preferences-talk-eval.ts`, real OpenAI spend): **9/9 pass, 0 safety
+  failures** — the real model captures allergies as flagged avoids from "allergic to" / "can't have" / "makes me
+  sick", never mis-files a taste dislike as an allergy, and handles diet/cuisine/memory/household/cook-time/forget.
+- **Visual-QA** (Layer A): built `you.capture.ts` (4 states) + looked at the pixels vs Direction A — faithful
+  (narrative hero, red SAFETY-CRITICAL card, provenance ledger, sheets, new-user state); **0 blockers / 0 high**.
+  Critique in `tests/e2e/captures/A-you-*/critique.md`.
+- **Code review** (code-reviewer subagent): no critical issues; id-safety + household scoping confirmed airtight, no
+  allergy-drop path. Fixed 4 findings: allergy-upgrade of a plain avoid (W1), `(allergy)` marker leaking into
+  recipe/plan prompts → strip in `getChefContext` (W2), talk-undo reactivate race → added cancel (W3), missing
+  error-state UI for the trust surface (W4); plus prompt-injection disclaimer hardening + a typed `saveField` + an
+  `isNew` edge fix. Re-ran gauntlet + You E2E green after fixes.
+
+### Left for later (deliberate)
+- **#4 onboarding interview** — still design-gated (Pass-2, not yet designed). The new-user state built here is the
+  *audit* sparse state, not the conversational first-run flow.
+- **App-wide serif finding** (bug-tracker): headings/prose render in a serif fallback in the headless capture; likely
+  a `--font-sans` wiring gap (Geist configured but the utility resolves to the default stack). Confirm on-device;
+  a 1F design-system item if real. Not a You-tab issue.
+- Carried taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar) still owed.
+
+## Session 32 — 2026-07-22 (Phase 1E scoped; OQ#2 resolved; You audit-surface design imported; build deferred)
+
+### What happened
+Scoping + design-intake session for **Phase 1E (You tab)** on Opus. Wrote `docs/scope-1E.md`, resolved the
+long-standing **Open-Question #2**, wrote the You-tab design brief, Griffin ran the Claude Design pass, and the
+chosen direction was imported + inspected. **No product code written** — the build was deliberately deferred to a
+clean session (see "Build decision").
+
+**1. `docs/scope-1E.md` written.** M5 ("chef knows you; preferences editable"). Six build features + E2E, each with
+acceptance criteria: You shell/account, hard-constraint direct-edit, memory ledger view/manage, onboarding
+interview, capture confirmation, implicit-surfacing. Explicit OUT list (proactive nudges, household sharing,
+recurring check-ins, memory dedup/decay) to hold the M5 line. Framed on the key realization: **the chef already
+personalizes today** (`getChefContext` reads prefs + memories on every generation) — 1E makes that loop *visible
+and editable*, it does not build the memory engine. So 1E is mostly frontend + a thin backend delta.
+
+**2. Open-Question #2 RESOLVED — AI-first capture, structured audit (split by data type).** Not one mode. Capture
+is AI-first (interview / Talk-to-Chef / thumbs); the You tab is a trust/audit surface, not the primary editor. Two
+field classes: **hard constraints** (dietary, allergies, household size, cook-times, cuisines) are AI-set but
+**always directly editable** (a mis-remembered allergy is a real-world harm — safety-critical values can't require a
+well-phrased sentence to fix); **soft memory** is an AI-captured, correctable ledger. The infra already *is* this
+hybrid (`user_preferences` + `ai_memories`, both read by `getChefContext`). → decisions.md; open-questions.md flipped.
+
+**3. Design Pass 1 (audit surface) done + imported.** Brief asked for two contrasting directions (narrative vs
+control-panel). Griffin's pick: **Direction A — the chef's narrative read**. Imported via `DesignSync.get_file`
+(projectId `8bc73bfa-…`, `You.dc.html`). As-built: prose "Here's what I know about you" hero + primary Talk-to-Chef;
+a **safety-weighted** "I never cook with" block (allergies red + SAFETY-CRITICAL badge); a soft
+dislikes/cuisines/counts card; a provenance-labeled memory ledger ("You told me when we started" / "You told me" /
+"I noticed") with per-item remove + edit + expand; account footer. Two states: returning-user (full) + new-user
+("We've just met" / "still learning" sparse). Pointer + as-built + gaps → `docs/design/surfaces/you/brief.md`.
+
+**4. Inspection gaps flagged (fold into the build):** memory *edit* routes through Talk-to-Chef, not inline (lean
+"remove + re-tell"; likely drop `memory.edit` from v1); the capture toast has no undo (brief wants one); ledger
+microcopy promises "I fold older notes together" (dedup is OUT of 1E — soften copy). The **onboarding interview (#4)
+is not designed** — the new-user state here is the audit sparse state, not the Pass-2 conversational flow.
+
+### Build decision — deferred to next session (deliberate, not a stall)
+The right container, not a delay. Reasons: (a) it's a full new-surface phase-build (whole tab, 6 field editors, a new
+ledger + `memory.deactivate` mutation, first-ever You E2E, `/visual-qa`), not a quick win — it deserves a clean
+context budget; (b) the intended build model is **Sonnet 5** (the standing 1E reco), not this Opus scoping session;
+(c) #4 (onboarding) is still undesigned, so building now wouldn't close 1E regardless. Next session builds the audit
+surface on Sonnet; onboarding follows its Pass-2 design.
+
+### State
+- No code change; gauntlet not re-run (nothing to run). 327 unit + 53 E2E remain green from S31.
+- 4 of 6 R1 phases done; 1E scoped + design-intaken, **build is the next move.** OQ#2 resolved. BUG-003 still the
+  only open parked bug.
+
 ## Session 31 — 2026-07-22 (BUG-002 buy-unit consolidation + BUG-001 category fix; 1D fast-follow, shipped)
 
 ### What happened

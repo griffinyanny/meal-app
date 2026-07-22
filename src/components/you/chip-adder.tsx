@@ -1,0 +1,77 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface ChipAdderProps {
+  onAdd: (value: string) => void;
+  variant?: "danger" | "neutral";
+  placeholder?: string;
+  // Accessible name for the reveal button, e.g. "Add something you never cook with".
+  label: string;
+}
+
+// Direct inline add for a constraint chip (feature #2 — never require a
+// conversation to add). Tapping the dashed "Add" reveals a small text field;
+// Enter or blur-with-text commits, Escape or empty-blur cancels.
+export function ChipAdder({
+  onAdd,
+  variant = "neutral",
+  placeholder = "Add…",
+  label,
+}: ChipAdderProps) {
+  const [adding, setAdding] = useState(false);
+  const [value, setValue] = useState("");
+  const danger = variant === "danger";
+
+  function commit() {
+    const v = value.trim();
+    if (v) onAdd(v);
+    setValue("");
+    setAdding(false);
+  }
+
+  if (adding) {
+    return (
+      <input
+        autoFocus
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          } else if (e.key === "Escape") {
+            setValue("");
+            setAdding(false);
+          }
+        }}
+        placeholder={placeholder}
+        aria-label={label}
+        className={cn(
+          "w-36 rounded-[11px] border bg-white/[0.06] px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
+          danger ? "border-[rgba(255,105,97,0.4)]" : "border-white/20"
+        )}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setAdding(true)}
+      aria-label={label}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-[11px] border border-dashed px-3 py-2 text-sm font-medium transition-colors",
+        danger
+          ? "border-[rgba(255,105,97,0.4)] text-[#FF9B94] hover:bg-[rgba(255,69,58,0.08)]"
+          : "border-white/20 text-muted-foreground hover:bg-white/[0.04]"
+      )}
+    >
+      <Plus className="size-3.5" strokeWidth={2.4} />
+      Add
+    </button>
+  );
+}

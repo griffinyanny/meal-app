@@ -4,6 +4,52 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**Phase 1E build — You audit surface + AI capture** (2026-07-22, Session 33)
+- **Built the full AI capture (`user.talk`) this session — Griffin's call (Option B).** The design's hero is
+  free-text "Talk to the chef," which is a net-new AI NL→ops task not among the five listed build features (#1/2/3/5/6)
+  and overlapping the deferred #4. Presented the fork; Griffin chose to build it now rather than defer it with #4.
+  Rationale for building it right: it's the design's centerpiece + the OQ#2 "AI-first capture" thesis made real. It
+  was gated on a **real-model safety eval** (allergies must never drop/mis-file) before being trusted — passed 9/9.
+- **Allergy weighting is a `(allergy)` string marker, not a schema change.** A restriction stores as
+  `"gluten (allergy)"`; the You-tab safety card parses the suffix for the sub-label + red weighting, and `user.talk`
+  writes it when `isAllergy`. Kept out of the chef prompt (stripped in `getChefContext`) so it stays UI/capture-only.
+- **Deviations from the imported mock (deliberate, all logged in scope-1E):** (a) **Add is a direct inline input**,
+  not the chef sheet — #2 requires fixing a hard constraint without a conversation; (b) **added an "Eating" (dietary)
+  field** to the soft card — the returning-user mock buried dietary in prose, but #2 needs every structured field
+  directly editable; (c) **dropped `memory.edit`** — edit routes to Talk-to-Chef re-tell (gap #1); (d) **added undo**
+  to every capture/remove toast (gap #2); (e) **softened** the "I fold older notes together" copy — dedup is out of
+  1E (gap #3); (f) **omitted the decorative mic** — no speech API in scope, a dead control is worse than its absence.
+- **Undo reuses existing mutations, no bespoke endpoint.** `user.talk` returns an `undo` payload (before-values of
+  changed prefs + written/deactivated memory ids); the client reverses via `updatePreferences` + `memory.deactivate`
+  / `memory.reactivate`. Memory-removal undo is optimistic (re-insert) to avoid a refetch race (found + fixed in E2E).
+- **`isNew` = no prefs row AND no memories** — a returning user who dismissed every memory keeps their constraints
+  and does not regress to "We've just met" (code-review edge fix).
+
+**Phase 1E framing — Open-Question #2 resolved + You audit-surface design** (2026-07-22, Session 32)
+- **AI-first capture, structured audit — split by data type (OQ#2 resolved).** Preferences are captured by AI
+  (onboarding interview / Talk-to-Chef / implicit thumbs), never via a form; the You tab is the trust/verification
+  surface, not the primary editor. Two field classes get different treatment: **hard constraints** (dietary
+  framework, allergies/restrictions, household size, cook-time ceilings, cuisines) are AI-settable but **always
+  directly editable** — a mis-remembered allergy is a real-world harm, so safety-critical values must be correctable
+  without phrasing a sentence the model parses right; **soft memory** (dislikes, brands, behaviors) is an
+  AI-captured, correctable ledger. Rationale: pure-AI fails the trust test, pure-settings fails the product thesis;
+  the infra already *is* this hybrid (typed `user_preferences` + free-form `ai_memories`, both read by
+  `getChefContext`). The realization that de-risks the phase: **the chef already personalizes** — 1E makes the loop
+  visible/editable, it does not build the engine. (Supersedes the S3 "AI generates the UI" direction's open tail on
+  preferences specifically.)
+- **Chosen design direction: A — the chef's narrative read** (over the structured control-panel B). Leads with a
+  prose summary of what the chef knows in its voice, then structured constraint cards + a memory ledger. Safety
+  constraints are visually weighted (red "I never cook with", SAFETY-CRITICAL badge, allergy sub-labels). Imported
+  from Claude Design (projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`, `You.dc.html`).
+- **Memory correction = remove + re-tell, not inline edit (design's call, likely v1 behavior).** The mock's
+  per-memory edit routes to Talk-to-Chef rather than an inline text field; removing a memory deactivates it
+  (`isActive=false`) with an honest "your chef will stop cooking around this" confirmation. Leaning into this
+  simplifies the backend (a `memory.deactivate` mutation covers v1; `memory.edit` may not be needed) and matches the
+  AI-first thesis. Confirm at build.
+- **1E build deferred to a clean session on Sonnet 5** (not this Opus scoping session): a full new-surface
+  phase-build deserves its own context budget + the intended model, and the onboarding interview (#4) is still
+  undesigned (its Pass-2 design must precede its build). The audit surface (#1/#2/#3/#5/#6) builds first.
+
 **BUG-002 buy-unit consolidation + BUG-001 category fix (1D fast-follow)** (2026-07-22, Session 31)
 - **A buy-unit table sits on top of the under-merge aggregator, never replaces it.** The aggregator under-merges by
   design (a wrong AI key can only *fail* to merge, never wrongly merge). BUG-002's duplicate rows are the cost of
