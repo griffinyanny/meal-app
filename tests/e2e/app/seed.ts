@@ -172,10 +172,61 @@ export async function seedGroceryState(state: GroceryState): Promise<{ listId: s
     await wipe(db, ctx);
 
     const spec = buildGrocerySpec(state);
+
+    // When the state carries a plan (GR-L1/GR-L2), materialize a confirmed plan +
+    // its recipes + slots first, and link the list to it via mealPlanId — so
+    // confirm-time generation reads real cached recipes and the straggler count
+    // has real unready slots to count. Insert order respects FKs: plan → recipes
+    // → slots. Recipe rows carry their review-time normalize cache (BUG-004).
+    let mealPlanId: string | null = null;
+    if (spec.plan) {
+      const [plan] = await db
+        .insert(schema.mealPlans)
+        .values({
+          householdId: ctx.householdId,
+          weekStart: "2026-01-05",
+          status: "confirmed",
+          confirmedAt: new Date(),
+        })
+        .returning();
+      mealPlanId = plan.id;
+
+      if (spec.plan.recipes.length > 0) {
+        await db.insert(schema.recipes).values(
+          spec.plan.recipes.map((r) => ({
+            id: r.id,
+            householdId: ctx.householdId,
+            title: r.title,
+            sourceType: "plan_generated" as const,
+            sourcePlanId: plan.id,
+            ingredients: r.ingredients,
+            steps: [],
+            normalizedIngredients:
+              r.normalizedIngredients as (typeof schema.recipes.$inferInsert)["normalizedIngredients"],
+            normalizedAt: r.normalizedIngredients ? new Date() : null,
+          }))
+        );
+      }
+
+      await db.insert(schema.mealPlanSlots).values(
+        spec.plan.slots.map((s, i) => ({
+          householdId: ctx.householdId,
+          planId: plan.id,
+          mealType: "dinner" as const,
+          date: `2026-01-0${5 + i}`,
+          slotType: s.slotType,
+          title: s.title,
+          recipeId: s.recipeId,
+          recipeStatus: s.recipeStatus,
+        }))
+      );
+    }
+
     const [list] = await db
       .insert(schema.groceryLists)
       .values({
         householdId: ctx.householdId,
+        mealPlanId,
         status: "draft",
         generationStatus: spec.generationStatus,
         generationError: spec.generationError,

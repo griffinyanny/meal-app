@@ -10,6 +10,10 @@ import { mealPlanSlots, recipes } from "@/server/db/schema";
 import { getChefContext } from "@/server/ai/memory";
 import { generateRecipe } from "@/server/ai/tasks/generate-recipe";
 import { toDbIngredients, toDbSteps } from "@/server/ai/tasks/types";
+import {
+  normalizeIngredients,
+  type RawIngredientLine,
+} from "@/server/ai/tasks/ingredient-normalize";
 
 type Db = ReturnType<typeof getDb>;
 type Slot = typeof mealPlanSlots.$inferSelect;
@@ -181,4 +185,73 @@ export async function hydrateSlotRecipe({
   }
 
   return { slotId: slot.id, recipeId: recipe.id, recipeStatus: "ready" };
+}
+
+export interface CacheNormalizationResult {
+  slotId: string;
+  cached: boolean;
+}
+
+// Normalize a hydrated slot's recipe ingredient lines and CACHE the result on the
+// recipe row, so confirm-time grocery generation skips the batched AI call (the
+// BUG-004 pinch). Runs as its own call (fired by the review-time walker right after
+// hydrate) — decoupled from hydrateSlotRecipe so the recipe/card go "ready" at
+// today's latency and this fills the cache right after. Idempotent (skips a recipe
+// already cached) and best-effort (a normalize failure is a no-op — the cache stays
+// null and confirm re-normalizes that one recipe). See BUG-004 (2026-07-21).
+export async function cacheSlotNormalization({
+  db,
+  householdId,
+  slotId,
+}: {
+  db: Db;
+  householdId: string;
+  slotId: string;
+}): Promise<CacheNormalizationResult> {
+  const slot = await db.query.mealPlanSlots.findFirst({
+    where: and(
+      eq(mealPlanSlots.id, slotId),
+      eq(mealPlanSlots.householdId, householdId)
+    ),
+  });
+  if (!slot?.recipeId) return { slotId, cached: false };
+
+  const recipe = await db.query.recipes.findFirst({
+    where: and(
+      eq(recipes.id, slot.recipeId),
+      eq(recipes.householdId, householdId)
+    ),
+  });
+  if (!recipe || recipe.ingredients.length === 0) {
+    return { slotId, cached: false };
+  }
+
+  // Already cached (and aligned) → idempotent no-op. Recipe ingredient lists don't
+  // mutate in place, so a length match means the cache is current.
+  if (
+    recipe.normalizedIngredients &&
+    recipe.normalizedIngredients.length === recipe.ingredients.length
+  ) {
+    return { slotId, cached: true };
+  }
+
+  const lines: RawIngredientLine[] = recipe.ingredients.map((ing, index) => ({
+    index,
+    qty: ing.qty,
+    unit: ing.unit,
+    item: ing.item,
+  }));
+
+  try {
+    const normalized = await normalizeIngredients(lines);
+    await db
+      .update(recipes)
+      .set({ normalizedIngredients: normalized, normalizedAt: new Date() })
+      .where(and(eq(recipes.id, recipe.id), eq(recipes.householdId, householdId)));
+    return { slotId, cached: true };
+  } catch {
+    // Best-effort: leave the cache null; confirm-time generate falls back to
+    // normalizing this recipe in its residual batch.
+    return { slotId, cached: false };
+  }
 }

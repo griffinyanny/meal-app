@@ -36,6 +36,13 @@
       "when": 1784587199095,
       "tag": "0004_black_mad_thinker",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784673312257,
+      "tag": "0005_nosy_mandroid",
+      "breakpoints": true
     }
   ]
 }

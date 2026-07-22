@@ -6,6 +6,14 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### Ingredient-cache scoping — global vs household (BUG-004 #3, deferred to Phase E)
+**Question**: The follow-up ingredient cache (#3) is most valuable **global** (an onion normalizes the same for every
+household; item strings carry no PII), but a global table violates our drizzle-schema rule that every table has a
+`household_id` + RLS. So: household-scoped (rule-clean, lower hit-rate) or genuinely global (best hit-rate, needs a
+documented public-read / service-role-write exception)?
+- Not urgent — #3 is a compounding follow-up, not part of the S29 latency fix. Decide when we pick up #3.
+- Flagged now so it isn't decided silently inside a build session. Resolve → decisions.md.
+
 ### D7 — background scroll behind an open sheet (Session 17 E2E finding)
 **Question**: The harness proved the background DOES scroll while a bottom sheet is open — the Session 16 note that the scrim blocks it was wrong (`modal={false}+noBodyStyles`, the fix for the D3 pointer-lockup, means nothing stops window scroll). Accept it as the trade for click-outside, or re-lock it?
 - Option A: accept (scrolling background behind a non-modal sheet is common and harmless).

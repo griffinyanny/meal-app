@@ -11,6 +11,7 @@ import {
 import { households } from "./households";
 import { mealPlans } from "./plans";
 import { z } from "zod";
+import type { NormalizedResult } from "@/lib/normalized-ingredient";
 
 export const ingredientSchema = z.object({
   qty: z.string(),
@@ -67,6 +68,15 @@ export const recipes = pgTable(
     }),
     ingredients: jsonb("ingredients").$type<Ingredient[]>().notNull(),
     steps: jsonb("steps").$type<Step[]>().notNull(),
+    // Cached per-line grocery normalization, one entry per `ingredients` line, same
+    // order (Zod: normalizedIngredientsSchema in @/lib/normalized-ingredient).
+    // Computed best-effort when the recipe hydrates during plan review so confirm-time
+    // grocery generation skips the ~37s batched AI call. Nullable — a normalize miss
+    // or a pre-feature recipe just falls back to normalizing at confirm. Never goes
+    // stale: recipe ingredient lists don't mutate in place (modify makes a new row).
+    // See BUG-004 / the generation-architecture rethink (2026-07-21).
+    normalizedIngredients: jsonb("normalized_ingredients").$type<NormalizedResult[]>(),
+    normalizedAt: timestamp("normalized_at", { withTimezone: true }),
     generationPrompt: text("generation_prompt"),
     generationModel: text("generation_model"),
     isFavorite: boolean("is_favorite").notNull().default(false),
