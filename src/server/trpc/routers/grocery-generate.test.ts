@@ -130,6 +130,29 @@ function recipeRow(id: string, ingredients: Array<{ qty: string; unit: string; i
   return { id, title: `Recipe ${id}`, ingredients };
 }
 
+type Cache = Array<{
+  index: number;
+  canonicalName: string;
+  category: string;
+  canonicalUnit: string;
+  numericQty: number | null;
+  confidence: number;
+}>;
+
+// A recipe carrying its review-time normalization cache (BUG-004). Aligned 1:1 with
+// ingredients ⇒ confirm reads it and skips the AI.
+function cachedRecipeRow(
+  id: string,
+  ingredients: Array<{ qty: string; unit: string; item: string }>,
+  normalizedIngredients: Cache
+) {
+  return { id, title: `Recipe ${id}`, ingredients, normalizedIngredients };
+}
+
+function brothCache(): Cache {
+  return [{ index: 0, canonicalName: "broth", category: "pantry", canonicalUnit: "cup", numericQty: null, confidence: 1 }];
+}
+
 function seedTwoRecipesSharingBroth(db: MockDb) {
   db.__selectResults.set(mealPlanSlots, [readySlot("rec-a"), readySlot("rec-b")]);
   db.__selectResults.set(recipes, [
@@ -196,6 +219,57 @@ describe("generateGroceryList", () => {
       sourceType: "recipe",
     });
     expect(db.__deletedRecipeItems).toBe(true); // idempotent replace
+  });
+
+  it("skips the AI normalize entirely when every recipe is cached (BUG-004)", async () => {
+    const db = createMockDb(draftList());
+    db.__claimReturning.push([{ id: LIST_ID }]);
+    db.__selectResults.set(mealPlanSlots, [readySlot("rec-a"), readySlot("rec-b")]);
+    db.__selectResults.set(recipes, [
+      cachedRecipeRow("rec-a", [{ qty: "2", unit: "cup", item: "broth" }], brothCache()),
+      cachedRecipeRow("rec-b", [{ qty: "1", unit: "cup", item: "broth" }], brothCache()),
+    ]);
+
+    const res = await generateGroceryList({ db: db as unknown as Db, householdId: HOUSEHOLD, userId: "u1", listId: LIST_ID });
+
+    // The whole point: no AI call on the confirm path, and the "normalizing" phase
+    // is skipped (hydrating → aggregating → ready).
+    expect(mockNormalize).not.toHaveBeenCalled();
+    expect(db.__statusWrites.map((w) => w.generationStatus)).toEqual([
+      "hydrating",
+      "aggregating",
+      "ready",
+    ]);
+    // Cached keys still merge the two broth lines into one summed item.
+    expect(res).toEqual({ listId: LIST_ID, generationStatus: "ready", itemCount: 1 });
+    expect(db.__insertedItems[0]).toMatchObject({ name: "broth", quantity: 3, unit: "cup" });
+  });
+
+  it("normalizes only the cache-miss recipe and merges cached + fresh by index", async () => {
+    const db = createMockDb(draftList());
+    db.__claimReturning.push([{ id: LIST_ID }]);
+    // rec-a is cached; rec-b (a pre-feature/straggler recipe) has no cache.
+    db.__selectResults.set(mealPlanSlots, [readySlot("rec-a"), readySlot("rec-b")]);
+    db.__selectResults.set(recipes, [
+      cachedRecipeRow("rec-a", [{ qty: "2", unit: "cup", item: "broth" }], brothCache()),
+      recipeRow("rec-b", [{ qty: "1", unit: "cup", item: "broth" }]),
+    ]);
+    // The residual normalize is called with ONLY the miss line, queued under its
+    // global sourced index (1). We echo that index back so it aligns on merge.
+    mockNormalize.mockResolvedValue([
+      { index: 1, canonicalName: "broth", category: "pantry", canonicalUnit: "cup", numericQty: null, confidence: 1 },
+    ]);
+
+    const res = await generateGroceryList({ db: db as unknown as Db, householdId: HOUSEHOLD, userId: "u1", listId: LIST_ID });
+
+    // Normalize ran once, on exactly the one uncached line (index 1).
+    expect(mockNormalize).toHaveBeenCalledTimes(1);
+    expect(mockNormalize).toHaveBeenCalledWith([
+      { index: 1, qty: "1", unit: "cup", item: "broth" },
+    ]);
+    // Cached rec-a + freshly-normalized rec-b merge into one 3-cup broth item.
+    expect(res).toEqual({ listId: LIST_ID, generationStatus: "ready", itemCount: 1 });
+    expect(db.__insertedItems[0]).toMatchObject({ name: "broth", quantity: 3, unit: "cup" });
   });
 
   it("marks the list error (with the message) when normalize fails", async () => {

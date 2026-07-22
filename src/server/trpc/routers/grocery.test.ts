@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eq, and } from "drizzle-orm";
 import type { User } from "@supabase/supabase-js";
 import { groceryRouter } from "./grocery";
-import { groceryItems } from "@/server/db/schema";
+import { groceryItems, mealPlanSlots } from "@/server/db/schema";
 import type { Context } from "../init";
 
 const LIST_ID = "11111111-1111-4111-8111-111111111111";
@@ -123,6 +123,7 @@ describe("groceryRouter.current", () => {
 
   it("should return the household-scoped list with its items", async () => {
     db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    // A terminal (non-building) list → no straggler count query, pendingRecipeCount 0.
     const list = { id: LIST_ID, householdId: "household-1", status: "shopping" };
     db.query.groceryLists.findFirst.mockResolvedValueOnce(list);
     const items = [{ id: ITEM_ID, listId: LIST_ID, name: "Milk" }];
@@ -131,11 +132,31 @@ describe("groceryRouter.current", () => {
     const caller = groceryRouter.createCaller(buildCtx(db, mockUser));
     const result = await caller.current();
 
-    expect(result).toEqual({ ...list, items });
+    expect(result).toEqual({ ...list, items, pendingRecipeCount: 0 });
     const chain = db.select.mock.results[0].value as Chain;
     expect(chain.where).toHaveBeenCalledWith(
       and(eq(groceryItems.listId, LIST_ID), eq(groceryItems.householdId, "household-1"))
     );
+  });
+
+  it("counts unready plan recipes as pendingRecipeCount while the list is building (BUG-004)", async () => {
+    db.query.householdMembers.findFirst.mockResolvedValueOnce({ householdId: "household-1" });
+    // A building list linked to a plan → the straggler count reflects its unready
+    // cookable slots (drives the "Finishing N recipes…" hint).
+    const list = {
+      id: LIST_ID,
+      householdId: "household-1",
+      generationStatus: "hydrating",
+      mealPlanId: "plan-1",
+    };
+    db.query.groceryLists.findFirst.mockResolvedValueOnce(list);
+    db.__selectResults.set(groceryItems, []);
+    db.__selectResults.set(mealPlanSlots, [{ id: "slot-1" }, { id: "slot-2" }]);
+
+    const caller = groceryRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.current();
+
+    expect(result).toMatchObject({ pendingRecipeCount: 2 });
   });
 });
 

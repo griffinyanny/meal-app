@@ -213,6 +213,45 @@ test("GR11 - Talk to the Chef removes an item by resolving its list number", asy
   await expect(rowByName(page, "Garlic")).toHaveCount(0);
 });
 
+// GR-L1 / GR-L2: the BUG-004 latency architecture (Phase D). The confirm-time list
+// reads a per-recipe normalize cache written during plan review, so a fully-reviewed
+// week makes ZERO AI calls at confirm and renders fast; a week confirmed with
+// stragglers shows an honest "Finishing N recipes…" hint that names the remaining
+// count. (Zero-AI-when-cached is asserted at the unit layer in grocery-generate.test;
+// these cover the user-visible render + copy.)
+
+test("GR-L1 - a fully-cached plan confirms straight to the merged list, no normalize hang", async ({
+  page,
+}) => {
+  await seedGroceryState("GROCERY_PENDING_CACHED");
+  await page.goto("/groceries");
+
+  // Auto-fires generate on the pending list. Every recipe is pre-hydrated and
+  // carries its review-time cache, so confirm skips the AI normalize and lands on
+  // the merged list. A generous timeout still proves the point (no 37s batch).
+  await expect(list(page)).toBeVisible({ timeout: 15_000 });
+
+  // The two recipes share garlic → one merged row (2 sources = the amber merge dot),
+  // plus the two single-source items. Proves the cached path aggregates correctly.
+  await expect(rowByName(page, /garlic/i)).toHaveCount(1);
+  await expect(rowByName(page, /salmon/i)).toBeVisible();
+  await expect(rowByName(page, /pasta/i)).toBeVisible();
+  const garlicRow = rowByName(page, /garlic/i);
+  await expect(garlicRow.getByTestId("grocery-merge-dot")).toBeVisible();
+});
+
+test("GR-L2 - a plan confirmed with stragglers shows the honest 'Finishing N recipes…' hint", async ({
+  page,
+}) => {
+  await seedGroceryState("GROCERY_HYDRATING_STRAGGLERS");
+  await page.goto("/groceries");
+
+  // The list is mid-generation (hydrating) with two unready recipes in its plan.
+  // The straggler hint names the exact remaining count, not a generic shimmer.
+  await expect(page.getByTestId("grocery-generating")).toHaveText("Finishing 2 recipes…");
+  await expect(list(page)).toBeHidden();
+});
+
 // Stepped pointer drag (dnd-kit PointerSensor tracks pointer events; Playwright's
 // touchscreen API is tap-only). Exceeds the 8px activation distance, then walks to
 // the target in small steps so collision detection registers the move.
