@@ -2,7 +2,8 @@
 // hybrid merge. Given the plan's recipe ingredient lines already normalized by
 // the AI (canonical name, category, canonical unit — see ingredient-normalize),
 // this pure function does ALL the arithmetic: it parses each line's original
-// quantity string itself and sums same-unit lines that share a canonical name.
+// quantity string itself (see quantity-parse.ts) and sums same-unit lines that
+// share a canonical name.
 //
 // Design contract (decisions.md, 2026-07-20 / 2026-05-26 "no LLM arithmetic"):
 //   - The AI's canonicalName + canonicalUnit are used ONLY as grouping keys. A
@@ -17,8 +18,20 @@
 //   - The AI's per-line numericQty is a FALLBACK only, used for a lone line whose
 //     string this parser can't read; such a line is forced solo so its uncertain
 //     number is never added to another.
+//   - EXCEPTION — the buy-unit table (buy-units.ts, BUG-002): for a hand-picked set
+//     of canonical names a shopper buys as one thing, lines consolidate to a single
+//     row (staples drop the noise quantity; concrete-unit items sum the buy-unit and
+//     absorb off-unit amounts without converting). It only ever adds merging for
+//     named items and can never merge two different items.
 import type { GroceryCategory, GroceryItemSource } from "@/server/db/schema";
 import { GROCERY_CATEGORIES } from "@/server/db/schema";
+import { parseQuantity, roundQty } from "./quantity-parse";
+import { resolveBuyUnit, finalizeBuyUnitAmount, type BuyUnit } from "./buy-units";
+
+// Quantity-string parsing moved to quantity-parse.ts (keeps this file under the
+// 300-line rule); re-exported here so existing callers of the aggregator's parsing
+// helpers (grocery-talk, grocery-item-mutations) are unchanged.
+export { parseQuantity, parseQtyText, numberFromQty, type ParsedQty } from "./quantity-parse";
 
 // One recipe ingredient line after AI normalization, ready to aggregate.
 export interface NormalizedLine {
@@ -48,159 +61,6 @@ export interface AggregatedItem {
 // Below this, we don't trust the AI's canonicalization enough to let a line merge
 // with anything — it stands alone (a safe under-merge).
 const CONFIDENCE_THRESHOLD = 0.5;
-
-// Quantity words that carry no countable amount. These stay unquantified rather
-// than being coerced to a number.
-const UNQUANTIFIED_WORDS = [
-  "pinch",
-  "to taste",
-  "as needed",
-  "as desired",
-  "some",
-  "handful",
-  "dash",
-  "splash",
-  "drizzle",
-  "for garnish",
-  "for serving",
-  "optional",
-];
-
-const UNICODE_FRACTIONS: Record<string, number> = {
-  "½": 0.5,
-  "⅓": 1 / 3,
-  "⅔": 2 / 3,
-  "¼": 0.25,
-  "¾": 0.75,
-  "⅕": 0.2,
-  "⅖": 0.4,
-  "⅗": 0.6,
-  "⅘": 0.8,
-  "⅙": 1 / 6,
-  "⅚": 5 / 6,
-  "⅛": 0.125,
-  "⅜": 0.375,
-  "⅝": 0.625,
-  "⅞": 0.875,
-};
-
-export type ParsedQty =
-  | { kind: "exact"; value: number }
-  | { kind: "range"; value: number } // value = higher end; buy enough, don't come up short
-  | { kind: "unquantified" } // empty, or a known "as needed" word
-  | { kind: "unparseable" }; // non-empty, but no number this parser recognizes
-
-// Parse a single numeric token: integer, decimal, "1/2", "1 1/2", "½", "1½".
-// Returns null if the token isn't a clean number.
-function parseSingleNumber(tokenRaw: string): number | null {
-  let token = tokenRaw.trim();
-  if (!token) return null;
-
-  // A trailing unicode fraction ("1½", "½") contributes its decimal value.
-  let unicodeVal = 0;
-  const last = token[token.length - 1];
-  if (UNICODE_FRACTIONS[last] != null) {
-    unicodeVal = UNICODE_FRACTIONS[last];
-    token = token.slice(0, -1).trim();
-    if (token === "") return unicodeVal;
-  }
-
-  let m = token.match(/^(\d+)\s+(\d+)\/(\d+)$/); // mixed "1 1/2"
-  if (m) return Number(m[1]) + Number(m[2]) / Number(m[3]) + unicodeVal;
-
-  m = token.match(/^(\d+)\/(\d+)$/); // fraction "1/2"
-  if (m) return Number(m[1]) / Number(m[2]) + unicodeVal;
-
-  m = token.match(/^(\d+(?:\.\d+)?)$/); // decimal / integer
-  if (m) return Number(m[1]) + unicodeVal;
-
-  return null;
-}
-
-// Parse a recipe quantity string into a countable amount (or an honest "no
-// amount"). Ranges resolve to the higher end and are flagged so a merge that
-// includes one reads as approximate.
-export function parseQuantity(raw: string): ParsedQty {
-  const s = (raw ?? "").trim().toLowerCase();
-  if (!s) return { kind: "unquantified" };
-
-  // Known no-amount phrases ("a pinch", "to taste") — only when there's no leading
-  // number ("1 pinch" is still a count of 1).
-  const hasLeadingNumber = /^[\d½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/.test(s);
-  if (!hasLeadingNumber && UNQUANTIFIED_WORDS.some((w) => s.includes(w))) {
-    return { kind: "unquantified" };
-  }
-
-  // Normalize range separators: "2 to 3" and en/em dashes → "-".
-  const norm = s.replace(/\s+to\s+/g, "-").replace(/[–—]/g, "-");
-
-  // Range: two numeric tokens around a hyphen. Fractions use "/", never "-", so a
-  // hyphen unambiguously separates a range. Take the higher end.
-  const hyphen = norm.indexOf("-");
-  if (hyphen > 0) {
-    const left = parseSingleNumber(norm.slice(0, hyphen));
-    const right = parseSingleNumber(norm.slice(hyphen + 1));
-    if (left != null && right != null) {
-      return { kind: "range", value: Math.max(left, right) };
-    }
-  }
-
-  // A clean single number.
-  const single = parseSingleNumber(norm);
-  if (single != null) return { kind: "exact", value: single };
-
-  // A leading number with trailing noise ("2 (14 oz can)") → take the count.
-  const lead = norm.match(/^(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)/);
-  if (lead) {
-    const v = parseSingleNumber(lead[1]);
-    if (v != null) return { kind: "exact", value: v };
-  }
-
-  return { kind: "unparseable" };
-}
-
-// Read a quantity string as a single number (or null if it carries no amount).
-// A thin wrapper over parseQuantity for callers that only want the count —
-// splitItem (per-source qty) and the qty-text parser below.
-export function numberFromQty(raw: string): number | null {
-  const parsed = parseQuantity(raw);
-  return parsed.kind === "exact" || parsed.kind === "range" ? parsed.value : null;
-}
-
-// Tokens that make up the numeric portion of a quantity string, so the trailing
-// remainder can be split off as the unit.
-const QTY_NUMERIC_TOKEN = /^[\d./½⅓⅔¼¾⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞-]+$/;
-
-// Parse a user-typed quantity string (inline qty editing) into the stored
-// (quantity, unit) pair. "2 heads" → {2, "heads"}; "1 1/2 cups" → {1.5, "cups"};
-// "3" → {3, null}; "as needed"/"" → {null, null}. When there's no readable
-// number we store no amount and no unit (renders "as needed"), so an orphan unit
-// never lingers without a count.
-export function parseQtyText(raw: string): { quantity: number | null; unit: string | null } {
-  const text = (raw ?? "").trim();
-  if (!text) return { quantity: null, unit: null };
-
-  // Peel the leading numeric tokens (digits, fractions, unicode ½, a "2-3"/"2 to 3"
-  // range) off the front; the remainder is the unit. Crucially, parse the numeric
-  // part ALONE — passing the whole "1½ cups" to parseQuantity lets the glued-on
-  // unit defeat its fraction/range reading (it would fall back to the bare "1").
-  const tokens = text.split(/\s+/);
-  let i = 0;
-  while (
-    i < tokens.length &&
-    (QTY_NUMERIC_TOKEN.test(tokens[i]) || tokens[i].toLowerCase() === "to")
-  ) {
-    i++;
-  }
-  const quantity = numberFromQty(tokens.slice(0, i).join(" "));
-  if (quantity == null) return { quantity: null, unit: null };
-  const unit = tokens.slice(i).join(" ").trim() || null;
-  return { quantity, unit };
-}
-
-function roundQty(n: number): number {
-  return Math.round(n * 1000) / 1000;
-}
 
 interface LineAmount {
   value: number | null; // the number to sum, or null if it carries no amount
@@ -242,10 +102,28 @@ interface Group {
   name: string;
   rawName: string;
   category: GroceryCategory;
-  unit: string | null;
-  quantified: number[]; // amounts to sum
+  unit: string | null; // the shared keyed unit (default path); ignored for buy-unit groups
+  buy: BuyUnit | null; // buy-unit policy when this item is in the table (BUG-002)
+  quantified: { value: number; unit: string }[]; // amounts to sum, with their unit
   hasUnquantified: boolean;
   sources: GroceryItemSource[];
+}
+
+// Finalize one group's displayed (quantity, unit) per its merge policy.
+function groupAmount(g: Group): { quantity: number | null; unit: string | null } {
+  if (g.buy?.kind === "staple") {
+    // Buy-once: the measured quantity is shopping noise → one unquantified row.
+    return { quantity: null, unit: null };
+  }
+  if (g.buy?.kind === "unit") {
+    return finalizeBuyUnitAmount(g.quantified, g.buy.unit);
+  }
+  // Default path: every line shares the keyed unit, so sum them all.
+  const quantity =
+    g.quantified.length > 0
+      ? roundQty(g.quantified.reduce((a, c) => a + c.value, 0))
+      : null;
+  return { quantity, unit: g.unit };
 }
 
 // Aggregate normalized recipe lines into a merged, categorized shopping list.
@@ -259,11 +137,19 @@ export function aggregateIngredients(lines: NormalizedLine[]): AggregatedItem[] 
     const name = line.canonicalName.trim() || line.rawItem.trim() || "item";
     const unit = line.canonicalUnit.trim();
 
-    // A mergeable line keys on (name, unit) so exact-same-unit lines combine.
-    // A solo line gets a unique key so it never joins anything.
-    const key = amount.soloReason
-      ? ` solo ${soloCounter++}`
-      : `${name.toLowerCase()} ${unit.toLowerCase()}`;
+    // A solo line gets a unique key so it never joins anything. A buy-unit item
+    // keys on its canonical name ALONE so its differently-measured lines consolidate
+    // into one row. Everything else keys on (name, unit) so exact-same-unit lines
+    // combine and different units stay honestly separate.
+    const buy = amount.soloReason ? null : resolveBuyUnit(name);
+    let key: string;
+    if (amount.soloReason) {
+      key = ` solo ${soloCounter++}`;
+    } else if (buy) {
+      key = `buy ${name.toLowerCase()}`;
+    } else {
+      key = `${name.toLowerCase()} ${unit.toLowerCase()}`;
+    }
 
     let group = groups.get(key);
     if (!group) {
@@ -272,6 +158,7 @@ export function aggregateIngredients(lines: NormalizedLine[]): AggregatedItem[] 
         rawName: line.rawItem.trim() || name,
         category: line.category,
         unit: unit.length > 0 ? unit : null,
+        buy,
         quantified: [],
         hasUnquantified: false,
         sources: [],
@@ -279,7 +166,7 @@ export function aggregateIngredients(lines: NormalizedLine[]): AggregatedItem[] 
       groups.set(key, group);
     }
 
-    if (amount.value != null) group.quantified.push(amount.value);
+    if (amount.value != null) group.quantified.push({ value: amount.value, unit: unit.toLowerCase() });
     else group.hasUnquantified = true;
 
     group.sources.push({
@@ -290,15 +177,17 @@ export function aggregateIngredients(lines: NormalizedLine[]): AggregatedItem[] 
     });
   }
 
-  const items: AggregatedItem[] = Array.from(groups.values()).map((g) => ({
-    name: g.name,
-    rawName: g.rawName,
-    category: g.category,
-    // Sum the quantified contributions; a group with none is "as needed" (null).
-    quantity: g.quantified.length > 0 ? roundQty(g.quantified.reduce((a, b) => a + b, 0)) : null,
-    unit: g.unit,
-    sources: g.sources,
-  }));
+  const items: AggregatedItem[] = Array.from(groups.values()).map((g) => {
+    const { quantity, unit } = groupAmount(g);
+    return {
+      name: g.name,
+      rawName: g.rawName,
+      category: g.category,
+      quantity,
+      unit,
+      sources: g.sources,
+    };
+  });
 
   // Stable order: by aisle category, then name. Slice C persists section order
   // separately; this is just a deterministic default.

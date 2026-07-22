@@ -4,6 +4,34 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**BUG-002 buy-unit consolidation + BUG-001 category fix (1D fast-follow)** (2026-07-22, Session 31)
+- **A buy-unit table sits on top of the under-merge aggregator, never replaces it.** The aggregator under-merges by
+  design (a wrong AI key can only *fail* to merge, never wrongly merge). BUG-002's duplicate rows are the cost of
+  that safety. Rather than loosen the merge (which risks wrong merges), a curated table (`src/server/grocery/buy-units.ts`)
+  keyed on the AI's `canonicalName` names the items a shopper buys as ONE thing and consolidates just those. It only
+  ever *increases* merging for a hand-picked set and **can never merge two different items** — a wrong/unexpected
+  canonicalName simply misses the table and keeps strict under-merge. Worst case of a table miss is the status quo
+  (a duplicate row), never a bad merge. The safety property is unchanged; the table is additive.
+- **Staples drop the measured quantity → one unquantified row** (Griffin's call). For buy-once items (salt, pepper,
+  cooking oils, dried spices, vinegars) the tsp/tbsp figure is shopping noise — you grab the container. So a staple's
+  lines collapse to a single row showing just the name; the per-meal amounts survive in the amber-dot breakdown
+  (`sources`). Chosen over keeping a summed number ("Salt 3.25 tsp" helps no shopper). Two-way door.
+- **Concrete buy-unit produce sums the buy-unit and absorbs off-unit amounts — no fake conversion.** carrot→lb,
+  potato→lb, onion/tomato/bell pepper→count, etc. All lines collapse to one row in the buy-unit; amounts in that unit
+  sum, amounts in other units fold into the same row (recorded in `sources`) but are **not** converted (the
+  2026-05-26 "no LLM/fake arithmetic" rule holds — lb↔cup needs a density we don't have). When no line uses the
+  buy-unit, the display unit falls back to a plain **count** if present (the legible shopping unit for this produce),
+  else the mode unit — so "2 carrots + 0.5 cup" shows "2", never "0.5 cup". Bulk pantry goods whose amount DOES
+  matter (flour, sugar, rice) are deliberately absent from the table.
+- **BUG-001: `guessCategory` matches whole words, not substrings.** The optimistic quick-add category guess used
+  substring `includes`, so "water"→"watermelon", "butter"→"butternut", "egg"→"eggplant" mis-homed for the ~1s before
+  the AI tidy landed. Now whole-word (+ simple -s/-es plural) with an allowlist for intentional stems (`berr`) and
+  multiword phrases (`ice cream`), plus added produce terms. A residual pre-existing keyword-ordering quirk
+  (`ice cream`→dairy via "cream") is left alone (out of scope; self-corrects via tidy).
+- **Two file splits under the 300-line rule, both re-export-preserving (zero caller churn):** the quantity parser
+  left `aggregate.ts` (which was itself 312 > 300) into `quantity-parse.ts`, re-exported from `aggregate.ts`; the
+  collect/sweep helpers left `grocery-generate.ts` (313 > 300) into `grocery-collect.ts`. No external import changed.
+
 **BUG-004 closed — Phase D + background rate-limit class** (2026-07-21, Session 30)
 - **Background AI fan-out gets its own rate-limit bucket.** The review-time `plan.normalizeSlot` is now a
   `bgAiProcedure` (new), not an `aiProcedure`. Rationale: the interactive 10-calls/min bucket is meant to stop a
