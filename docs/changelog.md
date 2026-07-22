@@ -4,6 +4,96 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 30 — 2026-07-21 (BUG-004 CLOSED — Phase D + real-model eval + rate-limit fix; shipped)
+
+### What happened
+Finished **BUG-004** (grocery-list latency) end to end and closed it. Build session on Opus (bumped from the
+planned Sonnet mid-session for the review + rate-limit fix). Migration applied, Phase D built, real-model eval
+run, one high-severity review finding fixed, and shipped.
+
+**1. Migration `0005` applied.** The Supabase project was live (not paused). `normalized_ingredients` +
+`normalized_at` columns confirmed on `recipes`.
+
+**2. Phase D — honest straggler hint + instrumentation + first Groceries latency E2E.**
+- `grocery.current` now returns `pendingRecipeCount` (unready cookable slots) while the list is `pending`/`hydrating`;
+  `groceries-page-client.tsx` shows **"Finishing N recipes…"** (names the count, not a generic shimmer) on the
+  straggler path. Confirm stays instant; common all-cached path is one honest beat → list.
+- **Early-confirm instrumentation** in `grocery-generate.ts`: one log line per confirm with `stragglers`,
+  `normalizeMisses`, `items`, `confirmMs` — the metric that gates whether true section-streaming (#2) is ever built.
+- **First Groceries latency E2E:** GR-L1 (fully-cached plan → merged list renders fast, zero normalize hang) and
+  GR-L2 (stragglers → the honest "Finishing 2 recipes…" hint). Two new seed states (`GROCERY_PENDING_CACHED`,
+  `GROCERY_HYDRATING_STRAGGLERS`) that materialize a real plan + cached recipes + slots. 53 E2E green.
+
+**3. Real-model eval (gated spend, 8 gpt-4.1-mini calls) — PASSED.** A throwaway `tsx` script
+(`scripts/bug004-normalize-eval.ts`) ran a realistic 7-dinner week both ways:
+- **Merge quality equivalent.** Batch and per-recipe produced the same rows/sums/merges — garlic ×6 → 15 cloves,
+  salt ×4, olive-oil ×4, all identical. The **scallion↔green-onion synonym canonicalized identically in both paths
+  with zero co-occurrence advantage** — the clincher for the load-bearing "batching did no correctness work"
+  assumption (the rule is in the prompt, not learned from the batch). The only diffs were cosmetic name variance
+  ("fresh basil"/"basil", "diced tomato"/"tomatoes") that yield the same rows — and that variance exists run-to-run
+  *within* the batch path too, so it's model nondeterminism, not a regression.
+- **Latency:** the batch reproduced at **27.1s** this run (S28 baseline 37.7s; model latency varies, always far
+  over Griffin's 15s bar). AFTER: **0 normalize calls at confirm**, aggregate ~0ms → confirm→ready is effectively
+  instant on a fully-reviewed week; each recipe's ≤5.4s normalize was paid during review, off the confirm path.
+
+**4. Code review (high effort) — found + FIXED a high-severity regression before shipping.**
+- 🔴 **Rate-limit fan-out.** `normalizeSlot` was an `aiProcedure`, sharing the user's **10-calls/min** interactive
+  bucket. A full-week review fires 7 hydrate + 7 normalize = ~14 calls/min → the later ones 429. A 429 on *hydrate*
+  hits the walker's `onError` (marks the slot failed, no auto-retry → stuck card); a 429 on *normalize* leaves the
+  cache null → confirm falls back to the 27–37s batch — defeating BUG-004 exactly on a fully-reviewed week. The mock
+  E2E can't catch it (limit relaxed to 1000 under the mock). **Fix:** a new `bgAiProcedure` with its own background
+  rate-limit bucket (`AI_BG_RATE_LIMIT` = 30/min, key `ai:bg:${userId}`) that (a) can never 429 a user-visible
+  hydrate and (b) doesn't double-charge the 150/day budget the recipe-generate already counted. `normalizeSlot`
+  switched to it. New `ratelimit.test.ts` locks the bucket isolation. 306 unit green (+3).
+- Logged (non-blocking, deferred): `grocery-generate.ts` is 313 lines (over the 300 rule → split follow-up in
+  idea-backlog); GR-L2 asserts the hint on a hand-seeded `hydrating` row rather than driving the full
+  pending→straggler→ready transition (E2E coverage note; the unit layer covers residual-normalize).
+
+**Gauntlet:** lint + typecheck clean, **306 unit + 53 E2E green**, real-model eval passed. BUG-004 → **Resolved**.
+The S28 60s stopgap timeout stays as belt-and-braces for the rare residual batch.
+
+---
+
+## Session 29 — 2026-07-21 (Generation-architecture rethink — planning + Phases A–C built)
+
+### What happened
+Planning session for **BUG-004** (grocery-list generation latency), then built the core fix (Phases A–C).
+Opened in plan mode, consulted `system-architect`, locked the approach, got Griffin's sign-off, and implemented
+the server-side latency win. Plan: `~/.claude/plans/resume-meal-app-peppy-simon.md` (architect memo:
+`…-peppy-simon-agent-a9a263c2c4d111270.md`).
+
+**The pinch (confirmed in code).** Hydration already runs in the background during plan review (good). The 37.7s
+lived entirely in `grocery.generate` at confirm: ONE batched `ingredient-normalize` over the whole week's ~70
+ingredient lines, then the instant deterministic aggregate. The load-bearing realization: **normalize is a pure,
+per-line function and recipe rows never mutate in place** (`plan.modify` makes a NEW recipe row), so the result is
+cacheable forever and can be computed during the review window the user already spends.
+
+**Built (A–C), gauntlet green — 302 unit tests (+8), lint + typecheck clean:**
+- **A — schema.** Added nullable `normalized_ingredients` (jsonb) + `normalized_at` to `recipes` (migration
+  `0005_nosy_mandroid.sql`, additive → no backfill). Shared `NormalizedResult` type/Zod moved to a client-safe
+  `src/lib/normalized-ingredient.ts` so the AI task and the DB schema share one shape without a circular import.
+- **B — cache at review time.** New best-effort `cacheSlotNormalization` (`plan-hydrate.ts`) + a `plan.normalizeSlot`
+  procedure; the review-time walker (`use-plan-hydration.ts`) fires it right after each hydrate succeeds.
+- **C — cache read at confirm.** `grocery-generate.ts` reads the cache (length-aligned) and AI-normalizes only the
+  misses; a fully-reviewed week makes **zero AI calls at confirm** and skips the "normalizing" phase.
+
+**One deliberate divergence from the architect's memo.** The memo suggested normalizing *inside* `hydrateSlotRecipe`.
+Instead I **decoupled** it into a separate `plan.normalizeSlot` call the walker fires after hydrate. Reason: an
+in-hydrate normalize would make a tapped recipe wait recipe-gen **+** normalize (~3–6s longer) before it's readable
+— regressing the "read the recipe while reviewing" flow that motivated plan-time hydration. Decoupled keeps the
+card/sheet at today's latency, is serverless-reliable (its own request, not a killed fire-and-forget), and the
+confirm-time fallback still covers any recipe whose normalize hadn't finished.
+
+**Griffin's two product calls (via the plan):** (1) confirming before the walk finishes stays instant + shows an
+**honest "Finishing N recipes…" hint** (Phase D); (2) ship the **minimal** loading treatment now, **defer** true
+server-side section-streaming until instrumentation shows early-confirm actually hurts.
+
+**Deferred to the next session (all need the live DB, which was paused):** apply migration `0005`; Phase D (the
+honest straggler hint + first Groceries E2E specs — a light design-pass candidate); the real-model eval
+(per-recipe == batch merge quality + a real before/after latency capture). BUG-004 stays `in-progress`.
+
+---
+
 ## Session 28 — 2026-07-21 (Slice 5 WRAP — 1D CLOSED + shipped to prod)
 
 ### What happened

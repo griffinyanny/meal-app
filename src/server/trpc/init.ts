@@ -4,7 +4,11 @@ import { getDb } from "@/server/db";
 import { householdMembers } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
-import { checkAiRateLimit, consumeDailyAiBudget } from "@/server/ratelimit";
+import {
+  checkAiRateLimit,
+  checkAiBackgroundRateLimit,
+  consumeDailyAiBudget,
+} from "@/server/ratelimit";
 
 export async function createTRPCContext() {
   const supabase = await createClient();
@@ -78,5 +82,23 @@ export const aiProcedure = protectedProcedure.use(async ({ ctx, next }) => {
     });
   }
 
+  return next();
+});
+
+// protectedProcedure + a SEPARATE background rate-limit bucket, for best-effort
+// AI fan-out that the app fires on the user's behalf (not a call they're watching)
+// — today just the review-time grocery normalize (BUG-004). It deliberately does
+// NOT share the interactive bucket (so it can never 429 a user-visible hydrate) and
+// does NOT consume the daily budget (the recipe-generate that produced this recipe
+// already counted; this derivative normalize shouldn't double-charge the user's
+// 150/day). Its own bounded bucket still protects the provider key from a loop.
+export const bgAiProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const result = checkAiBackgroundRateLimit(ctx.user.id);
+  if (!result.allowed) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Background work is catching up — try again shortly.",
+    });
+  }
   return next();
 });

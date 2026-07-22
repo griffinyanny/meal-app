@@ -20,7 +20,7 @@ Detailed plans for individual features within a phase. Created when we're ready 
 
 Format: `{phase}-{feature-name}.md` (e.g., `v1-recipe-url-import.md`, `v1-grocery-list-generation.md`)
 
-(none yet created)
+- `~/.claude/plans/resume-meal-app-peppy-simon.md` — **Generation-architecture rethink (BUG-004): cut grocery-list latency.** Move the ~37s batched `ingredient-normalize` off the confirm critical path by normalizing each recipe incrementally during plan review + caching it on the recipe row; confirm becomes the instant aggregate. **COMPLETE — BUG-004 closed + shipped S30.** Phases A–C built S29; S30 applied migration `0005`, built Phase D (honest "Finishing N recipes…" hint + early-confirm instrumentation + GR-L1/GR-L2 E2E), ran the real-model eval (PASSED — per-recipe == batch merge quality; ~27–37s off the confirm path), and fixed a high-sev rate-limit fan-out via `bgAiProcedure`. 306 unit + 53 E2E green. Plan-mode + `system-architect` consulted; architect memo alongside (`…-peppy-simon-agent-a9a263c2c4d111270.md`).
 
 ### Spike / Research Plans
 Plans for technical investigations or design explorations that inform future work.

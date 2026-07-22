@@ -1,45 +1,57 @@
 # What's Next
 
-Last updated: 2026-07-21 (Session 28)
+Last updated: 2026-07-21 (Session 30)
 
-## ▶ NEXT SESSION — Generation-architecture rethink (a PLANNING session)
-**Phase 1D is CLOSED and shipped to prod (S28).** The next focus is a **material rethink of grocery-list
-generation to cut perceived latency** — a **planning/design session, not a build session.** (Griffin: even 15s on
-a loading screen is too long; a full-week normalize measured **37.7s**. The direction is locked but stay open to a
-more creative approach.) Tracked as **BUG-004** in `docs/bug-tracker.md`.
+## ▶ NEXT SESSION — BUG-004 is CLOSED + shipped. Pick the next R1 phase (1E You-tab) or a fast-follow.
+**BUG-004 (grocery-list latency) is done end to end and deployed.** The ~27–37s batched normalize is entirely off
+the confirm path — recipes normalize during review and cache on the recipe row; a fully-reviewed week makes zero AI
+calls at confirm (verified by the real-model eval + the E2E instrumentation line). 4 of 6 R1 phases done.
 
-**⭐ Model recommendation: Opus 4.8 (most capable) + plan mode + the `system-architect` agent.** This is
-sophisticated, cross-cutting architecture reasoning — hydration timing, an AI-call pipeline, caching, and the UX
-of perceived latency — so use the strongest model, open in plan mode, and consult `system-architect` before
-locking the approach. *(Reason: architecture depth matters more than speed here.)*
+**Candidate next moves (Griffin's call):**
+1. **Phase 1E — You tab** (preferences / chef memory surface). The next R1 phase; needs a scope-1E doc + likely a
+   design pass (new surface → strong design-pass recommendation). Open question #2 (AI-first prefs vs static
+   settings) resolves here.
+2. **BUG-002 buy-unit / consolidation fast-follow** (now unblocked) — the duplicate-name-line under-merge
+   (`Salt 3.25 tsp` + `Salt to taste`). A focused Groceries polish pass; could fold in BUG-001 (guessCategory
+   compound-word) and the deferred `grocery-generate.ts` split (313 > 300 lines).
+3. **Owed taste passes** (non-blocking, carried): Slice C/D Groceries + Recipes reorg read; the Recipes double
+   bottom-bar density on a phone.
 
-**The decided direction (S28) — the plan should design + sequence these, and pressure-test alternatives:**
-1. **Normalize incrementally during plan review (#1)** — as each recipe hydrates in the background during review,
-   normalize its lines and cache them on the slot, so **confirm runs only the instant pure aggregate** (moves the
-   ~37s off the critical path into the review window the user already spends).
-2. **Progressive / legible loading (#5)** — stream the list in as sections resolve; let the user act on
-   already-merged items while the rest lands. (Griffin likes a *little* visible loading — it explains the work.)
-3. **Ingredient caching (#3)** — memoize canonical normalization (household/global) so repeat items skip the AI.
-   The compounding follow-up.
+**⭐ Model recommendation: Sonnet 5** for 1E scoping / BUG-002 fast-follow (mechanical + design-brief work). Bump to
+Opus only if 1E turns into a cross-cutting architecture decision (e.g. the prefs data model).
 
-**Copy-paste kickoff prompt:**
-> Resume meal app — **planning session** for the generation-architecture rethink (BUG-004): cut the perceived
-> latency of grocery-list generation. Phase 1D is closed + in prod. Open in **plan mode** and consult the
-> **system-architect** agent before locking anything. Current flow: plan-gen produces meal *concepts* only →
-> per-slot `plan.hydrateSlot` generates full recipes in the background during review → at confirm,
-> `grocery.generate` runs ONE batched `ingredient-normalize` (~37s on a full week) + the pure aggregate = the
-> pinch. Decided direction (stay open to better): (1) normalize each recipe incrementally as it hydrates during
-> review + cache on the slot, so confirm is just the instant aggregate; (2) progressive/legible loading; (3)
-> ingredient caching as the follow-up. Key files: `src/server/trpc/routers/grocery-generate.ts`,
-> `src/server/trpc/routers/plan-hydrate.ts`, `src/components/plan/use-plan-hydration.ts`,
-> `src/server/ai/tasks/ingredient-normalize.ts`, `src/server/grocery/aggregate.ts`. Deliver a sequenced build
-> plan (phases + risks + test strategy). A 60s normalize stopgap already shipped so nothing errors today. Read
-> `docs/bug-tracker.md` (BUG-004) + `docs/decisions.md` (S28) first.
-> ⚠️ If DB calls fail with "tenant not found," the Supabase project auto-paused — resume it in the dashboard,
-> then `set -a; . ./.env.local; set +a` before any `db:*` command.
+**Copy-paste kickoff prompt (defaulting to 1E scoping — swap in BUG-002 if you'd rather fast-follow):**
+> Resume meal app. **BUG-004 is closed + shipped (S30)** — grocery-list latency fixed (normalize moved off the
+> confirm path to plan-review time, cached on the recipe row; real-model eval passed; rate-limit fan-out fixed via
+> `bgAiProcedure`). Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/changelog.md` (S30), and
+> `docs/decisions.md` (S30) first, then give me the ≤6-line scope check. I want to **start Phase 1E (You tab)**:
+> write `docs/scope-1E.md` (in-scope prefs/chef-memory features + acceptance criteria), resolve open-question #2
+> (AI-first preferences vs static settings) with a recommendation, and — since 1E is a new surface — OFFER a Claude
+> Design pass before building. Don't build until the scope doc + design direction are agreed.
 
-*(This is a planning session, so no design pass is needed to start — but the loading-treatment (#5) piece will
-want a design pass once the approach is chosen.)*
+*(Design-independent alt: if you'd rather not wait on a design pass, do the **BUG-002 buy-unit fast-follow** instead
+— it's an in-pattern Groceries change (aggregator + a buy-unit table), no new surface, and it clears two parked bugs
+plus the `grocery-generate.ts` split. Same kickoff, swap the 1E ask for "start the BUG-002 buy-unit fast-follow.")*
+
+## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
+- **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review
+  (decoupled `plan.normalizeSlot` the walker fires after hydrate) and caches on the recipe row (`normalized_ingredients`,
+  migration `0005` applied); confirm reads the cache + AI-normalizes only cache-misses → **zero AI calls at confirm on
+  a fully-reviewed week → instant aggregate.** Phase D added the honest **"Finishing N recipes…"** straggler hint +
+  early-confirm instrumentation.
+- **Real-model eval PASSED (the load-bearing gate).** Per-recipe normalization == the old batch's merge quality
+  (identical rows/sums/merges; scallion↔green-onion synonym canonicalized identically with no co-occurrence
+  advantage). Latency: ~27s batch → **0 normalize calls at confirm** (aggregate ~0ms). Script:
+  `scripts/bug004-normalize-eval.ts` (real spend — re-run for prompt-drift checks).
+- **Code review found + FIXED a high-severity regression** before ship: `normalizeSlot` on the shared 10/min AI
+  bucket would 429 user-visible hydrates on a full-week review. Fixed with a dedicated `bgAiProcedure` (own 30/min
+  bucket, no daily-budget double-charge). `ratelimit.test.ts` locks the isolation.
+- **Green:** lint + typecheck clean, **306 unit + 53 E2E** (GR-L1/GR-L2 new). The S28 60s stopgap timeout stays as
+  belt-and-braces for the rare residual batch.
+- **Deferred follow-ups (idea-backlog):** split `grocery-generate.ts` (313 > 300); strengthen GR-L2 to drive the full
+  straggler transition; ingredient caching (#3, global-vs-household open Q); section-streaming (#2, measurement-gated).
+- **Owed to Griffin — taste pass** (carried from S28, non-blocking): Slice C/D Groceries + Recipes reorg; the double
+  bottom-bar density on a phone.
 
 ## Exact Status (end of Session 28 — Phase 1D CLOSED, shipped to prod)
 - **Phase 1D (Groceries) is COMPLETE — 4 of 6 R1 phases done; merged to prod.** Wrap: code review (3 fixes),

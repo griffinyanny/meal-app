@@ -4,6 +4,52 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+**BUG-004 closed — Phase D + background rate-limit class** (2026-07-21, Session 30)
+- **Background AI fan-out gets its own rate-limit bucket.** The review-time `plan.normalizeSlot` is now a
+  `bgAiProcedure` (new), not an `aiProcedure`. Rationale: the interactive 10-calls/min bucket is meant to stop a
+  runaway *user-visible* client, but the walker legitimately fans out ~7 normalizes per week on top of ~7 hydrates —
+  sharing one bucket would 429 the user-visible hydrate (→ stuck card, no auto-retry). `bgAiProcedure` uses a
+  separate bucket (`AI_BG_RATE_LIMIT` = 30/min, key `ai:bg:${userId}`) and does NOT consume the 150/day budget (the
+  recipe-generate that produced the recipe already counted; the derivative normalize shouldn't double-charge). A
+  429 in the background bucket is harmless — `cacheSlotNormalization` is best-effort, so the recipe just re-normalizes
+  at confirm. This is the general "interactive vs background AI work" split, not a special-case bump. Found by the
+  Phase-D code review; the mock E2E couldn't surface it (limit relaxed to 1000 under the mock).
+- **Real-model eval confirmed the load-bearing assumption.** Per-recipe normalization == the old batch's merge
+  quality (identical rows/sums/merges; the scallion↔green-onion synonym canonicalized identically with no
+  co-occurrence advantage). "Batching did no correctness work" is now verified, not assumed. The ~27–37s normalize
+  is entirely off the confirm path.
+- **Straggler hint over section-streaming (confirmed built).** `pendingRecipeCount` on `grocery.current` +
+  "Finishing N recipes…" copy; early-confirm instrumentation logs `stragglers`/`normalizeMisses`/`confirmMs`. True
+  server-side section-streaming (#2) stays deferred until that instrumentation shows early-confirm actually hurts.
+
+**Generation-architecture rethink — BUG-004 (design + Phases A–C)** (2026-07-21, Session 29)
+- **Normalize is cached on the RECIPE row, not the slot.** Corrects the S28 whats-next note ("cache on the slot").
+  A leftover slot can share one recipe and a slot doesn't own ingredients; the recipe row owns `ingredients` and is
+  immutable (`plan.modify` spins up a NEW recipe row rather than editing one), so a derived normalize cache next to
+  it can never go stale. New nullable columns `normalized_ingredients` (jsonb, `NormalizedResult[]` aligned by index
+  to `ingredients`) + `normalized_at`. Nullable ⇒ no backfill; old/pre-feature recipes self-heal via the confirm-time
+  fallback, and plan-generated recipes cascade away with their plan anyway.
+- **Normalize runs as a SEPARATE best-effort call at review time, decoupled from hydration** (my divergence from the
+  architect memo, which put it inside `hydrateSlotRecipe`). Rationale: folding it in would delay a tapped recipe by
+  the normalize time (~3–6s), regressing the read-while-reviewing flow that justified plan-time hydration. So
+  `cacheSlotNormalization` + a `plan.normalizeSlot` procedure; the walker fires it right after each hydrate lands
+  (non-blocking, concurrent with the next recipe-gen). A normalize failure is a no-op (cache stays null → confirm
+  re-normalizes that one recipe). It never blocks the recipe/card going "ready".
+- **Confirm reads the cache + normalizes only the residual.** `grocery.generate` uses a recipe's cache when present
+  AND length-aligned with its ingredients; only cache-miss lines (stragglers swept at confirm, pre-feature recipes,
+  or a recipe whose normalize hadn't finished) get one batched AI call. A fully-reviewed week ⇒ zero AI calls at
+  confirm ⇒ the aggregate is instant. The `normalizing` phase is now conditional (shown only when there's a residual).
+- **Under-merge remains the safety net for the cache.** A misaligned/partial cache drops the whole recipe to the
+  residual batch (length check), and even a wrong cached key can only *fail to merge* (a safe separate row), never
+  wrongly merge — same property as the batched path.
+- **Straggler UX = instant confirm + an honest "Finishing N recipes…" hint** (Griffin). Confirm stays instant (no
+  gating); the Groceries screen names the remaining work on the straggler path. **Loading scope = minimal now; defer
+  true server-side section-by-section streaming (#2)** until instrumentation shows early-confirm actually hurts.
+  Section-streaming would fake a progress bar for a task that (common case) finishes before it renders.
+- **Ingredient caching (#3) is a later, separate follow-up** — a read-through household/global canonical cache
+  *underneath* `normalizeIngredients` (it optimizes how expensive each call is; the recipe-row cache optimizes *when*
+  normalize runs vs confirm — they stack). Its global-vs-household scoping is an open decision (see open-questions).
+
 **Phase 1D closed + wrap decisions** (2026-07-21, Session 28)
 - **Merge quality PASSED the soft DoD (#2) on the real model** (Griffin's eye). Sums exact, semantic
   canonicalization right (scallions == green onion), zero mis-merges (under-merge holds). 1D's hard V1 problem is
