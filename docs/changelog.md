@@ -4,6 +4,58 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 38 — 2026-07-25 (1E #4 closed out: visual QA, Layer B, code review)
+
+The three gates 1E was waiting on. **449 unit + 75 E2E green, visual-QA gate PASS (0 blockers / 0 high),
+Layer B run, `/code-review` complete across four lenses.** Everything below is on `session-33-you-tab-audit`.
+
+**Built the missing harness.** `/visual-qa` had no onboarding coverage — `tests/e2e/capture/` covered
+Plan/Groceries/Recipes/You only. Added `onboarding-facts.ts` + `onboarding.capture.ts` (14 states walking the real
+flow from `/welcome`; there is no way to deep-link a turn, and driving it for real is the point) and
+`onboarding-live.capture.ts` for Layer B. Generalized `playwright.capture-live.config.ts` from `plan-live` to
+`-live\.capture\.ts$` so each surface's live capture is separately runnable.
+
+**Visual QA — three rounds, 13 findings fixed.** Round 1 found four highs: `min-h-full` was a no-op so three
+screens never filled the viewport; the "what I caught" tray echoed the chef's reply sentence instead of itemizing
+what free text surfaced, and left the answered pill dark; the reflect hook was generic on the core-only path (every
+dish-level branch required deep-round data, so the brief's hero moment never fired for the most common completion);
+selected allergens were blue, identical to a diet chip. Round 2 added two capture states because two fixes had no
+visual proof. Round 3 was the `ux-design-critic` pass, which **corrected round 1's own fix**: centering the turns
+traded a void for layout shift under the thumb — measured 36px when the confirm appeared, 77px on the household
+turn, moving the stepper being tapped. Rebuilt as two anchored blocks with the confirm's height reserved.
+
+**BUG-005 (app-wide serif) closed, deviating from its "defer to 1F" disposition.** It needed no on-device check:
+`--font-sans: var(--font-sans)` is a self-reference, invalid at computed-value time, so the token could never
+resolve anywhere. One-line bridge to `--font-geist-sans`. Fixed inside 1E because Griffin's taste pass on chef copy
+was about to happen in Times. Blast radius verified by re-capturing all four other surfaces.
+
+**Layer B earned its keep on its first onboarding run.** The tray renders the ops `user.talk` produced — perfect
+against a fixture written to emit them, and silently degraded to prose if the real model preferred `remember`. It
+didn't: the live model reproduced the brief's own worked example. But it caught a bug the mock structurally could
+not: "we do taco night every Tuesday and nobody eats mushrooms" lit the **No restrictions** pill, because the write
+created the preferences row, `dietary_framework` defaults to `'omnivore'`, and the client read that default back as
+an answer.
+
+**`/code-review` (4 lenses) found a critical bug in this session's own work.** The preselect merge appended without
+respecting `multi` and never removed, so tapping "Pescatarian" then typing "actually we eat everything" left both
+chips lit and **persisted the retracted answer** — the chef overwriting a correction with the thing it corrected.
+Two root causes behind it, both fixed: `changed` was derived from the DB diff (so setting a field back to its
+default registered as nothing happening), now derived from the ops; and `utils.user.preferences.fetch()` was served
+from the provider's 30s cache, so a second correction inside half a minute read back as the first one's answer.
+Guarded by OB12/OB13 and three router tests. Also split `use-onboarding.ts` (338 lines) — the free-text path moved
+to `use-onboarding-talk.ts`.
+
+**Nine review findings logged rather than fixed** (BUG-010 through BUG-018), because `/review` says present, don't
+auto-apply. Two are recommended before Griffin and his wife run the interview for real, since it fires exactly once
+per account and a half-saved first run is not recoverable: **BUG-016** (a failed preference save is silent and the
+reflect screen still says "All saved") and **BUG-014** (typed text is cleared before the request resolves, so a
+failed capture loses the message the toast invites you to retry).
+
+**Process note:** a concurrent Claude session was editing this repo mid-run — four harness files rewritten under
+this session, `test-results/` wiped, and the shared Supabase test user briefly deleted. It invalidated one full E2E
+run (15 spurious failures) before it was spotted. Worth a rule: don't run two sessions against this repo, because
+they share one Supabase test household.
+
 ## Session 37 — 2026-07-25 (QA-process hardening + the harness ported to FFOS)
 
 Infrastructure session, no product work. Ran the five tasks from

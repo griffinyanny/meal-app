@@ -209,6 +209,99 @@ test("OB10 - the tray itemizes what free text surfaced beyond the pills", async 
   await expect(tray).not.toContainText("Added Thai to your cuisines");
 });
 
+test("OB11 - free text about something else never answers the question on screen", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  // Says nothing about diet. The write still creates the preferences row, whose
+  // dietary_framework column defaults to "omnivore" — so a screen that trusted
+  // the row would light "No restrictions" over an unanswered question. Caught
+  // on the real model in the Layer-B capture, invisible to the mock fixture.
+  await page.getByTestId("onboarding-tell-me-input").fill("we do taco night every Tuesday");
+  await page.getByTestId("onboarding-tell-me-send").click();
+
+  await expect(page.getByTestId("onboarding-caught-tray")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("onboarding-option-omnivore")).toHaveAttribute(
+    "aria-pressed",
+    "false"
+  );
+  // Still unanswered, so there is nothing to confirm yet.
+  await expect(page.getByTestId("onboarding-confirm")).toBeHidden();
+});
+
+test("OB12 - a spoken correction beats an earlier tap, and is what gets saved", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  await page.getByTestId("onboarding-option-pescatarian").click();
+  // Then change their mind out loud. The chef applied it; the screen has to
+  // agree, and the confirm has to persist the correction rather than the tap.
+  await page.getByTestId("onboarding-tell-me-input").fill("actually we are not pescatarian");
+  await page.getByTestId("onboarding-tell-me-send").click();
+
+  await expect(page.getByTestId("onboarding-option-omnivore")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+    { timeout: 20_000 }
+  );
+  // Exactly one answer is lit — two would make the confirm a coin flip.
+  await expect(page.getByTestId("onboarding-option-pescatarian")).toHaveAttribute(
+    "aria-pressed",
+    "false"
+  );
+
+  await confirm(page).click();
+  await expect(page.getByText("Anything I should never cook with?")).toBeVisible();
+  await page.getByTestId("onboarding-pass").click();
+  await expect(page.getByText("How much time on a weeknight?")).toBeVisible();
+  await page.getByTestId("onboarding-option-30").click();
+  await confirm(page).click();
+  await page.getByTestId("onboarding-deepen-no").click();
+  await page.getByTestId("onboarding-build-plan").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  const saved = await readOnboardingResult();
+  expect(saved.dietaryFramework).toBe("omnivore");
+});
+
+test("OB13 - a retracted allergy does not come back on confirm", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+  await page.getByTestId("onboarding-option-pescatarian").click();
+  await confirm(page).click();
+
+  await expect(page.getByText("Anything I should never cook with?")).toBeVisible();
+  await page.getByTestId("onboarding-tell-me-input").fill("I'm allergic to peanuts");
+  await page.getByTestId("onboarding-tell-me-send").click();
+  await expect(page.getByTestId("onboarding-option-peanuts")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+    { timeout: 20_000 }
+  );
+
+  // Take it back. Over-restricting is the safer error direction, but it still
+  // contradicts the user's last word on the one screen built for trust.
+  await page.getByTestId("onboarding-tell-me-input").fill("actually remove peanuts");
+  await page.getByTestId("onboarding-tell-me-send").click();
+  await expect(page.getByTestId("onboarding-option-peanuts")).toHaveAttribute(
+    "aria-pressed",
+    "false",
+    { timeout: 20_000 }
+  );
+});
+
 test("OB8 - the deep round is adaptive and always offers a way out", async ({ page }) => {
   await seedOnboardingState("ONBOARDING_NEW");
   await page.goto("/welcome");

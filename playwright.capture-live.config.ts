@@ -39,7 +39,10 @@ export default defineConfig({
     {
       name: "capture-live",
       dependencies: ["setup"],
-      testMatch: /plan-live\.capture\.ts$/,
+      // Every Layer-B capture, one per surface. Pass a file path to run just
+      // one tab's live capture — each state here is real OpenAI spend, so the
+      // per-tab backlog is meant to be cleared deliberately, not all at once.
+      testMatch: /-live\.capture\.ts$/,
       use: { storageState: STORAGE_STATE_PATH, deviceScaleFactor: 2 },
     },
   ],

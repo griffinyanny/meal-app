@@ -58,9 +58,6 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
           Let&apos;s get started
           <ArrowRight className="size-[18px]" strokeWidth={2.2} />
         </button>
-        <p className="m-0 text-center text-[12.5px] leading-[1.4] text-[#6B6B72]">
-          Tap an answer, or just tell me in your own words. Your call on every question.
-        </p>
         <button
           type="button"
           onClick={onSkipAll}

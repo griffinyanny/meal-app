@@ -97,10 +97,12 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
       babyCount: "Babies under 2 stepper reads 1",
       babyNote:
         "amber note revealed: 'I'll flag first-foods textures and skip choking hazards for the little one.'",
-      stageChips:
-        "three stage chips inside that note — Under 6 months / 6 to 12 months / 12 to 24 months — with '6 to 12 months' selected",
-      servingsUnchanged:
-        "'I'll cook for 2 servings.' — a 6-to-12-month-old eats adapted bites, not a portion",
+      stageProposed:
+        "'6 to 12 months' is ALREADY selected — this is the first frame after tapping +, with nothing else tapped. The note narrates that assumption, so the chips read as a correction rather than a second, blank question ('AI proposes, user reacts')",
+      servingsExplained:
+        "'I'll cook for 2 servings, plus bites for the little one.' — the count deliberately doesn't move for a 6-to-12-month-old, and says why, so an unchanged number doesn't read as a tap that failed to register",
+      noShift:
+        "the steppers above have NOT moved from ob-household; the note grows downward into the slack",
       tasteQuestion: "does this read as one extra tap, or as a form growing under you?",
     },
     prepare: firstRun,
@@ -108,7 +110,6 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
       await gotoHousehold(page);
       await page.getByRole("button", { name: "One more babies under 2" }).click();
       await expect(page.getByTestId("onboarding-baby-stage")).toBeVisible();
-      await page.getByTestId("onboarding-baby-stage-6_to_12m").click();
     },
   },
   {
@@ -161,6 +162,46 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
     navigate: gotoRestrictions,
   },
   {
+    id: "ob-safety-selected",
+    briefRef: "Onboarding — a CHOSEN allergen carries the You tab's red weight, not the blue accent",
+    readyText: "Anything I should never cook with?",
+    facts: {
+      redSelection:
+        "Shellfish selected and rendered red, distinct from every unselected chip AND from a selected diet chip",
+      whyItMatters:
+        "the next screen recaps these same items in red; a blue allergen would lose the one distinction this screen exists to make",
+      confirm: "'That's everything' appears once something is selected",
+    },
+    prepare: firstRun,
+    navigate: async (page) => {
+      await gotoRestrictions(page);
+      await page.getByTestId("onboarding-option-shellfish").click();
+      await expect(page.getByTestId("onboarding-confirm")).toBeVisible();
+    },
+  },
+  {
+    id: "ob-diet-typed-pill",
+    briefRef: "Onboarding — free text lights the matching pill (the tray stays silent about it)",
+    readyText: "How do you eat?",
+    facts: {
+      litPill: "Vegan selected, by typing alone — no tap happened",
+      noTray:
+        "the 'what I caught' tray is ABSENT: the pill already says it, and the locked design forbids restating it",
+      confirm: "the confirm appears, so a typed answer is a complete path",
+    },
+    prepare: firstRun,
+    navigate: async (page) => {
+      await gotoDiet(page);
+      await page.getByTestId("onboarding-tell-me-input").fill("we are going vegan");
+      await page.getByTestId("onboarding-tell-me-send").click();
+      await expect(page.getByTestId("onboarding-option-vegan")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+        { timeout: 20_000 }
+      );
+    },
+  },
+  {
     id: "ob-weeknight",
     briefRef: "Onboarding — core turn 4, weeknight time (two-column cards)",
     readyText: "How much time on a weeknight?",
@@ -177,8 +218,8 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
     briefRef: "Onboarding — state 4a, the opt-in gate for the adaptive deep round",
     readyText: "Want to go a little deeper?",
     facts: {
-      eyebrow: "'THAT'S THE ESSENTIALS'",
-      honestBothWays: "copy says the plan is good now AND that more makes it better",
+      eyebrow: "'THAT'S THE ESSENTIALS' beside the ember chef mark — the chef is visibly present on the one screen where it asks for more of your time",
+      honestBothWays: "copy says the plan is good now AND that more makes it better, in two lines",
       declineIsEqual:
         "'Just build my week' is a full-width button beside the accept, not a hidden link",
     },

@@ -1,5 +1,18 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S37)
+
+- **[pre-monetization / native-build] Experimentation + A/B testing platform (pricing first)** — Griffin (S37):
+  as the iOS native build productionalizes, he wants to run A/B tests, **primarily pricing tests** (price points,
+  trial length, paywall placement/copy, free-vs-paid boundary). Assumes a **third-party vendor**, not homegrown.
+  Needs a design pass on *which vendor* and *how it integrates* (flag evaluation on the server/tRPC layer vs. client,
+  exposure logging, how assignment survives web ↔ native, how it ties to the analytics already planned for 1F).
+  **Two distinct needs, don't conflate:** (1) generic feature flags / experiments, (2) *subscription price* tests,
+  which on iOS are constrained by StoreKit — you test among App Store price points, you don't set arbitrary prices,
+  and you need a subscription layer that can assign + report on them. Depends on the **LLM cost-per-user model**
+  (S35 row below) — the price floor has to exist before testing around it. Ties to the **Monetization Details**
+  open question. **Trigger to pick this up:** when the paywall/subscription work is actually scoped, not before.
+
 ## Incoming (S36)
 
 - **[V1.5] Per-person meals within one dinner** — Griffin (S36): "need to think about if babies/kids are eating the

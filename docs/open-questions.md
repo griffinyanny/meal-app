@@ -117,6 +117,8 @@ documented public-read / service-role-write exception)?
 - **Is grocery-store integration (Instacart / Kroger / other) a hard requirement to justify the price** — or can we charge on the planning/list intelligence alone? (Ordering is V2 today; this asks whether monetization is gated on pulling it forward.)
 - **Cost-per-user must sit below the price with margin.** Requires the LLM cost-per-user model (idea-backlog, S35) so a heavy user can't run us negative — the abuse ceiling. Pricing can't be set until that number exists.
 - Free vs. paid split, trial length, and the freemium boundary all sit downstream of the two questions above.
+- **How do we test any of this?** Griffin (S37) wants pricing A/B tests once the native build productionalizes —
+  third-party vendor, not homegrown. Vendor choice + integration design is its own piece of work (idea-backlog, S37).
 
 **Status**: Deferred to the post-MVP gate (after R1 validates the core loop) — but the sub-questions above are the actual work, and they depend on the cost model + a call on ordering-as-gate. Reference: `reference/meal-app-pricing-research.md`.
 **Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**

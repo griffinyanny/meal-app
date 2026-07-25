@@ -37,6 +37,34 @@ function added(before: string[], after: string[] | undefined): string[] {
   return after.filter((a) => !seen.has(a.toLowerCase()));
 }
 
+// Which typed fields a message SPOKE TO, read off the ops rather than off the
+// diff. The two differ in a way that matters: setting a field to the value it
+// already holds produces no diff, and `dietary_framework` defaults to
+// "omnivore", so "actually, we're not pescatarian" — a real correction, said
+// out loud — would otherwise register as nothing happening and the screen would
+// keep the answer the user had just retracted.
+const FIELD_BY_OP: Record<string, keyof PreferenceSnapshot> = {
+  set_diet: "dietaryFramework",
+  add_avoid: "restrictions",
+  remove_avoid: "restrictions",
+  add_dislike: "dislikes",
+  remove_dislike: "dislikes",
+  add_cuisine: "cuisinePreferences",
+  remove_cuisine: "cuisinePreferences",
+  set_household: "householdSize",
+  set_weeknight: "maxCookTimeWeeknight",
+  set_weekend: "maxCookTimeWeekend",
+};
+
+export function fieldsTouchedBy(ops: Array<{ kind: string }>): string[] {
+  const fields = new Set<string>();
+  for (const op of ops) {
+    const field = FIELD_BY_OP[op.kind];
+    if (field) fields.add(field);
+  }
+  return [...fields];
+}
+
 export function describeCaught(
   before: PreferenceSnapshot,
   after: Partial<PreferenceSnapshot>,

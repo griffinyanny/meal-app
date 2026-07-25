@@ -1,8 +1,64 @@
 # What's Next
 
-Last updated: 2026-07-25 (Session 37)
+Last updated: 2026-07-25 (Session 38)
 
-## ⚠️ S37 was infrastructure, not product — the 1E close below is STILL the next product step
+## ▶ NEXT SESSION — 1E's three gates are CLEARED. The only thing left is **Griffin's taste pass**.
+
+**Done S38:** `/visual-qa` (0 blockers / 0 high, 3 rounds + the ux-design-critic pass), the first onboarding
+**Layer B** real-model capture, and `/code-review` across four lenses. **449 unit + 75 E2E green**, lint + typecheck
+clean. The onboarding capture harness is new this session — `/visual-qa` had no coverage for this surface at all.
+Final captures: `tests/e2e/captures/A-onboarding-2026-07-25T17-33-21-019Z/` (+ `critique.md`).
+
+### Griffin's taste pass — the four calls
+1. **The baby-stage follow-up** (the deliberate addition to the locked design). It now arrives *pre-selected* at
+   6-12 months with the amber note narrating the assumption, so the chips read as a correction rather than a second
+   blank question. Does it feel like one extra tap, or like a form growing under you?
+2. **The reflect hook.** Core-only completions used to fall through to a generic line; every branch now names a
+   plate ("seared salmon with green beans that get some real char"), guarded so it can never name a food you just
+   told it to avoid. Cook with a point of view, or receipt?
+3. **Four deep questions.** Tunable via four numbers in `src/lib/onboarding/planner.ts`; re-run
+   `scripts/1e-onboarding-planner-eval.ts` after changing any of them.
+4. **The dinners stepper / lunch + breakfast toggles are still absent** from the hand-off (R1 generates dinners
+   only, so they would be dead controls). Sanity-check that omission.
+
+### ⚠️ Two fixes recommended BEFORE you and your wife run the interview for real
+The interview fires **exactly once per account** — both complete and skip set `onboardingCompletedAt`, and
+re-running is out of 1E scope. A half-saved first run is not recoverable by the user.
+- **BUG-016** 🔴 — a failed preference save is silent, and the reflect screen still says "All saved."
+- **BUG-014** 🟠 — typed text is cleared before the request resolves, so a failed capture loses the very message the
+  error toast invites you to retry.
+
+Seven more review findings are logged as BUG-010…BUG-018 in `docs/bug-tracker.md`; none block the taste pass.
+
+### When the taste pass lands
+**1E closes → M5 done**, then open **1E.5 (Plan Design Buildout)**.
+
+**⭐ Model recommendation: Opus 4.8** — the taste pass is judgement plus small copy/UX edits, not new architecture.
+If you'd rather have BUG-016/014 fixed first, that's also 4.8 work (two contained error paths plus their specs).
+
+**Copy-paste kickoff prompt (taste pass):**
+```
+Resume meal app — 1E's three gates are cleared (visual-QA 0 blockers/0 high, Layer B run, code review done; 449
+unit + 75 E2E green). Read docs/whats-next.md, docs/scope-v1.md, docs/scope-1E.md first, then give me the ≤6-line
+scope check. Start by fixing BUG-016 and BUG-014 (silent save failure + typed text lost on error) — the interview
+fires once per account and I'm about to run it for real. Then walk me through the taste pass: pull up the final
+captures in tests/e2e/captures/A-onboarding-2026-07-25T17-33-21-019Z/ and give me your own read on the baby-stage
+follow-up, the reflect hook, and whether 4 deep questions is the right depth, before I give mine. When my taste
+pass lands, 1E closes → M5 done and we open 1E.5 (Plan Design Buildout). On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather not spend this session on taste):
+```
+Resume meal app — 1E is machine-complete and waiting only on my taste pass. Skip that this session and burn down
+the S38 code-review findings instead: BUG-016 and BUG-014 first, then BUG-011 (householdSize/composition desync
+putting two contradictory numbers in the same chef prompt) and BUG-012 (the You tab saying "4 adults" for 2 adults
++ 2 children). Read docs/whats-next.md + docs/bug-tracker.md first, give me the ≤6-line scope check, and keep the
+E2E suite green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S37 was infrastructure, not product (superseded by S38 above)
 
 Session 37 ran the QA-process hardening plan (`~/.claude/plans/qa-process-hardening-and-ffos-port.md`)
 and did no product work. What changed under you:
