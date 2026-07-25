@@ -1,52 +1,74 @@
 # What's Next
 
-Last updated: 2026-07-22 (Session 33)
+Last updated: 2026-07-24 (Session 36)
 
-## ▶ NEXT SESSION — 1E You audit surface BUILT + verified (S33). Only the onboarding interview (#4) remains, and it's DESIGN-GATED. Next move: design + build #4 to CLOSE 1E.
-**The You-tab audit surface is built, verified, and on a branch pending Griffin's taste pass** (see the taste-pass
-handoff in the S33 wrap / changelog). Shipped: #1 shell + account, #2 hard-constraint direct edit, #3 memory ledger
-(+ `memory.deactivate`/`reactivate`), #5 capture confirmation + undo, #6 implicit surfaced/dismissible, and — Griffin's
-call — the design's hero, the **AI capture task `user.talk`** (`preferences-talk` prompt + `[N]` id-safety + pure
-`applyPreferencesTalkOps`). All three inspection gaps folded in. Verified: **363 unit + 62 E2E** (first You coverage
-Y1–Y9), **real-model safety eval 9/9 (0 safety failures)**, visual-QA (0 blockers/0 high vs Direction A), code review
-(no critical; 4 findings fixed). Files: `src/components/you/*`, `src/server/trpc/routers/{memory,user-talk}.ts`,
-`src/server/ai/{prompts,tasks}/preferences-talk.ts`, `tests/e2e/specs/you.spec.ts`, `scripts/1e-preferences-talk-eval.ts`.
+## ▶ NEXT SESSION — 1E #4 onboarding interview is BUILT. **Blocked on ONE Griffin action: refresh the Supabase service-role key** (BUG-007), then E2E + /visual-qa + your taste pass close 1E.
 
-**The next move: DESIGN then BUILD the onboarding interview (#4) — the last 1E feature.** It's the Pass-2 fast-follow
-(1 direction) that inherits this audit surface's memory vocabulary: a short, **skippable** chef-led first-run
-conversation that seeds `user_preferences` + ≥1 `sourceType:'onboarding'` memory, sets an onboarding-complete flag
-(small additive schema), and hands off to the first plan. The audit surface (the destination) is now built, so the
-on-ramp design is lower-novelty. **Design-gated: it needs its Claude Design pass before the build.** When #4 ships +
-its E2E lands, **1E closes → M5 done → only 1F (polish/production-readiness) left.**
+**Built and green this session (S36):** the whole onboarding interview — household-composition schema (+ migration `0006`,
+applied), the deterministic **deep-round stopping policy** + its 6-persona eval, the full one-model-per-screen flow
+(ember chef presence, 4-question core, adaptive deep round, opinionated reflect), the first-run gate, the
+`sourceType:'onboarding'` memory writes, and the pre-seeded Plan hand-off (door #3). **437 unit tests green** (+74),
+**planner eval 6/6**, lint + typecheck clean.
 
-**Reusable capture backend already exists:** `user.talk` (NL → typed prefs/memory ops with the SAFETY-eval'd prompt)
-is the same machinery the interview needs — the interview is a guided front-end over it (ask ≤4 questions, feed answers
-through the capture path, write an `onboarding` memory). So #4 is mostly the conversational UI + a distill/seed step +
-the flag, not new AI infrastructure.
+### ⛔ THE BLOCKER — Griffin, ~2 minutes (BUG-007)
+Supabase now rejects the `service_role` key in `.env.local`: `403 bad_jwt — unrecognized JWT kid <nil> for algorithm
+ES256`. The project's JWT signing keys were migrated to asymmetric, which revokes the legacy JWT-format key. **This is
+not a code defect** — the same key worked earlier in S36, the anon key and REST still work, and only the auth-admin API
+rejects it. But `auth.setup.ts` mints the test session through that API, so **all 70 E2E specs fail to run**, and
+`/visual-qa` is blocked too (same storageState).
 
-**Carried, non-blocking:** owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar on a
-phone) + the You-tab taste pass from S33. **BUG-005** (app-wide `font-sans`→serif in the capture) — confirm on-device;
-if real, a one-line 1F fix. **BUG-003** (recipe.list harvest). Fold into 1F polish.
+**Fix:** Supabase dashboard → Settings → API → copy the current secret/service key (with asymmetric JWTs it's the new
+`sb_secret_…` format) → set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` → `npm run test:e2e`. Only
+`tests/e2e/harness/supabase-session.ts` consumes it. Verify with:
+```
+set -a; . ./.env.local; set +a
+curl -s "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/admin/users?page=1&per_page=1" \
+  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+```
+200 = fixed.
 
-**⭐ Model recommendation: Opus 4.8** for the #4 design-brief + build — the onboarding flow is a conversational-AI
-surface (distill answers → seed prefs/memory reliably, skip logic, first-plan handoff) where capture quality matters,
-and it reuses the safety-critical `user.talk` path. (If you'd rather just do the carried polish / font fix / taste-pass
-triage instead, that's light enough for Sonnet 5.)
+### Then, to close 1E
+1. `npm run test:e2e` — **OB1–OB8 are written but have never run.** They cover both required paths (complete + skip),
+   the first-run gate, the mic toast, and the adaptive round, asserting all the way to the database.
+   ⚠️ One thing to watch: a harness bug I found and fixed but could not verify — the new first-run gate was redirecting
+   **every** spec to `/welcome`, because the test user's `onboardingCompletedAt` was NULL. `auth.setup.ts` now stamps
+   the default identity as already-onboarded and `onboarding.spec.ts` restores that default in `afterAll`. If specs
+   still bounce to `/welcome`, that's where to look.
+2. `/visual-qa` against the locked design.
+3. **Griffin's taste pass** (scope below).
+4. `/code-review` — not yet run on this build.
 
-**Copy-paste kickoff prompt (Phase 1E close — onboarding interview #4, DESIGN-FIRST):**
-> Resume meal app. **The You-tab audit surface is built + verified (S33); only the onboarding interview (#4) remains to
-> close Phase 1E, and it's design-gated.** Read `docs/whats-next.md`, `docs/scope-1E.md`, `docs/scope-v1.md`, and
-> `docs/design/surfaces/you/brief.md` first, then give me the ≤6-line scope check. Then **design the onboarding
-> interview (Pass 2, 1 direction)** — write `docs/design/surfaces/onboarding/brief.md` (a short, skippable chef-led
-> first-run conversation that seeds `user_preferences` + an `onboarding` memory and hands off to the first plan,
-> inheriting the audit surface's vocabulary) and give me the Claude Design kickoff prompt. **Don't build until I've run
-> the design pass and picked a direction.** Note the `user.talk` capture backend already exists — the interview is a
-> guided front-end over it. On Opus 4.8.
+### For your taste pass (once it runs)
+- **The one deliberate addition to the locked design:** a **baby-stage follow-up** (Under 6 months / 6-12 / 12-24)
+  that appears only when babies > 0, inside the amber note the design already reveals. Your call was that servings
+  "depends on the baby's age" — this is how that got captured. Does it read as one extra tap or as a form?
+- **The reflect screen's opinionated hook** ("I'm already picturing blistered shishitos and a chili-crisp salmon") —
+  does it sound like a cook or like a receipt?
+- **The deep round** — 4 questions for an engaged user. Too many? Too few? The policy is four tunable numbers in
+  `src/lib/onboarding/planner.ts`; re-run the eval after changing them.
+- **Deviation to sanity-check:** the hand-off screen's **dinners stepper + lunch/breakfast toggles were NOT built.**
+  R1 generates dinners only (`mealType` is hardcoded), so those controls would have done nothing. The hand-off is the
+  real Plan intent screen, pre-seeded with your chips + request.
 
-*(Build-independent alt: if you'd rather not wait on a design pass, triage the carried polish instead — confirm
-**BUG-005** (font/serif) on-device and one-line-fix it if real, burn down the owed taste passes (Groceries/Recipes),
-and look at **BUG-003**. Same kickoff, swap the ask for "do the carried 1F polish + bug triage; leave onboarding for a
-design pass." On Sonnet 5.)*
+### Carried, non-blocking
+Owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar on a phone) + the You-tab taste pass
+from S33. **BUG-005** (`font-sans`→serif; confirm on-device, 1F). **BUG-003** (recipe.list harvest). **BUG-006**
+(expanded meal sheet → 1E.5).
+
+**⭐ Model recommendation: Opus 4.8** — the close-out is verification and judgement (reading E2E failures, visual-QA
+critique, taste iteration on copy), not fresh architecture. If the key is fixed and everything runs clean first try,
+Sonnet would carry the doc updates fine.
+
+**Copy-paste kickoff prompt (1E close — unblock E2E, then verify):**
+> Resume meal app — the 1E onboarding interview (#4) is BUILT; close the phase. **First: BUG-007** — I've refreshed
+> `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; verify the auth-admin API returns 200, then run `npm run test:e2e`.
+> **OB1–OB8 have never run** (written S36), so expect real failures — fix them. Watch specifically for specs bouncing
+> to `/welcome` (the first-run gate; `auth.setup.ts` now stamps the test user onboarded and `onboarding.spec.ts`
+> restores it in `afterAll` — unverified). Then `/visual-qa` against the locked design, then `/code-review` (not yet
+> run on this build), then hand me the taste pass — call out the **baby-stage follow-up** (my addition to the locked
+> design), the reflect hook's voice, and whether 4 deep questions is the right depth. Read `docs/whats-next.md`,
+> `docs/scope-v1.md`, `docs/scope-1E.md`, `docs/bug-tracker.md` (BUG-007) first, then give me the ≤6-line scope check.
+> When E2E + visual-QA + my taste pass land, **1E closes → M5 done**, then 1E.5. On Opus 4.8.
 
 ## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
 - **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review

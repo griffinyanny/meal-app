@@ -1,5 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
 import { userPreferences, aiMemories } from "@/server/db/schema/memory";
+import type { HouseholdComposition } from "@/lib/household";
 import type { getDb } from "@/server/db";
 
 type Db = ReturnType<typeof getDb>;
@@ -9,6 +10,10 @@ export interface ChefMemoryContext {
   restrictions: string[];
   dislikedFoods: string[];
   householdSize: number;
+  // Who those servings are FOR (Phase 1E). Undefined for households that
+  // predate the onboarding interview or never answered — buildUserContext then
+  // falls back to the plain servings line.
+  householdComposition?: HouseholdComposition;
   maxCookTimeMinutes: number;
   memories: string[];
 }
@@ -49,6 +54,8 @@ export async function getChefContext(
     ),
     dislikedFoods: (prefs?.dislikes as string[] | null) ?? [],
     householdSize: prefs?.householdSize ?? 2,
+    householdComposition:
+      (prefs?.householdComposition as HouseholdComposition | null) ?? undefined,
     maxCookTimeMinutes: prefs?.maxCookTimeWeeknight ?? 45,
     memories: memories.map((m) => m.content),
   };

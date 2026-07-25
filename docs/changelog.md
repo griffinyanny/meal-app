@@ -4,6 +4,116 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 36 — 2026-07-24 (Phase 1E #4 onboarding interview BUILT — 1E closes, M5 done)
+
+### What happened
+The build session for the last 1E feature. Design was locked (1D) coming in, so this was execution against the
+build spec plus the two dependencies it flagged.
+
+**1. `/architect` pass on the household-composition schema — and a real conflict surfaced.** The brief's schema note
+said per-member age arrays (`children[ageYears]`), but the **locked design captures three band COUNTS** (Adults /
+Children 2-12 / Babies under 2) with no age-entry UI. Griffin ratified **band counts** (match the locked design;
+V1.5 Family Member Profiles extends the same JSONB with an optional `members` array — additive, no breaking
+migration).
+
+**2. Griffin reframed the servings question rather than picking a side.** Asked whether babies count toward
+`householdSize`, he pushed back: it depends on the baby's age — past ~6 months they're increasingly eating part of
+the adult meal. That's right, and "babies under 2" is too coarse to act on. Resolution built:
+- A **conditional baby-stage follow-up** (Under 6 months / 6-12 months / 12-24 months) appears only when
+  `babies > 0`, inside the amber note the design already reveals. **This is a deliberate addition to the locked
+  design** — flagged for the taste pass.
+- Serving rule follows the stage: under 6m → 0 (milk, no meal impact); 6-12m → 0 servings but the chef is told to
+  include a soft, unsalted, hazard-free portion from the same dish; 12-24m → counts toward `householdSize`.
+  Griffin's own household (2 adults + baby) derives to 2, matching the old default — no regression.
+- **Scope assumption stated:** R1 plans ONE meal per slot and tells the chef how to adapt a portion. Separate kid
+  meals = multiple recipes per slot = a schema change, logged to the backlog as V1.5.
+
+**3. The deep-round stopping policy, built as its own tunable task with an eval.** Deliberately **deterministic, not
+a per-question model call** — onboarding is the most latency-sensitive moment in the app, and a model call between
+every screen would buy question-ordering at the cost of seconds of dead air. A scored bank (`value × novelty ×
+fatigue^asked`) with four tunable knobs: hard cap 5, `minValue`, fatigue decay, and a consecutive-low-signal stop.
+`scripts/1e-onboarding-planner-eval.ts` runs six personas. **The eval earned its keep on first run:** at
+`minValue 0.42` a vegan got a *shallower* interview (3 questions) than an omnivore (4), purely because the
+suppressed protein question left the threshold sitting on a cluster of tail values. Tuned to 0.38 → **6/6 pass**,
+every engaged persona gets 4.
+
+**4. Built the flow** to the locked design in real components: ember chef presence (reduced-motion honored), the
+one-model-per-screen turn (tap answers on top, text field below routed through the existing `user.talk` — no new AI
+infra), the "what I caught" tray, the 4-question core, the adaptive deep round with value meter, the opinionated
+reflect, and the hand-off. `user.talk` gained a `sourceType` param so interview captures stamp `onboarding` rather
+than `explicit` (the build delta the brief called out).
+
+**5. Two self-caught bugs during the build** (worth recording, both would have been quiet):
+- `answerDeep` ran a side effect inside a `setState` updater — double-invoked under StrictMode.
+- Free-text answers never merged back into local interview state, so answering "we're pescatarian" by *typing*
+  would leave the reflect screen, the synthesized memory, and the planner blind to it. Now refetches preferences
+  after each capture.
+
+### Decisions
+- Household composition = **band counts** `{adults, children, babies, babyStage}`, `householdSize` derived
+  server-side (composition is authoritative when sent). Ratified by Griffin.
+- Baby stage drives both cooking guidance and the serving count (see above).
+- Onboarding-complete flag = `users.onboardingCompletedAt`, read via the `ensureOnboarded` call `OnboardGuard`
+  already makes → the first-run gate costs **no extra round-trip**. Both complete AND skip stamp it.
+- **No backfill for existing users** — Griffin: "the accounts mean nothing right now." He and his wife will see the
+  interview on next load, which doubles as the real-user test.
+- Deep-round planner is deterministic (rationale above); AI planner can replace `pickNext()` behind the same
+  interface later without touching the flow.
+- Interview persists **per question**, not in one batch at the end — abandoning halfway still leaves the chef
+  knowing what it was told, and the reflect screen's "all saved" is honest.
+- **Deviation from the locked design, flagged:** the plan-setup screen's dinners stepper and lunch/breakfast toggles
+  were NOT built. R1 generates dinners only (`mealType: "dinner"` is hardcoded); shipping toggles that do nothing
+  would be worse than omitting them. The hand-off is the real Plan intent screen, pre-seeded (door #3, as specified).
+
+### Verification
+- **432 unit tests green** (+69: household derivation/notes, planner + stopping policy, synthesis, onboarding
+  router, chef-context composition rendering).
+- **Planner eval 6/6 personas.**
+- Migration `0006` generated + applied.
+- E2E: OB1-OB8 added (`tests/e2e/specs/onboarding.spec.ts`) covering **both required paths** (complete + skip), the
+  first-run gate, the mic's "coming soon" answer, and the adaptive round. Assertions go to the database, not just
+  the UI.
+
+---
+
+## Session 35 — 2026-07-24 (Phase 1E #4 onboarding — design LOCKED (1D); 1E.5 formalized; color exploration kicked off)
+
+### What happened
+Design + planning session (no build). Three threads:
+
+**#4 onboarding interview — design LOCKED to direction 1D "Talk it through."** Iterated in Claude Design with Griffin
+across several passes (1A one-per-screen structured / 1B stacked-chat foil, rejected / 1C ambient orb, "felt like a
+tech app" → **1D**, the merge: 1C's aliveness + chef warmth via an ember/steam presence + 1A's app-explainer
+clarity). The blend problem (voice vs tap reading as "two apps") was solved into **one model per screen**: tappable
+answers on top, a bottom "or just tell me" field, a "what I caught" tray that shows only what free-text adds beyond
+the pills. Griffin's build calls this session:
+- **Mic-as-text for R1.** The bottom field is a TEXT input (routes through `user.talk`); the mic icon stays for the
+  feel but fires a "voice coming soon" toast. Dictation/STT deferred (out of R1 — open-questions S35).
+- **Weeknight cook-time is a core question, not optional.** Core = 4 (household composition · diet · allergies ·
+  weeknight time), then an adaptive opt-in deep round (value-meter + one-tap "I'm good for now").
+- **Deep-round stopping policy = a tunable build task** (planner over the question bank + a "learned enough" cutoff
+  + hard cap; needs an eval).
+- **Household captured as composition + ages** (9-mo vs 3-yr vs 16 = different prep/taste profiles) → a new build
+  dependency (an `/architect` pass; R1 recommendation + V1.5 deferral logged in open-questions).
+- **Reflect reads like an opinionated cook**; hand-off = the **pre-seeded Plan intent modal** (door #3), not a
+  bespoke screen; reduced-motion honored.
+Recorded the lock: `surfaces/onboarding/brief.md` rewritten as the build spec; scope-1E #4 → design-LOCKED /
+build-pending; onboarding-depth open question resolved; decisions.md entry added.
+
+**Phase 1E.5 "Plan Design Buildout" formalized into the spine** (from the S34 proposal) — a full all-states Plan
+rebuild in Claude Design, **must ship before 1F** (Plan is the only core surface never mocked in the Claude Design
+system-of-record). See scope-v1 change log + idea-backlog.
+
+**Color/palette exploration kicked off** (Claude Design, this session, continuing). The amber+blue that emerged in
+onboarding (amber = chef presence/warmth, blue = action) is provisional; palette **locks in 1F** but is being
+explored now so 1E.5 stays compatible. Open question logged (food-right warmth, complementary-yet-distinct pairings,
+category distinctness).
+
+### Next
+Build #4 in a parallel session (Opus) — it's the 1E close. Color exploration continues in the design session.
+
+---
+
 ## Session 33 — 2026-07-22 (Phase 1E You audit surface BUILT — features #1/#2/#3/#5/#6 + first You E2E)
 
 ### What happened

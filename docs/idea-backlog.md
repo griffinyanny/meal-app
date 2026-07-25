@@ -1,5 +1,18 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S36)
+
+- **[V1.5] Per-person meals within one dinner** — Griffin (S36): "need to think about if babies/kids are eating the
+  same meals as adults and how to handle that." R1 deliberately plans ONE meal per slot and tells the chef to adapt a
+  portion (texture, salt, hazards). True separate kid meals need multiple recipes per slot = a schema change. Belongs
+  with **V1.5 Family Member Profiles**, alongside per-member preference sets.
+- **[V1.5] Per-member ages + preference profiles** — the `householdComposition` JSONB is shaped to take an optional
+  `members` array additively (decided S36), so this lands without a breaking migration.
+- **[1F] Onboarding palette consolidation** — the interview introduced an amber chef-presence register
+  (`.ember-*` in globals.css) beside the app's blue actions. Provisional by design; the 1F design-system pass settles it.
+- **[Post-1E] AI deep-round planner** — the stopping policy is deterministic for latency reasons (decisions.md S36).
+  If question ordering ever feels rigid, an AI planner can replace `pickNext()` behind the same interface.
+
 This is the living backlog of ALL ideas — from initial planning, from sessions, from research, from anywhere. Ideas never get deleted from here. They get slotted into a phase, marked as deprioritized (with reason), or left as unphased for future consideration.
 
 **How this works:**

@@ -4,6 +4,68 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-24 (S36) — Household composition: band counts, and a baby's STAGE drives servings
+
+**Decision.** `user_preferences.householdComposition` stores three band **counts** plus one stage:
+`{adults, children, babies, babyStage}`. `householdSize` stays as the derived total every existing
+consumer already reads, computed server-side (composition wins when both are sent).
+
+**Why counts, not per-member ages.** The brief's schema note said `children[ageYears]`, but the
+**locked design (1D) captures three stepper counts with no age-entry UI**. Storing arrays the UI can
+never populate means fabricating or null-filling data. V1.5 (Family Member Profiles) extends the same
+JSONB with an optional `members` array — additive, no breaking migration. Griffin ratified.
+
+**Why a baby stage.** Asked whether babies count toward servings, Griffin declined the binary: it
+depends on the baby's age, since past ~6 months they increasingly eat part of the adult meal. He's
+right, and "under 2" is too coarse to act on. So a **conditional follow-up** (Under 6 months / 6-12 /
+12-24) appears only when `babies > 0`, and the rule follows the stage:
+- **under 6m** → 0 servings, chef told to plan the adult meals normally (milk only).
+- **6-12m** → 0 servings, but the chef is told to note a soft, unsalted, hazard-free portion from the
+  same dish.
+- **12-24m** → counts toward `householdSize` (they eat the family meal at a smaller portion).
+
+Griffin's own household (2 adults + baby) derives to 2 — matching the previous default, no regression.
+**This follow-up is an addition to the locked design** and is flagged for his taste pass.
+
+**Related scope call.** R1 plans **ONE meal per slot** and tells the chef how to adapt a portion for
+the little ones. Separate kid meals would mean multiple recipes per slot — a schema change, deferred to
+V1.5 (logged in idea-backlog).
+
+**Onboarding-complete flag** lives on `users.onboardingCompletedAt` (not `user_preferences`, whose row
+is written lazily and may not exist pre-interview). It's read through the `ensureOnboarded` call
+`OnboardGuard` already makes, so the first-run gate costs no extra round-trip. **Both complete AND skip
+stamp it.** No backfill for existing users — Griffin: "the accounts mean nothing right now."
+
+## 2026-07-24 (S36) — The deep-round planner is deterministic, not a model call
+
+**Decision.** The adaptive deep round picks its next question with a pure scored bank
+(`value × novelty × fatigue^asked`) and stops on four tunable knobs: a hard cap, a minimum value, a
+fatigue decay, and a consecutive-low-signal cutoff. No AI call between screens.
+
+**Why.** Onboarding is the most latency-sensitive moment in the product. A model call between every
+question would buy question-ordering at the cost of seconds of dead air on a first run, plus cost and a
+failure mode at the worst possible time. Deterministic is instant, free, exactly reproducible — and
+that reproducibility is what makes the policy **tunable against an eval** rather than a vibe.
+
+**It earned this immediately.** `scripts/1e-onboarding-planner-eval.ts` runs six personas; on the first
+run it caught that a vegan got a *shallower* interview (3 questions) than an omnivore (4), purely
+because the suppressed protein question left the threshold sitting on a cluster of tail values.
+Retuned `minValue` 0.42 → 0.38; now 6/6 pass and every engaged persona gets 4.
+
+**Reversible.** An AI planner can replace `pickNext()` behind the same interface without touching the
+flow.
+
+
+**Onboarding interview (#4) — design LOCKED to direction 1D "Talk it through"** (2026-07-24, Session 35)
+- **One interaction model, not two.** Every question screen: tappable answers on top (primary), a bottom "or just tell me" field, and a "what I caught" tray that surfaces only what free-text adds beyond the pills. Satisfies both hard rules at once — AI-proposes/user-reacts (the pills) and not-chat-first (the field is a per-question escape, no thread). Resolves the "voice vs tap = two apps" tension that killed the earlier top-of-screen mode toggle.
+- **Mic-as-text for R1.** The bottom field is a TEXT input routed through the existing `user.talk` capture path; the mic icon stays for the feel but fires a "voice coming soon" toast. Real dictation/STT deferred (out of R1 — see open-questions "Dictation implementation approach"). Rationale: the tap+type path is fully functional with zero speech infra, so voice can't block the 1E close; dictation is an uncosted principle (unit-economics tie-in).
+- **Weeknight cook-time is a core question, not optional.** A first plan full of 90-min recipes for a 30-min cook is a bad first impression — too load-bearing to defer. Core = 4 (household · diet · allergies · weeknight time), then an adaptive opt-in deep round.
+- **Deep round is adaptive with a tunable stopping policy** (a build task w/ eval): probe as far as the user will go, but a "learned enough" threshold + hard cap so it never exhausts them. Value-progress framing ("the more you tell me, the better your plans get") + an always-present one-tap "I'm good for now."
+- **Household captured as composition + ages, not a count** — 9-mo vs 3-yr vs 16 are different prep/texture/portion profiles the chef must cook for. Schema shape is a build dependency (`/architect` pass; R1 recommendation = a flexible composition field, keep `householdSize` derived, defer full per-member *preference* profiles + conflict navigation to V1.5 Family Member Profiles). See open-questions.
+- **Hand-off = the pre-seeded Plan intent modal** (door #3 of the three Plan front doors), not a bespoke onboarding screen — one architecture.
+- **Palette (amber+blue) stays provisional — a 1F decision**, explored in parallel now (open-questions) so 1E.5 stays compatible; the #4 build keeps current tokens.
+- Direction history: 1A (one-per-screen structured), 1B (stacked chat foil — rejected, drifts to a chat log), 1C (ambient orb — "felt like a tech app"), **1D** (the merge: 1C's aliveness + chef warmth via an ember presence + 1A's clarity). Build spec: `design/surfaces/onboarding/brief.md`.
+
 **Ticketing / Linear adoption — deferred; trigger = in-app feedback capture generating real tickets** (2026-07-24, Session 35)
 - **Not adopting Linear (or any external tracker) yet.** The `docs/` system — `idea-backlog.md` (features), `open-questions.md` (decisions), `bug-tracker.md` (defects), `decisions.md` — is working and, critically, **Claude-legible**: Claude triages, cross-links, and closes items across these files every session. For a solo team that's most of what a tracker buys, without the overhead.
 - **The trigger to adopt Linear is a concrete event, not a feeling:** when the **in-app bug/feedback capture** (idea-backlog, S35) ships and a small beta starts generating **tickets from outside Griffin's own head.** That volume + the "an agent picks it up and fixes it" loop Griffin wants both need a real queue with an API — which is what Linear is for. Sequencing: **build the capture feature → that IS the Linear trigger.**

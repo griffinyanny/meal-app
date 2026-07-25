@@ -1,8 +1,15 @@
+import {
+  describeHousehold,
+  householdCookingNotes,
+  type HouseholdComposition,
+} from "@/lib/household";
+
 interface ChefContext {
   dietaryFramework?: string;
   restrictions?: string[];
   dislikedFoods?: string[];
   householdSize?: number;
+  householdComposition?: HouseholdComposition;
   maxCookTimeMinutes?: number;
   skillLevel?: string;
   memories?: string[];
@@ -49,6 +56,23 @@ export function buildUserContext(ctx: ChefContext): string {
     sections.push(
       `Default servings: ${ctx.householdSize} (scale to this unless told otherwise).`
     );
+  }
+
+  // Who those servings are for. Only added when there are kids or a baby —
+  // for an adults-only household the servings line above already says it all,
+  // and a redundant sentence is prompt noise. Ages drive prep, texture, and
+  // food safety, which is the whole reason composition is worth storing.
+  if (ctx.householdComposition) {
+    const roster = describeHousehold(ctx.householdComposition);
+    if (roster) {
+      sections.push(
+        [
+          `Cooking for ${roster}.`,
+          ...householdCookingNotes(ctx.householdComposition),
+          "Plan ONE dinner the household shares — adapt a portion of it rather than planning a separate meal for the little ones.",
+        ].join(" ")
+      );
+    }
   }
 
   if (ctx.maxCookTimeMinutes) {

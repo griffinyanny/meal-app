@@ -6,6 +6,14 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### ⛔ BUG-007 — Supabase service-role key rejected (blocks ALL E2E + visual-QA)
+**Not a question so much as a 2-minute action.** GoTrue returns `403 bad_jwt — unrecognized JWT kid <nil> for
+algorithm ES256` for every admin call, so the E2E harness can't mint its test session and all 70 specs fail to run.
+The project's JWT signing keys moved to asymmetric, revoking the legacy JWT-format key in `.env.local`. Refresh
+`SUPABASE_SERVICE_ROLE_KEY` from the dashboard (Settings → API; likely the new `sb_secret_…` format). Full repro +
+verification curl in `bug-tracker.md`. **This is what stands between #4 and 1E closing.**
+
+
 ### Ingredient-cache scoping — global vs household (BUG-004 #3, deferred to Phase E)
 **Question**: The follow-up ingredient cache (#3) is most valuable **global** (an onion normalizes the same for every
 household; item strings carry no PII), but a global table violates our drizzle-schema rule that every table has a
@@ -121,6 +129,14 @@ documented public-read / service-role-write exception)?
 **Status**: Deferred to the post-MVP gate (after R1 validates the core loop) — but the sub-questions above are the actual work, and they depend on the cost model + a call on ordering-as-gate. Reference: `reference/meal-app-pricing-research.md`.
 **Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**
 
+### Color / palette scheme — amber + blue, or something else (1F decision)
+**Question**: The onboarding pass surfaced an **amber-plus-blue** palette layered on the existing dark system — amber (ember/`#E8944A`/`#F2B279`) as the **chef-presence / warmth** signal (orb, eyebrows, value-meter), blue (`#3A86FF`) as the **action** color (CTAs). Is amber+blue the right scheme for the app, or does the palette want a rethink?
+- **Semantic split is the strong argument to keep both:** amber = "the chef is present," blue = "you act." That gives amber a *job*, not just decoration — worth preserving regardless of the final hues.
+- **Risk to test:** when both amber and blue run saturated, "what's the primary action?" can blur — hierarchy discipline needed.
+- **Where it's decided:** **1F design-system pass** (palette is explicitly the 1F "one system exercise"; PROJECT-CONTEXT holds the palette SETTLED until then). Deciding it now would mean re-theming four already-built tabs piecemeal.
+- **But explore now:** a dedicated Claude Design color play can run during the current design work so **1E.5 (Plan re-design) stays compatible** and we don't lock Plan's look right before a repaint. Explore now → lock 1F. Resolve → decisions.md.
+**Raised**: Session 35 (2026-07-24)
+
 ## Technical
 
 ### PWA vs. React Native for Mobile
@@ -146,6 +162,18 @@ documented public-read / service-role-write exception)?
 - **Cost ties into the LLM cost-per-user model** (idea-backlog, S35): a hosted STT is another per-use cost to fold into unit economics.
 **Status**: Open — research + a build/host decision needed before voice input ships. Not scoped into R1 (voice is a principle, not yet a built feature).
 **Raised**: Session 35 (2026-07-24)
+
+### ~~Household composition schema~~ — RESOLVED (S36) → decisions.md
+**Resolved as BAND COUNTS, not age arrays.** The recommendation above said `children[ageYears] / babies[ageMonths]`,
+but the **locked design (1D) captures three stepper counts with no age-entry UI** — storing arrays the UI can never
+populate would mean fabricating data. Shipped: `{adults, children, babies, babyStage}` on `user_preferences`, with
+`householdSize` derived server-side. V1.5 Family Member Profiles extends the same JSONB with an optional `members`
+array (additive, no breaking migration). Griffin ratified.
+
+Griffin also reframed the servings half of the question rather than answering it: whether a baby counts depends on the
+baby's **age**, so a conditional **baby-stage follow-up** (Under 6m / 6-12m / 12-24m) was added — under 6m and 6-12m
+contribute 0 servings, 12-24m counts. That follow-up is an **addition to the locked design**, flagged for his taste
+pass. Full rationale in decisions.md (S36).
 
 ### Regenerate / "new plan" entry point (V1 blocker)
 **Question**: Where does "plan a new week" live once a plan already exists? `NoPlanState` only shows when there's no plan, so today the plan dead-ends after week one. Related: should a new generation replace the current plan (backend already does this) or archive it for history? And how does an elapsed/all-past confirmed plan invite a fresh week instead of showing a nonsensical mid-week view?

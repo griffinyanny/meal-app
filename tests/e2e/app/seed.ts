@@ -321,6 +321,76 @@ export async function seedYouState(state: YouState): Promise<void> {
   }
 }
 
+// The onboarding-interview gate (Phase 1E #4). The interview fires when the
+// test user's onboardingCompletedAt is NULL, so a spec picks its starting
+// condition here: ONBOARDING_NEW is a first-ever login, ONBOARDING_DONE is a
+// user who has already completed or skipped it. Also clears household data so
+// the interview's writes are the only ones present. The users-row write is
+// scoped to the test user id and runs only after the sentinel-household guard.
+export type OnboardingState = "ONBOARDING_NEW" | "ONBOARDING_DONE";
+
+export async function seedOnboardingState(state: OnboardingState): Promise<void> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    await db
+      .update(schema.users)
+      .set({
+        onboardingCompletedAt: state === "ONBOARDING_DONE" ? new Date() : null,
+      })
+      .where(eq(schema.users.id, ctx.userId));
+  } finally {
+    await close();
+  }
+}
+
+// Reads back what the interview persisted, so a spec can assert the chef
+// actually learned what the user tapped (rather than only that the UI moved).
+export async function readOnboardingResult(): Promise<{
+  onboardingCompletedAt: Date | null;
+  householdSize: number | null;
+  householdComposition: unknown;
+  dietaryFramework: string | null;
+  restrictions: string[];
+  maxCookTimeWeeknight: number | null;
+  onboardingMemories: string[];
+}> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    const [user, prefs, memories] = await Promise.all([
+      db.query.users.findFirst({ where: eq(schema.users.id, ctx.userId) }),
+      db.query.userPreferences.findFirst({
+        where: eq(schema.userPreferences.userId, ctx.userId),
+      }),
+      db
+        .select({
+          content: schema.aiMemories.content,
+          sourceType: schema.aiMemories.sourceType,
+        })
+        .from(schema.aiMemories)
+        .where(eq(schema.aiMemories.householdId, ctx.householdId)),
+    ]);
+
+    return {
+      onboardingCompletedAt: user?.onboardingCompletedAt ?? null,
+      householdSize: prefs?.householdSize ?? null,
+      householdComposition: prefs?.householdComposition ?? null,
+      dietaryFramework: prefs?.dietaryFramework ?? null,
+      restrictions: (prefs?.restrictions as string[] | null) ?? [],
+      maxCookTimeWeeknight: prefs?.maxCookTimeWeeknight ?? null,
+      onboardingMemories: memories
+        .filter((m) => m.sourceType === "onboarding")
+        .map((m) => m.content),
+    };
+  } finally {
+    await close();
+  }
+}
+
 // Resets the test household, then materializes a named Recipes-tab state: an
 // optional plan (for drafts / the cooked-harvest source), the recipes, and any
 // past confirmed slots. Insert order respects FKs: plan → recipes → slots.

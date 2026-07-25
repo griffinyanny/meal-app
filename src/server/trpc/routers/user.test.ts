@@ -39,6 +39,9 @@ function makeMutationChain(
 interface MockDb {
   query: {
     householdMembers: { findFirst: ReturnType<typeof vi.fn> };
+    // ensureOnboarded reads the users row to report whether the onboarding
+    // interview has run (Phase 1E #4), so the gate rides on the bootstrap call.
+    users: { findFirst: ReturnType<typeof vi.fn> };
   };
   insert: ReturnType<typeof vi.fn>;
   transaction: ReturnType<typeof vi.fn>;
@@ -51,6 +54,7 @@ function createMockDb(): MockDb {
   return {
     query: {
       householdMembers: { findFirst: vi.fn() },
+      users: { findFirst: vi.fn().mockResolvedValue(undefined) },
     },
     insert: vi.fn((table: unknown) => makeMutationChain(table, insertReturning)),
     transaction: vi.fn(),
@@ -107,7 +111,12 @@ describe("userRouter.ensureOnboarded", () => {
     const caller = userRouter.createCaller(buildCtx(db, mockUser));
     const result = await caller.ensureOnboarded();
 
-    expect(result).toEqual({ status: "created", householdId: "household-1" });
+    expect(result).toEqual({
+      status: "created",
+      householdId: "household-1",
+      // A brand-new user has not seen the interview.
+      onboardingCompletedAt: null,
+    });
   });
 
   it("should return the existing household when membership already exists", async () => {
@@ -121,6 +130,7 @@ describe("userRouter.ensureOnboarded", () => {
     expect(result).toEqual({
       status: "already_onboarded",
       householdId: "household-existing",
+      onboardingCompletedAt: null,
     });
     // No household/membership rows should be created when one already exists.
     expect(db.insert).not.toHaveBeenCalled();
@@ -145,6 +155,7 @@ describe("userRouter.ensureOnboarded", () => {
     expect(result).toEqual({
       status: "already_onboarded",
       householdId: "household-winner",
+      onboardingCompletedAt: null,
     });
     expect(db.query.householdMembers.findFirst).toHaveBeenCalledTimes(2);
   });

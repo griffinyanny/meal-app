@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { Settings } from "lucide-react";
@@ -18,6 +18,8 @@ import { ExpandedMealSheet } from "./expanded-meal-sheet";
 import { usePlanModify } from "./use-plan-modify";
 import { usePlanHydration } from "./use-plan-hydration";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
+import { takeHandoff } from "@/lib/onboarding/handoff";
+import { seedChips } from "@/lib/onboarding/synthesize";
 import {
   type DisplayMeal,
   dayTitle,
@@ -59,6 +61,46 @@ export function PlanPageClient() {
   // Regenerate flow: routes back through the intent-capture screen so a new
   // plan carries fresh weekly intent instead of a blind reroll.
   const [intentMode, setIntentMode] = useState(false);
+
+  // Hand-off from the onboarding interview (Phase 1E #4). The interview ends in
+  // THIS screen, pre-filled — door #3, one way to start a week. Read once on
+  // mount: takeHandoff clears it, so coming back here later is an ordinary,
+  // unseeded intent screen.
+  const [seedRequest, setSeedRequest] = useState<{ request?: string } | null>(null);
+  useEffect(() => {
+    // sessionStorage is exactly the "external system" an effect is for, and it
+    // can't be read during render: the server has no session storage, so a
+    // lazy initializer would render an unseeded screen on the server and a
+    // seeded one on the client. Reading here (and clearing as we read) is the
+    // correct place despite the general rule against setState in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSeedRequest(takeHandoff());
+  }, []);
+
+  // The chips come from the PERSISTED preferences the interview just wrote, not
+  // from anything carried across the navigation — so they show what the chef
+  // will actually cook with. Only fetched when we actually arrived from the
+  // interview.
+  const seedPrefsQuery = trpc.user.preferences.useQuery(undefined, {
+    enabled: seedRequest !== null,
+  });
+
+  const seed = useMemo(() => {
+    if (!seedRequest) return undefined;
+    const prefs = seedPrefsQuery.data;
+    return {
+      request: seedRequest.request,
+      chips: prefs
+        ? seedChips({
+            dietaryFramework: prefs.dietaryFramework,
+            maxCookTimeWeeknight: prefs.maxCookTimeWeeknight,
+            cuisinePreferences: prefs.cuisinePreferences,
+            restrictions: prefs.restrictions,
+            composition: prefs.householdComposition,
+          })
+        : [],
+    };
+  }, [seedPrefsQuery.data, seedRequest]);
 
   // In-place AI-working affordance (see docs/idea-backlog "Something is
   // happening"): pending state where the user is looking, a highlight on the
@@ -290,7 +332,15 @@ export function PlanPageClient() {
       );
     }
 
-    return <NoPlanState onGenerate={handleGenerate} isGenerating={isStreaming} />;
+    // The first-run empty state, and the surface the onboarding interview hands
+    // off into when `seed` is present.
+    return (
+      <NoPlanState
+        onGenerate={handleGenerate}
+        isGenerating={isStreaming}
+        seed={seed}
+      />
+    );
   }
 
   const chatHeadline = chatScope

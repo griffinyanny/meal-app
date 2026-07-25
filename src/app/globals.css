@@ -163,4 +163,117 @@
       box-shadow: 0 0 0 2px rgba(58, 134, 255, 0);
     }
   }
+
+  /* ── Chef presence (onboarding interview, Phase 1E #4) ──────────────────
+     The ember is the chef being PRESENT while it asks you things — the locked
+     1D direction's replacement for a cold assistant orb. Amber here is the
+     chef/warmth register against the app's blue actions; the pairing is
+     provisional and gets settled in the 1F design-system pass, so it lives in
+     one clearly-scoped block rather than spreading into the token set.
+     Everything below is decorative and is switched off entirely under
+     prefers-reduced-motion (see the media query at the end). */
+  .ember-core {
+    background: radial-gradient(
+      circle at 40% 34%,
+      rgba(255, 214, 170, 0.95),
+      rgba(232, 148, 74, 0.8) 46%,
+      rgba(200, 90, 50, 0.35) 78%
+    );
+    box-shadow: 0 0 42px -6px rgba(232, 148, 74, 0.7);
+    animation: ember-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes ember-breathe {
+    0%,
+    100% {
+      opacity: 0.72;
+      transform: scale(1) translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05) translateY(-2px);
+    }
+  }
+
+  .ember-ring {
+    animation: ember-ring-out 3.4s ease-out infinite;
+  }
+
+  @keyframes ember-ring-out {
+    0% {
+      transform: scale(0.75);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1.85);
+      opacity: 0;
+    }
+  }
+
+  .ember-steam {
+    background: rgba(255, 214, 170, 0.5);
+    filter: blur(4px);
+    animation: ember-steam-rise 3.2s ease-in infinite;
+  }
+
+  @keyframes ember-steam-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(4px) scaleX(1);
+    }
+    30% {
+      opacity: 0.55;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-26px) scaleX(1.5);
+    }
+  }
+
+  .ember-float {
+    animation: ember-float-bob 5.5s ease-in-out infinite;
+  }
+
+  @keyframes ember-float-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-9px);
+    }
+  }
+
+  /* Each answered turn fades its content up rather than snapping in, so the
+     interview reads as a conversation advancing. */
+  .animate-turn-in {
+    animation: turn-in 0.32s ease-out both;
+  }
+
+  @keyframes turn-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* The chef's motion language is atmosphere, never information — so under
+     reduced-motion it all stops and nothing is lost. */
+  @media (prefers-reduced-motion: reduce) {
+    .ember-core,
+    .ember-ring,
+    .ember-steam,
+    .ember-float,
+    .animate-turn-in {
+      animation: none !important;
+    }
+    .ember-ring,
+    .ember-steam {
+      opacity: 0;
+    }
+  }
 }

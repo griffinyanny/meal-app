@@ -132,4 +132,51 @@ describe("buildUserContext", () => {
     expect(ctx).toContain("Loves spicy Thai food");
     expect(ctx).toContain("Has a cast iron skillet");
   });
+
+  // Household composition (Phase 1E #4). The servings line already covers an
+  // adults-only household, so the roster sentence is deliberately additive and
+  // only appears when ages actually change how the chef should cook.
+  it("should not add a household roster for an adults-only household", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Default servings: 2");
+    expect(ctx).not.toContain("Cooking for");
+  });
+
+  it("should describe the roster and kid-friendly guidance when there are children", () => {
+    const ctx = buildUserContext({
+      householdSize: 4,
+      householdComposition: { adults: 2, children: 2, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Cooking for 2 adults and 2 children");
+    expect(ctx).toContain("kid-friendly");
+  });
+
+  it("should carry choking-hazard guidance for a baby starting solids", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 1, babyStage: "6_to_12m" },
+    });
+    expect(ctx).toContain("1 baby");
+    expect(ctx).toContain("whole grapes");
+    expect(ctx).toContain("no honey");
+  });
+
+  it("should tell the chef to plan normally for a milk-only baby", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 1, babyStage: "under_6m" },
+    });
+    expect(ctx).toContain("not on solids yet");
+  });
+
+  it("should ask for one shared dinner rather than a separate kids' meal", () => {
+    const ctx = buildUserContext({
+      householdSize: 3,
+      householdComposition: { adults: 2, children: 1, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Plan ONE dinner the household shares");
+  });
 });
