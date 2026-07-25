@@ -24,7 +24,7 @@ setup("mint session + bootstrap test household", async () => {
   const authCfg: SupabaseAuthConfig = {
     supabaseUrl: env.supabaseUrl,
     anonKey: env.anonKey,
-    serviceRoleKey: env.serviceRoleKey,
+    databaseUrl: env.databaseUrl,
     email: TEST_USER_EMAIL,
     password: TEST_USER_PASSWORD,
   };

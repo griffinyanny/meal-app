@@ -8,12 +8,18 @@ and write a thin app layer.
 
 ## What the core gives you
 
-- **`supabase-session.ts`** — `mintSupabaseSession(cfg)` admin-creates a dedicated
-  test user and signs it in (password, magic-link fallback) to get a REAL signed
-  session, then `sessionToStorageState(cfg, session)` replays it through
-  `@supabase/ssr` so the cookies are byte-identical to what the app writes. This
-  is an auth bypass of the *UI*, not of security — the session passes real
-  `getClaims()`/`getUser()` verification.
+- **`supabase-session.ts`** — `mintSupabaseSession(cfg)` signs a dedicated test
+  user in with the publishable key to get a REAL signed session, then
+  `sessionToStorageState(cfg, session)` replays it through `@supabase/ssr` so the
+  cookies are byte-identical to what the app writes. This is an auth bypass of the
+  *UI*, not of security — the session passes real `getClaims()`/`getUser()`
+  verification. On a cold start (user absent, unconfirmed, or password drifted) it
+  bootstraps via public `signUp` + a SQL confirm/password-reset over
+  `cfg.databaseUrl`. **It never calls GoTrue's `/auth/v1/admin/*` endpoints** —
+  those reject the new `sb_secret_` keys outright (`403 bad_jwt: unrecognized JWT
+  kid <nil>`, since the key isn't a JWT), so an admin-based bootstrap is dead code
+  on any project using the new key format. The harness needs no service-role key
+  at all: `{ supabaseUrl, anonKey, databaseUrl, email, password }`.
 - **`seed-client.ts`** — `makeSeedDb(connectionString, schema)`: a throwaway
   Drizzle client (postgres-js, SSL) for Node-side seeding/reset.
 - **`config-factory.ts`** — `baseE2EConfig({ port, testDir, storageStatePath,
@@ -34,8 +40,9 @@ then runs against canned fixtures.
 
 1. **Copy** `tests/e2e/harness/` into the target repo.
 2. **`app/env.ts`** — load `.env.local` (`process.loadEnvFile`) and export the
-   target's Supabase/DB env var values + test constants (a dedicated port, a
-   test-user email, a sentinel household/tenant name).
+   target's Supabase URL + publishable key + `DATABASE_URL`, plus test constants
+   (a dedicated port, a test-user email, a sentinel household/tenant name). No
+   service-role key needed.
 3. **`app/auth.setup.ts`** — call `mintSupabaseSession` + `sessionToStorageState`,
    then bootstrap the app's "minimum functioning user" rows (whatever its
    `ensureOnboarded` equivalent creates). Persist ids for the seed helpers.
