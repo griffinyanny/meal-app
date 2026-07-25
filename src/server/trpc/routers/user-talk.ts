@@ -24,6 +24,7 @@ import {
   talkToPreferencesChef,
   type PreferencesState,
 } from "@/server/ai/tasks/preferences-talk";
+import { describeCaught } from "@/lib/onboarding/caught";
 
 export const userTalkMutations = {
   talk: aiProcedure
@@ -144,6 +145,10 @@ export const userTalkMutations = {
 
       return {
         reply,
+        // Item-by-item labels for what this message actually changed. The
+        // onboarding interview's "what I caught" tray renders these; the You
+        // tab ignores them and keeps using `reply`.
+        caught: describeCaught(orig, nextPatch, remember.map((m) => m.content)),
         applied: {
           prefsChanged,
           remembered: wroteMemoryIds.length,

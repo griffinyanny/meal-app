@@ -88,34 +88,97 @@ export function synthesizeMemories(state: InterviewState): SynthesizedMemory[] {
 // The chef's opinionated read-back on the reflect screen. The brief asks for an
 // actual cook's reaction ("I'm already picturing blistered shishitos"), not a
 // receipt — so this leads with a dish the answers point at.
-export function reflectHook(state: InterviewState): string {
-  const heat = valueOf(state, "heat");
-  const proteins = valuesOf(state, "proteins");
-  const cuisines = state.cuisinePreferences.map((c) => c.toLowerCase());
-  const diet = state.dietaryFramework;
+//
+// Ordered most-specific first, and the CORE-ONLY answers (diet, weeknight time,
+// who's at the table) each earn a real line of their own. Someone who taps the
+// four core questions and declines the deep round is the most common completion
+// there is; falling through to a generic "I've got enough" would mean the one
+// moment the whole flow builds toward never fires for most people.
+//
+// `mentions` is the honesty guard: a line naming a food is only usable if the
+// user hasn't just told us never to cook it. Naming salmon back to someone who
+// declared a fish allergy on the previous screen would undo the entire safety
+// turn, so a colliding candidate is skipped rather than shown.
+interface HookCandidate {
+  applies: (state: InterviewState) => boolean;
+  mentions?: string[];
+  line: string;
+}
 
-  if (heat === "hot" && (proteins.includes("fish") || diet === "pescatarian")) {
-    return "I'm already picturing blistered shishitos and a chili-crisp salmon.";
-  }
-  if (heat === "hot") {
-    return "Good. I'll actually season things, and there'll be chili crisp on the table.";
-  }
-  if (diet === "vegan" || diet === "vegetarian") {
-    return "I'm thinking charred broccoli with something rich under it, not sad substitutes.";
-  }
-  if (cuisines.some((c) => c.includes("thai") || c.includes("indian"))) {
-    return "I'm already thinking about the aromatics I want in your pantry.";
-  }
-  if (state.maxCookTimeWeeknight && state.maxCookTimeWeeknight <= 20) {
-    return "Twenty minutes is a real constraint, so I'll cook hot and fast and lean on the pantry.";
-  }
-  if (state.composition && state.composition.babies > 0) {
-    return "I'll build dinners that come apart easily, so the little one eats a version of what you eat.";
-  }
-  if (proteins.length > 0) {
-    return "I've got a few ideas I want to try on you this week.";
+const HOOKS: HookCandidate[] = [
+  {
+    applies: (s) =>
+      valueOf(s, "heat") === "hot" &&
+      (valuesOf(s, "proteins").includes("fish") || s.dietaryFramework === "pescatarian"),
+    mentions: ["shishito", "pepper", "chili", "salmon", "fish", "seafood"],
+    line: "I'm already picturing blistered shishitos and a chili-crisp salmon.",
+  },
+  {
+    applies: (s) => valueOf(s, "heat") === "hot",
+    mentions: ["chili"],
+    line: "Good. I'll actually season things, and there'll be chili crisp on the table.",
+  },
+  {
+    applies: (s) => s.dietaryFramework === "vegan" || s.dietaryFramework === "vegetarian",
+    mentions: ["broccoli"],
+    line: "I'm thinking charred broccoli with something rich under it, not sad substitutes.",
+  },
+  {
+    applies: (s) =>
+      s.cuisinePreferences.some((c) => {
+        const lower = c.toLowerCase();
+        return lower.includes("thai") || lower.includes("indian");
+      }),
+    line: "I'm already thinking about the aromatics I want in your pantry.",
+  },
+  {
+    // Ahead of the diet lines on purpose: a 20-minute ceiling is the sharper
+    // constraint, and it's the one the cook has to answer first.
+    applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight <= 20,
+    line: "Twenty minutes is a real constraint, so I'll cook hot and fast and lean on the pantry.",
+  },
+  {
+    applies: (s) => s.dietaryFramework === "pescatarian",
+    mentions: ["fish", "seafood", "salmon"],
+    line: "Fish is the fastest good dinner there is. Expect something seared, with a vegetable that gets real color next to it.",
+  },
+  {
+    applies: (s) => !!s.composition && s.composition.babies > 0,
+    line: "I'll build dinners that come apart easily, so the little one eats a version of what you eat.",
+  },
+  {
+    applies: (s) => !!s.composition && s.composition.children > 0,
+    line: "I'll cook things that survive being picked apart, and you won't be making two dinners.",
+  },
+  {
+    applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight <= 30,
+    line: "Half an hour is plenty. One hot pan, one thing that gets real color, and dinner's done.",
+  },
+  {
+    applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight >= 75,
+    line: "You've given yourself real time on a weeknight, so at least one dinner is going to be worth standing over.",
+  },
+  {
+    applies: (s) => valuesOf(s, "proteins").length > 0,
+    line: "I've got a few ideas I want to try on you this week.",
+  },
+];
+
+export function reflectHook(state: InterviewState): string {
+  const avoided = state.restrictions.map((r) =>
+    r.replace(/\s*\(allergy\)\s*$/i, "").trim().toLowerCase()
+  );
+  const collides = (mentions?: string[]) =>
+    !!mentions?.some((m) => avoided.some((a) => a.length > 0 && m.includes(a)));
+
+  for (const hook of HOOKS) {
+    if (hook.applies(state) && !collides(hook.mentions)) return hook.line;
   }
   return "I've got enough to build you a week worth cooking.";
+}
+
+function capitalize(s: string): string {
+  return s.length > 0 ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
 function valueOf(state: InterviewState, questionId: string): string | null {
@@ -144,7 +207,11 @@ export function reflectSummary(state: InterviewState): string {
   if (bits.length === 0) {
     return "I'll start with something safe and simple, and learn as we cook.";
   }
-  return `${bits.join(". ")}.`;
+  // Commas, not full stops: the diet labels are lowercase sentence fragments
+  // ("pescatarian"), so period-joining them produced "Cooking for 2 adults.
+  // pescatarian." — which reads like machine output on the one screen that has
+  // to sound like a person.
+  return `${bits.join(", ")}.`;
 }
 
 // The shape both callers have: the in-memory interview state, and the
@@ -164,7 +231,9 @@ export interface SeedChipSource {
 export function seedChips(source: SeedChipSource): string[] {
   const chips: string[] = [];
   const diet = source.dietaryFramework;
-  if (diet && diet !== "omnivore") chips.push(DIET_LABEL[diet] ?? diet);
+  // Chips are labels, not sentence fragments, so the diet gets a capital to sit
+  // level with "Under 30 min" and "No shellfish" beside it.
+  if (diet && diet !== "omnivore") chips.push(capitalize(DIET_LABEL[diet] ?? diet));
   if (source.maxCookTimeWeeknight) chips.push(`Under ${source.maxCookTimeWeeknight} min`);
   for (const cuisine of (source.cuisinePreferences ?? []).slice(0, 2)) chips.push(cuisine);
   if (source.composition && source.composition.children > 0) chips.push("Kid-friendly");

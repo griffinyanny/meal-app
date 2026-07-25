@@ -48,11 +48,21 @@ export interface OptionChipsProps {
   options: QuestionOption[];
   selected: string[];
   onToggle: (value: string) => void;
+  // "safety" gives the selected state the You tab's red weight instead of the
+  // blue accent. On the never-cook-with turn, a chosen allergen that looks
+  // exactly like a chosen diet drops the one distinction the screen exists to
+  // make — and the very next screen recaps those same items in red.
+  tone?: "default" | "safety";
 }
 
 // Wrapping chips — the locked layout for multi-select (diet, cuisines,
 // proteins, goals).
-export function OptionChips({ options, selected, onToggle }: OptionChipsProps) {
+export function OptionChips({
+  options,
+  selected,
+  onToggle,
+  tone = "default",
+}: OptionChipsProps) {
   return (
     <div className="flex flex-wrap gap-2.5">
       {options.map((o) => {
@@ -66,9 +76,11 @@ export function OptionChips({ options, selected, onToggle }: OptionChipsProps) {
             data-testid={`onboarding-option-${o.value}`}
             className={cn(
               "rounded-full border px-4 py-2.5 text-[0.9rem] font-medium transition-colors",
-              on
-                ? "border-primary/60 bg-primary/15 text-foreground"
-                : "border-white/10 bg-white/[0.04] text-foreground/90 hover:bg-white/[0.07]"
+              !on && "border-white/10 bg-white/[0.04] text-foreground/90 hover:bg-white/[0.07]",
+              on &&
+                (tone === "safety"
+                  ? "border-[rgba(255,69,58,0.55)] bg-[rgba(255,69,58,0.16)] text-[#FFD9D6]"
+                  : "border-primary/60 bg-primary/15 text-foreground")
             )}
           >
             {o.label}

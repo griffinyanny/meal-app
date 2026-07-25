@@ -9,7 +9,7 @@ import { ReflectScreen } from "./reflect-screen";
 import { OnboardingToast } from "./onboarding-toast";
 import { valueMeterProgress } from "@/lib/onboarding/planner";
 import { makeRestriction } from "@/components/you/constraint-utils";
-import type { Dimension, QuestionOption } from "@/lib/onboarding/types";
+import type { Dimension, InterviewState, QuestionOption } from "@/lib/onboarding/types";
 
 // The three core turns that render through the shared question screen. Household
 // has its own screen (three steppers plus the baby follow-up); these three are
@@ -47,6 +47,23 @@ const WEEKNIGHT_OPTIONS: QuestionOption[] = [
   { value: "75", label: "An hour plus", sub: "I enjoy it" },
 ];
 
+// What the chef already knows for a core turn, expressed as option values so
+// the turn's own pills can show it. Populated only by free text — a tapped
+// answer advances the flow, so it never comes back to a turn it already
+// answered.
+function preselectedFor(step: string, state: InterviewState): string[] {
+  if (step === "diet") return state.dietaryFramework ? [state.dietaryFramework] : [];
+  if (step === "restrictions") {
+    return state.restrictions.map((r) =>
+      r.replace(/\s*\(allergy\)\s*$/i, "").trim().toLowerCase()
+    );
+  }
+  if (step === "weeknight") {
+    return state.maxCookTimeWeeknight ? [String(state.maxCookTimeWeeknight)] : [];
+  }
+  return [];
+}
+
 export function OnboardingFlow() {
   const o = useOnboarding();
 
@@ -61,6 +78,10 @@ export function OnboardingFlow() {
     talkPending: o.talkPending,
     caught: o.caught,
   };
+
+  const corePreselect = (step: string) => ({
+    preselected: preselectedFor(step, o.state),
+  });
 
   function body() {
     switch (o.step) {
@@ -97,6 +118,7 @@ export function OnboardingFlow() {
             onConfirm={(values) => o.confirmDiet(values[0])}
             onFreeText={freeText("diet")}
             onSkipQuestion={o.skipCore}
+            {...corePreselect("diet")}
             {...shared}
           />
         );
@@ -124,6 +146,7 @@ export function OnboardingFlow() {
             onFreeText={freeText("restrictions")}
             passLabel="Nothing comes to mind"
             onPass={() => o.confirmRestrictions([])}
+            {...corePreselect("restrictions")}
             {...shared}
           />
         );
@@ -142,6 +165,7 @@ export function OnboardingFlow() {
             onConfirm={(values) => o.confirmWeeknight(Number(values[0]))}
             onFreeText={freeText("weeknight_time")}
             onSkipQuestion={o.skipCore}
+            {...corePreselect("weeknight")}
             {...shared}
           />
         );

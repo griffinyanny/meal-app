@@ -196,10 +196,12 @@ export function useOnboarding(): OnboardingController {
         { request: text, sourceType: "onboarding" },
         {
           onSuccess: async (data) => {
-            // The tray shows the chef's own one-line read of what it caught.
+            // The tray lists what the message actually changed, item by item.
             // user.talk has already applied the ops, so this is a confirmation,
-            // not a pending edit.
-            setCaught([data.reply]);
+            // not a pending edit. When nothing landed as a typed field or a
+            // memory there is nothing to itemize, so the chef's own sentence
+            // stands in — silence would read as the message being swallowed.
+            setCaught(data.caught.length > 0 ? data.caught : [data.reply]);
 
             // user.talk wrote straight to user_preferences, so the server now
             // knows things this component doesn't. Pull them back before moving

@@ -36,6 +36,11 @@ export interface QuestionScreenProps {
   talkPending: boolean;
   caught: string[];
   meter?: number;
+  // Option values the chef already knows for this turn, because free text
+  // answered it. The pills are the screen's statement of what it heard, so an
+  // answer given in words has to light one up — otherwise the screen shows
+  // "Pescatarian" un-chosen a second after the chef recorded pescatarian.
+  preselected?: string[];
 }
 
 // The repeating unit of the interview. One layout, no modes: tappable answers
@@ -64,9 +69,12 @@ export function QuestionScreen({
   talkPending,
   caught,
   meter,
+  preselected,
 }: QuestionScreenProps) {
-  const [selected, setSelected] = useState<string[]>([]);
+  const preselectedKey = (preselected ?? []).join("|");
+  const [selected, setSelected] = useState<string[]>(preselected ?? []);
   const [prevQuestionId, setPrevQuestionId] = useState(questionId);
+  const [prevPreselectedKey, setPrevPreselectedKey] = useState(preselectedKey);
 
   // A new question means a fresh answer — without this, a selection would leak
   // from one turn into the next. Render-time reset (the same pattern
@@ -74,7 +82,16 @@ export function QuestionScreen({
   // paints for a frame carrying the previous turn's selection.
   if (questionId !== prevQuestionId) {
     setPrevQuestionId(questionId);
-    setSelected([]);
+    setPrevPreselectedKey(preselectedKey);
+    setSelected(preselected ?? []);
+  } else if (preselectedKey !== prevPreselectedKey) {
+    // Free text just landed on this same turn. Merge rather than replace: a
+    // tap the user already made is still their answer.
+    setPrevPreselectedKey(preselectedKey);
+    setSelected((prev) => [
+      ...prev,
+      ...(preselected ?? []).filter((v) => !prev.includes(v)),
+    ]);
   }
 
   function toggle(value: string) {
@@ -87,7 +104,12 @@ export function QuestionScreen({
   }
 
   return (
-    <div className="animate-turn-in">
+    // The turn composes to the viewport rather than stacking from the top: a
+    // short turn (four chips) would otherwise leave half the phone empty and
+    // read as an unfinished screen next to the intro/reflect turns, which do
+    // fill it. Centering, not bottom-pinning, so the confirm stays attached to
+    // the answers it confirms instead of drifting away from them.
+    <div className="animate-turn-in flex flex-1 flex-col justify-center">
       {meter !== undefined && (
         <div className="mb-[18px]">
           <div className="mb-2 flex items-center justify-between gap-3">
@@ -128,10 +150,25 @@ export function QuestionScreen({
       {kind === "cards" ? (
         <OptionCards options={options} selected={selected} onToggle={toggle} />
       ) : (
-        <OptionChips options={options} selected={selected} onToggle={toggle} />
+        <OptionChips
+          options={options}
+          selected={selected}
+          onToggle={toggle}
+          tone={safety ? "safety" : "default"}
+        />
       )}
 
-      <CaughtTray items={caught} />
+      {/* No redundancy between the tray and the pills (locked design): anything
+          the free text surfaced that is now a lit answer above is already
+          visible, so it doesn't get restated here. */}
+      <CaughtTray
+        items={caught.filter(
+          (item) =>
+            !options.some(
+              (o) => selected.includes(o.value) && item.toLowerCase().includes(o.label.toLowerCase())
+            )
+        )}
+      />
 
       <TellMeField
         example={example}

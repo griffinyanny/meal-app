@@ -7,7 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* BUG-005: this read `var(--font-sans)` — a self-reference, so the token was
+     invalid at computed-value time and every `font-sans` surface fell back to
+     the browser default serif. Geist is loaded in layout.tsx as
+     --font-geist-sans; this is the bridge that was missing. */
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
