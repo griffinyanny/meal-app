@@ -14,12 +14,16 @@ and write a thin app layer.
   cookies are byte-identical to what the app writes. This is an auth bypass of the
   *UI*, not of security — the session passes real `getClaims()`/`getUser()`
   verification. On a cold start (user absent, unconfirmed, or password drifted) it
-  bootstraps via public `signUp` + a SQL confirm/password-reset over
-  `cfg.databaseUrl`. **It never calls GoTrue's `/auth/v1/admin/*` endpoints** —
-  those reject the new `sb_secret_` keys outright (`403 bad_jwt: unrecognized JWT
-  kid <nil>`, since the key isn't a JWT), so an admin-based bootstrap is dead code
-  on any project using the new key format. The harness needs no service-role key
-  at all: `{ supabaseUrl, anonKey, databaseUrl, email, password }`.
+  bootstraps the `auth.users` + `auth.identities` rows directly over
+  `cfg.databaseUrl`. The harness needs no service-role key at all:
+  `{ supabaseUrl, anonKey, databaseUrl, email, password }`.
+  Two dead ends this deliberately avoids, both verified: GoTrue's
+  `/auth/v1/admin/*` endpoints reject the new `sb_secret_` keys outright (`403
+  bad_jwt: unrecognized JWT kid <nil>` — the key isn't a JWT), so an admin
+  bootstrap is dead code on any new-format project; and public `signUp` rejects
+  the reserved `@example.com` sentinel address (`email_address_invalid`) and
+  would send real confirmation mail besides. Writing the rows keeps the test
+  identity on an address that can never receive a password-reset link.
 - **`seed-client.ts`** — `makeSeedDb(connectionString, schema)`: a throwaway
   Drizzle client (postgres-js, SSL) for Node-side seeding/reset.
 - **`config-factory.ts`** — `baseE2EConfig({ port, testDir, storageStatePath,
@@ -54,9 +58,19 @@ then runs against canned fixtures.
    forced-failure / latency / behavior routing. Then a root `playwright.config.ts`
    calling `baseE2EConfig` with an app-unique port + the mock flag in
    `webServerEnv`.
+6. **Layer A capture** (optional but cheap once 1-5 are done) — `capture/<tab>-facts.ts`
+   (the states + their ground-truth facts) and `<tab>.capture.ts`, plus a
+   `playwright.capture.config.ts` that reuses `baseE2EConfig` with a capture-only
+   project. Set `useHud: false` and omit `expectedState` if the app has no debug
+   HUD, or every state reports `state-mismatch`.
 
 In-repo and copyable by design — no npm package, no separate repo. Claude does the
 porting; this README is the checklist.
+
+**Validated by the port to a second app (S37):** harness/ copied verbatim, app layer written
+against the Goal tab, first run green except one ambiguous selector. Budget it as
+an afternoon, not a project. What actually took the time was none of the harness:
+it was deciding what a deterministic seed for that app's domain looks like.
 
 ## Gotchas learned building the meal-app suite
 
@@ -70,3 +84,12 @@ porting; this README is the checklist.
   seeds and UI agree; a run spanning UTC midnight can flip past/today.
 - The mock stream is the AI-SDK **text-stream** protocol (progressive JSON text),
   NOT SSE.
+- **Seed for determinism, not realism.** Prefer inputs the app reads directly
+  (configured rows) over inputs it has to infer from a synthetic history. the second app's
+  Goal seed sets paycheck schedules and budgets rather than transactions, so
+  income and discretionary resolve the same way on every run instead of drifting
+  with the trailing window.
+- **Give the capture layer an ugly state.** Every hand-written seed is
+  well-behaved, so without one the pleasant case is the only case Layer A ever
+  photographs. meal-app's `ADVERSARIAL` state found two display bugs the moment
+  it existed.

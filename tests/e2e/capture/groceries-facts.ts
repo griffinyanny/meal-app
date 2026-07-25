@@ -7,7 +7,7 @@
 // resulting element before the shot.
 import { type Page } from "@playwright/test";
 import { seedGroceryState } from "../app/seed";
-import { type CaptureStateDef } from "./capture-runtime";
+import { type CaptureStateDef } from "../harness/capture-runtime";
 
 // No HUD section on this tab; a nominal key for the manifest meta.
 export const GROCERY_SECTION_KEY = "grocery";

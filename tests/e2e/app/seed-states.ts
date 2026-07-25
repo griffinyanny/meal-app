@@ -10,7 +10,8 @@ export type PlanState =
   | "DRAFT"
   | "MIDWEEK"
   | "ELAPSED_CONFIRMED"
-  | "ELAPSED_DRAFT";
+  | "ELAPSED_DRAFT"
+  | "ADVERSARIAL";
 
 const WEEKDAYS = [
   "Sunday",
@@ -110,6 +111,85 @@ function buildWeek(
   };
 }
 
+// ── ADVERSARIAL (capture-only) ────────────────────────────────────────────
+// The layout stress state. Every other seed is well-behaved by design, which
+// means the pleasant case is the ONLY case Layer-A ever photographs — so a
+// title that overflows its card, a missing chip row, or two near-identical
+// meals rendering ambiguously can ship unseen. This state makes each of those
+// deterministic rather than waiting for the real chef to produce one.
+//
+// Capture/visual-QA only: it is NOT a behavior-spec state. The E2E specs assert
+// on stable seeded titles, and these deliberately aren't stable-looking.
+const ADVERSARIAL_LONG_TITLE =
+  "Slow-Braised Gochujang Short Ribs with Charred Scallion Salsa Verde, " +
+  "Crispy Garlic Confit and a Whipped Sesame Labneh";
+
+const ADVERSARIAL_NEAR_DUPLICATE = "Seeded Weeknight Chicken";
+
+function adversarialSlots(weekStart: string): SeedSlotInput[] {
+  const base = (dayOffset: number): SeedSlotInput =>
+    seededSlot(weekStart, dayOffset, ["Make it spicier", "Swap the protein"]);
+
+  const slots: SeedSlotInput[] = [];
+
+  // 0 — a title far past any single line, with a long description behind it.
+  slots.push({
+    ...base(0),
+    title: ADVERSARIAL_LONG_TITLE,
+    description:
+      "A deliberately long description that keeps going well past the point " +
+      "where a two-line clamp would stop, so the card has to decide what to do " +
+      "with the overflow rather than getting lucky.",
+    slotTags: ["seeded", "long-title", "90 min", "make-ahead", "gluten-free"],
+    estTimeMinutes: 95,
+  });
+
+  // 1 — nothing optional present: no title, no description, no chips, no tags.
+  // The card must still be a card.
+  slots.push({
+    ...base(1),
+    title: null,
+    description: null,
+    ingredientPreview: [],
+    slotTags: [],
+    estTimeMinutes: null,
+    chips: [],
+    rationale: null,
+  });
+
+  // 2 — chips present but empty-ish/oversized: a chip row that can't lay out on
+  // one line, plus a single-character chip.
+  slots.push({
+    ...base(2),
+    chips: [
+      "Make it dramatically spicier than it already is tonight",
+      "x",
+      "Swap the protein",
+    ],
+  });
+
+  // 3-5 — three near-identical cards. If the UI leans on the title alone to
+  // tell meals apart, this is where that shows.
+  for (const offset of [3, 4, 5]) {
+    slots.push({ ...base(offset), title: ADVERSARIAL_NEAR_DUPLICATE });
+  }
+
+  // 6 — the de-emphasized case: eating out has no recipe content at all.
+  slots.push({
+    ...base(6),
+    slotType: "eating_out",
+    title: "Eating out",
+    description: null,
+    ingredientPreview: [],
+    slotTags: [],
+    estTimeMinutes: null,
+    chips: [],
+    rationale: null,
+  });
+
+  return slots;
+}
+
 // Returns the plan spec for a state, or null for EMPTY (no plan row). Week
 // anchors: DRAFT starts today; MIDWEEK starts 3 days ago (some past + today +
 // upcoming); ELAPSED_* start 8 days ago (all 7 days already past).
@@ -129,5 +209,14 @@ export function buildSeedSpec(
       return buildWeek(addDaysISO(today, -8), "confirmed", 7, opts);
     case "ELAPSED_DRAFT":
       return buildWeek(addDaysISO(today, -8), "draft", 7, opts);
+    case "ADVERSARIAL":
+      return {
+        status: "draft",
+        weekStart: today,
+        chefSummary:
+          "A deliberately awkward week — long titles, missing fields, and " +
+          "near-identical dinners — so the layout has to hold up on its own.",
+        slots: adversarialSlots(today),
+      };
   }
 }

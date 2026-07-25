@@ -3,7 +3,7 @@
 // test — it produces artifacts; a non-"ok" captureStatus is a caught bug.
 import { test } from "@playwright/test";
 import path from "node:path";
-import { captureStates, makeRunDir } from "./capture-runtime";
+import { captureStates, makeRunDir } from "../harness/capture-runtime";
 import { YOU_CAPTURE_STATES, YOU_SECTION_KEY } from "./you-facts";
 import { resetTestHousehold } from "../app/seed";
 

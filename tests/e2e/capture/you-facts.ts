@@ -5,7 +5,7 @@
 // the chef sheet, open a field editor) and wait for the resulting element first.
 import { type Page } from "@playwright/test";
 import { seedYouState } from "../app/seed";
-import { type CaptureStateDef } from "./capture-runtime";
+import { type CaptureStateDef } from "../harness/capture-runtime";
 
 // No HUD section on this tab; a nominal key for the manifest meta.
 export const YOU_SECTION_KEY = "you";
