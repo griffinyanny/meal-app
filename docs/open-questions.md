@@ -102,14 +102,24 @@ documented public-read / service-role-write exception)?
 **Raised**: Session 5 (2026-04-05)
 
 ### Onboarding Flow
-**Question**: What should the first 5 minutes look like? UX designer suggested: have user paste one recipe URL, watch AI extract it, show what a meal plan + grocery list looks like. Griffin mentioned "baby mode" with dynamic onboarding (combo chat + fixed UI).
-**Status**: Needs design exploration.
-**Raised**: Session 1 (2026-03-28)
+**Question**: What should the first 5 minutes look like? UX designer suggested: have user paste one recipe URL, watch AI extract it, show what a meal plan + grocery list looks like. Griffin mentioned "baby mode" with dynamic onboarding (combo chat + fixed UI). **Live now — the #4 onboarding interview is the last 1E feature and gets designed next.** Griffin's S35 (2026-07-24) considerations to weigh in that pass (also appended raw to `design/surfaces/onboarding/brief.md`):
+- **Gate vs. open door.** His anti-pattern: Cooklist/Mealtime wall you out of the app until you finish a long setup (incl. pantry). He wants to *see what he's got* before committing. Our interview is already skippable — the design should make the skip-to-app path first-class and decide how much value-prop to sell up front vs. letting intrigue + a fast payoff pull the user in. (Hard gate lifts completion but costs new users; open door is the reverse.)
+- **Value-prop pitch placement.** A moment that sells the agentic value, not just captures data — inline in the intro, a one-card pitch, or pushed to the separate chef tour (below).
+- **First-run interview vs. dynamic chef tour are two different things.** The interview *learns you* (#4); a tab-by-tab walkthrough with demo states + "you can always just talk to me / dictate" *teaches the app + sells the value* — tracked as its own idea-backlog feature (S35), likely post-MVP. Don't overload #4 with the tour.
+- **Progressive disclosure cadence.** How later features (e.g. "copy a recipe link into the app") get taught over time without a front-loaded tour — the friction-vs-understanding tradeoff. Separate backlog item (S35).
+
+**Status**: #4 interview is design-gated and next up (see whats-next + `scope-1E.md`); the broader gate/value-prop/tour/disclosure questions above are open and split across the onboarding brief + idea-backlog.
+**Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**
 
 ### Monetization Details
-**Question**: What features are free vs. paid? What's the pricing? Free trial length?
-**Status**: Deferred to after V1 validates core loop.
-**Raised**: Session 1 (2026-03-28)
+**Question**: What features are free vs. paid? What's the pricing? Free trial length? **Expanded S35 (2026-07-24) with the specific sub-questions Griffin wants answered before charging:**
+- **What is the bare MVP that justifies a charge?** If it's still just recipe generation + a list, is that valuable enough? If it's generation + storage + note creation + planning, does that clear the bar? Where's the line?
+- **Is grocery-store integration (Instacart / Kroger / other) a hard requirement to justify the price** — or can we charge on the planning/list intelligence alone? (Ordering is V2 today; this asks whether monetization is gated on pulling it forward.)
+- **Cost-per-user must sit below the price with margin.** Requires the LLM cost-per-user model (idea-backlog, S35) so a heavy user can't run us negative — the abuse ceiling. Pricing can't be set until that number exists.
+- Free vs. paid split, trial length, and the freemium boundary all sit downstream of the two questions above.
+
+**Status**: Deferred to the post-MVP gate (after R1 validates the core loop) — but the sub-questions above are the actual work, and they depend on the cost model + a call on ordering-as-gate. Reference: `reference/meal-app-pricing-research.md`.
+**Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**
 
 ## Technical
 
@@ -127,6 +137,15 @@ documented public-read / service-role-write exception)?
 **Question**: Which LLM provider(s) to use for production? Current recommendation is tiered routing (GPT-4.1-mini for routine, Claude Sonnet for complex). Need to benchmark on actual recipe tasks before deciding.
 **Status**: Research done. Decision deferred to prototyping phase. Will test on Gemini free tier first, then benchmark.
 **Raised**: Session 1 (2026-03-28)
+
+### Dictation implementation approach (S35)
+**Question**: Dictation is a core interaction bet (multiple voice ideas in idea-backlog: "Dictation/voice-first input emphasis" S2, "Voice dictation for feedback and modifications" S3, "AI-first preferences" capture). Griffin wants it to be *really good*. **How do we actually build it?**
+- **Simplest path: invoke native iPhone/OS dictation** (the platform speech-to-text on the keyboard) — free, zero infra, but quality/UX is the OS's, not ours, and it's device-dependent.
+- **Higher-ceiling path: a strong open-source voice-to-text model** (e.g. Whisper-class). Better/consistent quality, but **where does it run** — do we host it, and at what cost/latency? (Wispr Flow-style productized dictation likely isn't usable for us.)
+- What do apps with excellent baked-in dictation actually do — are there common paradigms (on-device model, streaming to a hosted STT, hybrid)?
+- **Cost ties into the LLM cost-per-user model** (idea-backlog, S35): a hosted STT is another per-use cost to fold into unit economics.
+**Status**: Open — research + a build/host decision needed before voice input ships. Not scoped into R1 (voice is a principle, not yet a built feature).
+**Raised**: Session 35 (2026-07-24)
 
 ### Regenerate / "new plan" entry point (V1 blocker)
 **Question**: Where does "plan a new week" live once a plan already exists? `NoPlanState` only shows when there's no plan, so today the plan dead-ends after week one. Related: should a new generation replace the current plan (backend already does this) or archive it for history? And how does an elapsed/all-past confirmed plan invite a fresh week instead of showing a nonsensical mid-week view?

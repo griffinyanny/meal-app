@@ -30,7 +30,7 @@ interaction rate · list quality.
 
 ## Definition of done — Release 1
 
-- [ ] All six phases below at their milestone
+- [ ] All phases below (1A–1F, including the **1E.5** interstitial) at their milestone
 - [ ] North-star flow validated: Griffin + wife each run the full weekly ritual on prod for **2 consecutive real weeks** (solo accounts)
 - [ ] Time-to-list measured < 10 minutes on a real week
 - [ ] E2E suite green across Plan, Recipes, AND Groceries tabs
@@ -38,7 +38,7 @@ interaction rate · list quality.
 
 ---
 
-## Phase spine (1A–1F)
+## Phase spine (1A–1F, + the 1E.5 interstitial)
 
 *Milestones M3–M6 reconstructed from Session-9 skeleton (original plan file lost — see plans/README.md).*
 
@@ -49,7 +49,8 @@ interaction rate · list quality.
 | **1C** Plan Tab | The signature "AI generates your week" experience | M3: full plan loop — generate→review→confirm→modify→wrap | ✅ | 2026-07-06 → 07-10 | [scope-1C.md](scope-1C.md) |
 | **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | ✅ | 2026-07-10 → 07-21 | [scope-1D.md](scope-1D.md) |
 | **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | 🔨 | 2026-07-22 (S32–S33) | [scope-1E.md](scope-1E.md) |
-| **1F** Polish / Production Readiness | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
+| **1E.5** Plan Design Buildout | Full **all-states** Plan-tab rebuild in Claude Design → code — the one core surface never mocked in the design system-of-record (Plan was designed in Figma + built in code; Recipes/Groceries were built in Claude Design). **Must ship before 1F.** | M5.5: Plan matches the Groceries/Recipes design fidelity, every state accounted for | ⬜ | — | scope doc at phase start |
+| **1F** Polish / Production Readiness (**after 1E.5**) | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
 
 *Pace note: 1A+1B took 2 days. The 2026-05-28 → 2026-07-06 gap was life, not build. 1C
 spent Sessions 15–17 building the E2E harness + review infrastructure (deliberate,
@@ -94,8 +95,18 @@ reusable for 1D–1F). Dates exist so pace is visible, not a feeling.*
 - [x] Blended feedback: implicit signals surfaced ("I noticed") + dismissible (S33). *(Lightweight explicit check-ins deferred → 1F/backlog.)*
 - [x] Carry-in: AI-first vs static settings resolved (OQ#2 — hybrid); **first You E2E (Y1–Y9), 62 suite green**
 
+### 1E.5 Plan Design Buildout ⬜ (interstitial — **must ship before 1F**)
+*Why it exists:* Plan is the signature surface but the only core tab **never rebuilt in the Claude Design system-of-record** — it was designed in Figma (the original State-1…State-6 briefs) and hand-built in code, while Recipes + Groceries were designed in Claude Design and imported. So there is no all-states Plan mock to hold the 1F design-system pass to. **Design Plan first, then 1F polishes against it.**
+- [ ] Sophisticated all-states Claude Design brief for Plan (Griffin's explicit ask) — enumerate + design **every** state: intent (empty + the onboarding pre-seeded entry, see `design/surfaces/onboarding/brief.md`), streaming/generating, review (draft), confirmed, mid-week, week-wrapped/elapsed, modify working/ack/error, expanded meal sheet, Talk-to-Chef, error/offline
+- [ ] Design pass run (Griffin) → import the chosen direction → rebuild Plan in real components to the new fidelity
+- [ ] Mine the original Figma `docs/design/brief-plan-states.md` so no existing state is dropped
+- [ ] `/visual-qa` + E2E still green across all Plan states; no regression in the shipped mechanics
+- [ ] **S35 design inputs to fold into the brief** (from idea-backlog): the summary-vs-full expanded meal sheet (**BUG-006**), a **chef proactive-clarification state** (the never-built S8 "tertiary clarification" slot), explicit **which-day-does-each-meal-land** assignment + going-out nights, and **move-a-meal / drag-drop** affordances. The dynamism cluster is Griffin's biggest ask for this surface — the brief must account for these states, not just the happy path.
+- *Supersedes* the idea-backlog `[1F] Visual refresh: Plan to Groceries fidelity` line (S25) — that assumed a polish pass; this is the from-scratch all-states buildout it becomes.
+
 ### 1F Polish / Production Readiness ⬜
-- [ ] THE design-system pass (2026-07-09 decision: one system exercise — type scale, spacing, motion, component library) + polish backlog burn-down
+- [ ] THE design-system pass (2026-07-09 decision: one system exercise — type scale, spacing, motion, component library) + polish backlog burn-down. **Plan's all-states design + rebuild lands in 1E.5 first** — 1F polishes the whole system on top of it, it does not re-design Plan.
+- [ ] Ship R1 as an installable PWA (manifest, service worker, offline shell, home-screen icon set, install prompt) — validated on Griffin's + wife's phones. Rides with the design pass; native mobile stays held (decision 2026-07-24, see decisions.md)
 - [ ] Observability: PostHog (event taxonomy from S9) + Sentry
 - [ ] Security review of the full surface; rate limiting audit
 - [ ] Performance/a11y pass; error-state sweep
@@ -147,3 +158,6 @@ line here (a decision, not drift). Same for pushing R1 items out.
 | 2026-07-21 (S28) | **1D → ✅ complete (4 of 6 phases done); shipped to prod.** Wrap: code review (3 fixes), **merge quality PASSED the real-model soft DoD** (Griffin's eye), `/visual-qa` capture harness extended to Groceries + Recipes (gate passed), 60s normalize stopgap. **Next: generation-architecture rethink** (a planning session — cut perceived list-gen latency; BUG-004). New: a parked-bug tracker (`docs/bug-tracker.md`). | All in-scope 1D features met + machine-verified; the one soft gate (merge on a real week) cleared; the slow-generation risk is stopgapped + scheduled as the next focus |
 | 2026-07-22 (S31) | 1D fast-follows **BUG-002** (buy-unit merge consolidation) + **BUG-001** (quick-add category) closed + shipped; both 300-line-rule splits done. No phase-status change (fast-follow, still 4 of 6). **Next: Phase 1E.** | Cleared the two parked Groceries bugs + tech-debt splits before opening the next surface |
 | 2026-07-22 (S33) | **1E You audit surface built + verified** (→ 🔨): features #1/#2/#3/#5/#6 + AI capture (`user.talk`) + first You E2E; real-model safety eval 9/9, visual-QA + code review passed. Phase stays open — **only #4 (onboarding interview) remains, design-gated.** 5 of 6 phases in flight. | The memory loop is M5 + the trust surface; built to the imported Direction A with full mechanics + safety verification |
+| 2026-07-24 (S34) | **New phase 1E.5 "Plan Design Buildout" formalized into the spine** (Griffin ratified), between 1E and 1F: a full **all-states** Plan-tab rebuild in Claude Design → code. Plan was designed in Figma + built in code but never mocked in the Claude Design system-of-record like Recipes/Groceries. It **must ship before 1F** (1F's design-system pass polishes on top of it, doesn't re-design Plan). Decimal label chosen over renumbering to keep 1F's identity + its many `[1F]` doc references intact. Brief not yet written — comes after the 1E onboarding interview locks. Same session: wrote the Pass-2 onboarding-interview design brief (`surfaces/onboarding/brief.md`); no build. | The Plan-mock gap is real: every other core surface has a Claude Design all-states source of truth, and ordering it before 1F prevents polishing a surface that was never properly designed in the current system |
+| 2026-07-24 | **PWA folded into 1F** (installable home-screen app, ships with the design-system pass); **native iOS/Android held** pending a real capability (push/camera), validation, or distribution trigger. | Current app is already a phone-form-factor web app; native = a full UI rewrite (backend ports via API-first, UI doesn't). Nail the still-unvalidated interaction in the faster web loop first; PWA delivers "app on the home screen" for ~1 slice. |
+| 2026-07-24 (S35) | Griffin brain-dump filed across the tracking docs; **1E.5 gains S35 design inputs** (summary-vs-full meal sheet [BUG-006], chef-clarification state, per-day meal assignment, move/drag) to fold into the Plan brief when it's written. No phase-status change. | Capture pass — route each idea to the doc where it resurfaces at the right phase; keep the 1E.5 brief honest to Griffin's dynamism asks |
