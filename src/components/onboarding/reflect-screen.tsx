@@ -22,7 +22,7 @@ export function ReflectScreen({ state, onBuildPlan, isSaving }: ReflectScreenPro
   const restrictions = state.restrictions;
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <div className="animate-turn-in flex flex-1 flex-col justify-center">
         <div className="mb-[18px] flex items-center gap-3">
           <ChefPresence />

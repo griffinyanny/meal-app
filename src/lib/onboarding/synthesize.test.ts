@@ -95,6 +95,22 @@ describe("reflectHook", () => {
     expect(hook).toContain("little one");
   });
 
+  it("should still name a dish when the user only answered the core questions", () => {
+    // The most common completion there is: four taps, no deep round. It must
+    // not fall through to the generic "I've got enough" line.
+    const hook = reflectHook(coreState);
+    expect(hook).not.toContain("enough to build you a week");
+    expect(hook.toLowerCase()).toContain("fish");
+  });
+
+  it("should never name a food the user just said to avoid", () => {
+    const hook = reflectHook({
+      ...coreState,
+      restrictions: ["fish (allergy)"],
+    });
+    expect(hook.toLowerCase()).not.toContain("fish");
+  });
+
   it("should always return something for an empty interview", () => {
     expect(reflectHook(emptyInterviewState()).length).toBeGreaterThan(0);
   });
@@ -115,7 +131,9 @@ describe("reflectSummary", () => {
 describe("planSeedChips", () => {
   it("should surface the constraints the plan was pre-filled from", () => {
     const chips = planSeedChips({ ...coreState, cuisinePreferences: ["Thai"] });
-    expect(chips).toContain("pescatarian");
+    // Capitalized: it's a label sitting beside "Under 30 min", not a sentence
+    // fragment.
+    expect(chips).toContain("Pescatarian");
     expect(chips).toContain("Under 30 min");
     expect(chips).toContain("Thai");
     expect(chips).toContain("Kid-friendly");

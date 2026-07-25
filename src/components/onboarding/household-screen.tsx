@@ -68,7 +68,7 @@ export function HouseholdScreen({
   const servings = deriveHouseholdSize({ ...composition, babyStage: stage });
 
   return (
-    <div className="animate-turn-in">
+    <div className="animate-turn-in flex flex-1 flex-col justify-center">
       <ChefStatus label="GETTING TO KNOW YOU" />
 
       <h2 className="m-0 mb-4 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-foreground">

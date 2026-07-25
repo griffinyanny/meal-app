@@ -21,7 +21,7 @@ const POINTS = [
 
 export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) {
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <div className="animate-turn-in flex flex-1 flex-col justify-center">
         <ChefPresence size="hero" className="mb-5" />
 

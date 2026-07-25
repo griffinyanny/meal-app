@@ -14,7 +14,7 @@ export interface DeepenOfferScreenProps {
 // than a failure to convert.
 export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProps) {
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="flex flex-1 flex-col">
       <div className="animate-turn-in flex flex-1 flex-col justify-center">
         <p className="m-0 mb-3.5 text-[11px] font-semibold tracking-[2px] text-[#F2B279]">
           THAT&apos;S THE ESSENTIALS

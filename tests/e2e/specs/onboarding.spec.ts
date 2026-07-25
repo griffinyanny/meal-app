@@ -120,7 +120,8 @@ test("OB4 - the completed interview hands off into a pre-seeded plan intent", as
   // Door #3: the real intent screen, pre-filled — not a bespoke onboarding step.
   await expect(page.getByText("YOUR PLAN, PRE-FILLED FROM WHAT YOU TOLD ME")).toBeVisible();
   const chips = page.getByTestId("plan-seed-chips");
-  await expect(chips).toContainText("pescatarian");
+  // Capitalized: a chip is a label beside "Under 30 min", not a sentence fragment.
+  await expect(chips).toContainText("Pescatarian");
   await expect(chips).toContainText("Under 30 min");
   await expect(page.getByTestId("plan-build-first-week")).toBeVisible();
 });
@@ -164,6 +165,48 @@ test("OB7 - the mic says voice is coming rather than failing silently", async ({
   await page.getByRole("button", { name: "Answer by voice" }).click();
 
   await expect(page.getByTestId("onboarding-toast")).toContainText("Voice is coming soon");
+});
+
+test("OB9 - typing an answer lights the pill instead of only echoing a sentence", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  await page.getByTestId("onboarding-tell-me-input").fill("we are going vegan");
+  await page.getByTestId("onboarding-tell-me-send").click();
+
+  // The screen's own statement of what it heard is the pill, so an answer given
+  // in words has to move it.
+  await expect(page.getByTestId("onboarding-option-vegan")).toHaveAttribute(
+    "aria-pressed",
+    "true",
+    { timeout: 20_000 }
+  );
+  // ...and having lit the pill, the tray doesn't say the same thing again.
+  await expect(page.getByTestId("onboarding-caught-tray")).toBeHidden();
+});
+
+test("OB10 - the tray itemizes what free text surfaced beyond the pills", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  await page.getByTestId("onboarding-tell-me-input").fill("I love Thai food");
+  await page.getByTestId("onboarding-tell-me-send").click();
+
+  const tray = page.getByTestId("onboarding-caught-tray");
+  await expect(tray).toBeVisible({ timeout: 20_000 });
+  // The cuisine itself, not the chef's reply sentence about it.
+  await expect(tray).toContainText("Thai");
+  await expect(tray).not.toContainText("Added Thai to your cuisines");
 });
 
 test("OB8 - the deep round is adaptive and always offers a way out", async ({ page }) => {
