@@ -209,6 +209,7 @@ export function OnboardingFlow() {
             state={o.state}
             onBuildPlan={o.finish}
             isSaving={o.isSaving}
+            unsaved={o.unsaved}
           />
         );
     }

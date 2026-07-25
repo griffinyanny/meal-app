@@ -31,7 +31,7 @@ export interface QuestionScreenProps {
   onGoodForNow?: () => void;
   onSkipQuestion?: () => void;
   onConfirm: (values: string[]) => void;
-  onFreeText: (text: string) => void;
+  onFreeText: (text: string) => Promise<boolean>;
   onMicTap: () => void;
   talkPending: boolean;
   caught: string[];

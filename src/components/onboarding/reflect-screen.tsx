@@ -10,6 +10,16 @@ export interface ReflectScreenProps {
   state: InterviewState;
   onBuildPlan: () => void;
   isSaving: boolean;
+  // Answers whose save didn't land, in the user's terms. Empty is the normal
+  // case; anything here means this screen must not say "All saved" (BUG-016).
+  unsaved: string[];
+}
+
+// "and" rather than a bare comma list: this line is an apology, and it should
+// read like a sentence a person would say.
+function joinAnswers(items: string[]): string {
+  if (items.length === 1) return items[0];
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
 // "Here's what I'm thinking" — the payoff turn. It leads with an OPINION (a dish
@@ -18,7 +28,12 @@ export interface ReflectScreenProps {
 // The red recap underneath inherits the You tab's safety vocabulary exactly:
 // same wording, same weight, same allergy sub-label, because these are the same
 // objects the You tab will show you tomorrow.
-export function ReflectScreen({ state, onBuildPlan, isSaving }: ReflectScreenProps) {
+export function ReflectScreen({
+  state,
+  onBuildPlan,
+  isSaving,
+  unsaved,
+}: ReflectScreenProps) {
   const restrictions = state.restrictions;
 
   return (
@@ -69,10 +84,20 @@ export function ReflectScreen({ state, onBuildPlan, isSaving }: ReflectScreenPro
           </div>
         )}
 
-        <p className="m-0 mt-4 px-0.5 text-[14px] leading-[1.5] text-muted-foreground text-pretty">
-          All saved. Change any of it anytime in{" "}
-          <span className="font-semibold text-primary">You</span>.
-        </p>
+        {unsaved.length > 0 ? (
+          <p
+            data-testid="onboarding-unsaved-note"
+            className="m-0 mt-4 px-0.5 text-[14px] leading-[1.5] text-[#F2B279] text-pretty"
+          >
+            One thing: {joinAnswers(unsaved)} didn&apos;t save. I&apos;ll try again
+            when you build your week.
+          </p>
+        ) : (
+          <p className="m-0 mt-4 px-0.5 text-[14px] leading-[1.5] text-muted-foreground text-pretty">
+            All saved. Change any of it anytime in{" "}
+            <span className="font-semibold text-primary">You</span>.
+          </p>
+        )}
       </div>
 
       <button
