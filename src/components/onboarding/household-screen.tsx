@@ -41,7 +41,7 @@ function babyNote(stage: BabyStage | null | undefined): string {
 export interface HouseholdScreenProps {
   onConfirm: (composition: HouseholdComposition) => void;
   onSkip: () => void;
-  onFreeText: (text: string) => void;
+  onFreeText: (text: string) => Promise<boolean>;
   onMicTap: () => void;
   talkPending: boolean;
   caught: string[];

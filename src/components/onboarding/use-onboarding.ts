@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { useFreeTextCapture } from "./use-onboarding-talk";
+import { useCoreSaves } from "./use-onboarding-saves";
 import {
   DEFAULT_HOUSEHOLD_COMPOSITION,
   type HouseholdComposition,
@@ -39,6 +40,9 @@ export interface OnboardingController {
   deepQuestion: DeepQuestion | null;
   isSaving: boolean;
   talkPending: boolean;
+  // Answers whose save didn't land. Non-empty means the reflect screen must not
+  // claim everything is saved (BUG-016).
+  unsaved: string[];
   caught: string[];
   toast: string | null;
   showToast: (message: string) => void;
@@ -57,7 +61,7 @@ export interface OnboardingController {
   answerDeep: (question: DeepQuestion, values: string[]) => void;
   acceptDeepRound: () => void;
   declineDeepRound: () => void;
-  submitFreeText: (text: string, dimension: Dimension) => void;
+  submitFreeText: (text: string, dimension: Dimension) => Promise<boolean>;
   finish: () => void;
   skipAll: () => void;
 }
@@ -72,12 +76,15 @@ export function useOnboarding(): OnboardingController {
   const [caught, setCaught] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
 
-  const savePreferences = trpc.user.updatePreferences.useMutation();
   const finishMutation = trpc.user.finishOnboarding.useMutation();
   const skipMutation = trpc.user.skipOnboarding.useMutation();
 
   const showToast = useCallback((message: string) => setToast(message), []);
   const dismissToast = useCallback(() => setToast(null), []);
+
+  // Core answers persist turn-by-turn; a failure is named, remembered, and
+  // retried before the interview closes rather than lost (BUG-016).
+  const { persist, retryFailed, failedSaves, isRetrying } = useCoreSaves(showToast);
 
   // Free text goes through the SAME capture path the You tab uses — the
   // interview is a guided front-end over user.talk, not a second AI pipeline.
@@ -111,43 +118,43 @@ export function useOnboarding(): OnboardingController {
     (composition: HouseholdComposition) => {
       setState((s) => ({ ...s, composition }));
       // householdSize is derived server-side from the composition.
-      savePreferences.mutate({ householdComposition: composition });
+      persist("who I'm cooking for", { householdComposition: composition });
       setCaught([]);
       setStep("diet");
     },
-    [savePreferences]
+    [persist]
   );
 
   const confirmDiet = useCallback(
     (framework: string) => {
       setState((s) => ({ ...s, dietaryFramework: framework }));
-      savePreferences.mutate({
+      persist("how you eat", {
         dietaryFramework: framework as "omnivore",
       });
       setCaught([]);
       setStep("restrictions");
     },
-    [savePreferences]
+    [persist]
   );
 
   const confirmRestrictions = useCallback(
     (restrictions: string[]) => {
       setState((s) => ({ ...s, restrictions }));
-      savePreferences.mutate({ restrictions });
+      persist("what I should never cook with", { restrictions });
       setCaught([]);
       setStep("weeknight");
     },
-    [savePreferences]
+    [persist]
   );
 
   const confirmWeeknight = useCallback(
     (minutes: number) => {
       setState((s) => ({ ...s, maxCookTimeWeeknight: minutes }));
-      savePreferences.mutate({ maxCookTimeWeeknight: minutes });
+      persist("your weeknight time", { maxCookTimeWeeknight: minutes });
       setCaught([]);
       setStep("deepenOffer");
     },
-    [savePreferences]
+    [persist]
   );
 
   // Advance past the current core question without persisting anything. The
@@ -174,7 +181,7 @@ export function useOnboarding(): OnboardingController {
       // The cuisines turn fills a TYPED preference, not just a memory, so it
       // persists like a core answer and the You tab can edit it directly.
       if (question.dimension === "cuisines" && values.length > 0) {
-        savePreferences.mutate({ cuisinePreferences: values });
+        persist("the cuisines you lean on", { cuisinePreferences: values });
       }
       // Computed outside the updater: advanceDeep is a side effect, and a
       // setState updater must stay pure (StrictMode invokes it twice).
@@ -190,17 +197,34 @@ export function useOnboarding(): OnboardingController {
       setCaught([]);
       advanceDeep(next);
     },
-    [advanceDeep, savePreferences, state]
+    [advanceDeep, persist, state]
   );
 
-  const finish = useCallback(() => {
+  const finish = useCallback(async () => {
+    // Last chance to land anything that failed mid-interview. Doing it here (not
+    // at the failing turn) means a transient drop usually heals on its own, and
+    // the user only ever sees one retry — the button they were going to press
+    // anyway.
+    if (!(await retryFailed())) {
+      showToast("Still can't reach the kitchen. Check your connection and tap again.");
+      return;
+    }
+
     // The seed is what makes the first plan demonstrably reflect the interview.
     writeHandoff({ request: planSeedRequest(state) });
-    finishMutation.mutate(
-      { state },
-      { onSuccess: leaveToPlan, onError: leaveToPlan }
-    );
-  }, [finishMutation, leaveToPlan, state]);
+    try {
+      await finishMutation.mutateAsync({ state });
+    } catch {
+      // Deliberately does NOT leave for Plan. finishOnboarding is what writes
+      // every synthesized memory AND the completed flag, so on failure nothing
+      // was saved and the gate will send the user straight back here — walking
+      // them out to a plan built on nothing would be the same silence BUG-016
+      // is about. Staying put keeps the retry one tap away.
+      showToast("I couldn't save what you told me. Tap again and I'll retry.");
+      return;
+    }
+    leaveToPlan();
+  }, [finishMutation, leaveToPlan, retryFailed, showToast, state]);
 
   const skipAll = useCallback(() => {
     // Skip is first-class: no preferences, no memories, but the same
@@ -211,7 +235,12 @@ export function useOnboarding(): OnboardingController {
     });
   }, [leaveToPlan, skipMutation]);
 
-  const isSaving = finishMutation.isPending || skipMutation.isPending;
+  const isSaving =
+    finishMutation.isPending || skipMutation.isPending || isRetrying;
+  const unsaved = useMemo(
+    () => failedSaves.map((f) => f.label),
+    [failedSaves]
+  );
 
   return useMemo(
     () => ({
@@ -220,6 +249,7 @@ export function useOnboarding(): OnboardingController {
       deepQuestion,
       isSaving,
       talkPending,
+      unsaved,
       caught,
       toast,
       showToast,
@@ -259,6 +289,7 @@ export function useOnboarding(): OnboardingController {
       submitFreeText,
       talkPending,
       toast,
+      unsaved,
     ]
   );
 }

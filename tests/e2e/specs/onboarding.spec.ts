@@ -302,6 +302,77 @@ test("OB13 - a retracted allergy does not come back on confirm", async ({ page }
   );
 });
 
+// OB14/OB15 are the two failure paths that matter more here than anywhere else
+// in the app: the interview fires exactly ONCE per account, so an answer lost to
+// a dropped connection is not something the user can re-run their way out of.
+// Both drive the failure for real (aborted requests), not a mocked error state.
+
+test("OB14 - a failed capture keeps what you typed (BUG-014)", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.route("**/api/trpc/user.talk*", (route) => route.abort());
+
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  const field = page.getByTestId("onboarding-tell-me-input");
+  await field.fill("we are going vegan");
+  await page.getByTestId("onboarding-tell-me-send").click();
+
+  await expect(page.getByTestId("onboarding-toast")).toContainText(
+    "didn't catch that"
+  );
+  // The toast says "try again" — so there has to be something left to try
+  // again with. Retyping on a phone is the worst outcome on the first screen a
+  // user ever sees.
+  await expect(field).toHaveValue("we are going vegan");
+});
+
+test("OB15 - a core answer that fails to save is not reported as saved, and is retried (BUG-016)", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+
+  // Drop only the FIRST preference write — the household turn — and let
+  // everything after it through. That is what a connection blip mid-interview
+  // actually looks like, and it used to pass completely unmentioned.
+  let dropped = false;
+  await page.route("**/api/trpc/user.updatePreferences*", (route) => {
+    if (!dropped) {
+      dropped = true;
+      return route.abort();
+    }
+    return route.continue();
+  });
+
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+  await page.getByTestId("onboarding-deepen-no").click();
+
+  await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+  // The claim the old build made regardless of what actually landed.
+  await expect(page.getByText("All saved.")).toBeHidden();
+  await expect(page.getByTestId("onboarding-unsaved-note")).toContainText(
+    "who I'm cooking for"
+  );
+
+  // The retry happens on the button the user was going to press anyway.
+  await page.getByTestId("onboarding-build-plan").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  const saved = await readOnboardingResult();
+  expect(saved.onboardingCompletedAt).not.toBeNull();
+  // The whole point: the dropped answer is in the database, not gone.
+  expect(saved.householdComposition).toMatchObject({
+    adults: 2,
+    babies: 1,
+    babyStage: "6_to_12m",
+  });
+  expect(saved.dietaryFramework).toBe("pescatarian");
+});
+
 test("OB8 - the deep round is adaptive and always offers a way out", async ({ page }) => {
   await seedOnboardingState("ONBOARDING_NEW");
   await page.goto("/welcome");

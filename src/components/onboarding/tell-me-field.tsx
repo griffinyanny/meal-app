@@ -6,7 +6,9 @@ import { cn } from "@/lib/utils";
 
 export interface TellMeFieldProps {
   example: string;
-  onSubmit: (text: string) => void;
+  // Resolves true when the chef actually caught it. The field keeps the text
+  // until then — see submit().
+  onSubmit: (text: string) => Promise<boolean>;
   onMicTap: () => void;
   isSubmitting: boolean;
   disabled?: boolean;
@@ -32,10 +34,14 @@ export function TellMeField({
   const [text, setText] = useState("");
   const canSubmit = text.trim().length > 0 && !isSubmitting && !disabled;
 
-  function submit() {
+  // Clear on success ONLY. The failure toast invites you to try again, so the
+  // message has to still be there to try again with — retyping on a phone, on
+  // the first screen a user ever sees, is the worst place to lose input. Same
+  // reasoning as shared/talk-to-chef-sheet.tsx, which never clears on submit.
+  async function submit() {
     if (!canSubmit) return;
-    onSubmit(text.trim());
-    setText("");
+    const caught = await onSubmit(text.trim());
+    if (caught) setText("");
   }
 
   return (
