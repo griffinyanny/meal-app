@@ -1,0 +1,200 @@
+// OB1–OB8: the first-run onboarding interview (Phase 1E, feature #4).
+//
+// The two paths the scope doc gates the phase on are COMPLETE (OB3/OB4) and
+// SKIP (OB5/OB6) — both must set the onboarding-complete flag so the interview
+// fires exactly once. The rest cover the gate itself, the mic's honest "not yet"
+// answer, and the adaptive deep round's always-available exit.
+//
+// Assertions go all the way to the database where it matters: a green UI that
+// persisted nothing would be the exact failure this feature can't afford, since
+// everything downstream (the chef's context, the You tab) reads the rows.
+import { test, expect, type Page } from "@playwright/test";
+import {
+  readOnboardingResult,
+  resetTestHousehold,
+  seedOnboardingState,
+} from "../app/seed";
+
+const confirm = (page: Page) => page.getByTestId("onboarding-confirm");
+
+// Walks the four core turns with a fixed set of answers: 2 adults + 1 baby at
+// 6-12 months, pescatarian, shellfish allergy, 30-minute weeknights.
+async function answerCoreQuestions(page: Page): Promise<void> {
+  await expect(page.getByText("Who am I cooking for?")).toBeVisible();
+  await page.getByRole("button", { name: "One more babies under 2" }).click();
+  await expect(page.getByTestId("onboarding-baby-stage")).toBeVisible();
+  await page.getByTestId("onboarding-baby-stage-6_to_12m").click();
+  await page.getByTestId("onboarding-confirm-household").click();
+
+  await expect(page.getByText("How do you eat?")).toBeVisible();
+  await page.getByTestId("onboarding-option-pescatarian").click();
+  await confirm(page).click();
+
+  await expect(page.getByText("Anything I should never cook with?")).toBeVisible();
+  await page.getByTestId("onboarding-option-shellfish").click();
+  await confirm(page).click();
+
+  await expect(page.getByText("How much time on a weeknight?")).toBeVisible();
+  await page.getByTestId("onboarding-option-30").click();
+  await confirm(page).click();
+}
+
+// These specs are the only ones that put the shared test user back into the
+// first-run state, and a user left mid-interview would redirect EVERY later
+// spec to /welcome. Restoring the onboarded default is therefore part of the
+// contract of this file, not just tidiness.
+test.afterAll(async () => {
+  await seedOnboardingState("ONBOARDING_DONE");
+  await resetTestHousehold();
+});
+
+test("OB1 - a first-time user is sent into the interview", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/plan");
+
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(
+    page.getByText("Let's get to know each other. Then I'll cook your week.")
+  ).toBeVisible();
+  // A conversation, not a destination — the tab bar is gone.
+  await expect(page.getByRole("navigation")).toBeHidden();
+});
+
+test("OB2 - a user who already onboarded is never re-prompted", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_DONE");
+  await page.goto("/plan");
+
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByText("What are you thinking this week?")).toBeVisible();
+});
+
+test("OB3 - completing the interview persists every core answer", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+
+  // Decline the optional deep round — the core alone must be a complete path.
+  await expect(page.getByText("Want to go a little deeper?")).toBeVisible();
+  await page.getByTestId("onboarding-deepen-no").click();
+
+  await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+  // The safety recap carries the You tab's vocabulary, including the marker.
+  await expect(page.getByText("I'll never cook with")).toBeVisible();
+  await expect(page.getByText("allergy")).toBeVisible();
+
+  await page.getByTestId("onboarding-build-plan").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  const saved = await readOnboardingResult();
+  expect(saved.onboardingCompletedAt).not.toBeNull();
+  expect(saved.dietaryFramework).toBe("pescatarian");
+  expect(saved.maxCookTimeWeeknight).toBe(30);
+  expect(saved.restrictions).toEqual(["shellfish (allergy)"]);
+  expect(saved.householdComposition).toMatchObject({
+    adults: 2,
+    children: 0,
+    babies: 1,
+    babyStage: "6_to_12m",
+  });
+  // A 6-to-12-month-old eats adapted bites, not a portion, so servings stay 2.
+  expect(saved.householdSize).toBe(2);
+  // The interview ALWAYS leaves at least one onboarding-stamped memory.
+  expect(saved.onboardingMemories.length).toBeGreaterThanOrEqual(1);
+  expect(saved.onboardingMemories.join(" ")).toContain("pescatarian");
+});
+
+test("OB4 - the completed interview hands off into a pre-seeded plan intent", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+  await page.getByTestId("onboarding-deepen-no").click();
+  await page.getByTestId("onboarding-build-plan").click();
+
+  await expect(page).toHaveURL(/\/plan$/);
+  // Door #3: the real intent screen, pre-filled — not a bespoke onboarding step.
+  await expect(page.getByText("YOUR PLAN, PRE-FILLED FROM WHAT YOU TOLD ME")).toBeVisible();
+  const chips = page.getByTestId("plan-seed-chips");
+  await expect(chips).toContainText("pescatarian");
+  await expect(chips).toContainText("Under 30 min");
+  await expect(page.getByTestId("plan-build-first-week")).toBeVisible();
+});
+
+test("OB5 - skipping from the intro sets the flag and lands in the app", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+
+  await page.getByTestId("onboarding-skip-all").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  const saved = await readOnboardingResult();
+  // Skip is first-class: same flag, but nothing invented on the user's behalf.
+  expect(saved.onboardingCompletedAt).not.toBeNull();
+  expect(saved.onboardingMemories).toHaveLength(0);
+  expect(saved.dietaryFramework).toBeNull();
+});
+
+test("OB6 - a skipped interview does not fire again on the next visit", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-skip-all").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  await page.goto("/plan");
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByText("What are you thinking this week?")).toBeVisible();
+});
+
+test("OB7 - the mic says voice is coming rather than failing silently", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+
+  await page.getByRole("button", { name: "Answer by voice" }).click();
+
+  await expect(page.getByTestId("onboarding-toast")).toContainText("Voice is coming soon");
+});
+
+test("OB8 - the deep round is adaptive and always offers a way out", async ({ page }) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+  await page.goto("/welcome");
+
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+  await page.getByTestId("onboarding-deepen-yes").click();
+
+  // The planner opens on its highest-value question and shows the honest
+  // "why we ask" line plus the optional-value meter.
+  await expect(page.getByText("How much heat do you actually want?")).toBeVisible();
+  await expect(page.getByTestId("onboarding-value-meter")).toBeVisible();
+  await expect(page.getByText("Spice is the thing people most often")).toBeVisible();
+
+  await page.getByTestId("onboarding-option-hot").click();
+  await confirm(page).click();
+
+  // A second, DIFFERENT question — the round adapts rather than repeating.
+  await expect(page.getByText("How much heat do you actually want?")).toBeHidden();
+  await expect(page.getByTestId("onboarding-good-for-now")).toBeVisible();
+
+  await page.getByTestId("onboarding-good-for-now").click();
+  await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+
+  await page.getByTestId("onboarding-build-plan").click();
+  await expect(page).toHaveURL(/\/plan$/);
+
+  const saved = await readOnboardingResult();
+  // The deep answer became its own onboarding memory alongside the headline.
+  expect(saved.onboardingMemories.length).toBeGreaterThanOrEqual(2);
+  expect(saved.onboardingMemories.join(" ").toLowerCase()).toContain("heat");
+});

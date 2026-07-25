@@ -33,12 +33,26 @@ setup("mint session + bootstrap test household", async () => {
 
   const { db, close } = makeSeedDb(env.databaseUrl, schema);
   try {
+    // The harness's DEFAULT identity is an already-onboarded user. Since Phase
+    // 1E the app redirects anyone with a NULL onboardingCompletedAt into the
+    // first-run interview, so leaving it null here would bounce every spec in
+    // the suite to /welcome before it could reach the tab it's testing. The
+    // onboarding specs opt into the first-run state explicitly via
+    // seedOnboardingState("ONBOARDING_NEW") and restore this default after.
     await db
       .insert(schema.users)
-      .values({ id: userId, email: TEST_USER_EMAIL })
+      .values({
+        id: userId,
+        email: TEST_USER_EMAIL,
+        onboardingCompletedAt: new Date(),
+      })
       .onConflictDoUpdate({
         target: schema.users.id,
-        set: { email: TEST_USER_EMAIL, updatedAt: new Date() },
+        set: {
+          email: TEST_USER_EMAIL,
+          onboardingCompletedAt: new Date(),
+          updatedAt: new Date(),
+        },
       });
 
     // One household per user (unique index on user_id). Reuse the existing

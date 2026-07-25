@@ -27,7 +27,18 @@ import {
 
 export const userTalkMutations = {
   talk: aiProcedure
-    .input(z.object({ request: z.string().trim().min(1).max(500) }))
+    .input(
+      z.object({
+        request: z.string().trim().min(1).max(500),
+        // Provenance for anything this call remembers. Defaults to "explicit"
+        // (the You tab's Talk-to-Chef sheet — "you told me"). The onboarding
+        // interview's per-question text field passes "onboarding" so its
+        // captures read as "you told me when we started" in the ledger, matching
+        // the memories finishOnboarding writes. Deliberately NOT free-form: only
+        // these two provenances can be claimed by a caller.
+        sourceType: z.enum(["explicit", "onboarding"]).default("explicit"),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const prefs = await ctx.db.query.userPreferences.findFirst({
         where: eq(userPreferences.userId, ctx.user.id),
@@ -110,7 +121,7 @@ export const userTalkMutations = {
               userId: ctx.user.id,
               content: mem.content,
               category: mem.category,
-              sourceType: "explicit",
+              sourceType: input.sourceType,
             })
             .returning({ id: aiMemories.id });
           if (row) wroteMemoryIds.push(row.id);

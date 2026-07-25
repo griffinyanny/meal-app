@@ -43,6 +43,13 @@
       "when": 1784673312257,
       "tag": "0005_nosy_mandroid",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784952790299,
+      "tag": "0006_useful_blur",
+      "breakpoints": true
     }
   ]
 }

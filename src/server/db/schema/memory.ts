@@ -29,6 +29,25 @@ export const restrictionsSchema = z.array(z.string().max(100)).max(50);
 export const dislikesSchema = z.array(z.string().max(100)).max(50);
 export const cuisinePreferencesSchema = z.array(z.string().max(50)).max(20);
 
+// Household composition (Phase 1E, onboarding interview) is defined in
+// @/lib/household — a pure module, so the interview UI and the You tab can
+// import the same shape without pulling drizzle into the client bundle.
+// Relative, not the "@/" alias: drizzle-kit's migration generator resolves this
+// file outside the Next.js/tsconfig path mapping.
+import {
+  DEFAULT_HOUSEHOLD_COMPOSITION,
+  type HouseholdComposition,
+} from "../../../lib/household";
+
+export {
+  BABY_STAGES,
+  babyStageSchema,
+  householdCompositionSchema,
+  DEFAULT_HOUSEHOLD_COMPOSITION,
+  deriveHouseholdSize,
+} from "../../../lib/household";
+export type { BabyStage, HouseholdComposition } from "../../../lib/household";
+
 export const userPreferences = pgTable("user_preferences", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")
@@ -42,6 +61,13 @@ export const userPreferences = pgTable("user_preferences", {
   restrictions: jsonb("restrictions").$type<string[]>().default([]),
   dislikes: jsonb("dislikes").$type<string[]>().default([]),
   householdSize: integer("household_size").default(2),
+  // Derived-from + richer-than householdSize. householdSize stays the single
+  // number every serving consumer reads (plan generation, recipe scaling); this
+  // column carries the composition those servings came from, so the chef can
+  // cook age-appropriately. Written together — see deriveHouseholdSize.
+  householdComposition: jsonb("household_composition")
+    .$type<HouseholdComposition>()
+    .default(DEFAULT_HOUSEHOLD_COMPOSITION),
   maxCookTimeWeeknight: integer("max_cook_time_weeknight").default(45),
   maxCookTimeWeekend: integer("max_cook_time_weekend").default(90),
   cuisinePreferences: jsonb("cuisine_preferences").$type<string[]>().default([]),

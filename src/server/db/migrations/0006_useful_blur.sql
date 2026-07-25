@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "onboarding_completed_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "user_preferences" ADD COLUMN "household_composition" jsonb DEFAULT '{"adults":2,"children":0,"babies":0,"babyStage":null}'::jsonb;

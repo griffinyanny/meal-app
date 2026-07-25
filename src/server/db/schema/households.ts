@@ -24,6 +24,14 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   displayName: text("display_name"),
   avatarUrl: text("avatar_url"),
+  // Set once by BOTH the completed AND the skipped onboarding interview (Phase
+  // 1E #4) — the interview fires on first login and never nags again. Lives on
+  // users, not user_preferences: the users row is guaranteed to exist before the
+  // app renders (ensureOnboarded creates it), while a preferences row is written
+  // lazily, so a pre-interview user has none. NULL = the interview hasn't run.
+  onboardingCompletedAt: timestamp("onboarding_completed_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
