@@ -68,7 +68,9 @@ export function HouseholdScreen({
   const servings = deriveHouseholdSize({ ...composition, babyStage: stage });
 
   return (
-    <div className="animate-turn-in flex flex-1 flex-col justify-center">
+    // Top-anchored question, bottom-anchored actions (see question-screen): the
+    // baby note revealing must not move the stepper the user is still tapping.
+    <div className="animate-turn-in flex flex-1 flex-col">
       <ChefStatus label="GETTING TO KNOW YOU" />
 
       <h2 className="m-0 mb-4 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-foreground">
@@ -101,8 +103,18 @@ export function HouseholdScreen({
           value={composition.babies}
           min={0}
           max={6}
+          // A revealed follow-up arrives with an answer already proposed, like
+          // every other turn ("AI proposes, user reacts" — three empty chips
+          // under a prompt is a blank form). 6-to-12 months is the conservative
+          // guess: it's the stage that makes the chef flag choking hazards, and
+          // the note above the chips narrates the assumption out loud, so the
+          // chips read as a correction rather than a second question.
           onChange={(babies) =>
-            patch({ babies, babyStage: babies > 0 ? composition.babyStage : null })
+            patch({
+              babies,
+              babyStage:
+                babies > 0 ? composition.babyStage ?? "6_to_12m" : null,
+            })
           }
           testId="onboarding-count-babies"
         />
@@ -144,6 +156,8 @@ export function HouseholdScreen({
         </div>
       )}
 
+      <div aria-hidden className="mt-auto min-h-6" />
+
       <CaughtTray items={caught} />
 
       <TellMeField
@@ -159,8 +173,13 @@ export function HouseholdScreen({
         testId="onboarding-confirm-household"
       />
 
+      {/* Adding a 6-to-12-month-old deliberately doesn't move the serving count
+          (they eat adapted bites, not a portion). Said plainly, because a
+          number that refuses to change after a tap reads as a control that
+          didn't register. */}
       <p className="mt-2.5 text-center text-[12px] text-[#6B6B72]">
-        I&apos;ll cook for {servings} {servings === 1 ? "serving" : "servings"}.
+        I&apos;ll cook for {servings} {servings === 1 ? "serving" : "servings"}
+        {stage === "6_to_12m" ? ", plus bites for the little one." : "."}
       </p>
 
       <div className="mt-1 flex justify-center">

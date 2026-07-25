@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
+import { useFreeTextCapture } from "./use-onboarding-talk";
 import {
   DEFAULT_HOUSEHOLD_COMPOSITION,
   type HouseholdComposition,
@@ -75,14 +76,16 @@ export function useOnboarding(): OnboardingController {
   const finishMutation = trpc.user.finishOnboarding.useMutation();
   const skipMutation = trpc.user.skipOnboarding.useMutation();
 
-  // Free text goes through the SAME capture path the You tab uses — the
-  // interview is a guided front-end over user.talk, not a second AI pipeline.
-  // Stamped "onboarding" so what it remembers reads as "you told me when we
-  // started" in the ledger.
-  const talkMutation = trpc.user.talk.useMutation();
-
   const showToast = useCallback((message: string) => setToast(message), []);
   const dismissToast = useCallback(() => setToast(null), []);
+
+  // Free text goes through the SAME capture path the You tab uses — the
+  // interview is a guided front-end over user.talk, not a second AI pipeline.
+  const { submitFreeText, talkPending } = useFreeTextCapture({
+    setState,
+    setCaught,
+    showToast,
+  });
 
   // Leaving the interview always lands on the Plan tab, never a dead end.
   const leaveToPlan = useCallback(() => {
@@ -190,50 +193,6 @@ export function useOnboarding(): OnboardingController {
     [advanceDeep, savePreferences, state]
   );
 
-  const submitFreeText = useCallback(
-    (text: string, dimension: Dimension) => {
-      talkMutation.mutate(
-        { request: text, sourceType: "onboarding" },
-        {
-          onSuccess: async (data) => {
-            // The tray lists what the message actually changed, item by item.
-            // user.talk has already applied the ops, so this is a confirmation,
-            // not a pending edit. When nothing landed as a typed field or a
-            // memory there is nothing to itemize, so the chef's own sentence
-            // stands in — silence would read as the message being swallowed.
-            setCaught(data.caught.length > 0 ? data.caught : [data.reply]);
-
-            // user.talk wrote straight to user_preferences, so the server now
-            // knows things this component doesn't. Pull them back before moving
-            // on: without this, answering "we're pescatarian" by TYPING would
-            // leave the reflect screen, the synthesized memory, and the planner
-            // all blind to it — the interview would forget what it just heard.
-            const prefs = await utils.user.preferences.fetch();
-
-            setState((s) => ({
-              ...s,
-              dietaryFramework: prefs?.dietaryFramework ?? s.dietaryFramework,
-              restrictions: (prefs?.restrictions as string[] | null) ?? s.restrictions,
-              cuisinePreferences:
-                (prefs?.cuisinePreferences as string[] | null) ?? s.cuisinePreferences,
-              maxCookTimeWeeknight:
-                prefs?.maxCookTimeWeeknight ?? s.maxCookTimeWeeknight,
-              composition:
-                (prefs?.householdComposition as HouseholdComposition | null) ??
-                s.composition,
-              freeTextDimensions: s.freeTextDimensions.includes(dimension)
-                ? s.freeTextDimensions
-                : [...s.freeTextDimensions, dimension],
-            }));
-          },
-          onError: () =>
-            showToast("The chef didn't catch that. Try again, or just tap an answer."),
-        }
-      );
-    },
-    [showToast, talkMutation, utils]
-  );
-
   const finish = useCallback(() => {
     // The seed is what makes the first plan demonstrably reflect the interview.
     writeHandoff({ request: planSeedRequest(state) });
@@ -260,7 +219,7 @@ export function useOnboarding(): OnboardingController {
       state,
       deepQuestion,
       isSaving,
-      talkPending: talkMutation.isPending,
+      talkPending,
       caught,
       toast,
       showToast,
@@ -298,7 +257,7 @@ export function useOnboarding(): OnboardingController {
       state,
       step,
       submitFreeText,
-      talkMutation.isPending,
+      talkPending,
       toast,
     ]
   );

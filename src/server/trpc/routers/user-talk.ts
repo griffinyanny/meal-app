@@ -24,7 +24,7 @@ import {
   talkToPreferencesChef,
   type PreferencesState,
 } from "@/server/ai/tasks/preferences-talk";
-import { describeCaught } from "@/lib/onboarding/caught";
+import { describeCaught, fieldsTouchedBy } from "@/lib/onboarding/caught";
 
 export const userTalkMutations = {
   talk: aiProcedure
@@ -149,6 +149,12 @@ export const userTalkMutations = {
         // onboarding interview's "what I caught" tray renders these; the You
         // tab ignores them and keeps using `reply`.
         caught: describeCaught(orig, nextPatch, remember.map((m) => m.content)),
+        // Which typed fields this message spoke to. Read off the ops, not the
+        // diff: a caller cannot infer this from the row afterwards, because
+        // `dietary_framework` defaults to "omnivore" — so any write at all
+        // makes the row claim a dietary answer nobody gave, while a genuine
+        // correction back TO omnivore produces no diff at all.
+        changed: fieldsTouchedBy(ops),
         applied: {
           prefsChanged,
           remembered: wroteMemoryIds.length,

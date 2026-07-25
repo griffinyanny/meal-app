@@ -114,7 +114,7 @@ export function NoPlanState({
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Or just start talking — what sounds good?"
+          placeholder="Or just start talking. What sounds good?"
           rows={3}
           disabled={isGenerating}
           className="min-h-24 resize-none bg-white/5 pr-12 text-base"

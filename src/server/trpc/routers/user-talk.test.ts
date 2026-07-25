@@ -187,6 +187,79 @@ describe("user.talk", () => {
     expect(result.undo.deactivatedMemoryIds).toEqual(["mem-1"]);
   });
 
+  it("reports only the fields the message actually changed", async () => {
+    // A message that files a memory and nothing else. `changed` must stay
+    // empty: the row it creates carries a defaulted dietary_framework, and a
+    // caller that trusted the row would show the user a dietary answer they
+    // never gave.
+    mockTalk.mockResolvedValue(
+      talkResult([{ kind: "remember", value: "Does taco night on Tuesdays", category: "preference" }])
+    );
+    const db = createTalkDb({
+      prefs: undefined,
+      memRows: [],
+      insertMemReturning: [{ id: "mem-new" }],
+      updateMemReturning: [],
+    });
+    const caller = talkRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.talk({ request: "we do taco night every Tuesday" });
+
+    expect(result.changed).toEqual([]);
+    expect(result.caught).toEqual(["Does taco night on Tuesdays"]);
+  });
+
+  it("names the changed field when the message does set one", async () => {
+    mockTalk.mockResolvedValue(talkResult([{ kind: "set_diet", value: "vegan" }]));
+    const db = createTalkDb({
+      prefs: DEFAULT_PREFS,
+      memRows: [],
+      insertMemReturning: [],
+      updateMemReturning: [],
+    });
+    const caller = talkRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.talk({ request: "we're going vegan" });
+
+    expect(result.changed).toEqual(["dietaryFramework"]);
+    expect(result.caught).toEqual(["Vegan"]);
+  });
+
+  it("reports a field the message set back to its existing value", async () => {
+    // "Actually, we're not pescatarian" resolves to omnivore, which is also the
+    // column default — so there is no diff to observe. The user still answered
+    // the question, and a caller that watched the diff would leave the screen
+    // showing the answer they had just retracted.
+    mockTalk.mockResolvedValue(talkResult([{ kind: "set_diet", value: "omnivore" }]));
+    const db = createTalkDb({
+      prefs: { ...DEFAULT_PREFS, dietaryFramework: "omnivore" },
+      memRows: [],
+      insertMemReturning: [],
+      updateMemReturning: [],
+    });
+    const caller = talkRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.talk({ request: "actually we are not pescatarian" });
+
+    // No diff to persist...
+    expect(result.applied.prefsChanged).toBe(false);
+    // ...but the question was still answered.
+    expect(result.changed).toEqual(["dietaryFramework"]);
+  });
+
+  it("reports the field when the message REMOVES something", async () => {
+    mockTalk.mockResolvedValue(
+      talkResult([{ kind: "remove_avoid", value: "peanuts" }])
+    );
+    const db = createTalkDb({
+      prefs: { ...DEFAULT_PREFS, restrictions: ["peanuts (allergy)"] },
+      memRows: [],
+      insertMemReturning: [],
+      updateMemReturning: [],
+    });
+    const caller = talkRouter.createCaller(buildCtx(db, mockUser));
+    const result = await caller.talk({ request: "actually remove peanuts" });
+
+    expect(result.changed).toEqual(["restrictions"]);
+  });
+
   it("ignores a forget ref that maps to no owned memory (id-safety)", async () => {
     mockTalk.mockResolvedValue(talkResult([{ kind: "forget", ref: 99 }]));
     const db = createTalkDb({

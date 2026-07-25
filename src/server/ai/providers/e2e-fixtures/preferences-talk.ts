@@ -63,6 +63,25 @@ export function buildPreferencesTalkFixture(promptText: string): {
   const lower = message.toLowerCase();
   const memories = extractRememberList(promptText);
 
+  // Taking an avoid back — checked BEFORE the allergy branch, because a
+  // retraction ("actually remove peanuts", "I'm not allergic to peanuts after
+  // all") usually still contains the word it is retracting. The real model
+  // emits remove_avoid here; without this branch the mock could only ever add,
+  // which would make the suite green over a chef that never lets go of a
+  // restriction the user withdrew.
+  const removeMatch = lower.match(
+    /(?:remove|drop|take off|forget about|no longer avoid)\s+(?:the\s+)?([a-z ]+)|not allergic to\s+([a-z ]+)/
+  );
+  if (removeMatch) {
+    const food = (removeMatch[1] ?? removeMatch[2] ?? "").split(/[.,]/)[0].trim();
+    if (food) {
+      return {
+        reply: `Taken ${food} off your list.`,
+        ops: [prefOp("remove_avoid", { value: food })],
+      };
+    }
+  }
+
   // Allergy — highest priority, ALWAYS a flagged avoid (never a dislike).
   const allergyMatch = lower.match(/allerg(?:ic to|y to|ic|y|ies)?\s+([a-z ]+)/);
   if (/\ballerg/.test(lower)) {

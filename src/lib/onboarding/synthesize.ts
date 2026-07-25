@@ -139,8 +139,8 @@ const HOOKS: HookCandidate[] = [
   },
   {
     applies: (s) => s.dietaryFramework === "pescatarian",
-    mentions: ["fish", "seafood", "salmon"],
-    line: "Fish is the fastest good dinner there is. Expect something seared, with a vegetable that gets real color next to it.",
+    mentions: ["fish", "seafood", "salmon", "green bean"],
+    line: "Fish is the fastest good dinner there is. I'm already picturing seared salmon with green beans that get some real char.",
   },
   {
     applies: (s) => !!s.composition && s.composition.babies > 0,
@@ -152,11 +152,13 @@ const HOOKS: HookCandidate[] = [
   },
   {
     applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight <= 30,
-    line: "Half an hour is plenty. One hot pan, one thing that gets real color, and dinner's done.",
+    mentions: ["pork", "chop", "cabbage"],
+    line: "Half an hour is plenty. I'm thinking a pork chop in a hot pan and cabbage that goes sweet at the edges.",
   },
   {
     applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight >= 75,
-    line: "You've given yourself real time on a weeknight, so at least one dinner is going to be worth standing over.",
+    mentions: ["short rib", "beef", "braise"],
+    line: "You've given yourself real time on a weeknight, so I'm putting a short-rib braise on the list.",
   },
   {
     applies: (s) => valuesOf(s, "proteins").length > 0,
