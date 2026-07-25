@@ -16,7 +16,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test:capture": "playwright test -c playwright.capture.config.ts",
+    "test:capture:live": "E2E_LIVE_CAPTURE=1 playwright test -c playwright.capture-live.config.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

@@ -160,6 +160,45 @@ The capture harness (Claude reads the PNGs, critiques vs `docs/design/visual-qa-
 - **Recipes** — `recipes.capture.ts` (S28): library, cooked-filter, drafts-expanded, create-menu, empty.
 S28 gate: 0 blockers, 0 high across all 11 Groceries+Recipes states.
 
+### ADVERSARIAL state (Plan, S37)
+`seedPlanState("ADVERSARIAL")` — capture-only, not a behavior-spec state. Every other
+seed is well-behaved by design, so the pleasant case was the only case Layer A ever
+photographed. This one makes the ugly cases deterministic: an overlong title, a slot
+with no title/description/chips/tags, an overlong chip row, three near-identical
+titles, and an eating-out card. Run: `npm run test:capture`.
+
+---
+
+## Layer-B cadence (real-model capture — `npm run test:capture:live`)
+Layer A photographs the app running on **canned fixtures**. That makes it a layout and
+correctness gate, and nothing more: if a fixture stops resembling what the real model
+returns, every screenshot stays beautiful and every spec stays green while the shipped
+product drifts. **The mock cannot detect its own drift.** Layer B is the only thing that
+can, and it costs real OpenAI spend, so it runs on a cadence rather than continuously.
+
+Precedent for why this matters: the mock relaxes the rate limiter to 1000/min, so it is
+structurally incapable of catching a rate-limit regression. S30's AI fan-out slipped
+past the whole E2E suite and was caught in code review instead.
+
+**Run Layer B when any of these fire:**
+1. **A fixture changed** — any edit under `src/server/ai/providers/e2e-fixtures/`. Run
+   the affected tab's live capture in the same session and say so at wrap.
+2. **A prompt changed** — any edit to a system prompt or prompt builder. The fixtures
+   were written against the old prompt's output shape.
+3. **New user-visible generated copy** — chips, chef summaries, recipe text, reply
+   sentences. Layer A proves the layout holds; only Layer B proves the words are good.
+4. **Phase close** — at minimum once per phase, on the phase's primary surface.
+5. **Model or provider change** — a new model is a new output distribution.
+
+**Owed today (as of S37):** Layer B has been run **once**, on Plan only. Groceries,
+Recipes, You, and onboarding have never had a real-model capture, so their fixtures are
+unvalidated against live output. Clearing that backlog is one live capture per tab —
+schedule it at the next phase close rather than as its own session.
+
+**When you run it, compare against Layer A and report the delta** — real titles vs
+fixture titles, real chip phrasing vs canned, real lengths vs seeded lengths. A
+difference that would have changed a layout judgment is a finding, not a curiosity.
+
 ## Not yet cataloged (future)
 - 1B recipe flows — capture / import / generate / modify (the AI-calling recipe mutations).
 - Groceries — item drag-reorder (manual mode) + merge-review split interactions (unit-covered; add E2E if they regress).

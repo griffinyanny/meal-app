@@ -4,7 +4,7 @@
 // states drive the filter/drafts/create-menu and wait before the shot.
 import { type Page } from "@playwright/test";
 import { seedRecipeState } from "../app/seed";
-import { type CaptureStateDef } from "./capture-runtime";
+import { type CaptureStateDef } from "../harness/capture-runtime";
 
 export const RECIPE_SECTION_KEY = "recipe";
 

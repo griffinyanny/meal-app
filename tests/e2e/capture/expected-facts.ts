@@ -5,7 +5,7 @@
 // vision judgment. Copy strings verified against the components.
 import { type Page } from "@playwright/test";
 import { seedPlanState } from "../app/seed";
-import { type CaptureStateDef } from "./capture-runtime";
+import { type CaptureStateDef } from "../harness/capture-runtime";
 
 // The debug-HUD section the Plan tab publishes (useDebugPanel("plan", ...)).
 export const PLAN_SECTION_KEY = "plan";
@@ -89,6 +89,29 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       primaryCta: "Plan next week →",
     },
     prepare: () => seedPlanState("ELAPSED_DRAFT"),
+    navigate: gotoPlan,
+  },
+  {
+    id: "adversarial",
+    briefRef: "visual-qa-rubric.md#adversarial-content",
+    expectedState: "review",
+    readyText: "Your week, ready to review",
+    facts: {
+      // Deliberately awkward content, so the layout is judged on its worst
+      // realistic day rather than its best. What to look for in the pixels:
+      slotCount: 7,
+      hasOverlongTitle: true,
+      overlongTitleIsClampedNotOverflowing: true,
+      hasSlotWithNoTitleOrChips: true,
+      emptySlotStillReadsAsACard: true,
+      hasOverlongChipRow: true,
+      chipRowWrapsOrScrollsCleanly: true,
+      hasThreeNearIdenticalTitles: true,
+      nearIdenticalCardsAreStillDistinguishable: true,
+      hasEatingOutCard: true,
+      eatingOutIsVisiblyDeEmphasized: true,
+    },
+    prepare: () => seedPlanState("ADVERSARIAL"),
     navigate: gotoPlan,
   },
 ];

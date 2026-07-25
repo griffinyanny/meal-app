@@ -1,6 +1,30 @@
 # What's Next
 
-Last updated: 2026-07-25 (Session 36)
+Last updated: 2026-07-25 (Session 37)
+
+## ⚠️ S37 was infrastructure, not product — the 1E close below is STILL the next product step
+
+Session 37 ran the QA-process hardening plan (`~/.claude/plans/qa-process-hardening-and-ffos-port.md`)
+and did no product work. What changed under you:
+
+- **The E2E harness now works from a genuine cold start.** It no longer needs a
+  service-role key, and deleting the test user no longer wedges the suite. Verified by
+  deleting the identity outright and running from nothing.
+- **`npm run test:capture` and `npm run test:capture:live`** are real scripts now (Layer A
+  and Layer B), instead of raw `npx playwright -c ...` invocations.
+- **The auto-invoking rules cover all five surfaces**, not just Plan — editing Groceries,
+  Recipes, You or onboarding now nudges the E2E + visual-QA loop.
+- **Two new Plan bugs are logged**: BUG-008 (the meal card prints the cook time twice, and
+  two different times when they disagree) and BUG-009 (a null-title slot renders as the
+  "Thinking…" state). Both are routed to **1E.5**, so read them before that buildout.
+- **Layer B is owed on four tabs** — it has run once, on Plan only. `docs/test-plan.md`
+  → "Layer-B cadence" has the triggers and the backlog.
+- The harness was ported to **FFOS** and caught three real UI bugs there on its first run,
+  which is the evidence that this layer earns its keep.
+
+Nothing above blocks the 1E close. Proceed with it as written below.
+
+---
 
 ## ▶ NEXT SESSION — 1E #4 is BUILT + fully machine-verified (70/70 E2E). Remaining to close 1E: `/visual-qa` → `/code-review` → **Griffin's taste pass**.
 

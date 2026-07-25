@@ -4,6 +4,67 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 37 — 2026-07-25 (QA-process hardening + the harness ported to FFOS)
+
+Infrastructure session, no product work. Ran the five tasks from
+`~/.claude/plans/qa-process-hardening-and-ffos-port.md`. **445 unit + 72 E2E green.**
+Three commits on `session-33-you-tab-audit`. CI was skipped deliberately (below).
+
+### 1. The dead auth-bootstrap path is fixed, and cold start actually works now
+BUG-007's fix left the privileged bootstrap unreachable — it survived only because the
+test user already existed. Verified the failure mode empirically before touching it: the
+`sb_secret_` key gets `403 bad_jwt: unrecognized JWT kid <nil>` from every
+`/auth/v1/admin/*` endpoint, so an admin bootstrap cannot work on this project at all.
+Deleted that branch rather than keeping a second untestable one. The harness now creates
+`auth.users` + `auth.identities` directly over `DATABASE_URL` and needs **no service-role
+key at all**.
+- Public `signUp` was the obvious replacement and is wrong twice: GoTrue rejects the
+  reserved `@example.com` sentinel (`email_address_invalid` — the admin API skipped that
+  check, which is why the old path worked), and it would send real confirmation mail.
+  Writing the rows keeps the test identity on an address that can never receive a
+  password-reset link.
+- Two failures found only by running it cold: GoTrue scans several nullable token columns
+  into non-nullable Go strings, so a NULL there fails every sign-in with an opaque
+  "Database error querying schema".
+- **Verified properly:** deleted the auth user, its public rows and its household, cleared
+  the Playwright transform cache, ran from nothing. Setup green, suite green.
+- Two one-off failures appeared across the cold runs (OB4, then RG5) and neither recurred;
+  OB4 was a stale transform cache (its error line numbers came from an old compile), RG5 is
+  a 6s-race spec that passes in isolation. Flagged, not silenced.
+
+### 2. Harness ported to FFOS — validated as genuinely copyable
+`harness/` copied verbatim; wrote FFOS's app layer against **/goal** (the north star, and
+the only surface with a money-behavior write). **859 unit + 9 E2E green**, Layer-A capture
+clean. Branch `e2e-harness-port`. It caught three real UI bugs on its first run — the
+sharp one being the debt stack rendering in arbitrary order under a heading promising
+"highest rate clears first". Also moved `capture-runtime.ts` into `harness/` (it was
+already marked generic but lived in `capture/`), so FFOS copies the core instead of
+forking it.
+
+### 3-5. Mock split, cadence, rules, ADVERSARIAL
+- `e2e-mock-fixtures.ts` (491 lines) split per-domain under `e2e-fixtures/`; the old path
+  is now a barrel, so no import changed. Largest file 151 lines.
+- **Layer-B cadence** written into `docs/test-plan.md`: five triggers, plus the honest
+  statement that Layer B has run **once, on Plan only** — Groceries/Recipes/You/onboarding
+  fixtures are unvalidated against live output.
+- Rules renamed `plan-e2e.md`→`e2e.md`, `plan-visual-qa.md`→`visual-qa.md`, globs widened
+  from Plan-only to all five covered surfaces, both now nudge Layer B on a fixture edit.
+  `test:capture` / `test:capture:live` promoted to npm scripts.
+- **ADVERSARIAL seed state** built (capture-only) and it paid for itself immediately:
+  **BUG-008** (the meal card prints the cook time twice — and two *different* times when
+  `estTimeMinutes` and a time-shaped tag disagree; present on every seeded card, so it was
+  in previous captures and got read past) and **BUG-009** (a null-title slot renders as the
+  "Thinking…" generating state). Both routed to 1E.5 rather than patched.
+
+### CI: skipped, deliberately
+The plan marked it optional and Griffin skeptical. The blocker is unchanged — the suite
+uses ONE shared test household with `workers:1`, so concurrent runs race the seed. A
+concurrency group would serialize them, but that buys little over the codified wrap-time
+gate while adding a failure surface. Revisit if the harness lands in a third repo or if a
+second person starts pushing.
+
+---
+
 ## Session 36 — 2026-07-24 (Phase 1E #4 onboarding interview BUILT — 1E closes, M5 done)
 
 ### What happened
