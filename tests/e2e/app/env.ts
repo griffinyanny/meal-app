@@ -27,9 +27,11 @@ export const TEST_USER_EMAIL = "e2e-harness@example.com";
 export const TEST_USER_PASSWORD = "e2e-Harness-Pw-7Q2x!";
 export const TEST_HOUSEHOLD_NAME = "E2E Test Kitchen";
 
+// The harness needs no service-role key: the test user is bootstrapped over the
+// direct Postgres connection (see harness/supabase-session.ts), which works on
+// both the legacy-JWT and the new sb_publishable_/sb_secret_ key regimes.
 export const env = {
   supabaseUrl: required("NEXT_PUBLIC_SUPABASE_URL"),
   anonKey: required("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
-  serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
   databaseUrl: required("DATABASE_URL"),
 };
