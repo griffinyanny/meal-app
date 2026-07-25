@@ -180,11 +180,21 @@ test("OB8 - the deep round is adaptive and always offers a way out", async ({ pa
   await expect(page.getByTestId("onboarding-value-meter")).toBeVisible();
   await expect(page.getByText("Spice is the thing people most often")).toBeVisible();
 
+  // Nothing captured yet, so the meter starts empty — it measures signal, not
+  // questions survived.
+  await expect(page.getByTestId("onboarding-value-meter-fill")).toHaveCSS("width", "0px");
+
   await page.getByTestId("onboarding-option-hot").click();
   await confirm(page).click();
 
   // A second, DIFFERENT question — the round adapts rather than repeating.
   await expect(page.getByText("How much heat do you actually want?")).toBeHidden();
+
+  // ...and the meter has actually moved, now that an answer carried signal.
+  await expect(page.getByTestId("onboarding-value-meter-fill")).not.toHaveCSS(
+    "width",
+    "0px"
+  );
   await expect(page.getByTestId("onboarding-good-for-now")).toBeVisible();
 
   await page.getByTestId("onboarding-good-for-now").click();

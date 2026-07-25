@@ -70,9 +70,29 @@ than `explicit` (the build delta the brief called out).
   router, chef-context composition rendering).
 - **Planner eval 6/6 personas.**
 - Migration `0006` generated + applied.
-- E2E: OB1-OB8 added (`tests/e2e/specs/onboarding.spec.ts`) covering **both required paths** (complete + skip), the
-  first-run gate, the mic's "coming soon" answer, and the adaptive round. Assertions go to the database, not just
-  the UI.
+- **70/70 E2E green**, including OB1-OB8 (`tests/e2e/specs/onboarding.spec.ts`) covering **both required paths**
+  (complete + skip), the first-run gate, the mic's "coming soon" answer, and the adaptive round. Assertions go to the
+  database, not just the UI.
+
+**Two bugs the E2E run caught, both fixed:**
+1. The first-run gate redirected **every** spec to `/welcome` — the harness's test user had a NULL
+   `onboardingCompletedAt`. `auth.setup.ts` now stamps the default identity as already-onboarded, and
+   `onboarding.spec.ts` restores that default in `afterAll` so it can't poison other specs whatever the run order.
+   Exactly the class of regression the harness exists to catch.
+2. **BUG-007 — the harness couldn't authenticate at all** (`bad_jwt` on every admin call, all 70 specs unable to
+   run). My first diagnosis was wrong: I assumed a stale legacy key and told Griffin to refresh it. He checked and
+   said neither key looked changed — which was the right pushback, because `.env.local` already held the new
+   `sb_publishable_`/`sb_secret_` keys. Probing each service separately localized it: PostgREST accepts the secret
+   key (200) and ordinary password sign-in with the publishable key works (200), but GoTrue's `/auth/v1/admin/*`
+   endpoints still expect a JWT carrying `role: service_role` and reject a non-JWT secret key. The harness was
+   calling `auth.admin.listUsers`/`updateUserById` to bootstrap a test user that **already existed**.
+   `mintSupabaseSession` now signs in with the publishable key first (also removing a 50-page `listUsers` scan from
+   every run) and falls back to the privileged bootstrap only if sign-in genuinely fails. **No credential change was
+   needed.**
+3. OB8 then failed on a bad assertion of mine, not a product fault: the value-meter testid sat on the *fill*, which
+   is legitimately zero-width on the first deep question (the meter measures signal captured, not questions
+   survived), and a zero-width element is invisible. Moved the testid to the track and strengthened the spec to
+   assert the fill actually grows once an answer carries signal.
 
 ---
 

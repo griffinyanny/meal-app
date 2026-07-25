@@ -43,6 +43,12 @@ function adminClient(cfg: SupabaseAuthConfig) {
   });
 }
 
+function anonClient(cfg: SupabaseAuthConfig) {
+  return createClient(cfg.supabaseUrl, cfg.anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
 async function findUserByEmail(
   admin: ReturnType<typeof adminClient>,
   email: string
@@ -91,9 +97,7 @@ export async function ensureAuthUser(cfg: SupabaseAuthConfig): Promise<string> {
 // require the Supabase "Email" provider to be enabled (Auth → Providers →
 // Email). Neither sends an actual email. A clear error names the fix.
 async function obtainSession(cfg: SupabaseAuthConfig): Promise<Session> {
-  const anon = createClient(cfg.supabaseUrl, cfg.anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const anon = anonClient(cfg);
 
   const pw = await anon.auth.signInWithPassword({
     email: cfg.email,
@@ -127,6 +131,31 @@ async function obtainSession(cfg: SupabaseAuthConfig): Promise<Session> {
 export async function mintSupabaseSession(
   cfg: SupabaseAuthConfig
 ): Promise<MintedSession> {
+  // Happy path: sign in as the test user with the PUBLISHABLE/anon key alone.
+  // No admin API, no service-role key, and no 50-page listUsers scan — the
+  // session itself carries the uid we need.
+  //
+  // This isn't just an optimization. On a project using the new
+  // sb_publishable_/sb_secret_ key format with asymmetric (ES256) JWTs, GoTrue's
+  // /auth/v1/admin/* endpoints reject the secret key outright — it isn't a JWT,
+  // so they fail with `bad_jwt: unrecognized JWT kid <nil>`. The privileged
+  // bootstrap below is therefore unusable on such projects, while ordinary
+  // sign-in works fine. Reaching for admin only when sign-in actually fails
+  // keeps the harness working across both key regimes.
+  const signedIn = await anonClient(cfg).auth.signInWithPassword({
+    email: cfg.email,
+    password: cfg.password,
+  });
+  if (signedIn.data.session?.user) {
+    return {
+      userId: signedIn.data.session.user.id,
+      session: signedIn.data.session,
+    };
+  }
+
+  // Cold start (the test user doesn't exist yet) or a changed password: fall
+  // back to the privileged bootstrap. Requires a service-role key the admin API
+  // accepts — i.e. a legacy JWT-format key.
   const userId = await ensureAuthUser(cfg);
   const session = await obtainSession(cfg);
   return { userId, session };

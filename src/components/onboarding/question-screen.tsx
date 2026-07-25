@@ -96,9 +96,16 @@ export function QuestionScreen({
             </span>
             <span className="text-[11px] font-semibold text-[#F2B279]">Optional</span>
           </div>
-          <div className="h-[5px] overflow-hidden rounded-[3px] bg-white/[0.08]">
+          {/* The testid lives on the TRACK, which is always rendered. The fill
+              is legitimately zero-width on the first deep question (the meter
+              measures signal captured, not questions survived), and a
+              zero-width element is invisible to both users and assertions. */}
+          <div
+            data-testid="onboarding-value-meter"
+            className="h-[5px] overflow-hidden rounded-[3px] bg-white/[0.08]"
+          >
             <div
-              data-testid="onboarding-value-meter"
+              data-testid="onboarding-value-meter-fill"
               className="h-full rounded-[3px] bg-[#F2B279] transition-[width] duration-500"
               style={{ width: `${Math.round(meter * 100)}%` }}
             />

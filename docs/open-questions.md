@@ -6,14 +6,6 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### ⛔ BUG-007 — Supabase service-role key rejected (blocks ALL E2E + visual-QA)
-**Not a question so much as a 2-minute action.** GoTrue returns `403 bad_jwt — unrecognized JWT kid <nil> for
-algorithm ES256` for every admin call, so the E2E harness can't mint its test session and all 70 specs fail to run.
-The project's JWT signing keys moved to asymmetric, revoking the legacy JWT-format key in `.env.local`. Refresh
-`SUPABASE_SERVICE_ROLE_KEY` from the dashboard (Settings → API; likely the new `sb_secret_…` format). Full repro +
-verification curl in `bug-tracker.md`. **This is what stands between #4 and 1E closing.**
-
-
 ### Ingredient-cache scoping — global vs household (BUG-004 #3, deferred to Phase E)
 **Question**: The follow-up ingredient cache (#3) is most valuable **global** (an onion normalizes the same for every
 household; item strings carry no PII), but a global table violates our drizzle-schema rule that every table has a

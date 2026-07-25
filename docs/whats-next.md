@@ -1,74 +1,67 @@
 # What's Next
 
-Last updated: 2026-07-24 (Session 36)
+Last updated: 2026-07-25 (Session 36)
 
-## ▶ NEXT SESSION — 1E #4 onboarding interview is BUILT. **Blocked on ONE Griffin action: refresh the Supabase service-role key** (BUG-007), then E2E + /visual-qa + your taste pass close 1E.
+## ▶ NEXT SESSION — 1E #4 is BUILT + fully machine-verified (70/70 E2E). Remaining to close 1E: `/visual-qa` → `/code-review` → **Griffin's taste pass**.
 
-**Built and green this session (S36):** the whole onboarding interview — household-composition schema (+ migration `0006`,
-applied), the deterministic **deep-round stopping policy** + its 6-persona eval, the full one-model-per-screen flow
-(ember chef presence, 4-question core, adaptive deep round, opinionated reflect), the first-run gate, the
-`sourceType:'onboarding'` memory writes, and the pre-seeded Plan hand-off (door #3). **437 unit tests green** (+74),
-**planner eval 6/6**, lint + typecheck clean.
+**Shipped S36:** the whole onboarding interview. Household-composition schema (band counts + a baby-stage follow-up;
+`householdSize` derived server-side; migration `0006` applied), the deterministic tunable **deep-round stopping
+policy** + its 6-persona eval, the full one-model-per-screen flow at `/welcome` (ember chef presence, 4-question core,
+adaptive deep round, opinionated reflect), the first-run gate, `sourceType:'onboarding'` memory writes, and the
+pre-seeded Plan intent hand-off (door #3).
 
-### ⛔ THE BLOCKER — Griffin, ~2 minutes (BUG-007)
-Supabase now rejects the `service_role` key in `.env.local`: `403 bad_jwt — unrecognized JWT kid <nil> for algorithm
-ES256`. The project's JWT signing keys were migrated to asymmetric, which revokes the legacy JWT-format key. **This is
-not a code defect** — the same key worked earlier in S36, the anon key and REST still work, and only the auth-admin API
-rejects it. But `auth.setup.ts` mints the test session through that API, so **all 70 E2E specs fail to run**, and
-`/visual-qa` is blocked too (same storageState).
+**Verified:** **437 unit + 70 E2E green** (OB1–OB8 new, whole suite passing), **planner eval 6/6**, lint + typecheck
+clean, migration applied. **No blockers, no Griffin action outstanding.**
 
-**Fix:** Supabase dashboard → Settings → API → copy the current secret/service key (with asymmetric JWTs it's the new
-`sb_secret_…` format) → set `SUPABASE_SERVICE_ROLE_KEY` in `.env.local` → `npm run test:e2e`. Only
-`tests/e2e/harness/supabase-session.ts` consumes it. Verify with:
-```
-set -a; . ./.env.local; set +a
-curl -s "$NEXT_PUBLIC_SUPABASE_URL/auth/v1/admin/users?page=1&per_page=1" \
-  -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
-```
-200 = fixed.
+**Two bugs found and fixed during the run** (both worth knowing about):
+1. The new first-run gate was redirecting **every** spec to `/welcome` — the E2E user's `onboardingCompletedAt` was
+   NULL. `auth.setup.ts` now stamps the harness's default identity as already-onboarded; `onboarding.spec.ts` restores
+   that default in `afterAll` so it can't poison other specs whatever the run order.
+2. **BUG-007 (resolved):** the harness couldn't authenticate at all. Root cause was the **harness, not the
+   credentials** — this project uses the new `sb_publishable_`/`sb_secret_` keys with asymmetric (ES256) JWTs, and
+   GoTrue's `/auth/v1/admin/*` endpoints reject a non-JWT secret key. `mintSupabaseSession` was calling
+   `auth.admin.listUsers`/`updateUserById` to bootstrap a user that already existed. It now signs in with the
+   publishable key first (also dropping a 50-page `listUsers` scan from every run) and only falls back to the
+   privileged bootstrap if sign-in genuinely fails. `.env.local` was correct all along.
 
-### Then, to close 1E
-1. `npm run test:e2e` — **OB1–OB8 are written but have never run.** They cover both required paths (complete + skip),
-   the first-run gate, the mic toast, and the adaptive round, asserting all the way to the database.
-   ⚠️ One thing to watch: a harness bug I found and fixed but could not verify — the new first-run gate was redirecting
-   **every** spec to `/welcome`, because the test user's `onboardingCompletedAt` was NULL. `auth.setup.ts` now stamps
-   the default identity as already-onboarded and `onboarding.spec.ts` restores that default in `afterAll`. If specs
-   still bounce to `/welcome`, that's where to look.
-2. `/visual-qa` against the locked design.
-3. **Griffin's taste pass** (scope below).
-4. `/code-review` — not yet run on this build.
+### To close 1E
+1. **`/visual-qa`** against the locked design (`docs/design/surfaces/onboarding/brief.md`, direction 1D) — not yet run
+   on this surface.
+2. **`/code-review`** — not yet run on this build.
+3. **Griffin's taste pass** (scope below). When those land, **1E closes → M5 done**, then **1E.5**.
 
-### For your taste pass (once it runs)
+### For Griffin's taste pass
 - **The one deliberate addition to the locked design:** a **baby-stage follow-up** (Under 6 months / 6-12 / 12-24)
-  that appears only when babies > 0, inside the amber note the design already reveals. Your call was that servings
-  "depends on the baby's age" — this is how that got captured. Does it read as one extra tap or as a form?
+  appearing only when babies > 0, inside the amber note the design already reveals. It exists because Griffin's answer
+  to "do babies count as a serving?" was "it depends on the baby's age." Does it read as one extra tap, or as a form?
 - **The reflect screen's opinionated hook** ("I'm already picturing blistered shishitos and a chili-crisp salmon") —
-  does it sound like a cook or like a receipt?
-- **The deep round** — 4 questions for an engaged user. Too many? Too few? The policy is four tunable numbers in
-  `src/lib/onboarding/planner.ts`; re-run the eval after changing them.
+  a cook with a point of view, or a receipt?
+- **Deep-round depth** — 4 questions for an engaged user. The policy is four tunable numbers in
+  `src/lib/onboarding/planner.ts`; re-run `scripts/1e-onboarding-planner-eval.ts` after changing any of them.
 - **Deviation to sanity-check:** the hand-off screen's **dinners stepper + lunch/breakfast toggles were NOT built.**
-  R1 generates dinners only (`mealType` is hardcoded), so those controls would have done nothing. The hand-off is the
-  real Plan intent screen, pre-seeded with your chips + request.
+  R1 generates dinners only (`mealType` hardcoded), so they'd have been dead controls. The hand-off is the real Plan
+  intent screen, pre-seeded with the interview's chips + request.
+- **The interview is live for Griffin + wife** — no backfill was applied, so both accounts will see it on next load.
+  That's the real-user test.
 
 ### Carried, non-blocking
 Owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar on a phone) + the You-tab taste pass
 from S33. **BUG-005** (`font-sans`→serif; confirm on-device, 1F). **BUG-003** (recipe.list harvest). **BUG-006**
 (expanded meal sheet → 1E.5).
 
-**⭐ Model recommendation: Opus 4.8** — the close-out is verification and judgement (reading E2E failures, visual-QA
-critique, taste iteration on copy), not fresh architecture. If the key is fixed and everything runs clean first try,
-Sonnet would carry the doc updates fine.
+**⭐ Model recommendation: Opus 4.8** — what's left is judgement work (visual critique against a locked design, code
+review of a safety-adjacent capture path, taste iteration on chef copy), not new architecture.
 
-**Copy-paste kickoff prompt (1E close — unblock E2E, then verify):**
-> Resume meal app — the 1E onboarding interview (#4) is BUILT; close the phase. **First: BUG-007** — I've refreshed
-> `SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; verify the auth-admin API returns 200, then run `npm run test:e2e`.
-> **OB1–OB8 have never run** (written S36), so expect real failures — fix them. Watch specifically for specs bouncing
-> to `/welcome` (the first-run gate; `auth.setup.ts` now stamps the test user onboarded and `onboarding.spec.ts`
-> restores it in `afterAll` — unverified). Then `/visual-qa` against the locked design, then `/code-review` (not yet
-> run on this build), then hand me the taste pass — call out the **baby-stage follow-up** (my addition to the locked
-> design), the reflect hook's voice, and whether 4 deep questions is the right depth. Read `docs/whats-next.md`,
-> `docs/scope-v1.md`, `docs/scope-1E.md`, `docs/bug-tracker.md` (BUG-007) first, then give me the ≤6-line scope check.
-> When E2E + visual-QA + my taste pass land, **1E closes → M5 done**, then 1E.5. On Opus 4.8.
+**Copy-paste kickoff prompt (close 1E):**
+> Resume meal app — the 1E onboarding interview (#4) is BUILT and fully machine-verified (437 unit + 70 E2E green,
+> planner eval 6/6). **Close the phase:** run `/visual-qa` against the locked design
+> (`docs/design/surfaces/onboarding/brief.md`, direction 1D) and iterate to 0 blockers / 0 high, then `/code-review`
+> (not yet run on this build — pay attention to the `user.talk` capture path and the new tRPC mutations), then hand me
+> the taste pass. In that hand-off, specifically call out: the **baby-stage follow-up** (your addition to the locked
+> design), whether the reflect hook sounds like a cook or a receipt, and whether 4 deep questions is the right depth.
+> Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/scope-1E.md` first, then give me the ≤6-line scope check. When
+> visual-QA + review + my taste pass land, **1E closes → M5 done** and we open **1E.5 (Plan Design Buildout)**. On
+> Opus 4.8.
 
 ## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
 - **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review
