@@ -1,8 +1,85 @@
 # What's Next
 
-Last updated: 2026-07-25 (Session 38)
+Last updated: 2026-07-26 (Session 39)
 
-## ▶ NEXT SESSION — 1E's three gates are CLEARED. The only thing left is **Griffin's taste pass**.
+## ▶ NEXT SESSION — close 1E: `/visual-qa` critique loop → Layer B → `/code-review`
+
+**Done S39 (a long session — Griffin's taste pass turned into a build).**
+
+1. **BUG-016 + BUG-014 + BUG-015 closed.** A failed core save is now named, remembered and retried on
+   "Plan my first week"; the reflect screen stops claiming "All saved" while anything is outstanding; a
+   failed finish stays put with a live retry instead of walking you out to a plan built on nothing; the
+   tell-me field clears on success only; the confirm is gated while a capture is in flight.
+2. **The deep round got deeper** (Griffin's calls). New **`skill`** question; **`goal`** raised into reach
+   because it already carried "Keep costs down"; **`effort`** kept but suppressed at a 30-minute ceiling.
+   Round retuned 4 → **5** questions, **7/7 personas**. **Ingredient reuse is a planner default now**, not a
+   preference — a perishable sold by the bunch gets a second, different dish that finishes it.
+3. **Test mode shipped.** You tab → "Restart onboarding", server-gated by `DEV_TOOLS_EMAILS`. The interview
+   fires once per account and this is what makes re-testing it free.
+4. **Design Specification v1.0 arrived mid-phase** and was split into three passes (Griffin ratified):
+   **pass 1 = onboarding, done this session**; **pass 2 = the new phase 1E.7**, mechanical and app-wide,
+   ordered **before 1E.5**; **pass 3 = 1F**. See scope-v1's S39 change-log row for the ordering argument.
+5. **The reflect playback is BUILT** from the design pass — three blocks, grouped by kitchen logic, with
+   each captured thing restated as a decision about dinner. `ALREADY CIRCLING` is deliberately off.
+
+**479 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.** Branch `session-33-you-tab-audit`.
+
+### ⚠️ Griffin's one action before the next session
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated). Test
+mode is invisible and inert until you do, and the whole point of it is to make your real first run cheap
+to repeat.
+
+### What actually closes 1E
+Three gates, and they are gates that were cleared in S38 and have been invalidated by this session's work:
+
+1. **`/visual-qa` on onboarding + You.** The Layer-A captures exist and are clean (17 states, all `ok`,
+   including the new `ob-reflect-deep` and `ob-reflect-sparse`), but the *critique-and-iterate-to-0-blockers
+   loop has not run* on them. That is the gate, not the capture. You tab needs it too — the test-mode card
+   is new UI there.
+2. **Layer B.** Two reasons this time, not one: onboarding copy changed substantially, **and**
+   `chef-system.ts` gained an ingredient-reuse rule. The mock cannot tell us whether the real model actually
+   finishes the carton without collapsing the week's variety, and that is a change to the most consequential
+   prompt in the product.
+3. **`/code-review`** across this session's work. It is a lot of new surface: `playback.ts`,
+   `use-onboarding-saves.ts`, `user-dev-tools.ts`, the rewritten reflect screen, the palette migration.
+
+### Carried, not blocking
+Owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar — note spec §12 item 04
+fixes that one in 1F). **BUG-011/012** (householdSize ↔ composition desync) and **BUG-010** (composition
+column default) are still open and are the next-best burn-down if you want a non-design session.
+**BUG-019** (GR7 flake) has not recurred in three full runs.
+
+**⭐ Model recommendation: Opus 4.8.** The critique loop is judgement against a locked spec, Layer B is
+reading real output for quality, and code review is reading a large diff. None of it is new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S39 built the reflect playback, migrated onboarding to Design Spec v1.0 (pass 1 of 3),
+deepened the interview (skill + cost, 5-question round), made ingredient reuse a planner default, and
+shipped test mode. 479 unit + 78 E2E green, planner eval 7/7. Read docs/whats-next.md, docs/scope-v1.md,
+docs/scope-1E.md first, then give me the ≤6-line scope check. Then close 1E with its three gates, in
+order: (1) run /visual-qa on onboarding AND You and iterate to 0 blockers / 0 high — the captures exist
+but the critique loop hasn't run on them; (2) run Layer B (npm run test:capture:live) — onboarding copy
+changed AND chef-system.ts gained an ingredient-reuse rule, so I need to see whether the real model
+actually uses up the carton without killing the week's variety; (3) run /code-review across the session's
+new surface (playback.ts, use-onboarding-saves.ts, user-dev-tools.ts, the rewritten reflect screen, the
+palette migration). When those land, 1E closes → M5 done, and 1E.7 (the mechanical design-system sweep)
+opens BEFORE 1E.5. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs):
+```
+Resume meal app — skip the 1E closing gates this session and clear the open bug list instead: BUG-011
+(householdSize/composition desync putting two contradictory numbers in the same chef prompt), BUG-012 (the
+You tab saying "4 adults" for 2 adults + 2 children — same root), then BUG-010 (household_composition
+ships with a column DEFAULT so a default is indistinguishable from an answer; needs a migration) and
+BUG-013 (finishOnboarding trusts client-supplied memory text). Read docs/whats-next.md +
+docs/bug-tracker.md first, give me the ≤6-line scope check, keep 479 unit + 78 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S38 (superseded by S39 above — those gates were invalidated by the S39 build)
 
 **Done S38:** `/visual-qa` (0 blockers / 0 high, 3 rounds + the ux-design-critic pass), the first onboarding
 **Layer B** real-model capture, and `/code-review` across four lenses. **449 unit + 75 E2E green**, lint + typecheck

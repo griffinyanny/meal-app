@@ -4,6 +4,73 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-26 (S39) — Design Specification v1.0 adopted, migration split into three passes
+
+**Decision.** Griffin's design system (Claude Design, "Gold voice, cream hand", theme 11i) is canonical:
+where an earlier screen disagrees with it, it wins. Its §12 migration table is applied in **three passes**
+rather than all at once or all in 1F:
+1. **S39** — the onboarding flow (done).
+2. **New phase 1E.7** — the mechanical app-wide items (warm alphas, wash recipes, radius scale), **before 1E.5**.
+3. **1F** — the surface-specific items plus type scale, motion, and component consolidation.
+
+**Why the ordering.** 1E.5 rebuilds Plan from scratch in Claude Design → code. Applying the mechanical sweep
+first is the difference between building the signature surface once and building it twice. Onboarding went
+first because Griffin runs the interview for real next and should run the design he just locked.
+
+**Accepted cost.** Onboarding looks different from the rest of the app until 1E.7 lands.
+
+**Future impact.** The 1E.5 Plan brief must be written against the spec, not against the pre-spec palette.
+`--spec-*` tokens + the elevation utilities in globals.css are the migration surface; the pre-spec `:root`
+family retires at the end of 1E.7. The spec's §09 "one way to talk to the chef" means the four freeform-input
+controls (onboarding done, You / Groceries / chef sheet remaining) consolidate into one.
+
+## 2026-07-26 (S39) — `skill` and `effort` are different questions; cost lives inside `goal`
+
+**Decision.** The deep round asks about cooking **skill** (what techniques are on the table) AND **effort**
+(how much you feel like doing tonight), which are distinct from each other and from the core weeknight-time
+ceiling. Claude proposed merging effort into skill; **Griffin overruled it** — an advanced cook can still be
+exhausted on a Tuesday, and a 30-minute meal can be one pan or thirty minutes of knife work. Effort is instead
+**suppressed when the weeknight ceiling is ≤30 minutes**, where the ceiling has already answered it.
+
+**Cost sensitivity is not its own question.** It lives as one option among several in `goal` ("Anything you're
+working toward?"), which already carried "Keep costs down" but ranked too low to be asked. Asking "are you
+doing this to save money" singles a person out; "what are you working toward" gets the same signal from
+someone who would never answer the first version honestly.
+
+**Ingredient reuse is a planner default, not a preference.** Nobody wants a wasted carton, and it shortens the
+grocery list, so it is a rule in `chef-system.ts` rather than something a user has to opt into.
+
+**Future impact.** The bank now holds more good questions than one interview should ask (8 questions, a
+5-question round). That is what the planner is for, but it means adding a question displaces one rather than
+lengthening the interview — re-run the eval and read the persona table before assuming otherwise.
+
+## 2026-07-26 (S39) — Griffin has to be able to test it (standing requirement)
+
+**Decision.** Every feature plan answers: how does Griffin get into the state, how does he get back out of it,
+and how does he report on it. Test-mode controls are **server-gated by an email allowlist**
+(`DEV_TOOLS_EMAILS`), never a `NODE_ENV` check — the phone he tests on runs production. Recorded in
+engineering-principles.md.
+
+**Why.** A product this personal is validated by living in it, and friction in that loop shows up as less
+feedback rather than as a complaint about the friction. The 1E interview is the worked example: it fires
+exactly once per account, so without a reset the only way to re-test it was a new account.
+
+**Future impact.** The full version (capture, dictate, auto-attached state + event metadata, LLM-cleaned into
+a ticket) is scoped to 1F alongside PostHog and is a candidate Linear graduation trigger.
+
+## 2026-07-26 (S39) — No closed beta; no household sharing in R1
+
+**Decision.** R1 validation stays Griffin + wife. **No closed beta** (resolves the scope-v1 open question that
+was parked for 1E). His wife tests on his phone rather than pulling household sharing forward — sharing stays
+V1.5 in full.
+
+**Why.** Nothing in R1 is gated on a beta, and a beta is a distribution decision rather than a product one.
+Griffin's read: V1.5 will land before this goes out more broadly, which is why it was called V1.5.
+
+**Open, and now logged:** how often two adults in a household actually eat the same dinner. It decides whether
+V1.5 sharing is a coordination feature or a per-member planning feature — a much bigger build. Our research
+doesn't answer it.
+
 ## 2026-07-24 (S36) — Household composition: band counts, and a baby's STAGE drives servings
 
 **Decision.** `user_preferences.householdComposition` stores three band **counts** plus one stage:

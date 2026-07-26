@@ -4,6 +4,82 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 39 — 2026-07-26 (Griffin's taste pass became a build)
+
+**Started as:** fix BUG-016/BUG-014, then hand Griffin the taste pass on three questions.
+**Ended as:** three bugs closed, a deeper interview, a planner-default change to the chef prompt, test mode,
+a new design system, and the reflect playback rebuilt from a design pass. **1E did not close.**
+
+### Bugs closed
+- **BUG-016** (silent failed save) — `useCoreSaves` names a failure, remembers it by the answer's label, and
+  retries on "Plan my first week". The reflect screen no longer claims "All saved" while anything is
+  outstanding. A failed `finishOnboarding` now stays on reflect with a live retry: that path writes both the
+  memories and the completed flag, so on failure nothing landed and leaving silently just deferred the loss.
+- **BUG-014** (typed text lost on error) — clears on success only, matching `talk-to-chef-sheet`.
+- **BUG-015** (tap/type race) — the confirm is gated on `talkPending`, and `talkPending` now covers the
+  read-back rather than only the write.
+
+### Griffin's taste-pass decisions
+| Question | Call |
+|---|---|
+| Baby-stage follow-up | Keep as built |
+| Reflect hook | Cut the categorical opening line; lead with the plate |
+| Deep-round depth | Add `skill`; **keep `effort`** (Griffin overruled merging it — an advanced cook can still be exhausted on a Tuesday); cost lands in `goal`, which already carried "Keep costs down" |
+| Ingredient reuse | A planner default, not a preference |
+| `ALREADY CIRCLING` | Off for R1 — it names dishes nothing carries into generation |
+| `safetyFirst` | Off — the recap stays after the playback |
+| Closed beta | None. Griffin + wife, wife tests on his phone. **No household sharing pulled into R1.** |
+
+### Built
+- **Deep round 4 → 5 questions.** `skill` (0.97) is the only one of time/effort/skill that decides whether a
+  recipe is *executable* rather than merely appealing. `goal` raised to 0.85 so the cost signal is reachable.
+  `effort` suppressed at a ≤30-minute ceiling (that ceiling already answered it). Policy retuned
+  (`minValue` 0.35, cap 6, new `meterTarget` 5 with an eval invariant tying it to what an engaged cook
+  actually reaches — the meter used to divide by a cap the policy never hit, so the most engaged user
+  possible saw 80%). **7/7 personas.**
+- **Ingredient reuse in `chef-system.ts`** — a perishable sold by the bunch, carton or head gets a second,
+  DIFFERENT dish that finishes it, guarded so it can never cost variety. **Unverified on the real model;
+  Layer B is owed.**
+- **Test mode** — `user.devToolsEnabled` + `user.resetOnboarding`, allowlisted by `DEV_TOOLS_EMAILS` (empty by
+  default, re-checked inside the mutation rather than trusted from the query), plus a You-tab card.
+  Deliberately not a hidden gesture: once the server decides who sees it, hiding it only makes it hard for
+  the one person who needs it. **Griffin must set `DEV_TOOLS_EMAILS` in Vercel Production.**
+- **Design Specification v1.0** ("Gold voice, cream hand", theme 11i) imported from Claude Design and split
+  into three passes. Pass 1 (onboarding) done: `--spec-*` tokens + the elevation ladder in globals.css, the
+  orb to its actual specification, the tell-me field rebuilt to spec §09, every cool-white alpha warmed.
+- **The reflect playback**, from the design pass. New pure `playback.ts` (16 tests): `playbackGroups` groups
+  by kitchen logic and drops empty groups, `weekDecisions` restates each capture as a commitment,
+  `chefGuesses`/`isSparse` drive the sparse state. Scrolls with the CTA on a pinned chrome bar. Two new
+  capture states (`ob-reflect-deep`, `ob-reflect-sparse`) so the design's central claim — depth reads as
+  specificity, not as a longer list — is checkable by looking rather than by argument.
+- Also: a verbatim quote of what the user typed, a subline under the hook, and an adults-only hook so a
+  skip-heavy run stops falling through to the generic line.
+
+### Found while working
+- **`chef-system.ts` is the one prompt file with no snapshot test**, despite `.claude/rules/test-files.md`
+  requiring them and CLAUDE.md calling it the single most important file in the product. A prompt change
+  landed this session and nothing flagged it. → backlog, Griffin's call on the test-strategy change.
+- **Four defects caught by looking at captures rather than by tests:** a stray space before punctuation in
+  every playback fact, "Fish are what you want to see more of", the subline duplicating the last week
+  decision verbatim, and `talkPending` clearing before the read-back so the confirm was ungated for the tail
+  of a capture. The last is the only one a test could plausibly have caught.
+
+### Scope changes
+- **New phase 1E.7** (mechanical design-system sweep), ordered **before 1E.5**, because 1E.5 rebuilds Plan
+  from scratch and building the signature surface against a retired palette means building it twice.
+- 1F's design-system line reframed as the *surface-specific* half of the spec migration (items 03/04/05/07),
+  each of which wants its own `/visual-qa` pass.
+- **1E did not close.** Its S38 gates were invalidated by this session's work.
+
+### Open questions raised
+- How often do two adults in a household actually eat the same dinner? Our research doesn't answer it, and it
+  decides how much V1.5 sharing has to do.
+- With two users in one household, whose diet governs a shared plan? (Allergies union; the rest is undefined.)
+
+**Green:** 479 unit + 78 E2E, planner eval 7/7, lint + typecheck clean.
+
+---
+
 ## Session 38 — 2026-07-25 (1E #4 closed out: visual QA, Layer B, code review)
 
 The three gates 1E was waiting on. **449 unit + 75 E2E green, visual-QA gate PASS (0 blockers / 0 high),

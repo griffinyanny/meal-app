@@ -1,6 +1,7 @@
 # Onboarding — the reflect playback (Pass 3, targeted)
 
-> **Status: TO GENERATE.** One direction, one screen. The rest of the onboarding interview is
+> **Status: BUILT (S39, 2026-07-26).** See the BUILT section at the bottom for the design pointer,
+> Griffin's calls on the wired tweaks, and the deviations. One direction, one screen. The rest of the onboarding interview is
 > LOCKED (see `brief.md`, direction 1D) and is not in scope here. Read `../../PROJECT-CONTEXT.md`
 > and `brief.md` before generating; everything in `brief.md`'s SETTLED list still binds.
 
@@ -98,3 +99,43 @@ has almost none, and the screen still has to work.
 2. **Fully engaged** — 4 core + 5 deep. The state that proves going deeper was worth it.
 3. **Skipped almost everything** — household answered, everything else passed. The chef has nearly
    nothing and still has to sound like it's looking forward to cooking.
+
+---
+
+## BUILT — S39 (2026-07-26)
+
+**Design pointer (durable):**
+- **Claude Design URL:** `https://claude.ai/design/p/8bc73bfa-9683-4b44-ab06-40da9ec78590?file=Reflect+Playback.dc.html`
+- **projectId:** `8bc73bfa-9683-4b44-ab06-40da9ec78590` · **file:** `Reflect Playback.dc.html`
+- **Re-fetch:** `DesignSync.get_file("8bc73bfa-9683-4b44-ab06-40da9ec78590", "Reflect Playback.dc.html")`
+- No local snapshot saved (same policy as You and the interview — the live design is re-fetchable and drifts).
+
+**What was built:** all three states, in real components. The derivation is pure and tested
+(`src/lib/onboarding/playback.ts` + 16 tests): `playbackGroups` groups by kitchen logic and drops empty
+groups, `weekDecisions` turns each captured thing into a commitment, `chefGuesses` + `isSparse` drive the
+sparse state's named assumptions. The screen scrolls with the CTA on a chrome bar pinned to the bottom
+edge — the pre-spec build was a static flex column that only worked because the content was three lines.
+
+**Griffin's calls on the three wired tweaks:**
+- `showCircling` → **OFF.** `ALREADY CIRCLING` names dishes ("Miso butter salmon, broccolini, rice") and
+  nothing carries them into generation, which is the same unenforced promise the reflect hooks had before
+  S39 demoted them to naming a technique. **The path to making it true, if we want it back:** derive the
+  dishes deterministically from state and put them into `planSeedRequest`, so the first plan actually
+  contains them. Three named dinners out of five to seven is not over-constraining. → idea-backlog.
+- `safetyFirst` → **OFF.** The safety recap stays after the playback, where the spec puts it.
+- `showYouLine` → ON, at the end of the scroll rather than in the sticky bar.
+
+**Deviations from the design, and why:**
+- **No `ALREADY CIRCLING`** (above).
+- **A subline under the hook** (`reflectSubline`) rather than only in states 2 and 3. It is what makes a
+  deeper interview read as richer at the TOP of the screen and not only in the middle of it, and it returns
+  null rather than filler when there is nothing to add.
+- **Skill's week decision was rewritten** so it does not repeat the subline verbatim. Two lines saying the
+  same thing in different type sizes is the receipt problem this screen exists to solve.
+
+**Capture states:** `ob-reflect` (core only), `ob-reflect-deep` (fully engaged), `ob-reflect-sparse`
+(skipped almost everything). All three are in the Layer-A run so the design's central claim — depth reads
+as specificity, not as a longer list — is checkable by looking at them side by side.
+
+**Still owed before 1E closes:** a `/visual-qa` critique pass on these captures (they exist and are clean,
+but the iterate-to-0-blockers loop has not run), Layer B, and `/code-review`.

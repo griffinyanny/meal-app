@@ -23,6 +23,15 @@
     onboarding interview fires once per account and Griffin could not otherwise re-test it. The standing principle
     behind it is now in engineering-principles.md ("Griffin has to be able to test it").
 
+- **[1E fast-follow / 1E.5] Make `ALREADY CIRCLING` true, then turn it back on** — S39. The reflect playback design
+  has a block naming 1-3 dishes the chef is "already circling", with a reason each. Built OFF (Griffin's call)
+  because nothing carries those dishes into generation, making it the same unenforced promise the reflect hooks
+  had before S39 demoted them to naming a technique. **To ship it:** derive the dishes deterministically from
+  `InterviewState` (same shape as `weekDecisions`) and put them into `planSeedRequest`, so the first plan actually
+  contains them. Three named dinners out of five to seven is not over-constraining, and it converts the screen's
+  strongest moment from a claim into a commitment. The design already wires the toggle (`showCircling`), so the
+  UI half is a flag flip. Risk to check on the real model: named dishes that fight the week's variety rule.
+
 - **[1E.5 / 1F] Snapshot-test the chef system prompt** — found S39. `.claude/rules/test-files.md` says system-prompt
   changes get an inline snapshot so they surface for deliberate review, and CLAUDE.md calls chef-system.ts "the
   single most important file." It is the one prompt file with no snapshot: `grocery-talk`, `preferences-talk` and
