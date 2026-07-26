@@ -45,20 +45,28 @@ export function TellMeField({
   }
 
   return (
+    // Spec §09 anatomy: an L3 control at min-height 52 and r16, padded 6 all
+    // round with 16 on the leading edge. There is no focus ring on purpose —
+    // the caret and the brighter value text ARE the focus state, and a gold ring
+    // here would read as the chef typing rather than the user.
     <div
       className={cn(
-        "mt-3.5 flex items-center gap-2.5 rounded-[14px] border bg-[rgba(26,24,22,0.5)] px-3 py-2 transition-colors",
-        text.trim() ? "border-[rgba(232,148,74,0.45)]" : "border-white/[0.09]"
+        "spec-control mt-3.5 flex min-h-[52px] items-center gap-2.5 rounded-[16px] py-1.5 pl-4 pr-1.5 transition-colors",
+        text.trim() && "border-[rgba(240,222,190,0.32)]"
       )}
     >
+      {/* The mic is cream because it is an action, not gold: gold is the chef,
+          and this control belongs to the user's hand (law 02). Never mic-only
+          and never text-only — both affordances stay visible at rest, so nobody
+          has to notice which mode they are in. */}
       <button
         type="button"
         onClick={onMicTap}
         disabled={disabled}
         aria-label="Answer by voice"
-        className="flex size-9 flex-none items-center justify-center rounded-full bg-[rgba(232,148,74,0.16)] text-[#F2B279] transition-colors hover:bg-[rgba(232,148,74,0.24)] disabled:opacity-50"
+        className="flex size-10 flex-none items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-action)] transition-colors hover:bg-[rgba(240,222,190,0.12)] disabled:opacity-50"
       >
-        <Mic className="size-4" strokeWidth={2} />
+        <Mic className="size-[19px]" strokeWidth={2} />
       </button>
 
       <input
@@ -75,23 +83,25 @@ export function TellMeField({
         placeholder={example}
         aria-label="Tell the chef in your own words"
         data-testid="onboarding-tell-me-input"
-        className="min-w-0 flex-1 bg-transparent text-[0.9rem] text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
+        className="min-w-0 flex-1 bg-transparent text-[14.5px] text-[var(--spec-text-primary)] caret-[var(--spec-action)] placeholder:text-[var(--spec-text-muted)] focus:outline-none disabled:opacity-60"
       />
 
       {isSubmitting ? (
-        <span className="flex-none pr-1 text-[11px] font-semibold tracking-[0.5px] text-[#F2B279]">
+        <span className="flex-none pr-2 text-[11px] font-semibold tracking-[0.5px] text-[var(--spec-text-muted)]">
           CATCHING…
         </span>
       ) : (
+        /* Send appears beside the mic rather than replacing it — starting to
+           type must never close the other door (spec §09). */
         <button
           type="button"
           onClick={submit}
           disabled={!canSubmit}
           aria-label="Send to chef"
           data-testid="onboarding-tell-me-send"
-          className="flex size-8 flex-none items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-30"
+          className="flex size-10 flex-none items-center justify-center rounded-[12px] bg-[var(--spec-action)] text-[var(--spec-action-on)] transition-opacity disabled:opacity-30"
         >
-          <ArrowUp className="size-4" strokeWidth={2.2} />
+          <ArrowUp className="size-[19px]" strokeWidth={2.2} />
         </button>
       )}
     </div>
@@ -111,16 +121,16 @@ export function CaughtTray({ items }: CaughtTrayProps) {
   return (
     <div
       data-testid="onboarding-caught-tray"
-      className="animate-turn-in mt-3.5 rounded-[16px] border border-[rgba(232,148,74,0.26)] bg-[rgba(232,148,74,0.08)] px-[15px] py-[13px]"
+      className="animate-turn-in mt-3.5 rounded-[16px] border border-[rgba(233,179,72,0.26)] bg-[rgba(233,179,72,0.08)] px-[15px] py-[13px]"
     >
-      <p className="m-0 mb-2.5 text-[10.5px] font-semibold tracking-[1.2px] text-[#F2B279]">
+      <p className="m-0 mb-2.5 text-[10.5px] font-semibold tracking-[1.2px] text-[var(--spec-gold-tint)]">
         WHAT I CAUGHT
       </p>
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
           <span
             key={item}
-            className="inline-flex items-center rounded-[10px] border border-[rgba(232,148,74,0.34)] bg-[rgba(232,148,74,0.14)] px-2.5 py-1.5 text-[13px] font-semibold text-[#E8DFD3]"
+            className="inline-flex items-center rounded-[10px] border border-[rgba(233,179,72,0.34)] bg-[rgba(233,179,72,0.14)] px-2.5 py-1.5 text-[13px] font-semibold text-[var(--spec-text-body)]"
           >
             {item}
           </span>

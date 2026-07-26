@@ -127,10 +127,10 @@ export function QuestionScreen({
       {meter !== undefined && (
         <div className="mb-[18px]">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="max-w-[270px] text-[10.5px] font-semibold leading-[1.3] tracking-[1.2px] text-muted-foreground">
+            <span className="max-w-[270px] text-[10.5px] font-semibold leading-[1.3] tracking-[1.2px] text-[var(--spec-text-muted)]">
               THE MORE YOU TELL ME, THE BETTER YOUR PLANS GET
             </span>
-            <span className="text-[11px] font-semibold text-[#F2B279]">Optional</span>
+            <span className="text-[11px] font-semibold text-[var(--spec-gold-tint)]">Optional</span>
           </div>
           {/* The testid lives on the TRACK, which is always rendered. The fill
               is legitimately zero-width on the first deep question (the meter
@@ -138,11 +138,11 @@ export function QuestionScreen({
               zero-width element is invisible to both users and assertions. */}
           <div
             data-testid="onboarding-value-meter"
-            className="h-[5px] overflow-hidden rounded-[3px] bg-white/[0.08]"
+            className="h-[5px] overflow-hidden rounded-[3px] bg-[rgba(240,222,190,0.08)]"
           >
             <div
               data-testid="onboarding-value-meter-fill"
-              className="h-full rounded-[3px] bg-[#F2B279] transition-[width] duration-500"
+              className="h-full rounded-[3px] bg-[var(--spec-gold-tint)] transition-[width] duration-500"
               style={{ width: `${Math.round(meter * 100)}%` }}
             />
           </div>
@@ -151,12 +151,12 @@ export function QuestionScreen({
 
       <ChefStatus label={status} safety={safety} />
 
-      <h2 className="m-0 mb-3.5 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-foreground text-pretty">
+      <h2 className="m-0 mb-3.5 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
         {headline}
       </h2>
 
       {why && (
-        <p className="m-0 mb-4 text-[13px] italic leading-[1.45] text-muted-foreground">
+        <p className="m-0 mb-4 text-[13px] italic leading-[1.45] text-[var(--spec-text-muted)]">
           {why}
         </p>
       )}

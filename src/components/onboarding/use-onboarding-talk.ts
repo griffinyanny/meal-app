@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import type { Dimension, InterviewState } from "@/lib/onboarding/types";
 
@@ -32,9 +32,16 @@ export function useFreeTextCapture({
 }: FreeTextCaptureArgs): FreeTextCapture {
   const utils = trpc.useUtils();
   const talkMutation = trpc.user.talk.useMutation();
+  // The mutation's own isPending clears as soon as the WRITE lands, but the
+  // operation isn't done until the read-back has updated local state. In that
+  // gap the field is live again with the text still in it and the confirm is
+  // ungated (BUG-015's window), so a fast second tap races the reconciliation.
+  // This covers the whole operation instead of just its first half.
+  const [readingBack, setReadingBack] = useState(false);
 
   const submitFreeText = useCallback(
     async (text: string, dimension: Dimension): Promise<boolean> => {
+      setReadingBack(true);
       let data;
       try {
         data = await talkMutation.mutateAsync({
@@ -43,6 +50,7 @@ export function useFreeTextCapture({
         });
       } catch {
         showToast("The chef didn't catch that. Try again, or just tap an answer.");
+        setReadingBack(false);
         // Nothing was written, so the caller keeps the user's text (BUG-014).
         return false;
       }
@@ -84,6 +92,7 @@ export function useFreeTextCapture({
         });
       } catch {
         showToast("I saved that, but couldn't read it back. It's in your You tab.");
+        setReadingBack(false);
         // The message DID land, so clearing the field is still correct.
         return true;
       }
@@ -108,12 +117,17 @@ export function useFreeTextCapture({
         freeTextDimensions: s.freeTextDimensions.includes(dimension)
           ? s.freeTextDimensions
           : [...s.freeTextDimensions, dimension],
+        // Kept verbatim for the reflect screen's quote. Last one wins: if the
+        // user corrected themselves, the correction is what they'd want to see
+        // quoted back, not the thing they took back.
+        quotedLine: text,
       }));
 
+      setReadingBack(false);
       return true;
     },
     [setCaught, setState, showToast, talkMutation, utils]
   );
 
-  return { submitFreeText, talkPending: talkMutation.isPending };
+  return { submitFreeText, talkPending: talkMutation.isPending || readingBack };
 }

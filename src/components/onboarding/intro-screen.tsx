@@ -25,13 +25,13 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
       <div className="animate-turn-in flex flex-1 flex-col justify-center">
         <ChefPresence size="hero" className="mb-5" />
 
-        <p className="m-0 mb-3 text-[11px] font-semibold tracking-[2px] text-[#F2B279]">
+        <p className="m-0 mb-3 text-[11px] font-semibold tracking-[2px] text-[var(--spec-gold-tint)]">
           YOUR CHEF
         </p>
-        <h1 className="m-0 mb-3 text-[28px] font-bold leading-[1.16] tracking-[-0.5px] text-foreground text-pretty">
+        <h1 className="m-0 mb-3 text-[28px] font-bold leading-[1.16] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
           Let&apos;s get to know each other. Then I&apos;ll cook your week.
         </h1>
-        <p className="m-0 mb-[22px] max-w-[335px] text-[15.5px] leading-[1.5] text-[#C7C7CC] text-pretty">
+        <p className="m-0 mb-[22px] max-w-[335px] text-[15.5px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
           I learn how you eat, then build a plan around it, not a template. Two minutes,
           and you can skip any of it.
         </p>
@@ -39,8 +39,8 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
         <div className="flex flex-col gap-[13px]">
           {POINTS.map(({ Icon, text }) => (
             <div key={text} className="flex items-start gap-3">
-              <div className="flex size-7 flex-none items-center justify-center rounded-[9px] bg-[rgba(232,148,74,0.14)]">
-                <Icon className="size-[15px] text-[#F2B279]" strokeWidth={2} />
+              <div className="flex size-7 flex-none items-center justify-center rounded-[9px] bg-[rgba(233,179,72,0.14)]">
+                <Icon className="size-[15px] text-[var(--spec-gold-tint)]" strokeWidth={2} />
               </div>
               <p className="m-0 mt-0.5 text-[14.5px] leading-[1.4] text-[#E5E5EA]">{text}</p>
             </div>
@@ -53,7 +53,7 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
           type="button"
           onClick={onStart}
           data-testid="onboarding-start"
-          className="flex w-full items-center justify-center gap-2.5 rounded-[15px] bg-primary px-4 py-[17px] text-[16px] font-semibold text-primary-foreground shadow-[0_10px_28px_-10px_rgba(58,134,255,0.7)]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[16px] bg-[var(--spec-action)] px-4 py-[17px] text-[16px] font-semibold text-[var(--spec-action-on)] shadow-[0_10px_28px_-10px_rgba(244,235,220,0.3)]"
         >
           Let&apos;s get started
           <ArrowRight className="size-[18px]" strokeWidth={2.2} />
@@ -63,7 +63,7 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
           onClick={onSkipAll}
           disabled={isSaving}
           data-testid="onboarding-skip-all"
-          className="w-full py-2 text-[14px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+          className="w-full py-2 text-[14px] font-semibold text-[var(--spec-text-muted)] transition-colors hover:text-[var(--spec-text-primary)] disabled:opacity-50"
         >
           Skip for now, use sensible defaults
         </button>

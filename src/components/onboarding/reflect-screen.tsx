@@ -1,8 +1,14 @@
 "use client";
 
-import { AlertTriangle, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowRight, Clock, Quote, Shield, UtensilsCrossed } from "lucide-react";
 import { ChefPresence } from "./chef-presence";
-import { reflectHook, reflectSummary } from "@/lib/onboarding/synthesize";
+import { reflectHook, reflectSubline } from "@/lib/onboarding/synthesize";
+import {
+  chefGuesses,
+  isSparse,
+  playbackGroups,
+  weekDecisions,
+} from "@/lib/onboarding/playback";
 import { isAllergyRestriction, restrictionLabel } from "@/components/you/constraint-utils";
 import type { InterviewState } from "@/lib/onboarding/types";
 
@@ -22,94 +28,248 @@ function joinAnswers(items: string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-// "Here's what I'm thinking" — the payoff turn. It leads with an OPINION (a dish
-// the chef is already picturing), not a receipt of the form you filled in,
-// because the whole promise of the product is a cook with a point of view.
-// The red recap underneath inherits the You tab's safety vocabulary exactly:
-// same wording, same weight, same allergy sub-label, because these are the same
-// objects the You tab will show you tomorrow.
+// The payoff turn, built to the locked direction (design pass 3, S39). Three
+// blocks, always in this order:
+//
+//   1. THE OPINION      alone on the floor, nothing boxed around it, because a
+//                       point of view inside a card is just another field.
+//   2. WHAT I'VE GOT    the capture, grouped by kitchen logic, every fact a
+//                       sentence rather than a label/value pair.
+//   3. SO HERE'S YOUR WEEK  what each captured thing DECIDES about dinner.
+//
+// The reward for answering more is consequence, not volume: deep answers thicken
+// the groups they belong to and sharpen the week list, but the structure never
+// changes and nothing is ever marked as a second tier. Nobody is shown what they
+// failed to fill in — which is why there is no meter, no count, and no progress
+// language anywhere on this screen.
+//
+// Safety keeps its own object and never shares a card with the opinion or the
+// playback, and it sits AFTER the playback (Griffin's call, S39 — the design
+// wires the position and he chose the spec's default).
+//
+// Scrolls, with the CTA on a chrome bar pinned to the bottom edge. The old
+// build was a static flex column, which worked only because the content was
+// three lines; a fully-engaged interview overflows any phone.
 export function ReflectScreen({
   state,
   onBuildPlan,
   isSaving,
   unsaved,
 }: ReflectScreenProps) {
-  const restrictions = state.restrictions;
+  const groups = playbackGroups(state);
+  const decisions = weekDecisions(state);
+  const guesses = chefGuesses(state);
+  const subline = reflectSubline(state);
+  const showGuesses = isSparse(state) && guesses.length > 0;
 
   return (
     <div className="flex flex-1 flex-col">
-      <div className="animate-turn-in flex flex-1 flex-col justify-center">
-        <div className="mb-[18px] flex items-center gap-3">
-          <ChefPresence />
-          <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[#F2B279]">
-            HERE&apos;S WHAT I&apos;M THINKING
-          </p>
-        </div>
-
-        <div className="glass-surface rounded-[22px] px-5 pb-[18px] pt-5">
-          <p
-            data-testid="onboarding-reflect-hook"
-            className="m-0 mb-3 text-[19px] font-semibold leading-[1.45] text-foreground text-pretty"
-          >
-            {reflectHook(state)}
-          </p>
-          <p className="m-0 text-[15px] leading-[1.5] text-[#C7C7CC] text-pretty">
-            {reflectSummary(state)}
-          </p>
-        </div>
-
-        {restrictions.length > 0 && (
-          <div className="mt-2.5 rounded-[16px] border border-[rgba(255,69,58,0.26)] bg-[rgba(255,69,58,0.07)] px-[15px] py-[13px]">
-            <div className="mb-2.5 flex items-center gap-2">
-              <AlertTriangle className="size-3.5 text-destructive" strokeWidth={2} />
-              <span className="text-[12.5px] font-bold text-[#FF6961]">
-                I&apos;ll never cook with
-              </span>
+      <div className="flex-1 overflow-y-auto pb-6">
+        <div className="flex flex-col gap-[18px]">
+          {/* 1 — the opinion. */}
+          <div className="animate-turn-in">
+            <div className="mb-4 flex items-center gap-3">
+              <ChefPresence />
+              <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[var(--spec-action)]">
+                HERE&apos;S WHAT I&apos;M THINKING
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {restrictions.map((r) => (
-                <span
-                  key={r}
-                  className="inline-flex items-center gap-1.5 rounded-[10px] border border-[rgba(255,69,58,0.34)] bg-[rgba(255,69,58,0.14)] px-2.5 py-1.5 text-[13px] font-semibold text-[#FFD9D6]"
-                >
-                  {restrictionLabel(r)}
-                  {isAllergyRestriction(r) && (
-                    <span className="text-[10.5px] font-semibold text-[rgba(255,217,214,0.7)]">
-                      allergy
-                    </span>
-                  )}
+            <p
+              data-testid="onboarding-reflect-hook"
+              className="m-0 text-[25px] font-[650] leading-[1.26] tracking-[-0.5px] text-[var(--spec-text-feature)] text-pretty"
+            >
+              {reflectHook(state)}
+            </p>
+            {subline && (
+              <p className="m-0 mt-3.5 text-[16px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
+                {subline}
+              </p>
+            )}
+          </div>
+
+          {/* The user's own sentence, quoted back. The only place in the
+              interview where they see their words rather than the chef's
+              paraphrase, which is what makes the typing path feel heard. */}
+          {state.quotedLine && (
+            <div className="flex items-start gap-3 rounded-[16px] border border-[rgba(240,222,190,0.28)] bg-[rgba(240,222,190,0.11)] px-4 py-3.5">
+              <Quote
+                className="mt-0.5 size-[18px] flex-none text-[rgba(240,222,190,0.55)]"
+                strokeWidth={2}
+              />
+              <div>
+                <p className="m-0 mb-1.5 text-[16px] font-semibold leading-[1.45] text-[var(--spec-text-muted)] text-pretty">
+                  &ldquo;{state.quotedLine}&rdquo;
+                </p>
+                <p className="m-0 text-[10.5px] font-semibold tracking-[1.8px] text-[rgba(240,222,190,0.65)]">
+                  YOUR WORDS, SO I WROTE THEM DOWN
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* 2 — what I've got. */}
+          {groups.length > 0 && (
+            <div
+              data-testid="onboarding-playback"
+              className="spec-glass rounded-[18px] px-[18px] pb-5 pt-[18px]"
+            >
+              <p className="m-0 mb-4 text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+                WHAT I&apos;VE GOT
+              </p>
+              <div className="flex flex-col gap-[15px]">
+                {groups.map((group) => (
+                  <div key={group.label}>
+                    <p className="m-0 mb-1.5 text-[10px] font-semibold tracking-[1.8px] text-[var(--spec-text-caption)]">
+                      {group.label}
+                    </p>
+                    {group.facts.map((fact) => (
+                      <p
+                        key={fact.lead}
+                        className="m-0 mb-[5px] text-[15px] leading-[1.5] text-[var(--spec-text-body)] last:mb-0 text-pretty"
+                      >
+                        <span className="font-semibold text-[var(--spec-text-primary)]">
+                          {fact.lead}
+                        </span>
+                        {/* A `rest` that opens on punctuation continues the
+                            lead's own sentence ("2 of you" + ", every night"),
+                            so joining with a space would print "2 of you ,". */}
+                        {fact.rest
+                          ? /^[,.;:!?]/.test(fact.rest)
+                            ? fact.rest
+                            : ` ${fact.rest}`
+                          : ""}
+                      </p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* The safety recap. Its own object, never sharing a card, and the
+              allergy sub-label is the You tab's exactly — these are the same
+              objects that tab will show tomorrow. */}
+          {state.restrictions.length > 0 && (
+            <div className="rounded-[16px] border border-[rgba(217,106,91,0.28)] bg-[rgba(217,106,91,0.09)] px-[15px] py-[14px]">
+              <div className="mb-2.5 flex items-center gap-2">
+                <AlertTriangle
+                  className="size-3.5 text-[var(--spec-destructive)]"
+                  strokeWidth={2}
+                />
+                <span className="text-[12.5px] font-bold text-[var(--spec-destructive-text)]">
+                  I&apos;ll never cook with
                 </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {state.restrictions.map((r) => (
+                  <span
+                    key={r}
+                    className="inline-flex items-center gap-1.5 rounded-[12px] border border-[rgba(217,106,91,0.32)] bg-[rgba(217,106,91,0.14)] px-[11px] py-1.5 text-[13px] font-semibold text-[#F0D8D3]"
+                  >
+                    {restrictionLabel(r)}
+                    {isAllergyRestriction(r) && (
+                      <span className="text-[10.5px] font-semibold text-[rgba(240,216,211,0.7)]">
+                        allergy
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Named guesses, for a run that told the chef almost nothing.
+              Deliberately not in the safety treatment: a gap is not a warning,
+              and dressing it as one borrows weight from the recap above. */}
+          {showGuesses && (
+            <div
+              data-testid="onboarding-guesses"
+              className="rounded-[18px] border border-[rgba(240,222,190,0.12)] bg-[rgba(70,58,46,0.52)] px-[17px] pb-[17px] pt-4"
+            >
+              <p className="m-0 mb-3 text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+                WHAT I&apos;M GUESSING, UNTIL YOU SAY OTHERWISE
+              </p>
+              <div className="flex flex-col gap-[11px]">
+                {guesses.map((guess, i) => (
+                  <div key={guess} className="flex items-start gap-2.5">
+                    {i === 0 ? (
+                      <Shield
+                        className="mt-[3px] size-[15px] flex-none text-[var(--spec-text-muted)]"
+                        strokeWidth={1.9}
+                      />
+                    ) : i === 1 ? (
+                      <Clock
+                        className="mt-[3px] size-[15px] flex-none text-[var(--spec-text-muted)]"
+                        strokeWidth={1.9}
+                      />
+                    ) : (
+                      <UtensilsCrossed
+                        className="mt-[3px] size-[15px] flex-none text-[var(--spec-text-muted)]"
+                        strokeWidth={1.9}
+                      />
+                    )}
+                    <p className="m-0 text-[14.5px] leading-[1.45] text-[var(--spec-text-body)] text-pretty">
+                      {guess}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 3 — the consequences. */}
+          <div data-testid="onboarding-week-decisions">
+            <p className="m-0 mb-[13px] text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+              SO HERE&apos;S YOUR WEEK
+            </p>
+            <div className="flex flex-col gap-3">
+              {decisions.map((decision) => (
+                <div key={decision} className="flex items-start gap-2.5">
+                  <ArrowRight
+                    className="mt-1 size-[15px] flex-none text-[var(--spec-action)]"
+                    strokeWidth={2.2}
+                  />
+                  <p className="m-0 text-[15px] leading-[1.45] text-[var(--spec-gold-voice)] text-pretty">
+                    {decision}
+                  </p>
+                </div>
               ))}
             </div>
           </div>
-        )}
 
-        {unsaved.length > 0 ? (
-          <p
-            data-testid="onboarding-unsaved-note"
-            className="m-0 mt-4 px-0.5 text-[14px] leading-[1.5] text-[#F2B279] text-pretty"
-          >
-            One thing: {joinAnswers(unsaved)} didn&apos;t save. I&apos;ll try again
-            when you build your week.
-          </p>
-        ) : (
-          <p className="m-0 mt-4 px-0.5 text-[14px] leading-[1.5] text-muted-foreground text-pretty">
-            All saved. Change any of it anytime in{" "}
-            <span className="font-semibold text-primary">You</span>.
-          </p>
-        )}
+          {/* Quietly at the end of the scroll, not in the sticky bar. */}
+          {unsaved.length > 0 ? (
+            <p
+              data-testid="onboarding-unsaved-note"
+              className="m-0 px-0.5 text-[13px] leading-[1.5] text-[var(--spec-gold-voice)] text-pretty"
+            >
+              One thing: {joinAnswers(unsaved)} didn&apos;t save. I&apos;ll try again when
+              you build your week.
+            </p>
+          ) : (
+            <p className="m-0 px-0.5 text-[13px] leading-[1.5] text-[var(--spec-text-caption)] text-pretty">
+              All saved. Change any of it anytime in{" "}
+              <span className="font-semibold text-[var(--spec-action)]">You</span>.
+            </p>
+          )}
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onBuildPlan}
-        disabled={isSaving}
-        data-testid="onboarding-build-plan"
-        className="mt-5 flex w-full items-center justify-center gap-2.5 rounded-[15px] bg-primary px-4 py-[17px] text-[16px] font-semibold text-primary-foreground shadow-[0_10px_30px_-8px_rgba(58,134,255,0.75)] disabled:opacity-60"
-      >
-        {isSaving ? "Saving what you told me…" : "Plan my first week"}
-        {!isSaving && <ArrowRight className="size-[19px]" strokeWidth={2.2} />}
-      </button>
+      {/* The bottom edge (spec §07): exactly one thing floats, and it is the
+          screen's single primary action. Chrome surface so content scrolling
+          under it dims rather than brightens. */}
+      <div className="spec-chrome -mx-[26px] flex-none px-[26px] pb-2 pt-3.5">
+        <button
+          type="button"
+          onClick={onBuildPlan}
+          disabled={isSaving}
+          data-testid="onboarding-build-plan"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[16px] bg-[var(--spec-action)] px-4 py-[17px] text-[16px] font-semibold text-[var(--spec-action-on)] shadow-[0_10px_30px_-8px_rgba(244,235,220,0.45)] disabled:opacity-60"
+        >
+          {isSaving ? "Saving what you told me…" : "Plan my first week"}
+          {!isSaving && <ArrowRight className="size-[19px]" strokeWidth={2.2} />}
+        </button>
+      </div>
     </div>
   );
 }

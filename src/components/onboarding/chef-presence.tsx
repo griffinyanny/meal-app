@@ -29,7 +29,7 @@ export function ChefPresence({ size = "inline", className }: ChefPresenceProps) 
     >
       {hero && (
         <>
-          <span className="ember-ring absolute size-28 rounded-full border border-[rgba(232,148,74,0.4)]" />
+          <span className="ember-ring absolute size-28 rounded-full border border-[rgba(233,179,72,0.4)]" />
           <span className="ember-steam absolute left-[44px] top-1.5 h-5 w-2 rounded-full" />
           <span
             className="ember-steam absolute left-[58px] top-1 h-[18px] w-[7px] rounded-full"
@@ -43,9 +43,18 @@ export function ChefPresence({ size = "inline", className }: ChefPresenceProps) 
           hero ? "size-[88px]" : "size-[42px]"
         )}
       />
+      {/* The toque (spec §02). A hairline stroke, never a fill — a filled toque
+          is a sticker, a line drawing is a silhouette seen through flame. Sized
+          to 41% of the sphere and seated just below centre so the highlight
+          stays clear above the brim and the light still reads as coming from
+          up-left. Below 40px the stroke goes sub-pixel and reads as dirt, which
+          is why the inline orb is still large enough to carry it. */}
       <ChefHat
-        className={cn("relative z-10 text-[#3A1D0E] opacity-85", hero ? "size-9" : "size-[21px]")}
-        strokeWidth={1.7}
+        className={cn(
+          "relative z-10 text-[#2A1C04] opacity-85",
+          hero ? "size-9" : "size-[17px]"
+        )}
+        strokeWidth={1.6}
       />
     </div>
   );
@@ -67,13 +76,13 @@ export function ChefStatus({ label, safety }: ChefStatusProps) {
         <p
           className={cn(
             "m-0 text-[10px] font-semibold tracking-[1.5px]",
-            safety ? "text-[#FF6961]" : "text-[#F2B279]"
+            safety ? "text-[var(--spec-destructive-text)]" : "text-[var(--spec-gold-tint)]"
           )}
         >
           {label}
         </p>
         {safety && (
-          <p className="mt-[3px] text-[10px] font-semibold tracking-[1.5px] text-[#FF6961]">
+          <p className="mt-[3px] text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-destructive-text)]">
             THE ONE I HAVE TO GET RIGHT
           </p>
         )}

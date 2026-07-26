@@ -7,6 +7,7 @@ import { QuestionScreen } from "./question-screen";
 import { DeepenOfferScreen } from "./deepen-offer-screen";
 import { ReflectScreen } from "./reflect-screen";
 import { OnboardingToast } from "./onboarding-toast";
+import { cn } from "@/lib/utils";
 import { valueMeterProgress } from "@/lib/onboarding/planner";
 import { makeRestriction } from "@/components/you/constraint-utils";
 import type { Dimension, InterviewState, QuestionOption } from "@/lib/onboarding/types";
@@ -220,23 +221,44 @@ export function OnboardingFlow() {
   // its own full-width skip) and the reflect turn (nothing left to skip).
   const showSkip = o.step !== "intro" && o.step !== "reflect";
 
+  // The reflect turn owns its own bottom edge (a chrome action bar it bleeds to
+  // the screen width), so the flow's padding gets out of its way.
+  const isReflect = o.step === "reflect";
+
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div className="flex h-[46px] flex-none items-center justify-end px-5">
+    <div className="relative flex min-h-dvh flex-col bg-[var(--spec-floor)]">
+      {/* Lighting, spec §03: light enters once, from above, and it is always
+          gold. `hero` is the recipe for screens the orb is on — the only one
+          permitted two stops, the second being a faint floor bounce so the orb
+          reads as sitting in a room. Beneath the content layer, never animated,
+          never stacked with a second hue. */}
+      <div
+        aria-hidden
+        className="spec-light-hero pointer-events-none absolute inset-0 z-0"
+      />
+
+      <div className="relative z-10 flex h-[46px] flex-none items-center justify-end px-5">
         {showSkip && (
           <button
             type="button"
             onClick={o.skipAll}
             disabled={o.isSaving}
             data-testid="onboarding-skip-all"
-            className="px-1 py-2 text-[13.5px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+            className="px-1 py-2 text-[13.5px] font-semibold text-[var(--spec-text-muted)] transition-colors hover:text-[var(--spec-text-primary)] disabled:opacity-50"
           >
             Skip for now
           </button>
         )}
       </div>
 
-      <div className="flex flex-1 flex-col px-[26px] pb-8">{body()}</div>
+      <div
+        className={cn(
+          "relative z-10 flex flex-1 flex-col px-[26px]",
+          isReflect ? "pb-0" : "pb-8"
+        )}
+      >
+        {body()}
+      </div>
 
       <OnboardingToast message={o.toast} onDismiss={o.dismissToast} />
     </div>

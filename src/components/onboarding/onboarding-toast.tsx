@@ -27,7 +27,7 @@ export function OnboardingToast({ message, onDismiss }: OnboardingToastProps) {
       data-testid="onboarding-toast"
       className="animate-turn-in pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
     >
-      <div className="glass-surface pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 text-[0.9rem] text-foreground shadow-lg">
+      <div className="spec-floating pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 text-[0.9rem] text-[var(--spec-text-primary)]">
         {message}
       </div>
     </div>

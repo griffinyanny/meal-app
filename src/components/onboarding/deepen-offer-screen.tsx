@@ -22,14 +22,14 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
       <div className="animate-turn-in">
         <div className="mb-[18px] flex items-center gap-3">
           <ChefPresence />
-          <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[#F2B279]">
+          <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[var(--spec-gold-tint)]">
             THAT&apos;S THE ESSENTIALS
           </p>
         </div>
-        <h2 className="m-0 mb-2.5 text-[27px] font-bold leading-[1.16] tracking-[-0.5px] text-foreground text-pretty">
+        <h2 className="m-0 mb-2.5 text-[27px] font-bold leading-[1.16] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
           Want to go a little deeper?
         </h2>
-        <p className="m-0 max-w-[335px] text-[15.5px] leading-[1.5] text-[#C7C7CC] text-pretty">
+        <p className="m-0 max-w-[335px] text-[15.5px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
           I can plan a good week right now. A few more minutes and I&apos;ll cook to
           your spice, your timing, the flavors you actually reach for.
         </p>
@@ -40,7 +40,7 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
           type="button"
           onClick={onAccept}
           data-testid="onboarding-deepen-yes"
-          className="flex w-full items-center justify-center gap-2.5 rounded-[15px] bg-primary px-4 py-[17px] text-[16px] font-semibold text-primary-foreground shadow-[0_10px_28px_-10px_rgba(58,134,255,0.7)]"
+          className="flex w-full items-center justify-center gap-2.5 rounded-[16px] bg-[var(--spec-action)] px-4 py-[17px] text-[16px] font-semibold text-[var(--spec-action-on)] shadow-[0_10px_28px_-10px_rgba(244,235,220,0.3)]"
         >
           Let&apos;s keep going
           <ArrowRight className="size-[18px]" strokeWidth={2.2} />
@@ -49,7 +49,7 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
           type="button"
           onClick={onDecline}
           data-testid="onboarding-deepen-no"
-          className="w-full rounded-[15px] border border-white/10 bg-white/[0.04] px-4 py-[15px] text-[15px] font-semibold text-[#C7C7CC] transition-colors hover:bg-white/[0.07]"
+          className="w-full rounded-[15px] border border-white/10 bg-[rgba(240,222,190,0.04)] px-4 py-[15px] text-[15px] font-semibold text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.07)]"
         >
           Just build my week
         </button>

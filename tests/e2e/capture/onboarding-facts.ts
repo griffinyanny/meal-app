@@ -246,20 +246,89 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
   },
   {
     id: "ob-reflect",
-    briefRef: "Onboarding — state 6, reflect (opinionated cook, not a receipt)",
-    readyText: "All saved.",
+    briefRef:
+      "Reflect playback — STATE 1, core only (design/surfaces/onboarding/brief-reflect-playback.md)",
+    readyText: "SO HERE'S YOUR WEEK",
     facts: {
       eyebrow: "'HERE'S WHAT I'M THINKING'",
-      hook: "an opinionated dish-level hook leads, above the summary",
+      hook: "the opinion leads, alone on the floor, with nothing boxed around it",
+      playback:
+        "'WHAT I'VE GOT' glass card, grouped AT THE TABLE / HOW YOU EAT / THE CLOCK — kitchen logic, not schema order; every fact a sentence, never a label/value pair",
+      emptyGroups:
+        "IN THE KITCHEN is ABSENT (no skill/effort answered) — a group with nothing in it is dropped, never shown empty",
       safetyRecap:
-        "red 'I'll never cook with' card recapping Shellfish with the 'allergy' sub-label — the You tab's exact vocabulary",
-      editPath: "'All saved. Change any of it anytime in You.'",
-      cta: "'Plan my first week'",
-      tasteQuestion: "does the hook sound like a cook with a point of view, or a receipt?",
+        "red 'I'll never cook with' card recapping Shellfish with the 'allergy' sub-label — its own object, never sharing a card, positioned AFTER the playback (Griffin, S39)",
+      week:
+        "'SO HERE'S YOUR WEEK' — three decisions in gold voice, closing on the shellfish promise",
+      editPath: "'All saved. Change any of it anytime in You.' at the end of the scroll, not in the bar",
+      cta: "'Plan my first week' on a chrome bar pinned to the bottom edge",
+      tasteQuestion: "does the core-only state feel thin, or complete?",
     },
     prepare: firstRun,
     navigate: async (page) => {
       await gotoDeepenOffer(page);
+      await page.getByTestId("onboarding-deepen-no").click();
+      await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+    },
+  },
+  {
+    // The state that has to prove going deeper was worth the taps. Captured
+    // separately because the design's central claim — depth reads as
+    // specificity, not as a longer list — is only checkable by looking at this
+    // one next to the one above it.
+    id: "ob-reflect-deep",
+    briefRef: "Reflect playback — STATE 2, fully engaged",
+    readyText: "SO HERE'S YOUR WEEK",
+    facts: {
+      richness:
+        "visibly richer than ob-reflect at the SAME structure: more facts inside the same groups, more decisions in the week list. No new sections, no second tier, no count anywhere",
+      kitchenGroup: "'IN THE KITCHEN' now present, fed by the skill answer",
+      week: "the week list has gained decisions that trace to the deep answers (heat -> a pantry decision)",
+      noMeter: "no progress meter and no 'x of y' on this screen — depth is never a count",
+      tasteQuestion: "does answering five more questions visibly buy something?",
+    },
+    prepare: firstRun,
+    navigate: async (page) => {
+      await gotoDeepenOffer(page);
+      await page.getByTestId("onboarding-deepen-yes").click();
+      // Walk the adaptive round to its natural end, answering each turn with
+      // its first real option, the way an engaged cook would.
+      for (let i = 0; i < 6; i++) {
+        const confirm = page.getByTestId("onboarding-confirm");
+        const options = page.locator('[data-testid^="onboarding-option-"]');
+        if ((await options.count()) === 0) break;
+        await options.first().click();
+        await confirm.click();
+        if (await page.getByTestId("onboarding-reflect-hook").isVisible()) break;
+      }
+      await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+    },
+  },
+  {
+    // Household answered, everything else passed. The state that must not read
+    // as a punishment for skipping.
+    id: "ob-reflect-sparse",
+    briefRef: "Reflect playback — STATE 3, skipped almost everything",
+    readyText: "SO HERE'S YOUR WEEK",
+    facts: {
+      guesses:
+        "'WHAT I'M GUESSING, UNTIL YOU SAY OTHERWISE' names the assumptions in plain warm grey",
+      noBorrowedRed:
+        "the guesses block does NOT use the safety treatment — a gap is not a warning, and there is no red card at all here since no allergies were given",
+      week: "a week is still described, because the heading promises one",
+      tone: "the chef sounds like it's looking forward to cooking, not like it's short of data",
+      tasteQuestion: "does skipping feel respected, or punished?",
+    },
+    prepare: firstRun,
+    navigate: async (page) => {
+      await gotoHousehold(page);
+      await page.getByTestId("onboarding-confirm-household").click();
+      await expect(page.getByText("How do you eat?")).toBeVisible();
+      await page.getByTestId("onboarding-skip-question").click();
+      await expect(page.getByText("Anything I should never cook with?")).toBeVisible();
+      await page.getByTestId("onboarding-pass").click();
+      await expect(page.getByText("How much time on a weeknight?")).toBeVisible();
+      await page.getByTestId("onboarding-skip-question").click();
       await page.getByTestId("onboarding-deepen-no").click();
       await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
     },

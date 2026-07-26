@@ -75,6 +75,13 @@ export interface InterviewState {
   // to preferences/memories by user.talk; kept here so the planner can see that
   // a dimension was covered in the user's own words.
   freeTextDimensions: Dimension[];
+  // The last thing the user typed, verbatim. The reflect screen quotes it back
+  // under "your words, so I wrote them down" — the one place in the interview
+  // where the user sees their own sentence rather than the chef's paraphrase of
+  // it, which is what proves the typing path was worth using. Never persisted
+  // and never sent to a model: user.talk already handled the content, and this
+  // is a display string.
+  quotedLine: string | null;
   deepAnswers: DeepAnswer[];
 }
 
@@ -86,6 +93,7 @@ export function emptyInterviewState(): InterviewState {
     maxCookTimeWeeknight: null,
     cuisinePreferences: [],
     freeTextDimensions: [],
+    quotedLine: null,
     deepAnswers: [],
   };
 }

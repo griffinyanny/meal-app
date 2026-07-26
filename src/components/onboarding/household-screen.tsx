@@ -73,11 +73,11 @@ export function HouseholdScreen({
     <div className="animate-turn-in flex flex-1 flex-col">
       <ChefStatus label="GETTING TO KNOW YOU" />
 
-      <h2 className="m-0 mb-4 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-foreground">
+      <h2 className="m-0 mb-4 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-[var(--spec-text-primary)]">
         Who am I cooking for?
       </h2>
 
-      <div className="overflow-hidden rounded-[20px] border border-white/[0.08] bg-[rgba(26,24,22,0.6)]">
+      <div className="overflow-hidden rounded-[20px] spec-control">
         <CountRow
           label="Adults"
           value={composition.adults}
@@ -86,7 +86,7 @@ export function HouseholdScreen({
           onChange={(adults) => patch({ adults })}
           testId="onboarding-count-adults"
         />
-        <div className="mx-[18px] h-px bg-white/[0.07]" />
+        <div className="mx-[18px] h-px bg-[rgba(240,222,190,0.07)]" />
         <CountRow
           label="Children"
           sub="Ages 2 to 12"
@@ -96,7 +96,7 @@ export function HouseholdScreen({
           onChange={(children) => patch({ children })}
           testId="onboarding-count-children"
         />
-        <div className="mx-[18px] h-px bg-white/[0.07]" />
+        <div className="mx-[18px] h-px bg-[rgba(240,222,190,0.07)]" />
         <CountRow
           label="Babies under 2"
           sub="First foods"
@@ -123,14 +123,14 @@ export function HouseholdScreen({
       {hasBabies && (
         <div
           data-testid="onboarding-baby-stage"
-          className="animate-turn-in mt-3 rounded-[14px] border border-[rgba(232,148,74,0.22)] bg-[rgba(232,148,74,0.07)] px-3.5 py-3"
+          className="animate-turn-in mt-3 rounded-[14px] border border-[rgba(233,179,72,0.22)] bg-[rgba(233,179,72,0.07)] px-3.5 py-3"
         >
           <div className="flex items-start gap-2.5">
             <Shield
-              className="mt-px size-[15px] flex-none text-[#F2B279]"
+              className="mt-px size-[15px] flex-none text-[var(--spec-gold-tint)]"
               strokeWidth={1.9}
             />
-            <p className="m-0 text-[12.5px] leading-[1.45] text-[#E8DFD3]">
+            <p className="m-0 text-[12.5px] leading-[1.45] text-[var(--spec-text-body)]">
               {babyNote(stage)}
             </p>
           </div>
@@ -145,8 +145,8 @@ export function HouseholdScreen({
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
                   stage === s.value
-                    ? "border-[rgba(232,148,74,0.6)] bg-[rgba(232,148,74,0.2)] text-[#F5E6D6]"
-                    : "border-[rgba(232,148,74,0.28)] bg-transparent text-[#C7B8A8] hover:bg-[rgba(232,148,74,0.1)]"
+                    ? "border-[rgba(233,179,72,0.6)] bg-[rgba(233,179,72,0.2)] text-[var(--spec-text-primary)]"
+                    : "border-[rgba(233,179,72,0.28)] bg-transparent text-[var(--spec-text-muted)] hover:bg-[rgba(233,179,72,0.1)]"
                 )}
               >
                 {s.label}
@@ -180,7 +180,7 @@ export function HouseholdScreen({
           (they eat adapted bites, not a portion). Said plainly, because a
           number that refuses to change after a tap reads as a control that
           didn't register. */}
-      <p className="mt-2.5 text-center text-[12px] text-[#6B6B72]">
+      <p className="mt-2.5 text-center text-[12px] text-[var(--spec-text-caption)]">
         I&apos;ll cook for {servings} {servings === 1 ? "serving" : "servings"}
         {stage === "6_to_12m" ? ", plus bites for the little one." : "."}
       </p>
