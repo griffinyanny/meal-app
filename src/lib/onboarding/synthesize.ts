@@ -174,7 +174,38 @@ const HOOKS: HookCandidate[] = [
     applies: (s) => valuesOf(s, "proteins").length > 0,
     line: "I've got a few ideas I want to try on you this week.",
   },
+  {
+    // The floor for anyone who answered the household question and little else.
+    // Without it a skip-heavy run falls through to the generic line, and the
+    // sparse reflect state — the one that most needs to sound unbothered —
+    // becomes the flattest screen in the flow.
+    applies: (s) => !!s.composition,
+    line: "Two of you at the table is enough to start cooking.",
+  },
 ];
+
+// The sentence under the hook. Present only when the chef has something to add
+// that the hook didn't already say, which is what makes a deeper interview read
+// as richer at the TOP of the screen and not only in the middle of it. Returns
+// null rather than filler: a second line that says nothing is worse than one
+// strong line alone.
+export function reflectSubline(state: InterviewState): string | null {
+  const skill = valueOf(state, "skill");
+  const effort = valueOf(state, "effort");
+
+  if (skill === "pro" || skill === "confident") {
+    return effort === "simple"
+      ? "You can clearly cook, so I'll keep the steps short and put the interest in the ingredients."
+      : "You cook, and you like the technique, so expect one dinner worth learning and the rest moving fast.";
+  }
+  if (skill === "learning") {
+    return "I'll write these so nothing assumes you already know it, and the timings will be honest.";
+  }
+  if (!state.dietaryFramework && !state.maxCookTimeWeeknight) {
+    return "I'll cook like I'm cooking for people I want to impress, and learn the rest from what you keep and what you push back on.";
+  }
+  return null;
+}
 
 export function reflectHook(state: InterviewState): string {
   const avoided = state.restrictions.map((r) =>

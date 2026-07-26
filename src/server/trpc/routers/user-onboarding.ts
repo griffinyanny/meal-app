@@ -36,6 +36,9 @@ const interviewStateSchema = z.object({
   maxCookTimeWeeknight: z.number().int().min(5).max(300).nullable(),
   cuisinePreferences: z.array(z.string().max(50)).max(20),
   freeTextDimensions: z.array(z.string().max(30)).max(20),
+  // Display-only on the client, and nothing here reads it. Accepted (and
+  // bounded) rather than rejected so the client can post the state it holds.
+  quotedLine: z.string().max(500).nullable().optional(),
   deepAnswers: z.array(deepAnswerSchema).max(12),
 });
 

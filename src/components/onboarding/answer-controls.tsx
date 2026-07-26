@@ -27,11 +27,11 @@ export function OptionCards({ options, selected, onToggle }: OptionCardsProps) {
             className={cn(
               "flex flex-col items-start rounded-[16px] border px-4 py-3.5 text-left transition-colors",
               on
-                ? "border-primary/60 bg-primary/15"
-                : "border-white/10 bg-white/[0.04] hover:bg-white/[0.07]"
+                ? "border-[var(--spec-action)]/60 bg-[var(--spec-action)]/15"
+                : "border-white/10 bg-[rgba(240,222,190,0.04)] hover:bg-[rgba(240,222,190,0.07)]"
             )}
           >
-            <span className="text-[16px] font-semibold leading-[1.15] text-foreground">
+            <span className="text-[16px] font-semibold leading-[1.15] text-[var(--spec-text-primary)]">
               {o.label}
             </span>
             {o.sub && (
@@ -76,11 +76,11 @@ export function OptionChips({
             data-testid={`onboarding-option-${o.value}`}
             className={cn(
               "rounded-full border px-4 py-2.5 text-[0.9rem] font-medium transition-colors",
-              !on && "border-white/10 bg-white/[0.04] text-foreground/90 hover:bg-white/[0.07]",
+              !on && "border-white/10 bg-[rgba(240,222,190,0.04)] text-[var(--spec-text-primary)]/90 hover:bg-[rgba(240,222,190,0.07)]",
               on &&
                 (tone === "safety"
-                  ? "border-[rgba(255,69,58,0.55)] bg-[rgba(255,69,58,0.16)] text-[#FFD9D6]"
-                  : "border-primary/60 bg-primary/15 text-foreground")
+                  ? "border-[rgba(217,106,91,0.55)] bg-[rgba(217,106,91,0.16)] text-[#F0D8D3]"
+                  : "border-[var(--spec-action)]/60 bg-[var(--spec-action)]/15 text-[var(--spec-text-primary)]")
             )}
           >
             {o.label}
@@ -115,8 +115,8 @@ export function CountRow({
   return (
     <div className="flex items-center gap-3.5 px-[18px] py-[15px]">
       <div className="flex-1">
-        <div className="text-[16px] font-semibold text-foreground">{label}</div>
-        {sub && <div className="mt-0.5 text-[12.5px] text-muted-foreground">{sub}</div>}
+        <div className="text-[16px] font-semibold text-[var(--spec-text-primary)]">{label}</div>
+        {sub && <div className="mt-0.5 text-[12.5px] text-[var(--spec-text-muted)]">{sub}</div>}
       </div>
       <div className="flex items-center gap-3">
         <button
@@ -124,13 +124,13 @@ export function CountRow({
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           aria-label={`One fewer ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06] text-foreground disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-[11px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
         >
           <Minus className="size-4" />
         </button>
         <span
           data-testid={testId}
-          className="min-w-5 text-center text-[19px] font-bold tabular-nums text-foreground"
+          className="min-w-5 text-center text-[19px] font-bold tabular-nums text-[var(--spec-text-primary)]"
         >
           {value}
         </span>
@@ -139,7 +139,7 @@ export function CountRow({
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           aria-label={`One more ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[11px] border border-white/[0.12] bg-white/[0.06] text-foreground disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-[11px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
         >
           <Plus className="size-4" />
         </button>
@@ -163,7 +163,7 @@ export function PrimaryAction({ label, onClick, disabled, testId }: PrimaryActio
       onClick={onClick}
       disabled={disabled}
       data-testid={testId}
-      className="mt-4 flex w-full items-center justify-center gap-2 rounded-[15px] bg-primary px-4 py-4 text-[16px] font-semibold text-primary-foreground shadow-[0_10px_28px_-10px_rgba(58,134,255,0.7)] transition-opacity disabled:opacity-40"
+      className="mt-4 flex w-full items-center justify-center gap-2 rounded-[16px] bg-[var(--spec-action)] px-4 py-4 text-[16px] font-semibold text-[var(--spec-action-on)] shadow-[0_10px_28px_-10px_rgba(244,235,220,0.3)] transition-opacity disabled:opacity-40"
     >
       {label}
     </button>
@@ -189,8 +189,8 @@ export function QuietAction({ label, onClick, tone = "normal", testId }: QuietAc
       className={cn(
         "px-2 py-2 font-semibold transition-colors",
         tone === "normal"
-          ? "text-[14px] text-[#C7C7CC] hover:text-foreground"
-          : "text-[12.5px] text-[#6B6B72] hover:text-muted-foreground"
+          ? "text-[14px] text-[var(--spec-text-body)] hover:text-[var(--spec-text-primary)]"
+          : "text-[12.5px] text-[var(--spec-text-caption)] hover:text-[var(--spec-text-muted)]"
       )}
     >
       {label}
