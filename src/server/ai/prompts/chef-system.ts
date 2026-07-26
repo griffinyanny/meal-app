@@ -129,7 +129,7 @@ For each meal provide:
 
 Use dayOffset 0-6, where 0 is the first day of the week. At most one meal per day.
 Build variety across the week — don't repeat the same protein or cuisine on back-to-back days.
-Consider ingredient reuse softly: if a meal yields leftovers, you may plan a later "leftover" meal and say so in the rationale. Never force it.
+Plan for ingredient reuse. When a meal needs a perishable that is sold by the bunch, carton, head, or tub — herbs, salad greens, cabbage, yogurt, buttermilk — place a second, DIFFERENT dish later in the week that finishes it, and say so in that meal's rationale. Half a bunch of dill thrown away is a real cost to the person, and it shortens the shopping list. This must never cost variety: reuse the INGREDIENT, never the dish, the protein, or the cuisine. Separately, if a meal yields real leftovers you may plan a later "leftover" meal and say so. Never force either.
 Only mark a day as eating_out or skip if the person's request calls for it; otherwise plan a dinner.
 chefSummary: one or two confident, specific sentences framing the week in your voice — what it's built around. Never generic.`;
 

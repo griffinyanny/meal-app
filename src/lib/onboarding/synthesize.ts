@@ -86,8 +86,18 @@ export function synthesizeMemories(state: InterviewState): SynthesizedMemory[] {
 }
 
 // The chef's opinionated read-back on the reflect screen. The brief asks for an
-// actual cook's reaction ("I'm already picturing blistered shishitos"), not a
-// receipt — so this leads with a dish the answers point at.
+// actual cook's reaction, not a receipt, so this leads with a point of view the
+// answers point at.
+//
+// REGISTER RULE (Griffin, S39): name a TECHNIQUE or an INGREDIENT FAMILY, never
+// a specific plate. "Seared salmon with green beans" is a promise, and nothing
+// carries it into generation — the plan is built from preferences and the seed
+// request, neither of which knows this line exists. So the very first specific
+// thing the product said would be wrong within the minute, on the screen whose
+// entire job is to prove the chef was listening. "Fish takes to a hot pan" is
+// the same voice and stays true whatever gets generated. Pure atmosphere is the
+// other failure ("I feel like I'm in the Italian Alps" is a mood board, not a
+// cook); the line has to have food in it.
 //
 // Ordered most-specific first, and the CORE-ONLY answers (diet, weeknight time,
 // who's at the table) each earn a real line of their own. Someone who taps the
@@ -96,7 +106,7 @@ export function synthesizeMemories(state: InterviewState): SynthesizedMemory[] {
 // moment the whole flow builds toward never fires for most people.
 //
 // `mentions` is the honesty guard: a line naming a food is only usable if the
-// user hasn't just told us never to cook it. Naming salmon back to someone who
+// user hasn't just told us never to cook it. Naming fish back to someone who
 // declared a fish allergy on the previous screen would undo the entire safety
 // turn, so a colliding candidate is skipped rather than shown.
 interface HookCandidate {
@@ -110,8 +120,8 @@ const HOOKS: HookCandidate[] = [
     applies: (s) =>
       valueOf(s, "heat") === "hot" &&
       (valuesOf(s, "proteins").includes("fish") || s.dietaryFramework === "pescatarian"),
-    mentions: ["shishito", "pepper", "chili", "salmon", "fish", "seafood"],
-    line: "I'm already picturing blistered shishitos and a chili-crisp salmon.",
+    mentions: ["shishito", "pepper", "chili", "fish", "seafood"],
+    line: "Then we're getting on well. Blistered peppers, chili crisp, and fish that hits a hot pan.",
   },
   {
     applies: (s) => valueOf(s, "heat") === "hot",
@@ -121,7 +131,7 @@ const HOOKS: HookCandidate[] = [
   {
     applies: (s) => s.dietaryFramework === "vegan" || s.dietaryFramework === "vegetarian",
     mentions: ["broccoli"],
-    line: "I'm thinking charred broccoli with something rich under it, not sad substitutes.",
+    line: "Charred vegetables with something rich underneath, then. No sad substitutes.",
   },
   {
     applies: (s) =>
@@ -139,8 +149,8 @@ const HOOKS: HookCandidate[] = [
   },
   {
     applies: (s) => s.dietaryFramework === "pescatarian",
-    mentions: ["fish", "seafood", "salmon", "green bean"],
-    line: "Fish is the fastest good dinner there is. I'm already picturing seared salmon with green beans that get some real char.",
+    mentions: ["fish", "seafood", "green bean"],
+    line: "Good. Fish takes to a hot pan faster than anything, and I like a green vegetable that gets some real char next to it.",
   },
   {
     applies: (s) => !!s.composition && s.composition.babies > 0,
@@ -152,13 +162,13 @@ const HOOKS: HookCandidate[] = [
   },
   {
     applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight <= 30,
-    mentions: ["pork", "chop", "cabbage"],
-    line: "Half an hour is plenty. I'm thinking a pork chop in a hot pan and cabbage that goes sweet at the edges.",
+    mentions: ["pork", "cabbage"],
+    line: "Half an hour is plenty. Hot pan, one good piece of protein, and a vegetable that goes sweet at the edges.",
   },
   {
     applies: (s) => !!s.maxCookTimeWeeknight && s.maxCookTimeWeeknight >= 75,
-    mentions: ["short rib", "beef", "braise"],
-    line: "You've given yourself real time on a weeknight, so I'm putting a short-rib braise on the list.",
+    mentions: ["beef", "braise"],
+    line: "You've given yourself real time on a weeknight, so I'll put something braised on the list.",
   },
   {
     applies: (s) => valuesOf(s, "proteins").length > 0,
@@ -251,11 +261,19 @@ export function planSeedChips(state: InterviewState): string[] {
 
 // The free-text request the hand-off pre-fills into plan generation, so the
 // first plan demonstrably reflects the interview.
+//
+// Every clause below except the last used to come from a DEEP answer, so the
+// most common completion — answer the core four, decline the optional round —
+// produced no request at all and handed off an empty box. The core answers are
+// the ones every completing user has, so they carry the floor.
 export function planSeedRequest(state: InterviewState): string | undefined {
   const parts: string[] = [];
   if (state.cuisinePreferences.length > 0) {
     parts.push(`leaning toward ${state.cuisinePreferences.slice(0, 3).join(", ")}`);
   }
+  const skill = valueOf(state, "skill");
+  if (skill === "learning") parts.push("with clear, forgiving steps");
+  if (skill === "pro" || skill === "confident") parts.push("with room for real technique");
   const proteins = valuesOf(state, "proteins");
   if (proteins.length > 0) parts.push(`featuring ${proteins.join(", ")}`);
   const heat = valueOf(state, "heat");
@@ -269,6 +287,14 @@ export function planSeedRequest(state: InterviewState): string | undefined {
   if (goals.includes("more_protein")) parts.push("protein-heavy");
   if (goals.includes("lighter")) parts.push("on the lighter side");
   if (goals.includes("budget")) parts.push("keeping costs down");
+  if (goals.includes("less_waste")) parts.push("using up what a recipe opens");
+
+  // The floor, from core answers alone. Time is the sharpest constraint the
+  // core captures and the one a first plan most visibly obeys, so a user who
+  // declined the whole deep round still hands off something real.
+  if (parts.length === 0 && state.maxCookTimeWeeknight) {
+    parts.push(`inside ${state.maxCookTimeWeeknight} minutes on a weeknight`);
+  }
 
   if (parts.length === 0) return undefined;
   return `My first week: ${parts.join(", ")}.`;

@@ -1,5 +1,5 @@
 import { baseE2EConfig } from "./tests/e2e/harness/config-factory";
-import { E2E_PORT } from "./tests/e2e/app/env";
+import { E2E_PORT, TEST_USER_EMAIL } from "./tests/e2e/app/env";
 import { STORAGE_STATE_PATH } from "./tests/e2e/app/test-context";
 
 // Use a production build (`next build && next start`), not `next dev`: Next 16
@@ -21,5 +21,13 @@ export default baseE2EConfig({
   webServerCommand,
   // Latency high enough that in-place pending states (shimmer, disabled actions)
   // are reliably observable by specs, still fast enough to keep the suite snappy.
-  webServerEnv: { E2E_AI_MOCK: "1", E2E_AI_MOCK_LATENCY_MS: "700" },
+  webServerEnv: {
+    E2E_AI_MOCK: "1",
+    E2E_AI_MOCK_LATENCY_MS: "700",
+    // Test mode is off unless a deployment names the accounts that get it, so
+    // the suite has to name its own test identity to exercise the controls at
+    // all. Scoped to this one address: a spec that could enable dev tools for an
+    // arbitrary user would be testing something the product never does.
+    DEV_TOOLS_EMAILS: TEST_USER_EMAIL,
+  },
 });

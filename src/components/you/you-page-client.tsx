@@ -10,6 +10,7 @@ import { SafetyConstraintsCard } from "./safety-constraints-card";
 import { SoftConstraintsCard, type EditableField } from "./soft-constraints-card";
 import { MemoryLedger } from "./memory-ledger";
 import { AccountFooter } from "./account-footer";
+import { TestModeCard } from "./test-mode-card";
 import { FieldEditSheet } from "./field-edit-sheet";
 import { YouToast, type YouToastState } from "./you-toast";
 import {
@@ -219,6 +220,8 @@ export function YouPageClient() {
         />
 
         <AccountFooter account={accountQuery.data} onSignOut={signOut} />
+
+        <TestModeCard onError={(message) => showToast(message)} />
       </div>
 
       <FieldEditSheet

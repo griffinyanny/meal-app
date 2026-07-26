@@ -14,6 +14,7 @@ export type Dimension =
   | "heat"
   | "proteins"
   | "effort"
+  | "skill"
   | "cuisines"
   | "leftovers"
   | "goal"

@@ -191,4 +191,58 @@ describe("valueMeterProgress", () => {
     for (const q of DEEP_QUESTIONS) state = answer(state, q.id);
     expect(valueMeterProgress(state)).toBe(1);
   });
+
+  it("should reach full for a cook who answered everything they were offered", () => {
+    // The meter used to divide by the hard cap, which the policy never reaches,
+    // so the most engaged user possible topped out at 80% and was told they'd
+    // left something undone. It now measures against meterTarget.
+    let state: InterviewState = {
+      ...emptyInterviewState(),
+      maxCookTimeWeeknight: 45,
+    };
+    for (;;) {
+      const result = planNextQuestion(state);
+      if (result.kind === "stop") break;
+      state = answer(state, result.question.id);
+    }
+    expect(valueMeterProgress(state)).toBe(1);
+  });
+});
+
+describe("the effort question's overlap with the core round", () => {
+  it("should not ask how ambitious a weeknight should get when the ceiling is 30 minutes", () => {
+    // "30 minutes, tops" has already answered it. Asking anyway is the same
+    // failure the planner refuses for free-text dimensions.
+    let state: InterviewState = {
+      ...emptyInterviewState(),
+      maxCookTimeWeeknight: 30,
+    };
+    const asked: string[] = [];
+    for (;;) {
+      const result = planNextQuestion(state);
+      if (result.kind === "stop") break;
+      asked.push(result.question.id);
+      state = answer(state, result.question.id);
+    }
+    expect(asked).not.toContain("effort");
+  });
+
+  it("should still ask it when the cook gave themselves real room", () => {
+    let state: InterviewState = {
+      ...emptyInterviewState(),
+      maxCookTimeWeeknight: 75,
+      // Two higher-ranked questions already covered in the user's own words, so
+      // effort is genuinely in reach rather than crowded out by score alone.
+      cuisinePreferences: ["Thai"],
+      freeTextDimensions: ["heat", "proteins"],
+    };
+    const asked: string[] = [];
+    for (;;) {
+      const result = planNextQuestion(state);
+      if (result.kind === "stop") break;
+      asked.push(result.question.id);
+      state = answer(state, result.question.id);
+    }
+    expect(asked).toContain("effort");
+  });
 });

@@ -15,6 +15,7 @@ import { householdCompositionSchema, deriveHouseholdSize } from "@/lib/household
 import { eq, and, desc } from "drizzle-orm";
 import { userTalkMutations } from "./user-talk";
 import { onboardingMutations } from "./user-onboarding";
+import { devToolsProcedures } from "./user-dev-tools";
 
 export const userRouter = router({
   ensureOnboarded: authedProcedure.mutation(async ({ ctx }) => {
@@ -206,4 +207,5 @@ export const userRouter = router({
   // The onboarding interview's terminal writes (feature #4). Implementation in
   // ./user-onboarding.
   ...onboardingMutations,
+  ...devToolsProcedures,
 });

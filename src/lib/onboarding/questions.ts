@@ -88,6 +88,51 @@ export const DEEP_QUESTIONS: DeepQuestion[] = [
     appliesTo: (s) => s.cuisinePreferences.length === 0,
   },
   {
+    // Distinct from the core weeknight-time question and from `effort`: time is
+    // how many minutes you have, effort is how much you feel like doing tonight,
+    // and this is what techniques are on the table at all. It's the only one of
+    // the three that changes whether a recipe is executable rather than
+    // appealing, which is why it outranks them (Griffin, S39). Self-rated on
+    // purpose: what a cook thinks of themselves is the thing that should govern
+    // how much the chef throws at them, and the stakes of getting it wrong are
+    // one boring week, not a safety event.
+    id: "skill",
+    dimension: "skill",
+    headline: "How comfortable are you in the kitchen?",
+    why: "It changes what I'll put in front of you, and how honest my timings are.",
+    kind: "cards",
+    multi: false,
+    value: 0.97,
+    options: [
+      { value: "learning", label: "Still learning", sub: "Keep the steps clear" },
+      { value: "comfortable", label: "Comfortable", sub: "I can follow anything" },
+      { value: "confident", label: "Confident", sub: "Give me some technique" },
+      { value: "pro", label: "I cook for a living", sub: "Don't hold back" },
+    ],
+  },
+  {
+    id: "goal",
+    dimension: "goal",
+    // Where cost lives. Deliberately one option among several rather than a
+    // question about money: "are you doing this to save money" singles a person
+    // out, and "what are you working toward" gets the same signal from someone
+    // who'd never answer the first version honestly (Griffin, S39).
+    headline: "Anything you're working toward?",
+    why: "I'd rather aim at it than have you correct me every week.",
+    kind: "chips",
+    multi: true,
+    value: 0.85,
+    options: [
+      { value: "more_veg", label: "More vegetables" },
+      { value: "more_protein", label: "More protein" },
+      { value: "lighter", label: "Lighter meals" },
+      { value: "budget", label: "Keep costs down" },
+      { value: "less_waste", label: "Less food waste" },
+      { value: "kid_wins", label: "Meals the kids eat" },
+      { value: "nothing", label: "Nothing specific" },
+    ],
+  },
+  {
     id: "effort",
     dimension: "effort",
     headline: "How ambitious should a weeknight get?",
@@ -101,23 +146,11 @@ export const DEEP_QUESTIONS: DeepQuestion[] = [
       { value: "project", label: "I like a project", sub: "Give me something" },
       { value: "mixed", label: "Mix it up", sub: "Depends on the night" },
     ],
-  },
-  {
-    id: "goal",
-    dimension: "goal",
-    headline: "Anything you're working toward?",
-    why: "I'd rather aim at it than have you correct me every week.",
-    kind: "chips",
-    multi: true,
-    value: 0.75,
-    options: [
-      { value: "more_veg", label: "More vegetables" },
-      { value: "more_protein", label: "More protein" },
-      { value: "lighter", label: "Lighter meals" },
-      { value: "budget", label: "Keep costs down" },
-      { value: "kid_wins", label: "Meals the kids eat" },
-      { value: "nothing", label: "Nothing specific" },
-    ],
+    // A 30-minute ceiling has already answered this. Asking anyway is the exact
+    // failure the planner refuses elsewhere (re-asking something the user
+    // already said reads as not listening), so the question is reserved for
+    // cooks who gave themselves enough room for the answer to be open.
+    appliesTo: (s) => (s.maxCookTimeWeeknight ?? 999) > 30,
   },
   {
     id: "leftovers",
@@ -180,6 +213,13 @@ export function memoryForAnswer(
       return `Wants to see more ${list(chosen).toLowerCase()}.`;
     case "cuisines":
       return `Leans toward ${list(chosen)} flavors.`;
+    case "skill":
+      return {
+        learning: "Still finding their feet in the kitchen; keep steps clear and timings honest.",
+        comfortable: "Comfortable following any recipe.",
+        confident: "A confident cook; technique is welcome.",
+        pro: "Cooks professionally. Don't simplify on their account.",
+      }[chosen[0]] ?? null;
     case "effort":
       return {
         simple: "Wants weeknights simple — few steps, few pans.",
