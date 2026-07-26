@@ -6,6 +6,20 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### How often do two adults in a household actually eat the same dinner? (raised S39)
+**Question**: Griffin's household always eats the same thing. Is that typical, or do a meaningful share of couples
+cook two different dinners? This decides how much V1.5 household sharing has to *do*: if one shared plan is the norm,
+sharing is a visibility and coordination feature; if divergence is common, it's a per-member planning feature and a
+much bigger build.
+- **Our own research doesn't answer it.** The competitor synthesis and the grocery-behavior research say nothing
+  about intra-household meal divergence; the pricing research only notes that 2-person sharing is a paid-tier
+  differentiator. So this needs either desk research or asking real couples.
+- **Not an R1 blocker** — R1 is two solo accounts and Griffin's wife will test on his phone (S39 decision). It is a
+  **V1.5 scoping** input, and worth answering before that phase is planned rather than during it.
+- Related, and only live once two users share a household: `user_preferences` is keyed per user and
+  `getChefContext(db, household, user)` takes both, so whose diet governs a shared plan is undefined today.
+  Allergies are the easy half (union them and over-protect); diet, cook-time ceiling and cuisines are not.
+
 ### Ingredient-cache scoping — global vs household (BUG-004 #3, deferred to Phase E)
 **Question**: The follow-up ingredient cache (#3) is most valuable **global** (an onion normalizes the same for every
 household; item strings carry no PII), but a global table violates our drizzle-schema rule that every table has a

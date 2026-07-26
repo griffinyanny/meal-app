@@ -32,19 +32,32 @@ export interface StoppingPolicy {
   // carrying no information). Someone tapping past questions is telling you
   // they're done; the cap alone would make them say it three more times.
   lowSignalStop: number;
+  // How many questions an engaged cook actually reaches, which is what the value
+  // meter is measured against. It is NOT maxQuestions: the cap is a backstop set
+  // deliberately above the natural stop, and dividing by it told the most
+  // engaged user possible that they'd finished 80% of something. Kept honest by
+  // an eval invariant rather than by a comment — the Engaged persona must reach
+  // exactly this number, so the two can't drift apart silently.
+  meterTarget: number;
 }
 
-// Tuned against scripts/1e-onboarding-planner-eval.ts. minValue was 0.42, which
-// sat right on top of the tail questions' decayed values — so a cook whose diet
-// suppressed one question (a vegan, no protein turn) got a SHORTER interview
-// than an omnivore, for no reason they'd recognize. 0.38 clears that cluster and
-// gives every engaged persona a 4-question round. Re-run the eval after changing
-// any of these.
+// Tuned against scripts/1e-onboarding-planner-eval.ts. Re-run it after changing
+// any of these and read the persona table.
+//
+// History: minValue was 0.42, which sat right on top of the tail questions'
+// decayed values, so a cook whose diet suppressed one question (a vegan, no
+// protein turn) got a SHORTER interview than an omnivore for no reason they'd
+// recognize. 0.38 cleared that cluster and gave every engaged persona 4
+// questions. S39 added `skill` to the bank and raised `goal` into reach (it
+// carries the cost signal), which made 4 too few to hold what the bank now
+// knows: 0.35 lands an engaged cook on 5 with real margin either side, the 6th
+// candidate scoring ~0.30.
 export const DEFAULT_STOPPING_POLICY: StoppingPolicy = {
-  maxQuestions: 5,
-  minValue: 0.38,
+  maxQuestions: 6,
+  minValue: 0.35,
   fatigue: 0.82,
   lowSignalStop: 2,
+  meterTarget: 5,
 };
 
 export type StopReason =
@@ -133,12 +146,14 @@ export function buildDeepAnswer(
 }
 
 // How full the "the more you tell me, the better your plans get" meter is. Runs
-// on signal actually captured, not questions survived — a meter that fills for
-// skipping would be a lie about how much the chef learned.
+// on signal actually captured, not questions survived: a meter that fills for
+// skipping would be a lie about how much the chef learned. Measured against
+// meterTarget rather than the hard cap, so a cook who answers everything they
+// are offered actually gets to the end of the bar.
 export function valueMeterProgress(
   state: InterviewState,
   policy: StoppingPolicy = DEFAULT_STOPPING_POLICY
 ): number {
   const captured = state.deepAnswers.filter((a) => !isLowSignal(a)).length;
-  return Math.min(1, captured / policy.maxQuestions);
+  return Math.min(1, captured / policy.meterTarget);
 }

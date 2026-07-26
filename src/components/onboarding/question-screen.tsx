@@ -203,6 +203,13 @@ export function QuestionScreen({
         <PrimaryAction
           label={confirmLabel}
           onClick={() => onConfirm(selected)}
+          // Gated while a typed answer is still in flight (BUG-015). Confirming
+          // mid-capture fires a second write against the same field, and the
+          // winner is whichever request lands last rather than what the user
+          // meant. Disabled rather than hidden: the button was already on
+          // screen, and removing it under a thumb is worse than dimming it for
+          // the second the reply takes.
+          disabled={talkPending}
           testId="onboarding-confirm"
         />
       ) : (

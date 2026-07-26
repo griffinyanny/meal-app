@@ -170,6 +170,9 @@ export function HouseholdScreen({
       <PrimaryAction
         label="That's my household"
         onClick={() => onConfirm({ ...composition, babyStage: stage })}
+        // Same race as the shared question screen (BUG-015): a typed answer
+        // still in flight can be overwritten by the confirm it was correcting.
+        disabled={talkPending}
         testId="onboarding-confirm-household"
       />
 

@@ -5,7 +5,12 @@
 // and memories are seeded directly (deterministic); the Talk-to-Chef test drives
 // the whole capture pipeline end to end.
 import { test, expect, type Page } from "@playwright/test";
-import { seedYouState, resetTestHousehold } from "../app/seed";
+import {
+  seedYouState,
+  resetTestHousehold,
+  seedOnboardingState,
+  readOnboardingResult,
+} from "../app/seed";
 
 const safety = (page: Page) => page.getByTestId("you-safety-card");
 const soft = (page: Page) => page.getByTestId("you-soft-card");
@@ -149,4 +154,35 @@ test("Y9 - a brand-new user sees the 'we've just met' + 'still learning' state",
   await expect(page.getByText("We've just met.")).toBeVisible();
   await expect(page.getByTestId("you-ledger-empty")).toBeVisible();
   await expect(page.getByText("Nothing here yet.")).toBeVisible();
+});
+
+test("Y10 - test mode resets the interview back to a genuine first run", async ({
+  page,
+}) => {
+  // The control exists because the interview fires once per account. If the
+  // reset ever half-works, the next run starts with answers already filled in
+  // and the thing being tested is not the thing that ships.
+  await seedYouState("YOU_RETURNING");
+  await seedOnboardingState("ONBOARDING_DONE");
+  await page.goto("/you");
+
+  await page.getByTestId("you-reset-onboarding").click();
+  await page.getByTestId("you-reset-onboarding-confirm").click();
+
+  await expect(page).toHaveURL(/\/welcome$/);
+  await expect(
+    page.getByText("Let's get to know each other. Then I'll cook your week.")
+  ).toBeVisible();
+
+  const saved = await readOnboardingResult();
+  expect(saved.onboardingCompletedAt).toBeNull();
+  expect(saved.dietaryFramework).toBeNull();
+  expect(saved.onboardingMemories).toHaveLength(0);
+});
+
+// Y10 leaves the shared test user mid-first-run, which would redirect every
+// later spec to /welcome. Restoring the onboarded default is part of this
+// file's contract now, exactly as it is in onboarding.spec.ts.
+test.afterEach(async () => {
+  await seedOnboardingState("ONBOARDING_DONE");
 });

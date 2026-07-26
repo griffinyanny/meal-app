@@ -1,5 +1,35 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S39)
+
+- **[1F] In-app feedback capture → LLM-cleaned → Linear ticket** — Griffin (S39). The vision, in his shape: he's on
+  his phone, hits something wrong, and a gesture (shake, or a persistent small control) opens a capture modal. It
+  takes a **screenshot or a short screen recording**, then a second step where he **writes or dictates** what
+  happened and what he expected, with an optional dropdown for which feature he was exercising. Submitting
+  **auto-attaches the state and event metadata** we'd need to diagnose it (route, seeded/real, preferences snapshot,
+  recent tRPC calls, recent analytics events), routes through an **LLM that turns it into a proper bug report or
+  feature request** — title, repro, expected vs actual, severity, tags — and **cuts a Linear ticket** already
+  organized thematically. Must work for a feature request as well as a bug. **The goal is friction-free feedback
+  volume**, from Griffin now and from real users later, so quality of the report is the LLM's job rather than the
+  reporter's.
+  - **Depends on 1F observability.** The metadata half is worthless without the PostHog event taxonomy (already in
+    1F scope), and Griffin's related ask is explicitly about *joining the two*: when he reports "I tapped X and the
+    wrong thing happened," we should be able to line his report up against the events that actually fired and confirm
+    the backend did what the tap intended. That matters more as usage scales past someone we can watch.
+  - **Candidate Linear graduation trigger.** Linear was deferred in S19 with explicit triggers (decisions.md); a
+    ticket-cutting pipeline is arguably one. Note the connector needs authorizing from claude.ai connector settings
+    before anything can be wired to it.
+  - **The small piece shipped early (S39):** `user.resetOnboarding` + the You-tab test-mode card, because the
+    onboarding interview fires once per account and Griffin could not otherwise re-test it. The standing principle
+    behind it is now in engineering-principles.md ("Griffin has to be able to test it").
+
+- **[1E.5 / 1F] Snapshot-test the chef system prompt** — found S39. `.claude/rules/test-files.md` says system-prompt
+  changes get an inline snapshot so they surface for deliberate review, and CLAUDE.md calls chef-system.ts "the
+  single most important file." It is the one prompt file with no snapshot: `grocery-talk`, `preferences-talk` and
+  `ingredient-normalize` all have them, `chef-system.ts` has targeted `toContain` assertions instead. An
+  ingredient-reuse rule was added to the plan prompt in S39 and nothing flagged it. Small, and it protects the file
+  the whole product's voice depends on.
+
 ## Incoming (S37)
 
 - **[pre-monetization / native-build] Experimentation + A/B testing platform (pricing first)** — Griffin (S37):

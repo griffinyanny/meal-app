@@ -58,6 +58,30 @@ Every tRPC procedure, AI pipeline, and utility function gets tests in the same c
 - Arrange-Act-Assert pattern
 - Descriptive names: "should return empty array when no recipes exist"
 
+### Griffin has to be able to test it (standing requirement, S39)
+
+Automated coverage is not the same thing as Griffin being able to *use* the feature
+and tell us what's wrong with it. Every feature plan answers three questions before
+it's considered scoped:
+
+1. **How does he get into the state?** If reaching it takes a week of real use, a
+   confirmed plan, or an account that has never existed before, there is a seed or a
+   test-mode control, not a set of instructions.
+2. **How does he get back out of it?** Anything that fires once per account, sets a
+   permanent flag, or consumes a one-time path needs a reset. The 1E onboarding
+   interview is the worked example: it fires exactly once, and without
+   `user.resetOnboarding` the only way to re-test it was a new account.
+3. **How does he report on it, and does the report carry the state we'd need?** Today
+   this is prose in a chat. The full version (capture, dictate, auto-attached state
+   and event metadata, LLM-cleaned into a ticket) is scoped to 1F alongside PostHog —
+   see idea-backlog. Until it exists, at minimum know what we'd ask him for.
+
+**Why it's a principle and not a nice-to-have:** a product this personal is validated
+by living in it, and friction in that loop shows up as less feedback rather than as a
+complaint about the friction. Test-mode controls are server-gated to allowlisted
+accounts (`DEV_TOOLS_EMAILS`), never a build flag, because the phone he tests on runs
+production.
+
 ---
 
 ## Security Principles (Non-Negotiable)

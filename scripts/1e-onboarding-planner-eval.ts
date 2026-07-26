@@ -46,8 +46,18 @@ const PERSONAS: Persona[] = [
   {
     name: "Engaged",
     note: "answers everything; should be stopped BY US, not by boredom",
+    // Seeded with a 45-minute ceiling so the `effort` question is in play. A
+    // 30-minute cook has already answered it, and the bank suppresses it.
+    seed: { maxCookTimeWeeknight: 45 },
     answer: (id) => firstRealOption(id),
-    expect: { minQuestions: 4, maxQuestions: 5 },
+    expect: { minQuestions: 5, maxQuestions: 5 },
+  },
+  {
+    name: "Fast cook",
+    note: "30-minute ceiling; must not be asked how ambitious a weeknight should get",
+    seed: { maxCookTimeWeeknight: 30 },
+    answer: (id) => firstRealOption(id),
+    expect: { minQuestions: 5, maxQuestions: 5 },
   },
   {
     name: "Terse",
@@ -141,6 +151,18 @@ function main(): void {
     // Universal invariants, checked for every persona.
     if (new Set(result.asked).size !== n) problems.push("asked a question twice");
     if (n > policy.maxQuestions) problems.push("exceeded the hard cap");
+    // The value meter divides by meterTarget, so if a fully engaged cook stops
+    // short of it the bar can never fill and the meter quietly lies. Checked
+    // here rather than trusted to a comment.
+    if (persona.name === "Engaged" && n !== policy.meterTarget)
+      problems.push(`engaged cook reached ${n}, but meterTarget is ${policy.meterTarget}`);
+    // A suppressed question must never be asked, however the scores land.
+    for (const id of result.asked) {
+      const q = DEEP_QUESTIONS.find((x) => x.id === id)!;
+      const seeded: InterviewState = { ...emptyInterviewState(), ...persona.seed };
+      if (q.appliesTo && !q.appliesTo(seeded))
+        problems.push(`asked "${id}", which does not apply to this cook`);
+    }
 
     const seededFreeText = persona.seed?.freeTextDimensions ?? [];
     for (const id of result.asked) {

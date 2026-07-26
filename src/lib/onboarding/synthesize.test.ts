@@ -77,9 +77,28 @@ describe("synthesizeMemories", () => {
 });
 
 describe("reflectHook", () => {
-  it("should react like a cook with a dish in mind, not a receipt", () => {
+  it("should react like a cook with a point of view, not a receipt", () => {
     const state = withAnswer(coreState, "heat", ["hot"]);
-    expect(reflectHook(state)).toContain("chili-crisp");
+    expect(reflectHook(state)).toContain("chili crisp");
+  });
+
+  it("should name a technique or ingredient rather than a specific plate", () => {
+    // The register rule (S39): nothing carries this line into generation, so a
+    // named plate is a promise the plan has no idea it made. Guarding the two
+    // dishes the hooks used to name, because the failure is invisible in code
+    // review and only shows up as a first plan that contradicts the first thing
+    // the chef said.
+    const banned = ["seared salmon", "short-rib", "pork chop"];
+    const states: InterviewState[] = [
+      withAnswer(coreState, "heat", ["hot"]),
+      coreState,
+      { ...coreState, maxCookTimeWeeknight: 75 },
+      { ...coreState, dietaryFramework: "vegan" },
+    ];
+    for (const state of states) {
+      const hook = reflectHook(state).toLowerCase();
+      for (const phrase of banned) expect(hook).not.toContain(phrase);
+    }
   });
 
   it("should speak to the constraint when weeknights are very short", () => {
@@ -176,6 +195,24 @@ describe("planSeedRequest", () => {
 
   it("should ignore a 'nothing specific' goal", () => {
     const state = withAnswer(coreState, "goal", ["nothing"]);
-    expect(planSeedRequest(state)).toBeUndefined();
+    // The core floor still applies, so the request exists — it just carries
+    // nothing the user declined to say.
+    expect(planSeedRequest(state)).not.toContain("Working toward");
+    expect(planSeedRequest(state)).toBe(planSeedRequest(coreState));
+  });
+
+  it("should still steer the first plan when the deep round was declined", () => {
+    // The most common completion: four core taps, no deep answers. This used to
+    // return undefined and hand off an empty box, so the interview's own
+    // hand-off screen fed nothing into the generation it introduced.
+    const request = planSeedRequest(coreState);
+    expect(request).toBeDefined();
+    expect(request).toContain("30 minutes");
+  });
+
+  it("should let a deep answer replace the core floor rather than stack on it", () => {
+    const state = withAnswer(coreState, "heat", ["hot"]);
+    expect(planSeedRequest(state)).toContain("real heat");
+    expect(planSeedRequest(state)).not.toContain("30 minutes");
   });
 });

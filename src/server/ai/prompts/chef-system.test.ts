@@ -56,6 +56,17 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("Never offer a quality the dish already has");
   });
 
+  it("should plan ingredient reuse without letting it cost variety", () => {
+    // The two rules pull against each other: reuse wants the same ingredient
+    // twice, variety wants a different week every night. The prompt has to hold
+    // both, so both halves are asserted — a future edit that drops the guard
+    // would produce a week that eats the same carton in the same dish.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("Plan for ingredient reuse");
+    expect(prompt).toContain("reuse the INGREDIENT, never the dish");
+    expect(prompt).toContain("don't repeat the same protein or cuisine");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });
