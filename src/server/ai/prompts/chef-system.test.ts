@@ -56,6 +56,34 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("Never offer a quality the dish already has");
   });
 
+  it("should plan ingredient reuse without letting it cost variety", () => {
+    // The two rules pull against each other: reuse wants the same ingredient
+    // twice, variety wants a different week every night. The prompt has to hold
+    // both, so both halves are asserted — a future edit that drops the guard
+    // would produce a week that eats the same carton in the same dish.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("Plan for ingredient reuse");
+    expect(prompt).toContain("reuse the INGREDIENT, never the dish");
+    expect(prompt).toContain("don't repeat the same protein or cuisine");
+  });
+
+  it("should constrain HOW the reuse is written, not just that it happens", () => {
+    // All three of these are real Layer-B findings from the first live run after
+    // the reuse rule shipped (S40). The rule works — every week reused a
+    // perishable and none lost variety — but giving the model a reason to
+    // cross-reference days made it reach for things it must not say:
+    //   • "reusing olive oil from day 0" — the internal dayOffset vocabulary
+    //     printed straight to the user, on a card they read every week.
+    //   • "use spinach fresh from last shopping trip" — invented history, on a
+    //     first-ever plan. There is no pantry model; pantry is V1.5.
+    //   • "reusing olive oil" / "reusing lemon" — staples nobody needs help
+    //     finishing, which makes the rationale read as filler.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("never pantry staples");
+    expect(prompt).toContain("WEEKDAY NAME");
+    expect(prompt).toContain("never what they already own");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });
@@ -131,5 +159,52 @@ describe("buildUserContext", () => {
     });
     expect(ctx).toContain("Loves spicy Thai food");
     expect(ctx).toContain("Has a cast iron skillet");
+  });
+
+  // Household composition (Phase 1E #4). The servings line already covers an
+  // adults-only household, so the roster sentence is deliberately additive and
+  // only appears when ages actually change how the chef should cook.
+  it("should not add a household roster for an adults-only household", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Default servings: 2");
+    expect(ctx).not.toContain("Cooking for");
+  });
+
+  it("should describe the roster and kid-friendly guidance when there are children", () => {
+    const ctx = buildUserContext({
+      householdSize: 4,
+      householdComposition: { adults: 2, children: 2, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Cooking for 2 adults and 2 children");
+    expect(ctx).toContain("kid-friendly");
+  });
+
+  it("should carry choking-hazard guidance for a baby starting solids", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 1, babyStage: "6_to_12m" },
+    });
+    expect(ctx).toContain("1 baby");
+    expect(ctx).toContain("whole grapes");
+    expect(ctx).toContain("no honey");
+  });
+
+  it("should tell the chef to plan normally for a milk-only baby", () => {
+    const ctx = buildUserContext({
+      householdSize: 2,
+      householdComposition: { adults: 2, children: 0, babies: 1, babyStage: "under_6m" },
+    });
+    expect(ctx).toContain("not on solids yet");
+  });
+
+  it("should ask for one shared dinner rather than a separate kids' meal", () => {
+    const ctx = buildUserContext({
+      householdSize: 3,
+      householdComposition: { adults: 2, children: 1, babies: 0, babyStage: null },
+    });
+    expect(ctx).toContain("Plan ONE dinner the household shares");
   });
 });

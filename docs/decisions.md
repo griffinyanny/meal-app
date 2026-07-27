@@ -4,6 +4,235 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-26 (S40) — A plan rationale may only describe what THIS plan buys
+
+**Decision.** The chef's per-meal rationale is constrained on three axes, in `PLAN_OUTPUT_RULES`:
+it may only claim reuse of **fresh perishables that actually spoil** (never pantry staples like oil,
+vinegar, spices, rice or pasta); it must name the other meal by its **weekday name**, never by a day
+number or offset; and it may describe **only what this plan buys**, never what the person already owns —
+no "from last shopping trip", no "already in your fridge" — unless their own request said so. A planned
+leftover must additionally be plausible from the dish it comes from.
+
+**Rationale.** All three are real Layer-B findings from the first live run after the S39 reuse rule
+shipped. The rule itself works — six real weeks, every one reusing a perishable, none losing variety — but
+giving the model a reason to cross-reference days made it reach for things it must not say. "Reusing olive
+oil **from day 0**" printed our internal `dayOffset` vocabulary onto a card the user reads every week.
+"Use spinach fresh **from last shopping trip**" invented history for a user who had never shopped — and
+**there is no pantry model at all**; pantry is explicitly V1.5, so the chef cannot know this and must not
+imply it. The third is softer but corrosive: nobody needs help finishing a bottle of oil, so claiming to
+reuse one makes the whole rationale read as filler and devalues the times it's real.
+
+**Future impact.** This is the same principle that cut `ALREADY CIRCLING` in S39 — **the chef never makes a
+promise the system cannot keep.** When pantry lands in V1.5, the "never what they already own" clause is
+the one to revisit, and it should be relaxed only as far as the pantry data actually reaches.
+
+**Also decided:** a system prompt guarded only by `toContain` assertions is not guarded. The S40 edit passed
+the existing suite silently; three assertions were added for the new clauses. Prefer inline snapshots on
+prompt builders going forward (the engineering rule already says so — the plan prompt had drifted from it).
+
+## 2026-07-26 (S40) — Spec-vs-locked-design conflicts are Griffin's call, not a gate finding
+
+**Decision.** When `/visual-qa` finds that the build violates Design Spec v1.0 but is **faithful to a Claude
+Design pass Griffin ran and ratified**, the finding is raised and logged — not fixed, and not counted
+against the 0-blockers/0-high gate. Genuine defects (things that are wrong against *any* reading) are still
+fixed in the loop.
+
+**Rationale.** The spec says it wins where an earlier screen disagrees, but the reflect design was authored
+in the *same session* as the spec, so "earlier" decides nothing. Silently repainting the payoff screen of an
+interview Griffin had just locked would be Claude overruling a design call on a technicality. The rubric
+already says a real product/taste question does not get forced green; this extends it to design-authority
+conflicts. Four such findings were raised in S40 (open-questions.md) — the largest being the reflect week
+list's gold body text against laws 03 and 06.
+
+**Future impact.** **Resolve these before 1E.7 starts**, because 1E.7 sweeps the palette across five
+surfaces using onboarding as the worked example — whatever gold rule holds there gets copied everywhere.
+
+## 2026-07-26 (S39) — Design Specification v1.0 adopted, migration split into three passes
+
+**Decision.** Griffin's design system (Claude Design, "Gold voice, cream hand", theme 11i) is canonical:
+where an earlier screen disagrees with it, it wins. Its §12 migration table is applied in **three passes**
+rather than all at once or all in 1F:
+1. **S39** — the onboarding flow (done).
+2. **New phase 1E.7** — the mechanical app-wide items (warm alphas, wash recipes, radius scale), **before 1E.5**.
+3. **1F** — the surface-specific items plus type scale, motion, and component consolidation.
+
+**Why the ordering.** 1E.5 rebuilds Plan from scratch in Claude Design → code. Applying the mechanical sweep
+first is the difference between building the signature surface once and building it twice. Onboarding went
+first because Griffin runs the interview for real next and should run the design he just locked.
+
+**Accepted cost.** Onboarding looks different from the rest of the app until 1E.7 lands.
+
+**Future impact.** The 1E.5 Plan brief must be written against the spec, not against the pre-spec palette.
+`--spec-*` tokens + the elevation utilities in globals.css are the migration surface; the pre-spec `:root`
+family retires at the end of 1E.7. The spec's §09 "one way to talk to the chef" means the four freeform-input
+controls (onboarding done, You / Groceries / chef sheet remaining) consolidate into one.
+
+## 2026-07-26 (S39) — `skill` and `effort` are different questions; cost lives inside `goal`
+
+**Decision.** The deep round asks about cooking **skill** (what techniques are on the table) AND **effort**
+(how much you feel like doing tonight), which are distinct from each other and from the core weeknight-time
+ceiling. Claude proposed merging effort into skill; **Griffin overruled it** — an advanced cook can still be
+exhausted on a Tuesday, and a 30-minute meal can be one pan or thirty minutes of knife work. Effort is instead
+**suppressed when the weeknight ceiling is ≤30 minutes**, where the ceiling has already answered it.
+
+**Cost sensitivity is not its own question.** It lives as one option among several in `goal` ("Anything you're
+working toward?"), which already carried "Keep costs down" but ranked too low to be asked. Asking "are you
+doing this to save money" singles a person out; "what are you working toward" gets the same signal from
+someone who would never answer the first version honestly.
+
+**Ingredient reuse is a planner default, not a preference.** Nobody wants a wasted carton, and it shortens the
+grocery list, so it is a rule in `chef-system.ts` rather than something a user has to opt into.
+
+**Future impact.** The bank now holds more good questions than one interview should ask (8 questions, a
+5-question round). That is what the planner is for, but it means adding a question displaces one rather than
+lengthening the interview — re-run the eval and read the persona table before assuming otherwise.
+
+## 2026-07-26 (S39) — Griffin has to be able to test it (standing requirement)
+
+**Decision.** Every feature plan answers: how does Griffin get into the state, how does he get back out of it,
+and how does he report on it. Test-mode controls are **server-gated by an email allowlist**
+(`DEV_TOOLS_EMAILS`), never a `NODE_ENV` check — the phone he tests on runs production. Recorded in
+engineering-principles.md.
+
+**Why.** A product this personal is validated by living in it, and friction in that loop shows up as less
+feedback rather than as a complaint about the friction. The 1E interview is the worked example: it fires
+exactly once per account, so without a reset the only way to re-test it was a new account.
+
+**Future impact.** The full version (capture, dictate, auto-attached state + event metadata, LLM-cleaned into
+a ticket) is scoped to 1F alongside PostHog and is a candidate Linear graduation trigger.
+
+## 2026-07-26 (S39) — No closed beta; no household sharing in R1
+
+**Decision.** R1 validation stays Griffin + wife. **No closed beta** (resolves the scope-v1 open question that
+was parked for 1E). His wife tests on his phone rather than pulling household sharing forward — sharing stays
+V1.5 in full.
+
+**Why.** Nothing in R1 is gated on a beta, and a beta is a distribution decision rather than a product one.
+Griffin's read: V1.5 will land before this goes out more broadly, which is why it was called V1.5.
+
+**Open, and now logged:** how often two adults in a household actually eat the same dinner. It decides whether
+V1.5 sharing is a coordination feature or a per-member planning feature — a much bigger build. Our research
+doesn't answer it.
+
+## 2026-07-24 (S36) — Household composition: band counts, and a baby's STAGE drives servings
+
+**Decision.** `user_preferences.householdComposition` stores three band **counts** plus one stage:
+`{adults, children, babies, babyStage}`. `householdSize` stays as the derived total every existing
+consumer already reads, computed server-side (composition wins when both are sent).
+
+**Why counts, not per-member ages.** The brief's schema note said `children[ageYears]`, but the
+**locked design (1D) captures three stepper counts with no age-entry UI**. Storing arrays the UI can
+never populate means fabricating or null-filling data. V1.5 (Family Member Profiles) extends the same
+JSONB with an optional `members` array — additive, no breaking migration. Griffin ratified.
+
+**Why a baby stage.** Asked whether babies count toward servings, Griffin declined the binary: it
+depends on the baby's age, since past ~6 months they increasingly eat part of the adult meal. He's
+right, and "under 2" is too coarse to act on. So a **conditional follow-up** (Under 6 months / 6-12 /
+12-24) appears only when `babies > 0`, and the rule follows the stage:
+- **under 6m** → 0 servings, chef told to plan the adult meals normally (milk only).
+- **6-12m** → 0 servings, but the chef is told to note a soft, unsalted, hazard-free portion from the
+  same dish.
+- **12-24m** → counts toward `householdSize` (they eat the family meal at a smaller portion).
+
+Griffin's own household (2 adults + baby) derives to 2 — matching the previous default, no regression.
+**This follow-up is an addition to the locked design** and is flagged for his taste pass.
+
+**Related scope call.** R1 plans **ONE meal per slot** and tells the chef how to adapt a portion for
+the little ones. Separate kid meals would mean multiple recipes per slot — a schema change, deferred to
+V1.5 (logged in idea-backlog).
+
+**Onboarding-complete flag** lives on `users.onboardingCompletedAt` (not `user_preferences`, whose row
+is written lazily and may not exist pre-interview). It's read through the `ensureOnboarded` call
+`OnboardGuard` already makes, so the first-run gate costs no extra round-trip. **Both complete AND skip
+stamp it.** No backfill for existing users — Griffin: "the accounts mean nothing right now."
+
+## 2026-07-24 (S36) — The deep-round planner is deterministic, not a model call
+
+**Decision.** The adaptive deep round picks its next question with a pure scored bank
+(`value × novelty × fatigue^asked`) and stops on four tunable knobs: a hard cap, a minimum value, a
+fatigue decay, and a consecutive-low-signal cutoff. No AI call between screens.
+
+**Why.** Onboarding is the most latency-sensitive moment in the product. A model call between every
+question would buy question-ordering at the cost of seconds of dead air on a first run, plus cost and a
+failure mode at the worst possible time. Deterministic is instant, free, exactly reproducible — and
+that reproducibility is what makes the policy **tunable against an eval** rather than a vibe.
+
+**It earned this immediately.** `scripts/1e-onboarding-planner-eval.ts` runs six personas; on the first
+run it caught that a vegan got a *shallower* interview (3 questions) than an omnivore (4), purely
+because the suppressed protein question left the threshold sitting on a cluster of tail values.
+Retuned `minValue` 0.42 → 0.38; now 6/6 pass and every engaged persona gets 4.
+
+**Reversible.** An AI planner can replace `pickNext()` behind the same interface without touching the
+flow.
+
+
+**Onboarding interview (#4) — design LOCKED to direction 1D "Talk it through"** (2026-07-24, Session 35)
+- **One interaction model, not two.** Every question screen: tappable answers on top (primary), a bottom "or just tell me" field, and a "what I caught" tray that surfaces only what free-text adds beyond the pills. Satisfies both hard rules at once — AI-proposes/user-reacts (the pills) and not-chat-first (the field is a per-question escape, no thread). Resolves the "voice vs tap = two apps" tension that killed the earlier top-of-screen mode toggle.
+- **Mic-as-text for R1.** The bottom field is a TEXT input routed through the existing `user.talk` capture path; the mic icon stays for the feel but fires a "voice coming soon" toast. Real dictation/STT deferred (out of R1 — see open-questions "Dictation implementation approach"). Rationale: the tap+type path is fully functional with zero speech infra, so voice can't block the 1E close; dictation is an uncosted principle (unit-economics tie-in).
+- **Weeknight cook-time is a core question, not optional.** A first plan full of 90-min recipes for a 30-min cook is a bad first impression — too load-bearing to defer. Core = 4 (household · diet · allergies · weeknight time), then an adaptive opt-in deep round.
+- **Deep round is adaptive with a tunable stopping policy** (a build task w/ eval): probe as far as the user will go, but a "learned enough" threshold + hard cap so it never exhausts them. Value-progress framing ("the more you tell me, the better your plans get") + an always-present one-tap "I'm good for now."
+- **Household captured as composition + ages, not a count** — 9-mo vs 3-yr vs 16 are different prep/texture/portion profiles the chef must cook for. Schema shape is a build dependency (`/architect` pass; R1 recommendation = a flexible composition field, keep `householdSize` derived, defer full per-member *preference* profiles + conflict navigation to V1.5 Family Member Profiles). See open-questions.
+- **Hand-off = the pre-seeded Plan intent modal** (door #3 of the three Plan front doors), not a bespoke onboarding screen — one architecture.
+- **Palette (amber+blue) stays provisional — a 1F decision**, explored in parallel now (open-questions) so 1E.5 stays compatible; the #4 build keeps current tokens.
+- Direction history: 1A (one-per-screen structured), 1B (stacked chat foil — rejected, drifts to a chat log), 1C (ambient orb — "felt like a tech app"), **1D** (the merge: 1C's aliveness + chef warmth via an ember presence + 1A's clarity). Build spec: `design/surfaces/onboarding/brief.md`.
+
+**Ticketing / Linear adoption — deferred; trigger = in-app feedback capture generating real tickets** (2026-07-24, Session 35)
+- **Not adopting Linear (or any external tracker) yet.** The `docs/` system — `idea-backlog.md` (features), `open-questions.md` (decisions), `bug-tracker.md` (defects), `decisions.md` — is working and, critically, **Claude-legible**: Claude triages, cross-links, and closes items across these files every session. For a solo team that's most of what a tracker buys, without the overhead.
+- **The trigger to adopt Linear is a concrete event, not a feeling:** when the **in-app bug/feedback capture** (idea-backlog, S35) ships and a small beta starts generating **tickets from outside Griffin's own head.** That volume + the "an agent picks it up and fixes it" loop Griffin wants both need a real queue with an API — which is what Linear is for. Sequencing: **build the capture feature → that IS the Linear trigger.**
+- Until then, adding Linear is overhead without payoff. The Linear MCP connector is available but needs auth when we get there (a two-minute setup, not now). Revisit at the post-MVP beta gate. Two-way door.
+
+**Platform: R1 ships as an installable PWA (folded into 1F); native mobile held** (2026-07-24, platform-strategy discussion)
+- **Ship R1 as an installable PWA — folded into Phase 1F alongside the design-system pass.** Manifest + service worker + offline shell + home-screen icon set + install prompt, so the app lives on Griffin's + his wife's home screens and launches full-screen (no browser chrome) for the 2-week validation. ~1 slice of work; pairs naturally with the 1F visual refresh (beauty is a design problem, not a platform one).
+- **Native iOS/Android stays HELD.** The current app is already a phone-form-factor web app (430px shell, bottom tabs, `@dnd-kit` touch-first gestures, glass) — the "web mobile mock" already exists. Native is a **full UI rewrite, not incremental work**: the API-first architecture means the backend (tRPC, AI service, Drizzle/RLS, all grocery/plan business logic) ports for free, but every screen is rebuilt in RN primitives — Tailwind, shadcn, `vaul`, `@dnd-kit`, CSS glass don't port. It's a second front-end.
+- **Rationale for the sequencing:** the core bet ("AI generates the UI") is still unvalidated — R1's DoD (Griffin + wife run the full weekly ritual for 2 consecutive real weeks) isn't met. You don't commit an unproven, still-changing interaction to the most expensive-to-iterate medium. Web iterates ~5–10× faster (hot reload, instant deploy, no app-store review); a native build now = rebuilding a moving target. Nail the interaction in web/PWA first, then the native port is a translation, not a discovery exercise.
+- **When to revisit native (the trigger, not "native looks prettier"):** a real capability the web/PWA can't meet — reliable push (V1.5 expiration alerts), camera/share-extension for photo+social recipe import (V2), widgets/offline — OR a validated interaction + a demonstrated web fidelity ceiling users hit — OR App Store distribution/GTM. Master plan parks native at V4; the most likely puller-forward is **iOS PWA push reliability** (works on 16.4+ but historically finicky) — if push becomes core in V1.5, that could argue a Capacitor wrapper or native earlier than V4. Two-way door until then.
+
+**Phase 1E build — You audit surface + AI capture** (2026-07-22, Session 33)
+- **Built the full AI capture (`user.talk`) this session — Griffin's call (Option B).** The design's hero is
+  free-text "Talk to the chef," which is a net-new AI NL→ops task not among the five listed build features (#1/2/3/5/6)
+  and overlapping the deferred #4. Presented the fork; Griffin chose to build it now rather than defer it with #4.
+  Rationale for building it right: it's the design's centerpiece + the OQ#2 "AI-first capture" thesis made real. It
+  was gated on a **real-model safety eval** (allergies must never drop/mis-file) before being trusted — passed 9/9.
+- **Allergy weighting is a `(allergy)` string marker, not a schema change.** A restriction stores as
+  `"gluten (allergy)"`; the You-tab safety card parses the suffix for the sub-label + red weighting, and `user.talk`
+  writes it when `isAllergy`. Kept out of the chef prompt (stripped in `getChefContext`) so it stays UI/capture-only.
+- **Deviations from the imported mock (deliberate, all logged in scope-1E):** (a) **Add is a direct inline input**,
+  not the chef sheet — #2 requires fixing a hard constraint without a conversation; (b) **added an "Eating" (dietary)
+  field** to the soft card — the returning-user mock buried dietary in prose, but #2 needs every structured field
+  directly editable; (c) **dropped `memory.edit`** — edit routes to Talk-to-Chef re-tell (gap #1); (d) **added undo**
+  to every capture/remove toast (gap #2); (e) **softened** the "I fold older notes together" copy — dedup is out of
+  1E (gap #3); (f) **omitted the decorative mic** — no speech API in scope, a dead control is worse than its absence.
+- **Undo reuses existing mutations, no bespoke endpoint.** `user.talk` returns an `undo` payload (before-values of
+  changed prefs + written/deactivated memory ids); the client reverses via `updatePreferences` + `memory.deactivate`
+  / `memory.reactivate`. Memory-removal undo is optimistic (re-insert) to avoid a refetch race (found + fixed in E2E).
+- **`isNew` = no prefs row AND no memories** — a returning user who dismissed every memory keeps their constraints
+  and does not regress to "We've just met" (code-review edge fix).
+
+**Phase 1E framing — Open-Question #2 resolved + You audit-surface design** (2026-07-22, Session 32)
+- **AI-first capture, structured audit — split by data type (OQ#2 resolved).** Preferences are captured by AI
+  (onboarding interview / Talk-to-Chef / implicit thumbs), never via a form; the You tab is the trust/verification
+  surface, not the primary editor. Two field classes get different treatment: **hard constraints** (dietary
+  framework, allergies/restrictions, household size, cook-time ceilings, cuisines) are AI-settable but **always
+  directly editable** — a mis-remembered allergy is a real-world harm, so safety-critical values must be correctable
+  without phrasing a sentence the model parses right; **soft memory** (dislikes, brands, behaviors) is an
+  AI-captured, correctable ledger. Rationale: pure-AI fails the trust test, pure-settings fails the product thesis;
+  the infra already *is* this hybrid (typed `user_preferences` + free-form `ai_memories`, both read by
+  `getChefContext`). The realization that de-risks the phase: **the chef already personalizes** — 1E makes the loop
+  visible/editable, it does not build the engine. (Supersedes the S3 "AI generates the UI" direction's open tail on
+  preferences specifically.)
+- **Chosen design direction: A — the chef's narrative read** (over the structured control-panel B). Leads with a
+  prose summary of what the chef knows in its voice, then structured constraint cards + a memory ledger. Safety
+  constraints are visually weighted (red "I never cook with", SAFETY-CRITICAL badge, allergy sub-labels). Imported
+  from Claude Design (projectId `8bc73bfa-9683-4b44-ab06-40da9ec78590`, `You.dc.html`).
+- **Memory correction = remove + re-tell, not inline edit (design's call, likely v1 behavior).** The mock's
+  per-memory edit routes to Talk-to-Chef rather than an inline text field; removing a memory deactivates it
+  (`isActive=false`) with an honest "your chef will stop cooking around this" confirmation. Leaning into this
+  simplifies the backend (a `memory.deactivate` mutation covers v1; `memory.edit` may not be needed) and matches the
+  AI-first thesis. Confirm at build.
+- **1E build deferred to a clean session on Sonnet 5** (not this Opus scoping session): a full new-surface
+  phase-build deserves its own context budget + the intended model, and the onboarding interview (#4) is still
+  undesigned (its Pass-2 design must precede its build). The audit surface (#1/#2/#3/#5/#6) builds first.
+
 **BUG-002 buy-unit consolidation + BUG-001 category fix (1D fast-follow)** (2026-07-22, Session 31)
 - **A buy-unit table sits on top of the under-merge aggregator, never replaces it.** The aggregator under-merges by
   design (a wrong AI key can only *fail* to merge, never wrongly merge). BUG-002's duplicate rows are the cost of

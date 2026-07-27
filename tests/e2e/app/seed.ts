@@ -17,6 +17,7 @@ import { env, TEST_HOUSEHOLD_NAME } from "./env";
 import { buildSeedSpec, type PlanState, type SeedOptions } from "./seed-states";
 import { buildGrocerySpec, type GroceryState } from "./grocery-seed-states";
 import { buildRecipeSpec, type RecipeState } from "./recipe-seed-states";
+import { buildYouSpec, type YouState } from "./you-seed-states";
 
 type Db = PostgresJsDatabase<typeof schema>;
 
@@ -70,6 +71,9 @@ async function wipe(db: Db, ctx: TestContext): Promise<void> {
   await db
     .delete(schema.aiMemories)
     .where(eq(schema.aiMemories.householdId, ctx.householdId));
+  await db
+    .delete(schema.userPreferences)
+    .where(eq(schema.userPreferences.householdId, ctx.householdId));
   await db
     .delete(schema.aiUsageDaily)
     .where(eq(schema.aiUsageDaily.userId, ctx.userId));
@@ -266,6 +270,122 @@ export async function seedGroceryState(state: GroceryState): Promise<{ listId: s
     }
 
     return { listId: list.id };
+  } finally {
+    await close();
+  }
+}
+
+// Resets the test household, then materializes a named You-tab state: the
+// user_preferences row (hard constraints) + the ai_memories ledger. Memories get
+// descending createdAt (spec order = display order) so the "newest first" ledger
+// and collapse-to-3 are deterministic.
+export async function seedYouState(state: YouState): Promise<void> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    const spec = buildYouSpec(state);
+
+    if (spec.preferences) {
+      await db.insert(schema.userPreferences).values({
+        userId: ctx.userId,
+        householdId: ctx.householdId,
+        dietaryFramework: spec.preferences.dietaryFramework,
+        restrictions: spec.preferences.restrictions,
+        dislikes: spec.preferences.dislikes,
+        householdSize: spec.preferences.householdSize,
+        maxCookTimeWeeknight: spec.preferences.maxCookTimeWeeknight,
+        maxCookTimeWeekend: spec.preferences.maxCookTimeWeekend,
+        cuisinePreferences: spec.preferences.cuisinePreferences,
+      });
+    }
+
+    if (spec.memories.length > 0) {
+      const base = Date.UTC(2026, 0, 10, 12, 0, 0);
+      await db.insert(schema.aiMemories).values(
+        spec.memories.map((m, i) => ({
+          householdId: ctx.householdId,
+          userId: ctx.userId,
+          content: m.content,
+          category: m.category,
+          sourceType: m.sourceType,
+          isActive: true,
+          createdAt: new Date(base - i * 60_000),
+        }))
+      );
+    }
+  } finally {
+    await close();
+  }
+}
+
+// The onboarding-interview gate (Phase 1E #4). The interview fires when the
+// test user's onboardingCompletedAt is NULL, so a spec picks its starting
+// condition here: ONBOARDING_NEW is a first-ever login, ONBOARDING_DONE is a
+// user who has already completed or skipped it. Also clears household data so
+// the interview's writes are the only ones present. The users-row write is
+// scoped to the test user id and runs only after the sentinel-household guard.
+export type OnboardingState = "ONBOARDING_NEW" | "ONBOARDING_DONE";
+
+export async function seedOnboardingState(state: OnboardingState): Promise<void> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    await assertTestHousehold(db, ctx);
+    await wipe(db, ctx);
+
+    await db
+      .update(schema.users)
+      .set({
+        onboardingCompletedAt: state === "ONBOARDING_DONE" ? new Date() : null,
+      })
+      .where(eq(schema.users.id, ctx.userId));
+  } finally {
+    await close();
+  }
+}
+
+// Reads back what the interview persisted, so a spec can assert the chef
+// actually learned what the user tapped (rather than only that the UI moved).
+export async function readOnboardingResult(): Promise<{
+  onboardingCompletedAt: Date | null;
+  householdSize: number | null;
+  householdComposition: unknown;
+  dietaryFramework: string | null;
+  restrictions: string[];
+  maxCookTimeWeeknight: number | null;
+  onboardingMemories: string[];
+}> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    const [user, prefs, memories] = await Promise.all([
+      db.query.users.findFirst({ where: eq(schema.users.id, ctx.userId) }),
+      db.query.userPreferences.findFirst({
+        where: eq(schema.userPreferences.userId, ctx.userId),
+      }),
+      db
+        .select({
+          content: schema.aiMemories.content,
+          sourceType: schema.aiMemories.sourceType,
+        })
+        .from(schema.aiMemories)
+        .where(eq(schema.aiMemories.householdId, ctx.householdId)),
+    ]);
+
+    return {
+      onboardingCompletedAt: user?.onboardingCompletedAt ?? null,
+      householdSize: prefs?.householdSize ?? null,
+      householdComposition: prefs?.householdComposition ?? null,
+      dietaryFramework: prefs?.dietaryFramework ?? null,
+      restrictions: (prefs?.restrictions as string[] | null) ?? [],
+      maxCookTimeWeeknight: prefs?.maxCookTimeWeeknight ?? null,
+      onboardingMemories: memories
+        .filter((m) => m.sourceType === "onboarding")
+        .map((m) => m.content),
+    };
   } finally {
     await close();
   }

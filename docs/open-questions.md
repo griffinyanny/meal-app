@@ -6,6 +6,47 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### The gold budget: Design Spec v1.0 vs the reflect design you locked (raised S40)
+**Question**: four places in onboarding use gold in ways **Design Spec v1.0 forbids**, and in every one of
+them the build is faithful to a **Claude Design pass you ran**. The spec says it wins where an earlier
+screen disagrees — but it was authored in the same session as the reflect design, so "earlier" is doing no
+work here. Which one is authoritative?
+- **The big one: `SO HERE'S YOUR WEEK` renders three to six lines of gold body text** (six on the deep
+  state), plus gold arrows. Law 03 says nothing you read twice is accent-coloured and reserves body-sized
+  gold for the chef's *italic rationale*; these are not italic. Law 06 caps gold at **three marks in the
+  content layer** and this block alone blows it.
+- The intro's three explainer rows sit in **gold icon tiles** — decorative containers (law 05) carrying
+  gold on non-chef elements (law 02). Note the reflect screen's own guesses list already does this the
+  spec-correct way with bare muted icons, so the flow disagrees with itself.
+- The **baby-stage chips are gold controls**; every other selected chip in the interview is cream or
+  semantic red, so this is the one outlier. (The amber note containing them is correct — gold.soft is
+  defined as the chef's speech container.)
+- The caught-tray's `Thai` chip is a value wearing a gold pill.
+- **A middle path, if you want the payoff to keep its presence:** mute the arrows and drop the week
+  decisions to `text.primary`, keeping gold on the eyebrow, the orb and the hook. The block keeps its
+  structure and the screen lands inside the budget.
+- **Why it's not just cosmetics:** 1E.7 sweeps this palette app-wide and onboarding is its worked example.
+  Whatever you decide here gets copied onto five surfaces. Decide before 1E.7 starts.
+
+### Three exits on one deep-round turn (raised S40)
+A deep question shows "Skip for now" (top right), "I'm good for now, build my week", and "Skip this
+question". The first two both end the interview and build a week; the difference — defaults vs keeping
+what you've said — is not legible from the labels. Suppress the top-right one during the deep round?
+
+### How often do two adults in a household actually eat the same dinner? (raised S39)
+**Question**: Griffin's household always eats the same thing. Is that typical, or do a meaningful share of couples
+cook two different dinners? This decides how much V1.5 household sharing has to *do*: if one shared plan is the norm,
+sharing is a visibility and coordination feature; if divergence is common, it's a per-member planning feature and a
+much bigger build.
+- **Our own research doesn't answer it.** The competitor synthesis and the grocery-behavior research say nothing
+  about intra-household meal divergence; the pricing research only notes that 2-person sharing is a paid-tier
+  differentiator. So this needs either desk research or asking real couples.
+- **Not an R1 blocker** — R1 is two solo accounts and Griffin's wife will test on his phone (S39 decision). It is a
+  **V1.5 scoping** input, and worth answering before that phase is planned rather than during it.
+- Related, and only live once two users share a household: `user_preferences` is keyed per user and
+  `getChefContext(db, household, user)` takes both, so whose diet governs a shared plan is undefined today.
+  Allergies are the easy half (union them and over-protect); diet, cook-time ceiling and cuisines are not.
+
 ### Ingredient-cache scoping — global vs household (BUG-004 #3, deferred to Phase E)
 **Question**: The follow-up ingredient cache (#3) is most valuable **global** (an onion normalizes the same for every
 household; item strings carry no PII), but a global table violates our drizzle-schema rule that every table has a
@@ -73,7 +114,7 @@ documented public-read / service-role-write exception)?
 
 ### AI-First Preferences vs. Static Settings UI
 **Question**: Should preferences (dietary rules, brand preferences, store layout, etc.) be managed primarily through AI conversation ("I don't eat gluten anymore") rather than traditional settings screens? Griffin's instinct is yes — people want to say a thing and have it happen. But this requires training users on what's possible, and some people will want to see/verify their preferences in a structured view.
-**Status**: Open. Core tenet to explore. Could be a major differentiator or a usability risk.
+**Status**: RESOLVED (Session 32, 2026-07-22). **Hybrid — AI-first capture, structured audit, split by data type.** Capture is conversational (onboarding interview / Talk-to-Chef / implicit thumbs); the You tab is the trust/audit surface, not the primary editor. Hard constraints (dietary, allergies, household size, cook-times, cuisines) are AI-set but **always directly editable** (safety-critical); soft memory is an AI-captured, correctable ledger. Infra already reflects it (`user_preferences` + `ai_memories`). See decisions.md (S32) + `scope-1E.md` (the framing decision).
 **Raised**: Session 2 (2026-03-29)
 
 ### Avoiding the Linear Golden Path Trap
@@ -102,14 +143,34 @@ documented public-read / service-role-write exception)?
 **Raised**: Session 5 (2026-04-05)
 
 ### Onboarding Flow
-**Question**: What should the first 5 minutes look like? UX designer suggested: have user paste one recipe URL, watch AI extract it, show what a meal plan + grocery list looks like. Griffin mentioned "baby mode" with dynamic onboarding (combo chat + fixed UI).
-**Status**: Needs design exploration.
-**Raised**: Session 1 (2026-03-28)
+**Question**: What should the first 5 minutes look like? UX designer suggested: have user paste one recipe URL, watch AI extract it, show what a meal plan + grocery list looks like. Griffin mentioned "baby mode" with dynamic onboarding (combo chat + fixed UI). **Live now — the #4 onboarding interview is the last 1E feature and gets designed next.** Griffin's S35 (2026-07-24) considerations to weigh in that pass (also appended raw to `design/surfaces/onboarding/brief.md`):
+- **Gate vs. open door.** His anti-pattern: Cooklist/Mealtime wall you out of the app until you finish a long setup (incl. pantry). He wants to *see what he's got* before committing. Our interview is already skippable — the design should make the skip-to-app path first-class and decide how much value-prop to sell up front vs. letting intrigue + a fast payoff pull the user in. (Hard gate lifts completion but costs new users; open door is the reverse.)
+- **Value-prop pitch placement.** A moment that sells the agentic value, not just captures data — inline in the intro, a one-card pitch, or pushed to the separate chef tour (below).
+- **First-run interview vs. dynamic chef tour are two different things.** The interview *learns you* (#4); a tab-by-tab walkthrough with demo states + "you can always just talk to me / dictate" *teaches the app + sells the value* — tracked as its own idea-backlog feature (S35), likely post-MVP. Don't overload #4 with the tour.
+- **Progressive disclosure cadence.** How later features (e.g. "copy a recipe link into the app") get taught over time without a front-loaded tour — the friction-vs-understanding tradeoff. Separate backlog item (S35).
+
+**Status**: #4 interview is design-gated and next up (see whats-next + `scope-1E.md`); the broader gate/value-prop/tour/disclosure questions above are open and split across the onboarding brief + idea-backlog.
+**Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**
 
 ### Monetization Details
-**Question**: What features are free vs. paid? What's the pricing? Free trial length?
-**Status**: Deferred to after V1 validates core loop.
-**Raised**: Session 1 (2026-03-28)
+**Question**: What features are free vs. paid? What's the pricing? Free trial length? **Expanded S35 (2026-07-24) with the specific sub-questions Griffin wants answered before charging:**
+- **What is the bare MVP that justifies a charge?** If it's still just recipe generation + a list, is that valuable enough? If it's generation + storage + note creation + planning, does that clear the bar? Where's the line?
+- **Is grocery-store integration (Instacart / Kroger / other) a hard requirement to justify the price** — or can we charge on the planning/list intelligence alone? (Ordering is V2 today; this asks whether monetization is gated on pulling it forward.)
+- **Cost-per-user must sit below the price with margin.** Requires the LLM cost-per-user model (idea-backlog, S35) so a heavy user can't run us negative — the abuse ceiling. Pricing can't be set until that number exists.
+- Free vs. paid split, trial length, and the freemium boundary all sit downstream of the two questions above.
+- **How do we test any of this?** Griffin (S37) wants pricing A/B tests once the native build productionalizes —
+  third-party vendor, not homegrown. Vendor choice + integration design is its own piece of work (idea-backlog, S37).
+
+**Status**: Deferred to the post-MVP gate (after R1 validates the core loop) — but the sub-questions above are the actual work, and they depend on the cost model + a call on ordering-as-gate. Reference: `reference/meal-app-pricing-research.md`.
+**Raised**: Session 1 (2026-03-28); **expanded Session 35 (2026-07-24)**
+
+### Color / palette scheme — amber + blue, or something else (1F decision)
+**Question**: The onboarding pass surfaced an **amber-plus-blue** palette layered on the existing dark system — amber (ember/`#E8944A`/`#F2B279`) as the **chef-presence / warmth** signal (orb, eyebrows, value-meter), blue (`#3A86FF`) as the **action** color (CTAs). Is amber+blue the right scheme for the app, or does the palette want a rethink?
+- **Semantic split is the strong argument to keep both:** amber = "the chef is present," blue = "you act." That gives amber a *job*, not just decoration — worth preserving regardless of the final hues.
+- **Risk to test:** when both amber and blue run saturated, "what's the primary action?" can blur — hierarchy discipline needed.
+- **Where it's decided:** **1F design-system pass** (palette is explicitly the 1F "one system exercise"; PROJECT-CONTEXT holds the palette SETTLED until then). Deciding it now would mean re-theming four already-built tabs piecemeal.
+- **But explore now:** a dedicated Claude Design color play can run during the current design work so **1E.5 (Plan re-design) stays compatible** and we don't lock Plan's look right before a repaint. Explore now → lock 1F. Resolve → decisions.md.
+**Raised**: Session 35 (2026-07-24)
 
 ## Technical
 
@@ -127,6 +188,27 @@ documented public-read / service-role-write exception)?
 **Question**: Which LLM provider(s) to use for production? Current recommendation is tiered routing (GPT-4.1-mini for routine, Claude Sonnet for complex). Need to benchmark on actual recipe tasks before deciding.
 **Status**: Research done. Decision deferred to prototyping phase. Will test on Gemini free tier first, then benchmark.
 **Raised**: Session 1 (2026-03-28)
+
+### Dictation implementation approach (S35)
+**Question**: Dictation is a core interaction bet (multiple voice ideas in idea-backlog: "Dictation/voice-first input emphasis" S2, "Voice dictation for feedback and modifications" S3, "AI-first preferences" capture). Griffin wants it to be *really good*. **How do we actually build it?**
+- **Simplest path: invoke native iPhone/OS dictation** (the platform speech-to-text on the keyboard) — free, zero infra, but quality/UX is the OS's, not ours, and it's device-dependent.
+- **Higher-ceiling path: a strong open-source voice-to-text model** (e.g. Whisper-class). Better/consistent quality, but **where does it run** — do we host it, and at what cost/latency? (Wispr Flow-style productized dictation likely isn't usable for us.)
+- What do apps with excellent baked-in dictation actually do — are there common paradigms (on-device model, streaming to a hosted STT, hybrid)?
+- **Cost ties into the LLM cost-per-user model** (idea-backlog, S35): a hosted STT is another per-use cost to fold into unit economics.
+**Status**: Open — research + a build/host decision needed before voice input ships. Not scoped into R1 (voice is a principle, not yet a built feature).
+**Raised**: Session 35 (2026-07-24)
+
+### ~~Household composition schema~~ — RESOLVED (S36) → decisions.md
+**Resolved as BAND COUNTS, not age arrays.** The recommendation above said `children[ageYears] / babies[ageMonths]`,
+but the **locked design (1D) captures three stepper counts with no age-entry UI** — storing arrays the UI can never
+populate would mean fabricating data. Shipped: `{adults, children, babies, babyStage}` on `user_preferences`, with
+`householdSize` derived server-side. V1.5 Family Member Profiles extends the same JSONB with an optional `members`
+array (additive, no breaking migration). Griffin ratified.
+
+Griffin also reframed the servings half of the question rather than answering it: whether a baby counts depends on the
+baby's **age**, so a conditional **baby-stage follow-up** (Under 6m / 6-12m / 12-24m) was added — under 6m and 6-12m
+contribute 0 servings, 12-24m counts. That follow-up is an **addition to the locked design**, flagged for his taste
+pass. Full rationale in decisions.md (S36).
 
 ### Regenerate / "new plan" entry point (V1 blocker)
 **Question**: Where does "plan a new week" live once a plan already exists? `NoPlanState` only shows when there's no plan, so today the plan dead-ends after week one. Related: should a new generation replace the current plan (backend already does this) or archive it for history? And how does an elapsed/all-past confirmed plan invite a fresh week instead of showing a nonsensical mid-week view?

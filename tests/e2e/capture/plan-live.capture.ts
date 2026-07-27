@@ -9,7 +9,7 @@ import {
   captureStates,
   makeRunDir,
   type CaptureStateDef,
-} from "./capture-runtime";
+} from "../harness/capture-runtime";
 import { PLAN_SECTION_KEY } from "./expected-facts";
 import { resetTestHousehold } from "../app/seed";
 

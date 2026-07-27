@@ -1,36 +1,304 @@
 # What's Next
 
-Last updated: 2026-07-22 (Session 31)
+Last updated: 2026-07-26 (Session 40)
 
-## ▶ NEXT SESSION — BUG-002 + BUG-001 CLOSED + shipped. Groceries fast-follows are done. Start Phase 1E (You tab).
-**The Groceries fast-follow shipped (S31).** BUG-002 (duplicate merge rows) is fixed via a **buy-unit table** in the
-aggregator — staples collapse to one unquantified row, concrete buy-unit produce sums the buy-unit and absorbs
-off-units without fake conversion. BUG-001 (quick-add category misfire) is fixed via whole-word matching. Both
-300-line-rule splits (`aggregate.ts`→`quantity-parse.ts`, `grocery-generate.ts`→`grocery-collect.ts`) are done.
-327 unit + 53 E2E green. **4 of 6 R1 phases done; the only open parked bug is BUG-003** (a design smell, not a fault).
+## ▶ NEXT SESSION — 1E is CLOSED. Open **1E.7**: the mechanical design-system sweep.
 
-**The clear next move: Phase 1E — You tab** (preferences / chef-memory surface). It's the next R1 phase (M5: "chef
-knows you; preferences editable"). Needs a `docs/scope-1E.md` + a Claude Design pass (new surface → strong
-recommendation). Open-question #2 (AI-first prefs vs static settings) resolves here.
+**S40 closed 1E by clearing its three gates for real.** 5 of 6 phases done, M5 met.
+**480 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.** Branch `session-33-you-tab-audit`.
 
-**Carried, non-blocking:** the owed taste passes (Slice C/D Groceries + Recipes reorg read; Recipes double
-bottom-bar density on a phone). Fold into 1E or a 1F polish pass.
+### What the gates actually found
 
-**⭐ Model recommendation: Sonnet 5** for 1E scoping + the design-brief work (scoping + design iteration, not
-cross-cutting architecture). Bump to Opus only if the prefs data model turns into a real architecture decision.
+1. **`/visual-qa` → 0 blockers / 0 high** across 22 states, judged against **Design Spec v1.0's six laws**
+   (not the superseded `Guidelines.md`). Two high fixes: the mic toast was letting the confirm + skip
+   labels **ghost through it**, and the You capture was shooting the page before the test-mode card
+   arrived — hiding it on one state and dropping it **under the tab bar** on another.
+2. **Layer B answered your question: the reuse rule works and does NOT cost variety.** Six real weeks,
+   7/7 distinct proteins and dish forms in every one, one bunch of dill finished across three different
+   dishes. **But it caught three things the mock cannot see** — most seriously the internal `dayOffset`
+   vocabulary printing **"reusing olive oil from day 0"** onto a card you read every week, and the chef
+   inventing **"use spinach fresh from last shopping trip"** on a first-ever plan. One prompt clause fixed
+   all three; round 2 verified them gone on the real model.
+3. **`/code-review`** found pass 1 of the palette migration had warmed the *fills* but left
+   `border-white/10` — the exact cool white law 04 forbids — on **every unselected chip and card in the
+   interview**. Fixed. Two defects logged instead of fixed at the gate: **BUG-020** and **BUG-021**.
 
-**Copy-paste kickoff prompt (Phase 1E scoping — design-gated):**
-> Resume meal app. **BUG-002 + BUG-001 are closed + shipped (S31)** — Groceries buy-unit consolidation (staples →
-> one unquantified row; carrot lb+cup → one row) + quick-add whole-word categorization; both 300-line splits done.
-> Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/changelog.md` (S31), and `docs/decisions.md` (S31) first,
-> then give me the ≤6-line scope check. I want to **start Phase 1E (You tab)**: write `docs/scope-1E.md` (in-scope
-> prefs/chef-memory features + acceptance criteria), resolve open-question #2 (AI-first preferences vs static
-> settings) with a recommendation, and — since 1E is a new surface — OFFER a Claude Design pass before building.
-> Don't build until the scope doc + design direction are agreed.
+### ⚠️ Still your one action
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated).
+Test mode is invisible and inert until you do, and it is what makes re-running the interview free.
 
-*(Design-independent alt: if you'd rather not open a new surface yet, knock out a carried **taste/QA pass** on the
-shipped Groceries + Recipes surfaces, or a 1F visual-refresh of Plan to the Groceries fidelity bar — both are
-in-pattern and need no design gate. Same kickoff, swap the 1E ask for the pass you want.)*
+### Your call, carried from the visual-QA pass
+Four places where the build is faithful to a **Claude Design pass you locked** and it is **Design Spec
+v1.0 that disagrees**. I did not touch them — repainting the payoff screen of an interview you just
+locked is your call, not a gate finding. Chiefly: the reflect screen's `SO HERE'S YOUR WEEK` renders
+three to six lines of **gold body text**, against law 03 ("nothing you read twice is accent-coloured")
+and law 06's three-gold-marks budget. Also the intro's gold icon tiles, the baby-stage gold chips, and
+the caught-tray chip. Full argument (including a middle path that keeps the block's presence) in
+`tests/e2e/captures/A-onboarding-2026-07-27T03-04-45-885Z/../critique.md`.
+
+**Also still open from scope-v1:** does 1F include a small closed beta beyond you + your wife, or is
+two-user validation enough to ship R1? That was parked *for* 1E and 1E has now closed without it.
+
+### Next up: 1E.7 (before 1E.5)
+The mechanical, app-wide half of the Design Spec v1.0 migration — items 01/02/06 plus retiring the
+pre-spec `:root` family. It goes **before** 1E.5 because 1E.5 rebuilds Plan from scratch, and building
+the signature surface against a palette we have already retired means building it twice. Onboarding is
+the worked example, and S40 just cleared its last cool-white border.
+
+**⭐ Model recommendation: Opus 4.8.** The edits are mechanical, but the bulk of the work is judgement by
+eye — deciding which of the three named wash recipes each of five surfaces gets, mapping ad-hoc radii onto
+the eight-rung scale, and then re-capturing and critiquing ~40 screenshots across all five surfaces for
+regressions. That is reading and judging against a locked spec, not new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — 1E is CLOSED (S40 cleared all three gates: visual-QA 0 blockers/0 high, Layer B verified
+the ingredient-reuse rule on the real model and caught three copy defects the mock couldn't, code review
+found the palette migration had left cool-white borders in onboarding). 480 unit + 78 E2E green, planner
+eval 7/7. Read docs/whats-next.md, docs/scope-v1.md first, then give me the ≤6-line scope check. Then open
+1E.7 — the mechanical design-system sweep, app-wide, BEFORE 1E.5: spec §12 items 01 (every
+rgba(255,255,255,x) → rgba(240,222,190,x) at the same alpha), 02 (ambient wash normalised to the three
+named recipes), 06 (radii onto the eight-rung scale), and retire the pre-spec :root family so every
+surface runs on --spec-* tokens. Onboarding is the worked example — match it. Write a scope-1E.7.md first,
+then sweep surface by surface, and finish with a /visual-qa re-capture of all five surfaces to prove no
+regression. Before you start, give me your read on the four gold-budget findings I owe a decision on
+(reflect's gold week list is the big one) — they're in the S40 critique.md. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs first):
+```
+Resume meal app — 1E is CLOSED (S40). Skip 1E.7 this session and clear the open bug list instead:
+BUG-020 (retryFailed never awaits in-flight saves, so "All saved." can be shown over a save that hasn't
+landed) and BUG-021 (a failed skipOnboarding still walks the user out to Plan) first, since the interview
+fires once per account and I'm about to run it for real. Then BUG-011/BUG-012 (householdSize ↔ composition
+desync putting two contradictory numbers in the same chef prompt, and the You tab saying "4 adults" for
+2 adults + 2 children — same root), then BUG-010 (household_composition ships with a column DEFAULT so a
+default is indistinguishable from an answer; needs a migration) and BUG-013 (finishOnboarding trusts
+client-supplied memory text). Read docs/whats-next.md + docs/bug-tracker.md first, give me the ≤6-line
+scope check, keep 480 unit + 78 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S39 (superseded by S40 above — its three gates were cleared)
+
+## ▶ S39 — close 1E: `/visual-qa` critique loop → Layer B → `/code-review`
+
+**Done S39 (a long session — Griffin's taste pass turned into a build).**
+
+1. **BUG-016 + BUG-014 + BUG-015 closed.** A failed core save is now named, remembered and retried on
+   "Plan my first week"; the reflect screen stops claiming "All saved" while anything is outstanding; a
+   failed finish stays put with a live retry instead of walking you out to a plan built on nothing; the
+   tell-me field clears on success only; the confirm is gated while a capture is in flight.
+2. **The deep round got deeper** (Griffin's calls). New **`skill`** question; **`goal`** raised into reach
+   because it already carried "Keep costs down"; **`effort`** kept but suppressed at a 30-minute ceiling.
+   Round retuned 4 → **5** questions, **7/7 personas**. **Ingredient reuse is a planner default now**, not a
+   preference — a perishable sold by the bunch gets a second, different dish that finishes it.
+3. **Test mode shipped.** You tab → "Restart onboarding", server-gated by `DEV_TOOLS_EMAILS`. The interview
+   fires once per account and this is what makes re-testing it free.
+4. **Design Specification v1.0 arrived mid-phase** and was split into three passes (Griffin ratified):
+   **pass 1 = onboarding, done this session**; **pass 2 = the new phase 1E.7**, mechanical and app-wide,
+   ordered **before 1E.5**; **pass 3 = 1F**. See scope-v1's S39 change-log row for the ordering argument.
+5. **The reflect playback is BUILT** from the design pass — three blocks, grouped by kitchen logic, with
+   each captured thing restated as a decision about dinner. `ALREADY CIRCLING` is deliberately off.
+
+**479 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.** Branch `session-33-you-tab-audit`.
+
+### ⚠️ Griffin's one action before the next session
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated). Test
+mode is invisible and inert until you do, and the whole point of it is to make your real first run cheap
+to repeat.
+
+### What actually closes 1E
+Three gates, and they are gates that were cleared in S38 and have been invalidated by this session's work:
+
+1. **`/visual-qa` on onboarding + You.** The Layer-A captures exist and are clean (17 states, all `ok`,
+   including the new `ob-reflect-deep` and `ob-reflect-sparse`), but the *critique-and-iterate-to-0-blockers
+   loop has not run* on them. That is the gate, not the capture. You tab needs it too — the test-mode card
+   is new UI there.
+2. **Layer B.** Two reasons this time, not one: onboarding copy changed substantially, **and**
+   `chef-system.ts` gained an ingredient-reuse rule. The mock cannot tell us whether the real model actually
+   finishes the carton without collapsing the week's variety, and that is a change to the most consequential
+   prompt in the product.
+3. **`/code-review`** across this session's work. It is a lot of new surface: `playback.ts`,
+   `use-onboarding-saves.ts`, `user-dev-tools.ts`, the rewritten reflect screen, the palette migration.
+
+### Carried, not blocking
+Owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar — note spec §12 item 04
+fixes that one in 1F). **BUG-011/012** (householdSize ↔ composition desync) and **BUG-010** (composition
+column default) are still open and are the next-best burn-down if you want a non-design session.
+**BUG-019** (GR7 flake) has not recurred in three full runs.
+
+**⭐ Model recommendation: Opus 4.8.** The critique loop is judgement against a locked spec, Layer B is
+reading real output for quality, and code review is reading a large diff. None of it is new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S39 built the reflect playback, migrated onboarding to Design Spec v1.0 (pass 1 of 3),
+deepened the interview (skill + cost, 5-question round), made ingredient reuse a planner default, and
+shipped test mode. 479 unit + 78 E2E green, planner eval 7/7. Read docs/whats-next.md, docs/scope-v1.md,
+docs/scope-1E.md first, then give me the ≤6-line scope check. Then close 1E with its three gates, in
+order: (1) run /visual-qa on onboarding AND You and iterate to 0 blockers / 0 high — the captures exist
+but the critique loop hasn't run on them; (2) run Layer B (npm run test:capture:live) — onboarding copy
+changed AND chef-system.ts gained an ingredient-reuse rule, so I need to see whether the real model
+actually uses up the carton without killing the week's variety; (3) run /code-review across the session's
+new surface (playback.ts, use-onboarding-saves.ts, user-dev-tools.ts, the rewritten reflect screen, the
+palette migration). When those land, 1E closes → M5 done, and 1E.7 (the mechanical design-system sweep)
+opens BEFORE 1E.5. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs):
+```
+Resume meal app — skip the 1E closing gates this session and clear the open bug list instead: BUG-011
+(householdSize/composition desync putting two contradictory numbers in the same chef prompt), BUG-012 (the
+You tab saying "4 adults" for 2 adults + 2 children — same root), then BUG-010 (household_composition
+ships with a column DEFAULT so a default is indistinguishable from an answer; needs a migration) and
+BUG-013 (finishOnboarding trusts client-supplied memory text). Read docs/whats-next.md +
+docs/bug-tracker.md first, give me the ≤6-line scope check, keep 479 unit + 78 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S38 (superseded by S39 above — those gates were invalidated by the S39 build)
+
+**Done S38:** `/visual-qa` (0 blockers / 0 high, 3 rounds + the ux-design-critic pass), the first onboarding
+**Layer B** real-model capture, and `/code-review` across four lenses. **449 unit + 75 E2E green**, lint + typecheck
+clean. The onboarding capture harness is new this session — `/visual-qa` had no coverage for this surface at all.
+Final captures: `tests/e2e/captures/A-onboarding-2026-07-25T17-33-21-019Z/` (+ `critique.md`).
+
+### Griffin's taste pass — the four calls
+1. **The baby-stage follow-up** (the deliberate addition to the locked design). It now arrives *pre-selected* at
+   6-12 months with the amber note narrating the assumption, so the chips read as a correction rather than a second
+   blank question. Does it feel like one extra tap, or like a form growing under you?
+2. **The reflect hook.** Core-only completions used to fall through to a generic line; every branch now names a
+   plate ("seared salmon with green beans that get some real char"), guarded so it can never name a food you just
+   told it to avoid. Cook with a point of view, or receipt?
+3. **Four deep questions.** Tunable via four numbers in `src/lib/onboarding/planner.ts`; re-run
+   `scripts/1e-onboarding-planner-eval.ts` after changing any of them.
+4. **The dinners stepper / lunch + breakfast toggles are still absent** from the hand-off (R1 generates dinners
+   only, so they would be dead controls). Sanity-check that omission.
+
+### ⚠️ Two fixes recommended BEFORE you and your wife run the interview for real
+The interview fires **exactly once per account** — both complete and skip set `onboardingCompletedAt`, and
+re-running is out of 1E scope. A half-saved first run is not recoverable by the user.
+- **BUG-016** 🔴 — a failed preference save is silent, and the reflect screen still says "All saved."
+- **BUG-014** 🟠 — typed text is cleared before the request resolves, so a failed capture loses the very message the
+  error toast invites you to retry.
+
+Seven more review findings are logged as BUG-010…BUG-018 in `docs/bug-tracker.md`; none block the taste pass.
+
+### When the taste pass lands
+**1E closes → M5 done**, then open **1E.5 (Plan Design Buildout)**.
+
+**⭐ Model recommendation: Opus 4.8** — the taste pass is judgement plus small copy/UX edits, not new architecture.
+If you'd rather have BUG-016/014 fixed first, that's also 4.8 work (two contained error paths plus their specs).
+
+**Copy-paste kickoff prompt (taste pass):**
+```
+Resume meal app — 1E's three gates are cleared (visual-QA 0 blockers/0 high, Layer B run, code review done; 449
+unit + 75 E2E green). Read docs/whats-next.md, docs/scope-v1.md, docs/scope-1E.md first, then give me the ≤6-line
+scope check. Start by fixing BUG-016 and BUG-014 (silent save failure + typed text lost on error) — the interview
+fires once per account and I'm about to run it for real. Then walk me through the taste pass: pull up the final
+captures in tests/e2e/captures/A-onboarding-2026-07-25T17-33-21-019Z/ and give me your own read on the baby-stage
+follow-up, the reflect hook, and whether 4 deep questions is the right depth, before I give mine. When my taste
+pass lands, 1E closes → M5 done and we open 1E.5 (Plan Design Buildout). On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather not spend this session on taste):
+```
+Resume meal app — 1E is machine-complete and waiting only on my taste pass. Skip that this session and burn down
+the S38 code-review findings instead: BUG-016 and BUG-014 first, then BUG-011 (householdSize/composition desync
+putting two contradictory numbers in the same chef prompt) and BUG-012 (the You tab saying "4 adults" for 2 adults
++ 2 children). Read docs/whats-next.md + docs/bug-tracker.md first, give me the ≤6-line scope check, and keep the
+E2E suite green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S37 was infrastructure, not product (superseded by S38 above)
+
+Session 37 ran the QA-process hardening plan (`~/.claude/plans/qa-process-hardening-and-ffos-port.md`)
+and did no product work. What changed under you:
+
+- **The E2E harness now works from a genuine cold start.** It no longer needs a
+  service-role key, and deleting the test user no longer wedges the suite. Verified by
+  deleting the identity outright and running from nothing.
+- **`npm run test:capture` and `npm run test:capture:live`** are real scripts now (Layer A
+  and Layer B), instead of raw `npx playwright -c ...` invocations.
+- **The auto-invoking rules cover all five surfaces**, not just Plan — editing Groceries,
+  Recipes, You or onboarding now nudges the E2E + visual-QA loop.
+- **Two new Plan bugs are logged**: BUG-008 (the meal card prints the cook time twice, and
+  two different times when they disagree) and BUG-009 (a null-title slot renders as the
+  "Thinking…" state). Both are routed to **1E.5**, so read them before that buildout.
+- **Layer B is owed on four tabs** — it has run once, on Plan only. `docs/test-plan.md`
+  → "Layer-B cadence" has the triggers and the backlog.
+- The harness was ported to **FFOS** and caught three real UI bugs there on its first run,
+  which is the evidence that this layer earns its keep.
+
+Nothing above blocks the 1E close. Proceed with it as written below.
+
+---
+
+## ▶ NEXT SESSION — 1E #4 is BUILT + fully machine-verified (70/70 E2E). Remaining to close 1E: `/visual-qa` → `/code-review` → **Griffin's taste pass**.
+
+**Shipped S36:** the whole onboarding interview. Household-composition schema (band counts + a baby-stage follow-up;
+`householdSize` derived server-side; migration `0006` applied), the deterministic tunable **deep-round stopping
+policy** + its 6-persona eval, the full one-model-per-screen flow at `/welcome` (ember chef presence, 4-question core,
+adaptive deep round, opinionated reflect), the first-run gate, `sourceType:'onboarding'` memory writes, and the
+pre-seeded Plan intent hand-off (door #3).
+
+**Verified:** **437 unit + 70 E2E green** (OB1–OB8 new, whole suite passing), **planner eval 6/6**, lint + typecheck
+clean, migration applied. **No blockers, no Griffin action outstanding.**
+
+**Two bugs found and fixed during the run** (both worth knowing about):
+1. The new first-run gate was redirecting **every** spec to `/welcome` — the E2E user's `onboardingCompletedAt` was
+   NULL. `auth.setup.ts` now stamps the harness's default identity as already-onboarded; `onboarding.spec.ts` restores
+   that default in `afterAll` so it can't poison other specs whatever the run order.
+2. **BUG-007 (resolved):** the harness couldn't authenticate at all. Root cause was the **harness, not the
+   credentials** — this project uses the new `sb_publishable_`/`sb_secret_` keys with asymmetric (ES256) JWTs, and
+   GoTrue's `/auth/v1/admin/*` endpoints reject a non-JWT secret key. `mintSupabaseSession` was calling
+   `auth.admin.listUsers`/`updateUserById` to bootstrap a user that already existed. It now signs in with the
+   publishable key first (also dropping a 50-page `listUsers` scan from every run) and only falls back to the
+   privileged bootstrap if sign-in genuinely fails. `.env.local` was correct all along.
+
+### To close 1E
+1. **`/visual-qa`** against the locked design (`docs/design/surfaces/onboarding/brief.md`, direction 1D) — not yet run
+   on this surface.
+2. **`/code-review`** — not yet run on this build.
+3. **Griffin's taste pass** (scope below). When those land, **1E closes → M5 done**, then **1E.5**.
+
+### For Griffin's taste pass
+- **The one deliberate addition to the locked design:** a **baby-stage follow-up** (Under 6 months / 6-12 / 12-24)
+  appearing only when babies > 0, inside the amber note the design already reveals. It exists because Griffin's answer
+  to "do babies count as a serving?" was "it depends on the baby's age." Does it read as one extra tap, or as a form?
+- **The reflect screen's opinionated hook** ("I'm already picturing blistered shishitos and a chili-crisp salmon") —
+  a cook with a point of view, or a receipt?
+- **Deep-round depth** — 4 questions for an engaged user. The policy is four tunable numbers in
+  `src/lib/onboarding/planner.ts`; re-run `scripts/1e-onboarding-planner-eval.ts` after changing any of them.
+- **Deviation to sanity-check:** the hand-off screen's **dinners stepper + lunch/breakfast toggles were NOT built.**
+  R1 generates dinners only (`mealType` hardcoded), so they'd have been dead controls. The hand-off is the real Plan
+  intent screen, pre-seeded with the interview's chips + request.
+- **The interview is live for Griffin + wife** — no backfill was applied, so both accounts will see it on next load.
+  That's the real-user test.
+
+### Carried, non-blocking
+Owed taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar on a phone) + the You-tab taste pass
+from S33. **BUG-005** (`font-sans`→serif; confirm on-device, 1F). **BUG-003** (recipe.list harvest). **BUG-006**
+(expanded meal sheet → 1E.5).
+
+**⭐ Model recommendation: Opus 4.8** — what's left is judgement work (visual critique against a locked design, code
+review of a safety-adjacent capture path, taste iteration on chef copy), not new architecture.
+
+**Copy-paste kickoff prompt (close 1E):**
+> Resume meal app — the 1E onboarding interview (#4) is BUILT and fully machine-verified (437 unit + 70 E2E green,
+> planner eval 6/6). **Close the phase:** run `/visual-qa` against the locked design
+> (`docs/design/surfaces/onboarding/brief.md`, direction 1D) and iterate to 0 blockers / 0 high, then `/code-review`
+> (not yet run on this build — pay attention to the `user.talk` capture path and the new tRPC mutations), then hand me
+> the taste pass. In that hand-off, specifically call out: the **baby-stage follow-up** (your addition to the locked
+> design), whether the reflect hook sounds like a cook or a receipt, and whether 4 deep questions is the right depth.
+> Read `docs/whats-next.md`, `docs/scope-v1.md`, `docs/scope-1E.md` first, then give me the ≤6-line scope check. When
+> visual-QA + review + my taste pass land, **1E closes → M5 done** and we open **1E.5 (Plan Design Buildout)**. On
+> Opus 4.8.
 
 ## Exact Status (end of Session 30 — BUG-004 CLOSED + shipped)
 - **BUG-004 resolved.** Full generation-architecture rethink shipped: normalize runs per-recipe during plan review

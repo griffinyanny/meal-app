@@ -7,7 +7,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  /* BUG-005: this read `var(--font-sans)` — a self-reference, so the token was
+     invalid at computed-value time and every `font-sans` surface fell back to
+     the browser default serif. Geist is loaded in layout.tsx as
+     --font-geist-sans; this is the bridge that was missing. */
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -81,6 +85,98 @@
   --sidebar-accent-foreground: #F5F5F7;
   --sidebar-border: rgba(255, 255, 255, 0.08);
   --sidebar-ring: #3A86FF;
+
+  /* ── Design Specification v1.0, theme 11i ("Gold voice, cream hand") ────────
+     Source of truth: docs/design/system/design-spec.dc.html (Claude Design,
+     S39). The spec document itself is deliberately literal — no tokens, no
+     utilities — because it has to be copy-pasteable by anyone reading it. Our
+     codebase is the opposite case: the same values appear across dozens of
+     components, and the migration lands in three passes (onboarding now, the
+     mechanical app-wide sweep before 1E.5, the rest in 1F). Tokens are what
+     make passes 2 and 3 a swap instead of a rewrite.
+
+     ONLY the onboarding flow consumes these today. Everything else still runs
+     on the tokens above until pass 2 — do not mix the two families inside one
+     surface, because half-migrated is worse-looking than either end state.
+
+     Law 04: every neutral is warm. There is no rgba(255,255,255,x) below, and
+     there must never be one — cool white on this floor is the exact blue cast
+     the low saturate values exist to prevent. */
+  --spec-floor: #0F0B08;
+
+  /* Presence: gold is the chef, and only the chef (law 02). */
+  --spec-gold: #E9B348;
+  --spec-gold-tint: #F0C265;
+  --spec-gold-voice: #E0B463;
+
+  /* Action: cream is what you press. Never swapped with gold, never in the
+     same control as it. */
+  --spec-action: #F4EBDC;
+  --spec-action-on: #1A140C;
+
+  /* Type: five warm steps, descending. Never invent a sixth (law 03 — nothing
+     you read twice is accent-coloured). */
+  --spec-text-primary: #F7F2EA;
+  --spec-text-feature: #F0EBE4;
+  --spec-text-body: #CAC4BC;
+  --spec-text-muted: #A29484;
+  --spec-text-caption: #8A7C6C;
+
+  /* Semantics: warm-shifted, max one per viewport. There is deliberately no
+     caution hue — amber is the chef, so a yellow badge beside the orb would
+     make the chef look like an alert. */
+  --spec-destructive: #D96A5B;
+  --spec-destructive-text: #E39B92;
+  --spec-success: #9CB86F;
+}
+
+/* The elevation ladder (spec §04). A surface may only ever sit one step above
+   its parent; if you need a third nesting level, the screen needs restructuring
+   rather than another rung. */
+@layer utilities {
+  .spec-glass {
+    background: rgba(70, 58, 46, 0.4);
+    backdrop-filter: blur(32px) saturate(115%);
+    border: 1px solid rgba(240, 222, 190, 0.11);
+  }
+  .spec-inset {
+    /* Borrows the parent's blur on purpose — this is the replacement for every
+       rgba(255,255,255,.04) in the pre-spec build. */
+    background: rgba(240, 222, 190, 0.045);
+    border: 1px solid rgba(240, 222, 190, 0.08);
+  }
+  .spec-control {
+    background: rgba(84, 70, 56, 0.46);
+    border: 1px solid rgba(240, 222, 190, 0.16);
+  }
+  .spec-chrome {
+    /* Darker than the floor, so content scrolling underneath dims rather than
+       brightens. The high saturate is correct here and nowhere else: this is
+       the only surface meant to feel like frosted hardware. */
+    background: rgba(22, 16, 11, 0.72);
+    backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid rgba(240, 222, 190, 0.13);
+  }
+  .spec-floating {
+    background: rgba(22, 16, 11, 0.94);
+    backdrop-filter: blur(40px) saturate(180%);
+    border: 1px solid rgba(240, 222, 190, 0.14);
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.7);
+  }
+  /* Lighting (spec §03). One wash per screen, entering once from above, always
+     gold, never animated, always beneath the content layer. `hero` is the only
+     recipe permitted two stops and is reserved for screens the orb is on. */
+  .spec-light-hero {
+    background:
+      radial-gradient(560px 440px at 50% 10%, rgba(233, 179, 72, 0.16), transparent 60%),
+      radial-gradient(420px 300px at 50% 106%, rgba(233, 179, 72, 0.07), transparent 68%);
+  }
+  .spec-light-ambient {
+    background: radial-gradient(560px 420px at 78% -12%, rgba(233, 179, 72, 0.13), transparent 62%);
+  }
+  .spec-light-flat {
+    background: radial-gradient(600px 400px at 78% -14%, rgba(233, 179, 72, 0.07), transparent 60%);
+  }
 }
 
 @layer base {
@@ -161,6 +257,124 @@
     }
     100% {
       box-shadow: 0 0 0 2px rgba(58, 134, 255, 0);
+    }
+  }
+
+  /* ── Chef presence (onboarding interview, Phase 1E #4) ──────────────────
+     The ember is the chef being PRESENT while it asks you things — the locked
+     1D direction's replacement for a cold assistant orb. Amber here is the
+     chef/warmth register against the app's blue actions; the pairing is
+     provisional and gets settled in the 1F design-system pass, so it lives in
+     one clearly-scoped block rather than spreading into the token set.
+     Everything below is decorative and is switched off entirely under
+     prefers-reduced-motion (see the media query at the end). */
+  /* The orb (spec §02). The hot spot sits up and slightly left of centre so it
+     agrees with the overhead light — law 01 applies to the orb too. No filter on
+     this layer: `filter` applies to children, so a blur here would smear the
+     toque. The glow below is what stops the sphere reading as a hard ball, and
+     it is the only glow anywhere in the product. */
+  .ember-core {
+    background: radial-gradient(
+      circle at 40% 34%,
+      rgba(255, 238, 196, 0.97),
+      rgba(233, 179, 72, 0.92) 46%,
+      rgba(140, 95, 25, 0.42) 78%
+    );
+    box-shadow: 0 0 44px -8px rgba(233, 179, 72, 0.6);
+    animation: ember-breathe 4s ease-in-out infinite;
+  }
+
+  @keyframes ember-breathe {
+    0%,
+    100% {
+      opacity: 0.72;
+      transform: scale(1) translateY(0);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05) translateY(-2px);
+    }
+  }
+
+  .ember-ring {
+    animation: ember-ring-out 3.4s ease-out infinite;
+  }
+
+  @keyframes ember-ring-out {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1.32);
+      opacity: 0;
+    }
+  }
+
+  .ember-steam {
+    background: rgba(255, 240, 205, 0.5);
+    filter: blur(4px);
+    animation: ember-steam-rise 3.2s ease-in infinite;
+  }
+
+  @keyframes ember-steam-rise {
+    0% {
+      opacity: 0;
+      transform: translateY(4px) scaleX(1);
+    }
+    30% {
+      opacity: 0.55;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-26px) scaleX(1.5);
+    }
+  }
+
+  .ember-float {
+    animation: ember-float-bob 5.5s ease-in-out infinite;
+  }
+
+  @keyframes ember-float-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-9px);
+    }
+  }
+
+  /* Each answered turn fades its content up rather than snapping in, so the
+     interview reads as a conversation advancing. */
+  .animate-turn-in {
+    animation: turn-in 0.32s ease-out both;
+  }
+
+  @keyframes turn-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* The chef's motion language is atmosphere, never information — so under
+     reduced-motion it all stops and nothing is lost. */
+  @media (prefers-reduced-motion: reduce) {
+    .ember-core,
+    .ember-ring,
+    .ember-steam,
+    .ember-float,
+    .animate-turn-in {
+      animation: none !important;
+    }
+    .ember-ring,
+    .ember-steam {
+      opacity: 0;
     }
   }
 }

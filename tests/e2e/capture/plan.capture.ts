@@ -4,7 +4,7 @@
 // a caught bug and is surfaced in the output.
 import { test } from "@playwright/test";
 import path from "node:path";
-import { captureStates, makeRunDir } from "./capture-runtime";
+import { captureStates, makeRunDir } from "../harness/capture-runtime";
 import { LAYER_A_STATES, PLAN_SECTION_KEY } from "./expected-facts";
 import { resetTestHousehold } from "../app/seed";
 

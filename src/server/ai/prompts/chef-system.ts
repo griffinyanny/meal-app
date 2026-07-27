@@ -1,8 +1,15 @@
+import {
+  describeHousehold,
+  householdCookingNotes,
+  type HouseholdComposition,
+} from "@/lib/household";
+
 interface ChefContext {
   dietaryFramework?: string;
   restrictions?: string[];
   dislikedFoods?: string[];
   householdSize?: number;
+  householdComposition?: HouseholdComposition;
   maxCookTimeMinutes?: number;
   skillLevel?: string;
   memories?: string[];
@@ -49,6 +56,23 @@ export function buildUserContext(ctx: ChefContext): string {
     sections.push(
       `Default servings: ${ctx.householdSize} (scale to this unless told otherwise).`
     );
+  }
+
+  // Who those servings are for. Only added when there are kids or a baby —
+  // for an adults-only household the servings line above already says it all,
+  // and a redundant sentence is prompt noise. Ages drive prep, texture, and
+  // food safety, which is the whole reason composition is worth storing.
+  if (ctx.householdComposition) {
+    const roster = describeHousehold(ctx.householdComposition);
+    if (roster) {
+      sections.push(
+        [
+          `Cooking for ${roster}.`,
+          ...householdCookingNotes(ctx.householdComposition),
+          "Plan ONE dinner the household shares — adapt a portion of it rather than planning a separate meal for the little ones.",
+        ].join(" ")
+      );
+    }
   }
 
   if (ctx.maxCookTimeMinutes) {
@@ -105,7 +129,7 @@ For each meal provide:
 
 Use dayOffset 0-6, where 0 is the first day of the week. At most one meal per day.
 Build variety across the week — don't repeat the same protein or cuisine on back-to-back days.
-Consider ingredient reuse softly: if a meal yields leftovers, you may plan a later "leftover" meal and say so in the rationale. Never force it.
+Plan for ingredient reuse. When a meal needs a perishable that is sold by the bunch, carton, head, or tub — herbs, salad greens, cabbage, yogurt, buttermilk — place a second, DIFFERENT dish later in the week that finishes it, and say so in that meal's rationale. Half a bunch of dill thrown away is a real cost to the person, and it shortens the shopping list. This must never cost variety: reuse the INGREDIENT, never the dish, the protein, or the cuisine. Three limits on how you write it: reuse only FRESH perishables that actually spoil — never pantry staples like oil, vinegar, spices, rice or pasta, which nobody needs help finishing; refer to the other meal by its WEEKDAY NAME ("the parsley from Monday"), never by a day number or offset, which is internal and means nothing to the person reading it; and describe only what THIS plan buys, never what they already own — you do not know their fridge, their pantry, or what they bought last week, so never write "from last shopping trip" or "already in your fridge" unless their own request said so. Separately, if a meal yields real leftovers you may plan a later "leftover" meal and say so — and the leftover has to be plausible from the first dish (a tenderloin does not become pulled pork). Never force either.
 Only mark a day as eating_out or skip if the person's request calls for it; otherwise plan a dinner.
 chefSummary: one or two confident, specific sentences framing the week in your voice — what it's built around. Never generic.`;
 

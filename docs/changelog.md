@@ -4,6 +4,516 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 40 — 2026-07-26 (1E CLOSED — the three gates, run for real)
+
+**The job:** close 1E by clearing its three gates in order. S39 had invalidated every S38 clearance by
+rebuilding the reflect screen, deepening the interview, changing the chef prompt and migrating onboarding
+to a new design system — so none of this was a formality.
+
+**Result: all three cleared. 1E → ✅ CLOSED, M5 met, 5 of 6 phases done.**
+**480 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.**
+
+### Gate 1 — `/visual-qa`, 0 blockers / 0 high
+
+Judged against **Design Specification v1.0's six laws**, not the superseded `Guidelines.md`. 22 Layer-A
+states: onboarding (16) and You (6). The You tab had **no capture coverage at all** for S39's test-mode
+card, so two states were added for it and the capture server now mirrors the E2E `DEV_TOOLS_EMAILS`
+allowlist.
+
+Two high findings, both fixed and re-captured:
+- **The mic toast let the controls under it read through.** At the spec's L5 `.94` fill with
+  `saturate(180%)`, "I'll cook for 2 servings." and "Skip this question" ghosted through the panel, which
+  reads as a rendering fault rather than a notice. Now opaque at the same hue. The manifest fact claimed
+  the toast "does not cover the answer controls" — it never could, at `bottom-6`, so the fact was corrected
+  rather than the placement.
+- **The You capture was photographing the page before it finished arriving.** The test-mode card renders
+  off its own `devToolsEnabled` query, which resolves after the ready text — so the card was missing
+  entirely from `you-returning` and, on `you-new`, landed after the viewport had been sized and rendered
+  **underneath the fixed tab bar**. Capture bug, not an app bug; fixed with a `settleDevTools()` wait.
+
+One stale ground-truth fact corrected (`ob-diet-caught` still recorded an S38 deviation that had been
+closed). A wrong fact is worse than no fact — it is the anchor the whole critique is told to trust.
+
+**Raised, deliberately not fixed:** four places where the build is faithful to a Claude Design pass Griffin
+locked and it is *Design Spec v1.0* that disagrees — chiefly the reflect screen's `SO HERE'S YOUR WEEK`
+rendering three to six lines of **gold body text** against law 03 ("nothing you read twice is
+accent-coloured") and law 06's three-gold budget. Repainting the payoff screen of an interview he just
+locked is his call, not a gate finding. Full list in the run's `critique.md`.
+
+### Gate 2 — Layer B, and it earned its keep
+
+**The question Griffin asked: does the real model finish the carton without killing the week's variety?
+Yes.** Six real weeks, 42 dinners: the reuse rule fired every time, no week collapsed onto one ingredient,
+and every week held **7/7 distinct proteins and 7/7 distinct dish forms**. One bunch of dill genuinely
+finished across three different dishes. The model narrates it unprompted in `chefSummary` and visibly
+reasons about the tension on the cards ("Break up the protein pattern…", "adding variety after mushrooms
+and seafood") — the two rules pull against each other correctly rather than one winning.
+
+**But giving the model a reason to cross-reference days made it reach for three things it must not say** —
+all user-visible, all invisible to the mock by construction:
+- 🔴 **"reusing olive oil from day 0"** — the internal `dayOffset` vocabulary printed onto a card the user
+  reads every week. The same run said "from Monday" elsewhere, so it was inconsistent as well as wrong.
+- 🟠 **"use spinach fresh from last shopping trip"** — invented history, on a **first-ever plan**, for a user
+  who has never shopped. There is no pantry model; pantry is explicitly V1.5.
+- 🟠 **Reuse over-generalised to pantry staples** — "reusing olive oil", "Reusing lemon". Nobody needs help
+  finishing a bottle of oil, and it makes the rationale read as filler.
+
+One clause in `PLAN_OUTPUT_RULES` fixed all three (fresh perishables only; refer to the other meal by
+**weekday name**; describe only what this plan buys, never what the person already owns), plus a
+plausibility guard after round 1 produced "Leftover Pulled Pork Tacos" from a *tenderloin*. **Round 2
+re-ran the same three intents on the real model and confirmed all three gone, with variety unchanged.**
+
+The existing prompt test was `toContain`-based rather than an inline snapshot, so the original edit passed
+silently — three assertions added to lock the new guards.
+
+### Gate 3 — code review
+
+- **The palette migration warmed the fills but missed the borders.** Three spots still carried
+  `border-white/10` — `rgba(255,255,255,0.1)`, the exact cool white **law 04** forbids — on *every
+  unselected chip and card in the interview* and the deepen-offer's secondary button. Onboarding is the
+  designated worked example for migration passes 2 and 3, so leaving it would have propagated into 1E.7.
+  Substituted at the same alpha per the law. Verified: no `rgba(255,255,255,x)` anywhere in onboarding, and
+  no `--spec-*` token leaking outside it.
+- **Two real defects logged rather than fixed at the gate** — **BUG-020** (`retryFailed` retries *failed*
+  saves but never awaits *in-flight* ones, so "All saved." can be shown over a save that has not landed) and
+  **BUG-021** (`skipAll` walks the user out to Plan even when the skip mutation fails, doing the opposite of
+  the fix BUG-016 landed on the finish path). Both are the once-per-account honesty contract, reached by
+  paths BUG-016 did not cover.
+- Checked and cleared: `user-dev-tools.ts` re-authorises server-side inside the mutation rather than
+  trusting the query, and its delete is correctly scoped to `sourceType:'onboarding'` so the copy's promise
+  ("memories from real use are kept") is true. A suspected stale-response race in `useCoreSaves` is **not
+  reachable** — the interview has no back navigation, so no turn can be answered twice.
+
+### Not done, and why
+
+The `ux-design-critic` taste pass (step 6 of the `/visual-qa` loop) was **not** run — this session's
+standing instruction was not to spawn subagents unrequested. The critique's own "raised" section carries
+the taste findings instead.
+
+---
+
+## Session 39 — 2026-07-26 (Griffin's taste pass became a build)
+
+**Started as:** fix BUG-016/BUG-014, then hand Griffin the taste pass on three questions.
+**Ended as:** three bugs closed, a deeper interview, a planner-default change to the chef prompt, test mode,
+a new design system, and the reflect playback rebuilt from a design pass. **1E did not close.**
+
+### Bugs closed
+- **BUG-016** (silent failed save) — `useCoreSaves` names a failure, remembers it by the answer's label, and
+  retries on "Plan my first week". The reflect screen no longer claims "All saved" while anything is
+  outstanding. A failed `finishOnboarding` now stays on reflect with a live retry: that path writes both the
+  memories and the completed flag, so on failure nothing landed and leaving silently just deferred the loss.
+- **BUG-014** (typed text lost on error) — clears on success only, matching `talk-to-chef-sheet`.
+- **BUG-015** (tap/type race) — the confirm is gated on `talkPending`, and `talkPending` now covers the
+  read-back rather than only the write.
+
+### Griffin's taste-pass decisions
+| Question | Call |
+|---|---|
+| Baby-stage follow-up | Keep as built |
+| Reflect hook | Cut the categorical opening line; lead with the plate |
+| Deep-round depth | Add `skill`; **keep `effort`** (Griffin overruled merging it — an advanced cook can still be exhausted on a Tuesday); cost lands in `goal`, which already carried "Keep costs down" |
+| Ingredient reuse | A planner default, not a preference |
+| `ALREADY CIRCLING` | Off for R1 — it names dishes nothing carries into generation |
+| `safetyFirst` | Off — the recap stays after the playback |
+| Closed beta | None. Griffin + wife, wife tests on his phone. **No household sharing pulled into R1.** |
+
+### Built
+- **Deep round 4 → 5 questions.** `skill` (0.97) is the only one of time/effort/skill that decides whether a
+  recipe is *executable* rather than merely appealing. `goal` raised to 0.85 so the cost signal is reachable.
+  `effort` suppressed at a ≤30-minute ceiling (that ceiling already answered it). Policy retuned
+  (`minValue` 0.35, cap 6, new `meterTarget` 5 with an eval invariant tying it to what an engaged cook
+  actually reaches — the meter used to divide by a cap the policy never hit, so the most engaged user
+  possible saw 80%). **7/7 personas.**
+- **Ingredient reuse in `chef-system.ts`** — a perishable sold by the bunch, carton or head gets a second,
+  DIFFERENT dish that finishes it, guarded so it can never cost variety. **Unverified on the real model;
+  Layer B is owed.**
+- **Test mode** — `user.devToolsEnabled` + `user.resetOnboarding`, allowlisted by `DEV_TOOLS_EMAILS` (empty by
+  default, re-checked inside the mutation rather than trusted from the query), plus a You-tab card.
+  Deliberately not a hidden gesture: once the server decides who sees it, hiding it only makes it hard for
+  the one person who needs it. **Griffin must set `DEV_TOOLS_EMAILS` in Vercel Production.**
+- **Design Specification v1.0** ("Gold voice, cream hand", theme 11i) imported from Claude Design and split
+  into three passes. Pass 1 (onboarding) done: `--spec-*` tokens + the elevation ladder in globals.css, the
+  orb to its actual specification, the tell-me field rebuilt to spec §09, every cool-white alpha warmed.
+- **The reflect playback**, from the design pass. New pure `playback.ts` (16 tests): `playbackGroups` groups
+  by kitchen logic and drops empty groups, `weekDecisions` restates each capture as a commitment,
+  `chefGuesses`/`isSparse` drive the sparse state. Scrolls with the CTA on a pinned chrome bar. Two new
+  capture states (`ob-reflect-deep`, `ob-reflect-sparse`) so the design's central claim — depth reads as
+  specificity, not as a longer list — is checkable by looking rather than by argument.
+- Also: a verbatim quote of what the user typed, a subline under the hook, and an adults-only hook so a
+  skip-heavy run stops falling through to the generic line.
+
+### Found while working
+- **`chef-system.ts` is the one prompt file with no snapshot test**, despite `.claude/rules/test-files.md`
+  requiring them and CLAUDE.md calling it the single most important file in the product. A prompt change
+  landed this session and nothing flagged it. → backlog, Griffin's call on the test-strategy change.
+- **Four defects caught by looking at captures rather than by tests:** a stray space before punctuation in
+  every playback fact, "Fish are what you want to see more of", the subline duplicating the last week
+  decision verbatim, and `talkPending` clearing before the read-back so the confirm was ungated for the tail
+  of a capture. The last is the only one a test could plausibly have caught.
+
+### Scope changes
+- **New phase 1E.7** (mechanical design-system sweep), ordered **before 1E.5**, because 1E.5 rebuilds Plan
+  from scratch and building the signature surface against a retired palette means building it twice.
+- 1F's design-system line reframed as the *surface-specific* half of the spec migration (items 03/04/05/07),
+  each of which wants its own `/visual-qa` pass.
+- **1E did not close.** Its S38 gates were invalidated by this session's work.
+
+### Open questions raised
+- How often do two adults in a household actually eat the same dinner? Our research doesn't answer it, and it
+  decides how much V1.5 sharing has to do.
+- With two users in one household, whose diet governs a shared plan? (Allergies union; the rest is undefined.)
+
+**Green:** 479 unit + 78 E2E, planner eval 7/7, lint + typecheck clean.
+
+---
+
+## Session 38 — 2026-07-25 (1E #4 closed out: visual QA, Layer B, code review)
+
+The three gates 1E was waiting on. **449 unit + 75 E2E green, visual-QA gate PASS (0 blockers / 0 high),
+Layer B run, `/code-review` complete across four lenses.** Everything below is on `session-33-you-tab-audit`.
+
+**Built the missing harness.** `/visual-qa` had no onboarding coverage — `tests/e2e/capture/` covered
+Plan/Groceries/Recipes/You only. Added `onboarding-facts.ts` + `onboarding.capture.ts` (14 states walking the real
+flow from `/welcome`; there is no way to deep-link a turn, and driving it for real is the point) and
+`onboarding-live.capture.ts` for Layer B. Generalized `playwright.capture-live.config.ts` from `plan-live` to
+`-live\.capture\.ts$` so each surface's live capture is separately runnable.
+
+**Visual QA — three rounds, 13 findings fixed.** Round 1 found four highs: `min-h-full` was a no-op so three
+screens never filled the viewport; the "what I caught" tray echoed the chef's reply sentence instead of itemizing
+what free text surfaced, and left the answered pill dark; the reflect hook was generic on the core-only path (every
+dish-level branch required deep-round data, so the brief's hero moment never fired for the most common completion);
+selected allergens were blue, identical to a diet chip. Round 2 added two capture states because two fixes had no
+visual proof. Round 3 was the `ux-design-critic` pass, which **corrected round 1's own fix**: centering the turns
+traded a void for layout shift under the thumb — measured 36px when the confirm appeared, 77px on the household
+turn, moving the stepper being tapped. Rebuilt as two anchored blocks with the confirm's height reserved.
+
+**BUG-005 (app-wide serif) closed, deviating from its "defer to 1F" disposition.** It needed no on-device check:
+`--font-sans: var(--font-sans)` is a self-reference, invalid at computed-value time, so the token could never
+resolve anywhere. One-line bridge to `--font-geist-sans`. Fixed inside 1E because Griffin's taste pass on chef copy
+was about to happen in Times. Blast radius verified by re-capturing all four other surfaces.
+
+**Layer B earned its keep on its first onboarding run.** The tray renders the ops `user.talk` produced — perfect
+against a fixture written to emit them, and silently degraded to prose if the real model preferred `remember`. It
+didn't: the live model reproduced the brief's own worked example. But it caught a bug the mock structurally could
+not: "we do taco night every Tuesday and nobody eats mushrooms" lit the **No restrictions** pill, because the write
+created the preferences row, `dietary_framework` defaults to `'omnivore'`, and the client read that default back as
+an answer.
+
+**`/code-review` (4 lenses) found a critical bug in this session's own work.** The preselect merge appended without
+respecting `multi` and never removed, so tapping "Pescatarian" then typing "actually we eat everything" left both
+chips lit and **persisted the retracted answer** — the chef overwriting a correction with the thing it corrected.
+Two root causes behind it, both fixed: `changed` was derived from the DB diff (so setting a field back to its
+default registered as nothing happening), now derived from the ops; and `utils.user.preferences.fetch()` was served
+from the provider's 30s cache, so a second correction inside half a minute read back as the first one's answer.
+Guarded by OB12/OB13 and three router tests. Also split `use-onboarding.ts` (338 lines) — the free-text path moved
+to `use-onboarding-talk.ts`.
+
+**Nine review findings logged rather than fixed** (BUG-010 through BUG-018), because `/review` says present, don't
+auto-apply. Two are recommended before Griffin and his wife run the interview for real, since it fires exactly once
+per account and a half-saved first run is not recoverable: **BUG-016** (a failed preference save is silent and the
+reflect screen still says "All saved") and **BUG-014** (typed text is cleared before the request resolves, so a
+failed capture loses the message the toast invites you to retry).
+
+**Process note:** a concurrent Claude session was editing this repo mid-run — four harness files rewritten under
+this session, `test-results/` wiped, and the shared Supabase test user briefly deleted. It invalidated one full E2E
+run (15 spurious failures) before it was spotted. Worth a rule: don't run two sessions against this repo, because
+they share one Supabase test household.
+
+## Session 37 — 2026-07-25 (QA-process hardening + the harness ported to FFOS)
+
+Infrastructure session, no product work. Ran the five tasks from
+`~/.claude/plans/qa-process-hardening-and-ffos-port.md`. **445 unit + 72 E2E green.**
+Three commits on `session-33-you-tab-audit`. CI was skipped deliberately (below).
+
+### 1. The dead auth-bootstrap path is fixed, and cold start actually works now
+BUG-007's fix left the privileged bootstrap unreachable — it survived only because the
+test user already existed. Verified the failure mode empirically before touching it: the
+`sb_secret_` key gets `403 bad_jwt: unrecognized JWT kid <nil>` from every
+`/auth/v1/admin/*` endpoint, so an admin bootstrap cannot work on this project at all.
+Deleted that branch rather than keeping a second untestable one. The harness now creates
+`auth.users` + `auth.identities` directly over `DATABASE_URL` and needs **no service-role
+key at all**.
+- Public `signUp` was the obvious replacement and is wrong twice: GoTrue rejects the
+  reserved `@example.com` sentinel (`email_address_invalid` — the admin API skipped that
+  check, which is why the old path worked), and it would send real confirmation mail.
+  Writing the rows keeps the test identity on an address that can never receive a
+  password-reset link.
+- Two failures found only by running it cold: GoTrue scans several nullable token columns
+  into non-nullable Go strings, so a NULL there fails every sign-in with an opaque
+  "Database error querying schema".
+- **Verified properly:** deleted the auth user, its public rows and its household, cleared
+  the Playwright transform cache, ran from nothing. Setup green, suite green.
+- Two one-off failures appeared across the cold runs (OB4, then RG5) and neither recurred;
+  OB4 was a stale transform cache (its error line numbers came from an old compile), RG5 is
+  a 6s-race spec that passes in isolation. Flagged, not silenced.
+
+### 2. Harness ported to FFOS — validated as genuinely copyable
+`harness/` copied verbatim; wrote FFOS's app layer against **/goal** (the north star, and
+the only surface with a money-behavior write). **859 unit + 9 E2E green**, Layer-A capture
+clean. Branch `e2e-harness-port`. It caught three real UI bugs on its first run — the
+sharp one being the debt stack rendering in arbitrary order under a heading promising
+"highest rate clears first". Also moved `capture-runtime.ts` into `harness/` (it was
+already marked generic but lived in `capture/`), so FFOS copies the core instead of
+forking it.
+
+### 3-5. Mock split, cadence, rules, ADVERSARIAL
+- `e2e-mock-fixtures.ts` (491 lines) split per-domain under `e2e-fixtures/`; the old path
+  is now a barrel, so no import changed. Largest file 151 lines.
+- **Layer-B cadence** written into `docs/test-plan.md`: five triggers, plus the honest
+  statement that Layer B has run **once, on Plan only** — Groceries/Recipes/You/onboarding
+  fixtures are unvalidated against live output.
+- Rules renamed `plan-e2e.md`→`e2e.md`, `plan-visual-qa.md`→`visual-qa.md`, globs widened
+  from Plan-only to all five covered surfaces, both now nudge Layer B on a fixture edit.
+  `test:capture` / `test:capture:live` promoted to npm scripts.
+- **ADVERSARIAL seed state** built (capture-only) and it paid for itself immediately:
+  **BUG-008** (the meal card prints the cook time twice — and two *different* times when
+  `estTimeMinutes` and a time-shaped tag disagree; present on every seeded card, so it was
+  in previous captures and got read past) and **BUG-009** (a null-title slot renders as the
+  "Thinking…" generating state). Both routed to 1E.5 rather than patched.
+
+### CI: skipped, deliberately
+The plan marked it optional and Griffin skeptical. The blocker is unchanged — the suite
+uses ONE shared test household with `workers:1`, so concurrent runs race the seed. A
+concurrency group would serialize them, but that buys little over the codified wrap-time
+gate while adding a failure surface. Revisit if the harness lands in a third repo or if a
+second person starts pushing.
+
+---
+
+## Session 36 — 2026-07-24 (Phase 1E #4 onboarding interview BUILT — 1E closes, M5 done)
+
+### What happened
+The build session for the last 1E feature. Design was locked (1D) coming in, so this was execution against the
+build spec plus the two dependencies it flagged.
+
+**1. `/architect` pass on the household-composition schema — and a real conflict surfaced.** The brief's schema note
+said per-member age arrays (`children[ageYears]`), but the **locked design captures three band COUNTS** (Adults /
+Children 2-12 / Babies under 2) with no age-entry UI. Griffin ratified **band counts** (match the locked design;
+V1.5 Family Member Profiles extends the same JSONB with an optional `members` array — additive, no breaking
+migration).
+
+**2. Griffin reframed the servings question rather than picking a side.** Asked whether babies count toward
+`householdSize`, he pushed back: it depends on the baby's age — past ~6 months they're increasingly eating part of
+the adult meal. That's right, and "babies under 2" is too coarse to act on. Resolution built:
+- A **conditional baby-stage follow-up** (Under 6 months / 6-12 months / 12-24 months) appears only when
+  `babies > 0`, inside the amber note the design already reveals. **This is a deliberate addition to the locked
+  design** — flagged for the taste pass.
+- Serving rule follows the stage: under 6m → 0 (milk, no meal impact); 6-12m → 0 servings but the chef is told to
+  include a soft, unsalted, hazard-free portion from the same dish; 12-24m → counts toward `householdSize`.
+  Griffin's own household (2 adults + baby) derives to 2, matching the old default — no regression.
+- **Scope assumption stated:** R1 plans ONE meal per slot and tells the chef how to adapt a portion. Separate kid
+  meals = multiple recipes per slot = a schema change, logged to the backlog as V1.5.
+
+**3. The deep-round stopping policy, built as its own tunable task with an eval.** Deliberately **deterministic, not
+a per-question model call** — onboarding is the most latency-sensitive moment in the app, and a model call between
+every screen would buy question-ordering at the cost of seconds of dead air. A scored bank (`value × novelty ×
+fatigue^asked`) with four tunable knobs: hard cap 5, `minValue`, fatigue decay, and a consecutive-low-signal stop.
+`scripts/1e-onboarding-planner-eval.ts` runs six personas. **The eval earned its keep on first run:** at
+`minValue 0.42` a vegan got a *shallower* interview (3 questions) than an omnivore (4), purely because the
+suppressed protein question left the threshold sitting on a cluster of tail values. Tuned to 0.38 → **6/6 pass**,
+every engaged persona gets 4.
+
+**4. Built the flow** to the locked design in real components: ember chef presence (reduced-motion honored), the
+one-model-per-screen turn (tap answers on top, text field below routed through the existing `user.talk` — no new AI
+infra), the "what I caught" tray, the 4-question core, the adaptive deep round with value meter, the opinionated
+reflect, and the hand-off. `user.talk` gained a `sourceType` param so interview captures stamp `onboarding` rather
+than `explicit` (the build delta the brief called out).
+
+**5. Two self-caught bugs during the build** (worth recording, both would have been quiet):
+- `answerDeep` ran a side effect inside a `setState` updater — double-invoked under StrictMode.
+- Free-text answers never merged back into local interview state, so answering "we're pescatarian" by *typing*
+  would leave the reflect screen, the synthesized memory, and the planner blind to it. Now refetches preferences
+  after each capture.
+
+### Decisions
+- Household composition = **band counts** `{adults, children, babies, babyStage}`, `householdSize` derived
+  server-side (composition is authoritative when sent). Ratified by Griffin.
+- Baby stage drives both cooking guidance and the serving count (see above).
+- Onboarding-complete flag = `users.onboardingCompletedAt`, read via the `ensureOnboarded` call `OnboardGuard`
+  already makes → the first-run gate costs **no extra round-trip**. Both complete AND skip stamp it.
+- **No backfill for existing users** — Griffin: "the accounts mean nothing right now." He and his wife will see the
+  interview on next load, which doubles as the real-user test.
+- Deep-round planner is deterministic (rationale above); AI planner can replace `pickNext()` behind the same
+  interface later without touching the flow.
+- Interview persists **per question**, not in one batch at the end — abandoning halfway still leaves the chef
+  knowing what it was told, and the reflect screen's "all saved" is honest.
+- **Deviation from the locked design, flagged:** the plan-setup screen's dinners stepper and lunch/breakfast toggles
+  were NOT built. R1 generates dinners only (`mealType: "dinner"` is hardcoded); shipping toggles that do nothing
+  would be worse than omitting them. The hand-off is the real Plan intent screen, pre-seeded (door #3, as specified).
+
+### Verification
+- **432 unit tests green** (+69: household derivation/notes, planner + stopping policy, synthesis, onboarding
+  router, chef-context composition rendering).
+- **Planner eval 6/6 personas.**
+- Migration `0006` generated + applied.
+- **70/70 E2E green**, including OB1-OB8 (`tests/e2e/specs/onboarding.spec.ts`) covering **both required paths**
+  (complete + skip), the first-run gate, the mic's "coming soon" answer, and the adaptive round. Assertions go to the
+  database, not just the UI.
+
+**Two bugs the E2E run caught, both fixed:**
+1. The first-run gate redirected **every** spec to `/welcome` — the harness's test user had a NULL
+   `onboardingCompletedAt`. `auth.setup.ts` now stamps the default identity as already-onboarded, and
+   `onboarding.spec.ts` restores that default in `afterAll` so it can't poison other specs whatever the run order.
+   Exactly the class of regression the harness exists to catch.
+2. **BUG-007 — the harness couldn't authenticate at all** (`bad_jwt` on every admin call, all 70 specs unable to
+   run). My first diagnosis was wrong: I assumed a stale legacy key and told Griffin to refresh it. He checked and
+   said neither key looked changed — which was the right pushback, because `.env.local` already held the new
+   `sb_publishable_`/`sb_secret_` keys. Probing each service separately localized it: PostgREST accepts the secret
+   key (200) and ordinary password sign-in with the publishable key works (200), but GoTrue's `/auth/v1/admin/*`
+   endpoints still expect a JWT carrying `role: service_role` and reject a non-JWT secret key. The harness was
+   calling `auth.admin.listUsers`/`updateUserById` to bootstrap a test user that **already existed**.
+   `mintSupabaseSession` now signs in with the publishable key first (also removing a 50-page `listUsers` scan from
+   every run) and falls back to the privileged bootstrap only if sign-in genuinely fails. **No credential change was
+   needed.**
+3. OB8 then failed on a bad assertion of mine, not a product fault: the value-meter testid sat on the *fill*, which
+   is legitimately zero-width on the first deep question (the meter measures signal captured, not questions
+   survived), and a zero-width element is invisible. Moved the testid to the track and strengthened the spec to
+   assert the fill actually grows once an answer carries signal.
+
+---
+
+## Session 35 — 2026-07-24 (Phase 1E #4 onboarding — design LOCKED (1D); 1E.5 formalized; color exploration kicked off)
+
+### What happened
+Design + planning session (no build). Three threads:
+
+**#4 onboarding interview — design LOCKED to direction 1D "Talk it through."** Iterated in Claude Design with Griffin
+across several passes (1A one-per-screen structured / 1B stacked-chat foil, rejected / 1C ambient orb, "felt like a
+tech app" → **1D**, the merge: 1C's aliveness + chef warmth via an ember/steam presence + 1A's app-explainer
+clarity). The blend problem (voice vs tap reading as "two apps") was solved into **one model per screen**: tappable
+answers on top, a bottom "or just tell me" field, a "what I caught" tray that shows only what free-text adds beyond
+the pills. Griffin's build calls this session:
+- **Mic-as-text for R1.** The bottom field is a TEXT input (routes through `user.talk`); the mic icon stays for the
+  feel but fires a "voice coming soon" toast. Dictation/STT deferred (out of R1 — open-questions S35).
+- **Weeknight cook-time is a core question, not optional.** Core = 4 (household composition · diet · allergies ·
+  weeknight time), then an adaptive opt-in deep round (value-meter + one-tap "I'm good for now").
+- **Deep-round stopping policy = a tunable build task** (planner over the question bank + a "learned enough" cutoff
+  + hard cap; needs an eval).
+- **Household captured as composition + ages** (9-mo vs 3-yr vs 16 = different prep/taste profiles) → a new build
+  dependency (an `/architect` pass; R1 recommendation + V1.5 deferral logged in open-questions).
+- **Reflect reads like an opinionated cook**; hand-off = the **pre-seeded Plan intent modal** (door #3), not a
+  bespoke screen; reduced-motion honored.
+Recorded the lock: `surfaces/onboarding/brief.md` rewritten as the build spec; scope-1E #4 → design-LOCKED /
+build-pending; onboarding-depth open question resolved; decisions.md entry added.
+
+**Phase 1E.5 "Plan Design Buildout" formalized into the spine** (from the S34 proposal) — a full all-states Plan
+rebuild in Claude Design, **must ship before 1F** (Plan is the only core surface never mocked in the Claude Design
+system-of-record). See scope-v1 change log + idea-backlog.
+
+**Color/palette exploration kicked off** (Claude Design, this session, continuing). The amber+blue that emerged in
+onboarding (amber = chef presence/warmth, blue = action) is provisional; palette **locks in 1F** but is being
+explored now so 1E.5 stays compatible. Open question logged (food-right warmth, complementary-yet-distinct pairings,
+category distinctness).
+
+### Next
+Build #4 in a parallel session (Opus) — it's the 1E close. Color exploration continues in the design session.
+
+---
+
+## Session 33 — 2026-07-22 (Phase 1E You audit surface BUILT — features #1/#2/#3/#5/#6 + first You E2E)
+
+### What happened
+Built the **You-tab audit surface** against the imported Direction A (`You.dc.html`), on Opus 4.8 (the S32 kickoff
+recommended Sonnet; Griffin ran it on Opus — a new-surface UI build with a small backend delta, well within either).
+One scope fork surfaced + decided up front (see decisions.md): the design's hero is free-text "Talk to the chef,"
+which is a net-new AI capture task not in the five listed features — **Griffin chose to build the full AI capture
+now** (Option B), so `user.talk` shipped this session alongside the deterministic surface.
+
+**Shipped (scope-1E #1/#2/#3/#5/#6 + #7 E2E):**
+- **#1 shell + account** — `you-page-client` orchestrator; `user.account` query (name/email/household) → account footer.
+- **#2 hard-constraint direct edit** — safety-weighted "I never cook with" card (allergy sub-label via a `(allergy)`
+  string marker, no schema change) + soft card (dislikes / cuisines / dietary / household / cook-times). Chips remove
+  via `×`, add via a **direct inline input** (deviation from the mock, which routed Add through chat — #2 requires
+  fixing without a conversation); scalars edit via a bottom-sheet picker/stepper. All persist via existing
+  `user.updatePreferences` and immediately change `getChefContext`.
+- **#3 memory ledger** — `memory.list` reads active memories (added `activeOnly` to `user.memories`); provenance
+  labels map to `sourceType` (onboarding→"when we started" / explicit→"you told me" / implicit→"I noticed"); new
+  `memory.deactivate` + `memory.reactivate` mutations (household-scoped). Dropped `memory.edit` — edit routes to
+  Talk-to-Chef re-tell (gap #1). Softened the "I fold older notes together" microcopy (gap #3, dedup is out of 1E).
+- **#5 capture confirmation WITH undo** — a single bottom toast on every remove/add/capture with an **Undo** action
+  (gap #2). `user.talk` returns an undo payload (before-values + written/deactivated memory ids) so undo reuses
+  existing mutations, no bespoke endpoint.
+- **#6 implicit surfaced + dismissible** — implicit memories carry the "I noticed" label and dismiss via the same
+  `memory.deactivate` (reuses #3).
+- **AI capture (`user.talk`)** — `preferences-talk` AI task (snapshot-tested prompt with a load-bearing SAFETY block;
+  `[N]` memory-ref → id resolution, id-safe + household-scoped, mirroring grocery-talk). Free text → typed
+  constraint/memory ops applied in one transaction. Pure `applyPreferencesTalkOps` (dedupe, allergy-marker
+  round-trip, change-detection, undo before-values) kept out of the router for clean unit testing.
+
+**Verification (all green):**
+- Gauntlet: lint + typecheck + **363 unit** (mock-tested coerce/apply/routers, auth-checked).
+- **First-ever You E2E** (`you.spec.ts` Y1–Y9): render, restriction-remove+undo, dislike-add, household stepper,
+  memory-remove+undo, implicit dismiss, ledger expand, **Talk-to-Chef allergy capture end-to-end through the real
+  pipeline**, new-user state. Full suite **62 E2E green** (was 53; +9). Added `preferences-talk` fixture to the AI
+  mock + `YOU_RETURNING`/`YOU_NEW` seed states (and `userPreferences` to the seed wipe).
+- **Real-model safety eval** (`scripts/1e-preferences-talk-eval.ts`, real OpenAI spend): **9/9 pass, 0 safety
+  failures** — the real model captures allergies as flagged avoids from "allergic to" / "can't have" / "makes me
+  sick", never mis-files a taste dislike as an allergy, and handles diet/cuisine/memory/household/cook-time/forget.
+- **Visual-QA** (Layer A): built `you.capture.ts` (4 states) + looked at the pixels vs Direction A — faithful
+  (narrative hero, red SAFETY-CRITICAL card, provenance ledger, sheets, new-user state); **0 blockers / 0 high**.
+  Critique in `tests/e2e/captures/A-you-*/critique.md`.
+- **Code review** (code-reviewer subagent): no critical issues; id-safety + household scoping confirmed airtight, no
+  allergy-drop path. Fixed 4 findings: allergy-upgrade of a plain avoid (W1), `(allergy)` marker leaking into
+  recipe/plan prompts → strip in `getChefContext` (W2), talk-undo reactivate race → added cancel (W3), missing
+  error-state UI for the trust surface (W4); plus prompt-injection disclaimer hardening + a typed `saveField` + an
+  `isNew` edge fix. Re-ran gauntlet + You E2E green after fixes.
+
+### Left for later (deliberate)
+- **#4 onboarding interview** — still design-gated (Pass-2, not yet designed). The new-user state built here is the
+  *audit* sparse state, not the conversational first-run flow.
+- **App-wide serif finding** (bug-tracker): headings/prose render in a serif fallback in the headless capture; likely
+  a `--font-sans` wiring gap (Geist configured but the utility resolves to the default stack). Confirm on-device;
+  a 1F design-system item if real. Not a You-tab issue.
+- Carried taste passes (Slice C/D Groceries + Recipes reorg; Recipes double bottom-bar) still owed.
+
+## Session 32 — 2026-07-22 (Phase 1E scoped; OQ#2 resolved; You audit-surface design imported; build deferred)
+
+### What happened
+Scoping + design-intake session for **Phase 1E (You tab)** on Opus. Wrote `docs/scope-1E.md`, resolved the
+long-standing **Open-Question #2**, wrote the You-tab design brief, Griffin ran the Claude Design pass, and the
+chosen direction was imported + inspected. **No product code written** — the build was deliberately deferred to a
+clean session (see "Build decision").
+
+**1. `docs/scope-1E.md` written.** M5 ("chef knows you; preferences editable"). Six build features + E2E, each with
+acceptance criteria: You shell/account, hard-constraint direct-edit, memory ledger view/manage, onboarding
+interview, capture confirmation, implicit-surfacing. Explicit OUT list (proactive nudges, household sharing,
+recurring check-ins, memory dedup/decay) to hold the M5 line. Framed on the key realization: **the chef already
+personalizes today** (`getChefContext` reads prefs + memories on every generation) — 1E makes that loop *visible
+and editable*, it does not build the memory engine. So 1E is mostly frontend + a thin backend delta.
+
+**2. Open-Question #2 RESOLVED — AI-first capture, structured audit (split by data type).** Not one mode. Capture
+is AI-first (interview / Talk-to-Chef / thumbs); the You tab is a trust/audit surface, not the primary editor. Two
+field classes: **hard constraints** (dietary, allergies, household size, cook-times, cuisines) are AI-set but
+**always directly editable** (a mis-remembered allergy is a real-world harm — safety-critical values can't require a
+well-phrased sentence to fix); **soft memory** is an AI-captured, correctable ledger. The infra already *is* this
+hybrid (`user_preferences` + `ai_memories`, both read by `getChefContext`). → decisions.md; open-questions.md flipped.
+
+**3. Design Pass 1 (audit surface) done + imported.** Brief asked for two contrasting directions (narrative vs
+control-panel). Griffin's pick: **Direction A — the chef's narrative read**. Imported via `DesignSync.get_file`
+(projectId `8bc73bfa-…`, `You.dc.html`). As-built: prose "Here's what I know about you" hero + primary Talk-to-Chef;
+a **safety-weighted** "I never cook with" block (allergies red + SAFETY-CRITICAL badge); a soft
+dislikes/cuisines/counts card; a provenance-labeled memory ledger ("You told me when we started" / "You told me" /
+"I noticed") with per-item remove + edit + expand; account footer. Two states: returning-user (full) + new-user
+("We've just met" / "still learning" sparse). Pointer + as-built + gaps → `docs/design/surfaces/you/brief.md`.
+
+**4. Inspection gaps flagged (fold into the build):** memory *edit* routes through Talk-to-Chef, not inline (lean
+"remove + re-tell"; likely drop `memory.edit` from v1); the capture toast has no undo (brief wants one); ledger
+microcopy promises "I fold older notes together" (dedup is OUT of 1E — soften copy). The **onboarding interview (#4)
+is not designed** — the new-user state here is the audit sparse state, not the Pass-2 conversational flow.
+
+### Build decision — deferred to next session (deliberate, not a stall)
+The right container, not a delay. Reasons: (a) it's a full new-surface phase-build (whole tab, 6 field editors, a new
+ledger + `memory.deactivate` mutation, first-ever You E2E, `/visual-qa`), not a quick win — it deserves a clean
+context budget; (b) the intended build model is **Sonnet 5** (the standing 1E reco), not this Opus scoping session;
+(c) #4 (onboarding) is still undesigned, so building now wouldn't close 1E regardless. Next session builds the audit
+surface on Sonnet; onboarding follows its Pass-2 design.
+
+### State
+- No code change; gauntlet not re-run (nothing to run). 327 unit + 53 E2E remain green from S31.
+- 4 of 6 R1 phases done; 1E scoped + design-intaken, **build is the next move.** OQ#2 resolved. BUG-003 still the
+  only open parked bug.
+
 ## Session 31 — 2026-07-22 (BUG-002 buy-unit consolidation + BUG-001 category fix; 1D fast-follow, shipped)
 
 ### What happened
