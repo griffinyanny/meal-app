@@ -134,7 +134,10 @@ A refined type scale, motion, and component-library consolidation are still the 
 **Motion:** `.shimmer-bar` (AI-working) and `.animate-highlight-ring` (one-shot on change-landed).
 **Icons:** lucide-react. Anti-pattern list: `Guidelines.md` (colour values there are superseded).
 
-Visual reference cards for all of the above: `docs/design/system/*.html` (a descriptive snapshot).
+Visual reference for all of the above: **`system/design-spec.dc.html`** — that file, and only that file.
+The other `system/*.html` cards (`colors`, `type`, `chips-pills`, `buttons-inputs`, `meal-card`, `sheets`,
+`surfaces`) are a **pre-spec snapshot on the retired palette** and each now carries a superseded banner.
+Do not sample colour from them.
 
 ## What "OPEN vs SETTLED" means in a brief
 

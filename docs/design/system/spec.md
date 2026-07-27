@@ -1,5 +1,11 @@
 # Guidelines — Meal App (Figma Make Bridge Doc)
 
+> **⚠️ DOUBLY SUPERSEDED — do not generate against this file.** It is a Figma-Make-era copy of
+> `../Guidelines.md`, and its colour section is retired: **Design Specification v1.0
+> (`design-spec.dc.html`, theme 11i) is canonical** — floor `#0F0B08`, gold `#E9B348` for the chef
+> only, cream `#F4EBDC` for every action. `#0E0E10` and `#3A86FF` below are dead. The Figma Make
+> workflow itself was replaced by Claude Design on 2026-07-13 (`../design-workflow.md`).
+
 > **How to use this file**: Paste this entire document into the Figma Make code editor (Guidelines tab) before generating. Reuse across every Make session. Pair it with a per-screen brief (e.g. `brief-plan.md`) for each generation.
 
 ---

@@ -1,5 +1,12 @@
 # Guidelines — Meal App (Design System Spec)
 
+> **⚠️ SUPERSEDED for colour, 2026-07-27. Do not generate against section 3 (Colour) or any hex
+> value in this file.** **Design Specification v1.0 — "Gold voice, cream hand"
+> (`system/design-spec.dc.html`, theme 11i) is canonical**: floor `#0F0B08`, gold `#E9B348` is the
+> chef and only the chef, cream `#F4EBDC` is every action. The `#0E0E10` floor and the `#3A86FF`
+> accent named below are **retired**. This file remains useful for the **anti-pattern list and the
+> layout/register guidance only**. See `PROJECT-CONTEXT.md` for the live token pin.
+
 > **How to use this file**: The written design-system spec. Synced into the Claude Design project (`docs/design/system/spec.md`) so generated prototypes inherit it, and used as grounding by the visual-QA rubric. Pair it with a per-screen brief (e.g. `brief-plan.md`) for each new surface. (Design workflow: `docs/design/design-workflow.md`. Was the Figma Make bridge doc pre-2026-07-13.)
 
 ---
