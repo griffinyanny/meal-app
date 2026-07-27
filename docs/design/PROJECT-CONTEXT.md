@@ -66,24 +66,73 @@ consolidation (refined type scale, spacing, motion, component library) is still 
 freeze it. If a generated direction introduces new brand colors, a light mode, cartoon graphics,
 or all-caps headers (outside the eyebrow), that's **drift to correct, not a decision**.
 
-**Token pin (from `src/app/globals.css`, dark-only):**
-- bg `#0E0E10` (warm near-black, never `#000`) · surface-1 `#1A1A1E` · surface-2/muted/secondary `#22222A`
-- foreground `#F5F5F7` · muted-foreground `#8E8E93` (day labels, meta, captions)
-- **accent/primary/ring `#3A86FF`** — CTAs, chef-voice rationale, active states ONLY. Used sparingly.
-- destructive `#FF453A` (muted use) · border `rgba(255,255,255,.08)` · radius base `.75rem` (cards use `radius-xl` ≈ 21px)
+## ⚠️ THE PALETTE CHANGED. Read this before generating anything.
 
-**Glass surfaces (the signature):**
-- `.glass-surface` — hero cards: `rgba(26,26,30,.72)`, blur 24, saturate 180, border .06
-- `.glass-card` — meal cards / list items: `rgba(34,34,42,.60)`, blur 16, saturate 150, border .06
-- `.glass-sheet` — bottom sheets / sticky bars: `rgba(26,26,30,.96)`, blur 40, saturate 180, border .08
+**Design Specification v1.0 — "Gold voice, cream hand" (`system/design-spec.dc.html`, theme 11i) is
+canonical as of S39 (2026-07-26). Where an earlier screen or an earlier version of this file disagrees
+with it, IT WINS.** `Guidelines.md` is the *superseded* aesthetic canon — read it for the anti-pattern
+list only, and ignore its colour values entirely.
+
+**The app is mid-migration, and you must design against the END state, not the current screens.**
+Onboarding was migrated in S39 and is the **worked example — match it**. Plan, Recipes, Groceries and
+You are still on the retired palette until phase 1E.7 sweeps them. So: **do not sample colours from a
+screenshot of Plan/Recipes/Groceries/You. They are the "before".**
+
+**Token pin — the SPEC values (`--spec-*` in `src/app/globals.css`):**
+- **Floor `#0F0B08`** — warm near-black. NOT `#0E0E10`, which was the cool floor this replaced.
+- **Presence — gold `#E9B348`** (tint `#F0C265`, voice `#E0B463`). **The chef, and only the chef:** the
+  orb, the presence dot, the active tab, the chef's italic rationale, the `YOUR CHEF` eyebrow.
+- **Action — cream `#F4EBDC`** (label on it always `#1A140C`; soft variant `.1` fill / `.32` line).
+  **Anything the finger is meant to find.** Gold and cream never appear in the same control and their
+  roles are never swapped. **The old indigo `#3A86FF` accent is RETIRED — do not use it.**
+- **Type, five warm steps, never invent a sixth:** primary `#F7F2EA` · feature `#F0EBE4` (hero sentences
+  and pull quotes only) · body `#CAC4BC` · muted `#A29484` · caption `#8A7C6C`.
+- **Semantics, max one per viewport:** destructive `#D96A5B` (text `#E39B92`) · success `#9CB86F`.
+  There is deliberately **no caution hue** — amber is the chef, so a yellow badge would make the chef
+  look like an alert.
+- **Radii: the eight-rung scale** — 7 / 9 / 12 / 14 / 16 / 18 / 22 / 46. Nothing off-scale.
+
+**The six laws (full text in the spec's §00 — these are hard rules, not preferences):**
+1. Light enters **once, from above, and is always gold**. One wash per screen, under the content layer,
+   never animated. No cream wash, no second hue, no bottom-up light.
+2. **Gold is who the app is. Cream is what you press.**
+3. **Nothing you read twice is accent-coloured.** Titles, body, metadata, labels are cream-white through
+   warm grey, always. The only coloured type in the product is the chef's *italic* rationale and the
+   `YOUR CHEF` byline.
+4. **No cool white. Ever.** Every neutral — every border, scrim and low-alpha fill — is warm.
+   `rgba(255,255,255,x)` reads blue on this floor; substitute `rgba(240,222,190,x)` at the same alpha.
+5. **A label is type. A control is a surface.** Nothing decorative wears a pill. If it has a fill and a
+   border it must respond to a tap; if it only names something it is flat uppercase type, no container.
+6. **Count the accents: at most three gold marks in the content layer, exactly one filled cream button,
+   at most one semantic hue.** The active tab sits outside the count.
+
+**The elevation ladder (spec §04) — a surface may only ever sit ONE step above its parent:**
+- **L0 Floor** `#0F0B08` · **L1 Glass card** `rgba(70,58,46,.4)`, blur 32, saturate **115** (low on
+  purpose — higher picks up a blue cast), border `rgba(240,222,190,.11)`
+- **L2 Inset row** `rgba(240,222,190,.045)`, border `.08`, no blur of its own (borrows the parent's)
+- **L3 Control** `rgba(84,70,56,.46)`, border `rgba(240,222,190,.16)` — inputs, steppers, segmented pills
+- **L4 Chrome** `rgba(22,16,11,.72)`, blur 24, saturate 180 — tab bar, nav, bottom sheets
+- **L5 Floating** `rgba(22,16,11,.94)`, blur 40, shadow `0 12px 32px -8px rgba(0,0,0,.7)` — **the only
+  level that casts a shadow.** Toasts, menus, popovers.
+
+**Lighting — three named recipes, chosen by what the screen is FOR (spec §03):**
+- `light.ambient` (default, every list/content screen incl. **Plan**): `radial-gradient(560px 420px at
+  78% -12%, rgba(233,179,72,.13), transparent 62%)`
+- `light.hero` (only where the orb is — onboarding, reflect): adds a faint floor bounce; the only recipe
+  permitted two stops
+- `light.flat` (dense/task screens — the grocery list): half strength, same origin
+
+**The chef orb** is specified in full in spec §02 (ember, not a chat avatar; hairline toque; four sizes
+88 / 40 / 34 / 20 and no others; ring + steam only at 64px+). **One orb per screen, never two. The orb is
+not a button.**
 
 **Type scale (from shipped components):** hero 26/bold · section 20/bold · card title 17/semibold ·
-chef rationale 13 in `primary/90` with trailing → · body 14 · meta 12 muted · **eyebrow 11
+chef rationale 13 *italic* in gold-voice with trailing → · body 14 · meta 12 muted · **eyebrow 11
 medium tracking-widest muted ALL-CAPS** (the one sanctioned all-caps use — day/section labels).
-Font is the default system sans today; a distinctive display face is a 1F decision.
+A refined type scale, motion, and component-library consolidation are still the **1F** pass.
 
 **Motion:** `.shimmer-bar` (AI-working) and `.animate-highlight-ring` (one-shot on change-landed).
-**Icons:** lucide-react. Full written system: `Guidelines.md` (the aesthetic canon + anti-pattern list).
+**Icons:** lucide-react. Anti-pattern list: `Guidelines.md` (colour values there are superseded).
 
 Visual reference cards for all of the above: `docs/design/system/*.html` (a descriptive snapshot).
 

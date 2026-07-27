@@ -4,6 +4,37 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-27 (S40) — 1E.5's DESIGN pass runs in parallel with 1E.7; only the BUILD is ordered
+
+**Decision.** The "1E.7 before 1E.5" rule constrains the **build**, not the design. Griffin's Claude Design
+pass for Plan may run concurrently with 1E.7's mechanical code sweep — different artifacts, zero file
+conflict. **1E.5's build still lands after 1E.7 ships.**
+
+**Rationale.** The original ordering argument (scope-v1, S39) was precise: *"1E.5 rebuilds Plan from scratch,
+so applying the mechanical sweep first is the difference between building the signature surface once and
+building it twice."* That is a statement about writing components, and the design pass writes none. The
+design pass is also the long-pole item — it needs Griffin's iteration time, not Claude's — so serialising it
+behind a mechanical sweep costs a session for nothing.
+
+**The blocking prerequisite, found when reconciling the two threads.** `docs/design/PROJECT-CONTEXT.md` — the
+file Claude Design reads **first** for the entire app project via the GitHub connector — **was never updated
+when Design Spec v1.0 landed in S39.** It still pinned `#0E0E10` bg, the retired `#3A86FF` indigo accent, and
+`rgba(255,255,255,.08)` borders (the exact cool white law 04 forbids), and named the superseded
+`Guidelines.md` as "the full written system". `surfaces/plan/brief.md` (written S38) compounded it, instructing
+the pass to use "current tokens" and calling the palette "provisional, locked in 1F" — which S39 made false.
+**Any Plan design generated before 2026-07-27 is in the retired palette and should be regenerated.** Both
+files were rewritten to point at the spec, and the brief now states plainly that Plan's own shipped screens
+are the "before" and must not be sampled from.
+
+**Future impact.** S39 landed the spec into `globals.css` and migrated onboarding but never updated the
+design tool's source of truth, so **code and design silently diverged for a session.** Any future change to
+the design system must update `PROJECT-CONTEXT.md` in the same commit — it is not documentation, it is the
+input the design tool actually reads. Worth a line in the design workflow doc.
+
+**Also:** the gold-budget open question is now an **input** to an in-flight design pass rather than a
+post-hoc call. Plan carries a per-card chef rationale ×7, the same shape as the reflect screen's gold block,
+so whatever Griffin decides for reflect must hold for Plan or the two surfaces disagree permanently.
+
 ## 2026-07-26 (S40) — A plan rationale may only describe what THIS plan buys
 
 **Decision.** The chef's per-meal rationale is constrained on three axes, in `PLAN_OUTPUT_RULES`:

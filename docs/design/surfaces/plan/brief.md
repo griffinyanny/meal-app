@@ -3,10 +3,18 @@
 > **Status: OPEN — this is a to-generate brief, not a build spec.** Written S38 (2026-07-25) to kick off the
 > Claude Design pass for **Phase 1E.5 (Plan Design Buildout)**, which gates 1F.
 >
-> **Read first, in this order:** `../../PROJECT-CONTEXT.md` (the system — tokens, glass, register, hard
-> constraints) → `../../Guidelines.md` (aesthetic canon + anti-patterns) → this file. For the surfaces this one
-> connects to: `../onboarding/brief.md` (the hand-off into Plan) and `../groceries/brief.md` (the fidelity bar
-> to beat).
+> **⚠️ REVISED S40 (2026-07-27): the palette section below was written before Design Specification v1.0
+> existed and pointed this pass at a palette the codebase has since retired.** If a design was already
+> generated against the original text, it is in the wrong colours and should be regenerated. See the
+> Palette bullet under "Hard constraints".
+>
+> **Read first, in this order:** `../../system/design-spec.dc.html` (**Design Specification v1.0 — canonical;
+> the six laws, the palette, the elevation ladder, the orb**) → `../../PROJECT-CONTEXT.md` (the system as it
+> stands, including which surfaces are migrated and which are not) → this file. `../../Guidelines.md` is
+> **superseded** — read it for the anti-pattern list only and ignore its colour values. For the surfaces this
+> one connects to: `../onboarding/brief.md` + `../onboarding/brief-reflect-playback.md` (the hand-off into
+> Plan, and the **only migrated worked example** — match its treatment) and `../groceries/brief.md` (the
+> fidelity bar to beat, but note it is still on the pre-spec palette).
 
 ---
 
@@ -200,23 +208,44 @@ Wednesday cooks itself."
 2. **The clarification state** (#4) — a general, non-hard-coded layout for the chef asking *you* something.
 3. **Draft vs. confirmed vs. mid-week differentiation** — how far the same week visually re-composes as it ages.
 4. **The expanded meal sheet's summary/full split** (BUG-006).
-5. **The card meta row.** BUG-008: today it prints the cook time twice (`estTimeMinutes` plus a time-shaped tag →
+5. **A stack of seven titles that all start with the same word (new, S40).** Layer B on the "I want to grill"
+   intent returned seven dinners *every one* of which was titled "Grilled …". The week underneath was
+   genuinely varied (7 distinct proteins, 7 distinct dish forms) and the intent was explicitly grilling — so
+   this is a **titling and layout** problem, not a variety problem, and no prompt fix is owed. But as a
+   scannable column of cards it reads as a wall of one word, and the review screen is where the plan has to
+   *look* varied at a glance. Design for it: the card may need to lead with the dish's distinguishing noun,
+   or push the shared method down into the tags where repetition is honest and cheap. Evidence:
+   `tests/e2e/captures/B-2026-07-27T02-51-29-888Z/live-grill.png`.
+6. **The card meta row.** BUG-008: today it prints the cook time twice (`estTimeMinutes` plus a time-shaped tag →
    "30 min · serves 2 · seeded · 30 min", and worse when they disagree: "95 min · … · 90 min"). The fix is a
    display decision this pass should make — what belongs in a meta row at all, and where tags go.
-6. **The null-title card.** BUG-009: a slot with no title currently renders as the permanent "Thinking…" state —
+7. **The null-title card.** BUG-009: a slot with no title currently renders as the permanent "Thinking…" state —
    a settled plan showing a card that loads forever. Design an explicit empty/error card so that state is
    *expressible*; whether it's reachable in production is a separate build-time call.
-7. **Streaming** — what honestly fills a 20-40s generation.
-8. **Offline/degraded** — currently unhandled.
-9. **How the grocery hand-off reads** — confirming a plan produces the list; today that consequence is quiet.
+8. **Streaming** — what honestly fills a 20-40s generation.
+9. **Offline/degraded** — currently unhandled.
+10. **How the grocery hand-off reads** — confirming a plan produces the list; today that consequence is quiet.
 
 ## SETTLED — don't touch (drift here is noise to correct, not a decision)
 
 - **All PROJECT-CONTEXT tokens, glass surfaces, type scale, register.** Dark-only. 430px phone form factor.
   lucide icons. Eyebrow all-caps is the one sanctioned all-caps use.
-- **Palette:** current tokens (`#0E0E10` bg, `#3A86FF` accent used sparingly). The **amber+blue** that emerged in
-  onboarding (amber = chef presence/warmth, blue = actions) is *provisional* and gets locked in the **1F**
-  design-system pass. Stay compatible with it; do not introduce a third palette here.
+- **⚠️ Palette — THIS PARAGRAPH WAS REWRITTEN S40. The version you may have already generated against was
+  wrong.** The palette is **no longer provisional and no longer a 1F decision**: **Design Specification v1.0
+  ("Gold voice, cream hand", `../../system/design-spec.dc.html`, theme 11i) landed in S39 and is canonical.**
+  Design Plan against **the spec**, not against the shipped Plan screens — Plan is still on the retired
+  palette until phase **1E.7** sweeps it, so the current screens are the "before". Concretely: floor
+  **`#0F0B08`** (not `#0E0E10`); **gold `#E9B348` is the chef and ONLY the chef** (orb, presence dot, active
+  tab, the chef's italic rationale); **cream `#F4EBDC` is every action** — **the indigo `#3A86FF` accent is
+  RETIRED**, which for this surface means the "Looks good →" CTA, the seed chips, the submit control and the
+  active tab all change hue. Warm every neutral (`rgba(240,222,190,x)`, never `rgba(255,255,255,x)` — law 04).
+  Plan takes the **`light.ambient`** wash. Obey the six laws and the elevation ladder in PROJECT-CONTEXT;
+  **onboarding is the migrated worked example — match it.**
+- **⚠️ Open question that is an INPUT to this pass, not an afterthought (S40):** how much gold the *content*
+  layer may carry. Law 06 caps it at three marks per viewport and law 03 forbids accent-coloured type you
+  read twice, but the S39 reflect screen renders its whole `SO HERE'S YOUR WEEK` block in gold body text.
+  Plan has the same shape (per-card chef rationale, ×7). **Griffin owes a decision — see `open-questions.md`
+  → "The gold budget". Do not guess: whatever holds on reflect must hold here, or the two surfaces disagree.**
 - **AI proposes, user reacts.** No blank state, no "Create new plan" as a primary action.
 - **Not chat-first.** No persistent chat bar, no thread, no floating AI FAB, no sparkle button. Free-form input
   lives behind "Talk to the Chef."
