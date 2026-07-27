@@ -28,7 +28,7 @@ export function OptionCards({ options, selected, onToggle }: OptionCardsProps) {
               "flex flex-col items-start rounded-[16px] border px-4 py-3.5 text-left transition-colors",
               on
                 ? "border-[var(--spec-action)]/60 bg-[var(--spec-action)]/15"
-                : "border-white/10 bg-[rgba(240,222,190,0.04)] hover:bg-[rgba(240,222,190,0.07)]"
+                : "border-[rgba(240,222,190,0.10)] bg-[rgba(240,222,190,0.04)] hover:bg-[rgba(240,222,190,0.07)]"
             )}
           >
             <span className="text-[16px] font-semibold leading-[1.15] text-[var(--spec-text-primary)]">
@@ -76,7 +76,7 @@ export function OptionChips({
             data-testid={`onboarding-option-${o.value}`}
             className={cn(
               "rounded-full border px-4 py-2.5 text-[0.9rem] font-medium transition-colors",
-              !on && "border-white/10 bg-[rgba(240,222,190,0.04)] text-[var(--spec-text-primary)]/90 hover:bg-[rgba(240,222,190,0.07)]",
+              !on && "border-[rgba(240,222,190,0.10)] bg-[rgba(240,222,190,0.04)] text-[var(--spec-text-primary)]/90 hover:bg-[rgba(240,222,190,0.07)]",
               on &&
                 (tone === "safety"
                   ? "border-[rgba(217,106,91,0.55)] bg-[rgba(217,106,91,0.16)] text-[#F0D8D3]"
