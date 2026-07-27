@@ -1,5 +1,21 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S40)
+
+- **[1E.5] Dish titles repeat their intent's verb — "Grilled X" seven times.** Layer B (S40) on the
+  "I want to grill" intent returned seven dinners whose titles *all* begin with "Grilled". The week
+  underneath is genuinely varied (7 distinct proteins, 7 distinct dish forms) and the intent is explicitly
+  grilling, so this is **not** the S19 "7× grilled salad" failure — it is a *titling* problem, not a
+  variety problem, and it predates S39. But as a scannable list on the review screen it reads as a wall of
+  one word. Worth solving when Plan is rebuilt: either vary the title's lead noun, or let the card's
+  method live in the tags where the repetition is honest and cheap. Evidence:
+  `tests/e2e/captures/B-2026-07-27T02-51-29-888Z/live-grill.png`.
+- **[1F] Guesses and facts look identical on the sparse reflect screen.** `WHAT I'M GUESSING, UNTIL YOU SAY
+  OTHERWISE` uses the same `spec-glass` treatment as `WHAT I'VE GOT`; only the eyebrow and the inline icons
+  distinguish an assumption from something the user actually said. Correctly *not* red (a gap is not a
+  warning — that was the deliberate S39 call), but a third treatment between "fact" and "warning" would
+  make the honesty legible at a glance.
+
 ## Incoming (S39)
 
 - **[1F] In-app feedback capture → LLM-cleaned → Linear ticket** — Griffin (S39). The vision, in his shape: he's on

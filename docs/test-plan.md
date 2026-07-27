@@ -190,10 +190,21 @@ past the whole E2E suite and was caught in code review instead.
 4. **Phase close** — at minimum once per phase, on the phase's primary surface.
 5. **Model or provider change** — a new model is a new output distribution.
 
-**Owed today (as of S37):** Layer B has been run **once**, on Plan only. Groceries,
-Recipes, You, and onboarding have never had a real-model capture, so their fixtures are
-unvalidated against live output. Clearing that backlog is one live capture per tab —
+**Owed today (as of S40):** **Plan ✅ (S30, S38, S40) · onboarding ✅ (S38, S40).**
+**Groceries, Recipes and You have still never had a real-model capture**, so their fixtures
+remain unvalidated against live output. Clearing that backlog is one live capture per tab —
 schedule it at the next phase close rather than as its own session.
+
+**S40 is the case study for why trigger #2 is not optional.** The `chef-system.ts` reuse rule
+shipped in S39 with the full mock suite green. Layer B then found three user-visible copy
+defects the mock is blind to by construction — the internal `dayOffset` vocabulary printing
+"reusing olive oil from **day 0**" onto a card the user reads every week, the chef inventing
+"use spinach fresh from **last shopping trip**" for a user who has never shopped, and reuse
+over-generalised to pantry staples. A fixture cannot catch any of these: the fixture *is* the
+old output. Two of the three would have shipped into Griffin's one real first run.
+**Corollary learned the same session:** the prompt's own test was `toContain`-based rather than
+an inline snapshot, so the prompt edit passed silently. A prompt guarded only by substring
+assertions is not guarded against the thing you didn't think to assert.
 
 **When you run it, compare against Layer A and report the delta** — real titles vs
 fixture titles, real chip phrasing vs canned, real lengths vs seeded lengths. A

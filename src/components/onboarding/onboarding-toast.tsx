@@ -27,7 +27,15 @@ export function OnboardingToast({ message, onDismiss }: OnboardingToastProps) {
       data-testid="onboarding-toast"
       className="animate-turn-in pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-6"
     >
-      <div className="spec-floating pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 text-[0.9rem] text-[var(--spec-text-primary)]">
+      {/* Opaque, not the spec's .94 L5 fill. A toast overlays whatever is under
+          it, and on an interview turn that is always the confirm + skip stack —
+          at .94 with saturate(180%) the covered labels ghosted through it and
+          the panel read as a rendering fault rather than a notice. Same hue as
+          L5, full alpha; the border and shadow still come from .spec-floating. */}
+      <div
+        style={{ background: "#160F0B" }}
+        className="spec-floating pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 text-[0.9rem] text-[var(--spec-text-primary)]"
+      >
         {message}
       </div>
     </div>

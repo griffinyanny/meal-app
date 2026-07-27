@@ -6,6 +6,33 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### The gold budget: Design Spec v1.0 vs the reflect design you locked (raised S40)
+**Question**: four places in onboarding use gold in ways **Design Spec v1.0 forbids**, and in every one of
+them the build is faithful to a **Claude Design pass you ran**. The spec says it wins where an earlier
+screen disagrees — but it was authored in the same session as the reflect design, so "earlier" is doing no
+work here. Which one is authoritative?
+- **The big one: `SO HERE'S YOUR WEEK` renders three to six lines of gold body text** (six on the deep
+  state), plus gold arrows. Law 03 says nothing you read twice is accent-coloured and reserves body-sized
+  gold for the chef's *italic rationale*; these are not italic. Law 06 caps gold at **three marks in the
+  content layer** and this block alone blows it.
+- The intro's three explainer rows sit in **gold icon tiles** — decorative containers (law 05) carrying
+  gold on non-chef elements (law 02). Note the reflect screen's own guesses list already does this the
+  spec-correct way with bare muted icons, so the flow disagrees with itself.
+- The **baby-stage chips are gold controls**; every other selected chip in the interview is cream or
+  semantic red, so this is the one outlier. (The amber note containing them is correct — gold.soft is
+  defined as the chef's speech container.)
+- The caught-tray's `Thai` chip is a value wearing a gold pill.
+- **A middle path, if you want the payoff to keep its presence:** mute the arrows and drop the week
+  decisions to `text.primary`, keeping gold on the eyebrow, the orb and the hook. The block keeps its
+  structure and the screen lands inside the budget.
+- **Why it's not just cosmetics:** 1E.7 sweeps this palette app-wide and onboarding is its worked example.
+  Whatever you decide here gets copied onto five surfaces. Decide before 1E.7 starts.
+
+### Three exits on one deep-round turn (raised S40)
+A deep question shows "Skip for now" (top right), "I'm good for now, build my week", and "Skip this
+question". The first two both end the interview and build a week; the difference — defaults vs keeping
+what you've said — is not legible from the labels. Suppress the top-right one during the deep round?
+
 ### How often do two adults in a household actually eat the same dinner? (raised S39)
 **Question**: Griffin's household always eats the same thing. Is that typical, or do a meaningful share of couples
 cook two different dinners? This decides how much V1.5 household sharing has to *do*: if one shared plan is the norm,

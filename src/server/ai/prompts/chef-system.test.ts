@@ -67,6 +67,23 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("don't repeat the same protein or cuisine");
   });
 
+  it("should constrain HOW the reuse is written, not just that it happens", () => {
+    // All three of these are real Layer-B findings from the first live run after
+    // the reuse rule shipped (S40). The rule works — every week reused a
+    // perishable and none lost variety — but giving the model a reason to
+    // cross-reference days made it reach for things it must not say:
+    //   • "reusing olive oil from day 0" — the internal dayOffset vocabulary
+    //     printed straight to the user, on a card they read every week.
+    //   • "use spinach fresh from last shopping trip" — invented history, on a
+    //     first-ever plan. There is no pantry model; pantry is V1.5.
+    //   • "reusing olive oil" / "reusing lemon" — staples nobody needs help
+    //     finishing, which makes the rationale read as filler.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("never pantry staples");
+    expect(prompt).toContain("WEEKDAY NAME");
+    expect(prompt).toContain("never what they already own");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });

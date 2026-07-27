@@ -4,6 +4,94 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 40 — 2026-07-26 (1E CLOSED — the three gates, run for real)
+
+**The job:** close 1E by clearing its three gates in order. S39 had invalidated every S38 clearance by
+rebuilding the reflect screen, deepening the interview, changing the chef prompt and migrating onboarding
+to a new design system — so none of this was a formality.
+
+**Result: all three cleared. 1E → ✅ CLOSED, M5 met, 5 of 6 phases done.**
+**480 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.**
+
+### Gate 1 — `/visual-qa`, 0 blockers / 0 high
+
+Judged against **Design Specification v1.0's six laws**, not the superseded `Guidelines.md`. 22 Layer-A
+states: onboarding (16) and You (6). The You tab had **no capture coverage at all** for S39's test-mode
+card, so two states were added for it and the capture server now mirrors the E2E `DEV_TOOLS_EMAILS`
+allowlist.
+
+Two high findings, both fixed and re-captured:
+- **The mic toast let the controls under it read through.** At the spec's L5 `.94` fill with
+  `saturate(180%)`, "I'll cook for 2 servings." and "Skip this question" ghosted through the panel, which
+  reads as a rendering fault rather than a notice. Now opaque at the same hue. The manifest fact claimed
+  the toast "does not cover the answer controls" — it never could, at `bottom-6`, so the fact was corrected
+  rather than the placement.
+- **The You capture was photographing the page before it finished arriving.** The test-mode card renders
+  off its own `devToolsEnabled` query, which resolves after the ready text — so the card was missing
+  entirely from `you-returning` and, on `you-new`, landed after the viewport had been sized and rendered
+  **underneath the fixed tab bar**. Capture bug, not an app bug; fixed with a `settleDevTools()` wait.
+
+One stale ground-truth fact corrected (`ob-diet-caught` still recorded an S38 deviation that had been
+closed). A wrong fact is worse than no fact — it is the anchor the whole critique is told to trust.
+
+**Raised, deliberately not fixed:** four places where the build is faithful to a Claude Design pass Griffin
+locked and it is *Design Spec v1.0* that disagrees — chiefly the reflect screen's `SO HERE'S YOUR WEEK`
+rendering three to six lines of **gold body text** against law 03 ("nothing you read twice is
+accent-coloured") and law 06's three-gold budget. Repainting the payoff screen of an interview he just
+locked is his call, not a gate finding. Full list in the run's `critique.md`.
+
+### Gate 2 — Layer B, and it earned its keep
+
+**The question Griffin asked: does the real model finish the carton without killing the week's variety?
+Yes.** Six real weeks, 42 dinners: the reuse rule fired every time, no week collapsed onto one ingredient,
+and every week held **7/7 distinct proteins and 7/7 distinct dish forms**. One bunch of dill genuinely
+finished across three different dishes. The model narrates it unprompted in `chefSummary` and visibly
+reasons about the tension on the cards ("Break up the protein pattern…", "adding variety after mushrooms
+and seafood") — the two rules pull against each other correctly rather than one winning.
+
+**But giving the model a reason to cross-reference days made it reach for three things it must not say** —
+all user-visible, all invisible to the mock by construction:
+- 🔴 **"reusing olive oil from day 0"** — the internal `dayOffset` vocabulary printed onto a card the user
+  reads every week. The same run said "from Monday" elsewhere, so it was inconsistent as well as wrong.
+- 🟠 **"use spinach fresh from last shopping trip"** — invented history, on a **first-ever plan**, for a user
+  who has never shopped. There is no pantry model; pantry is explicitly V1.5.
+- 🟠 **Reuse over-generalised to pantry staples** — "reusing olive oil", "Reusing lemon". Nobody needs help
+  finishing a bottle of oil, and it makes the rationale read as filler.
+
+One clause in `PLAN_OUTPUT_RULES` fixed all three (fresh perishables only; refer to the other meal by
+**weekday name**; describe only what this plan buys, never what the person already owns), plus a
+plausibility guard after round 1 produced "Leftover Pulled Pork Tacos" from a *tenderloin*. **Round 2
+re-ran the same three intents on the real model and confirmed all three gone, with variety unchanged.**
+
+The existing prompt test was `toContain`-based rather than an inline snapshot, so the original edit passed
+silently — three assertions added to lock the new guards.
+
+### Gate 3 — code review
+
+- **The palette migration warmed the fills but missed the borders.** Three spots still carried
+  `border-white/10` — `rgba(255,255,255,0.1)`, the exact cool white **law 04** forbids — on *every
+  unselected chip and card in the interview* and the deepen-offer's secondary button. Onboarding is the
+  designated worked example for migration passes 2 and 3, so leaving it would have propagated into 1E.7.
+  Substituted at the same alpha per the law. Verified: no `rgba(255,255,255,x)` anywhere in onboarding, and
+  no `--spec-*` token leaking outside it.
+- **Two real defects logged rather than fixed at the gate** — **BUG-020** (`retryFailed` retries *failed*
+  saves but never awaits *in-flight* ones, so "All saved." can be shown over a save that has not landed) and
+  **BUG-021** (`skipAll` walks the user out to Plan even when the skip mutation fails, doing the opposite of
+  the fix BUG-016 landed on the finish path). Both are the once-per-account honesty contract, reached by
+  paths BUG-016 did not cover.
+- Checked and cleared: `user-dev-tools.ts` re-authorises server-side inside the mutation rather than
+  trusting the query, and its delete is correctly scoped to `sourceType:'onboarding'` so the copy's promise
+  ("memories from real use are kept") is true. A suspected stale-response race in `useCoreSaves` is **not
+  reachable** — the interview has no back navigation, so no turn can be answered twice.
+
+### Not done, and why
+
+The `ux-design-critic` taste pass (step 6 of the `/visual-qa` loop) was **not** run — this session's
+standing instruction was not to spawn subagents unrequested. The critique's own "raised" section carries
+the taste findings instead.
+
+---
+
 ## Session 39 — 2026-07-26 (Griffin's taste pass became a build)
 
 **Started as:** fix BUG-016/BUG-014, then hand Griffin the taste pass on three questions.

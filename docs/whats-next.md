@@ -1,8 +1,88 @@
 # What's Next
 
-Last updated: 2026-07-26 (Session 39)
+Last updated: 2026-07-26 (Session 40)
 
-## ▶ NEXT SESSION — close 1E: `/visual-qa` critique loop → Layer B → `/code-review`
+## ▶ NEXT SESSION — 1E is CLOSED. Open **1E.7**: the mechanical design-system sweep.
+
+**S40 closed 1E by clearing its three gates for real.** 5 of 6 phases done, M5 met.
+**480 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.** Branch `session-33-you-tab-audit`.
+
+### What the gates actually found
+
+1. **`/visual-qa` → 0 blockers / 0 high** across 22 states, judged against **Design Spec v1.0's six laws**
+   (not the superseded `Guidelines.md`). Two high fixes: the mic toast was letting the confirm + skip
+   labels **ghost through it**, and the You capture was shooting the page before the test-mode card
+   arrived — hiding it on one state and dropping it **under the tab bar** on another.
+2. **Layer B answered your question: the reuse rule works and does NOT cost variety.** Six real weeks,
+   7/7 distinct proteins and dish forms in every one, one bunch of dill finished across three different
+   dishes. **But it caught three things the mock cannot see** — most seriously the internal `dayOffset`
+   vocabulary printing **"reusing olive oil from day 0"** onto a card you read every week, and the chef
+   inventing **"use spinach fresh from last shopping trip"** on a first-ever plan. One prompt clause fixed
+   all three; round 2 verified them gone on the real model.
+3. **`/code-review`** found pass 1 of the palette migration had warmed the *fills* but left
+   `border-white/10` — the exact cool white law 04 forbids — on **every unselected chip and card in the
+   interview**. Fixed. Two defects logged instead of fixed at the gate: **BUG-020** and **BUG-021**.
+
+### ⚠️ Still your one action
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated).
+Test mode is invisible and inert until you do, and it is what makes re-running the interview free.
+
+### Your call, carried from the visual-QA pass
+Four places where the build is faithful to a **Claude Design pass you locked** and it is **Design Spec
+v1.0 that disagrees**. I did not touch them — repainting the payoff screen of an interview you just
+locked is your call, not a gate finding. Chiefly: the reflect screen's `SO HERE'S YOUR WEEK` renders
+three to six lines of **gold body text**, against law 03 ("nothing you read twice is accent-coloured")
+and law 06's three-gold-marks budget. Also the intro's gold icon tiles, the baby-stage gold chips, and
+the caught-tray chip. Full argument (including a middle path that keeps the block's presence) in
+`tests/e2e/captures/A-onboarding-2026-07-27T03-04-45-885Z/../critique.md`.
+
+**Also still open from scope-v1:** does 1F include a small closed beta beyond you + your wife, or is
+two-user validation enough to ship R1? That was parked *for* 1E and 1E has now closed without it.
+
+### Next up: 1E.7 (before 1E.5)
+The mechanical, app-wide half of the Design Spec v1.0 migration — items 01/02/06 plus retiring the
+pre-spec `:root` family. It goes **before** 1E.5 because 1E.5 rebuilds Plan from scratch, and building
+the signature surface against a palette we have already retired means building it twice. Onboarding is
+the worked example, and S40 just cleared its last cool-white border.
+
+**⭐ Model recommendation: Opus 4.8.** The edits are mechanical, but the bulk of the work is judgement by
+eye — deciding which of the three named wash recipes each of five surfaces gets, mapping ad-hoc radii onto
+the eight-rung scale, and then re-capturing and critiquing ~40 screenshots across all five surfaces for
+regressions. That is reading and judging against a locked spec, not new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — 1E is CLOSED (S40 cleared all three gates: visual-QA 0 blockers/0 high, Layer B verified
+the ingredient-reuse rule on the real model and caught three copy defects the mock couldn't, code review
+found the palette migration had left cool-white borders in onboarding). 480 unit + 78 E2E green, planner
+eval 7/7. Read docs/whats-next.md, docs/scope-v1.md first, then give me the ≤6-line scope check. Then open
+1E.7 — the mechanical design-system sweep, app-wide, BEFORE 1E.5: spec §12 items 01 (every
+rgba(255,255,255,x) → rgba(240,222,190,x) at the same alpha), 02 (ambient wash normalised to the three
+named recipes), 06 (radii onto the eight-rung scale), and retire the pre-spec :root family so every
+surface runs on --spec-* tokens. Onboarding is the worked example — match it. Write a scope-1E.7.md first,
+then sweep surface by surface, and finish with a /visual-qa re-capture of all five surfaces to prove no
+regression. Before you start, give me your read on the four gold-budget findings I owe a decision on
+(reflect's gold week list is the big one) — they're in the S40 critique.md. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs first):
+```
+Resume meal app — 1E is CLOSED (S40). Skip 1E.7 this session and clear the open bug list instead:
+BUG-020 (retryFailed never awaits in-flight saves, so "All saved." can be shown over a save that hasn't
+landed) and BUG-021 (a failed skipOnboarding still walks the user out to Plan) first, since the interview
+fires once per account and I'm about to run it for real. Then BUG-011/BUG-012 (householdSize ↔ composition
+desync putting two contradictory numbers in the same chef prompt, and the You tab saying "4 adults" for
+2 adults + 2 children — same root), then BUG-010 (household_composition ships with a column DEFAULT so a
+default is indistinguishable from an answer; needs a migration) and BUG-013 (finishOnboarding trusts
+client-supplied memory text). Read docs/whats-next.md + docs/bug-tracker.md first, give me the ≤6-line
+scope check, keep 480 unit + 78 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S39 (superseded by S40 above — its three gates were cleared)
+
+## ▶ S39 — close 1E: `/visual-qa` critique loop → Layer B → `/code-review`
 
 **Done S39 (a long session — Griffin's taste pass turned into a build).**
 

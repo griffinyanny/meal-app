@@ -4,6 +4,49 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-26 (S40) — A plan rationale may only describe what THIS plan buys
+
+**Decision.** The chef's per-meal rationale is constrained on three axes, in `PLAN_OUTPUT_RULES`:
+it may only claim reuse of **fresh perishables that actually spoil** (never pantry staples like oil,
+vinegar, spices, rice or pasta); it must name the other meal by its **weekday name**, never by a day
+number or offset; and it may describe **only what this plan buys**, never what the person already owns —
+no "from last shopping trip", no "already in your fridge" — unless their own request said so. A planned
+leftover must additionally be plausible from the dish it comes from.
+
+**Rationale.** All three are real Layer-B findings from the first live run after the S39 reuse rule
+shipped. The rule itself works — six real weeks, every one reusing a perishable, none losing variety — but
+giving the model a reason to cross-reference days made it reach for things it must not say. "Reusing olive
+oil **from day 0**" printed our internal `dayOffset` vocabulary onto a card the user reads every week.
+"Use spinach fresh **from last shopping trip**" invented history for a user who had never shopped — and
+**there is no pantry model at all**; pantry is explicitly V1.5, so the chef cannot know this and must not
+imply it. The third is softer but corrosive: nobody needs help finishing a bottle of oil, so claiming to
+reuse one makes the whole rationale read as filler and devalues the times it's real.
+
+**Future impact.** This is the same principle that cut `ALREADY CIRCLING` in S39 — **the chef never makes a
+promise the system cannot keep.** When pantry lands in V1.5, the "never what they already own" clause is
+the one to revisit, and it should be relaxed only as far as the pantry data actually reaches.
+
+**Also decided:** a system prompt guarded only by `toContain` assertions is not guarded. The S40 edit passed
+the existing suite silently; three assertions were added for the new clauses. Prefer inline snapshots on
+prompt builders going forward (the engineering rule already says so — the plan prompt had drifted from it).
+
+## 2026-07-26 (S40) — Spec-vs-locked-design conflicts are Griffin's call, not a gate finding
+
+**Decision.** When `/visual-qa` finds that the build violates Design Spec v1.0 but is **faithful to a Claude
+Design pass Griffin ran and ratified**, the finding is raised and logged — not fixed, and not counted
+against the 0-blockers/0-high gate. Genuine defects (things that are wrong against *any* reading) are still
+fixed in the loop.
+
+**Rationale.** The spec says it wins where an earlier screen disagrees, but the reflect design was authored
+in the *same session* as the spec, so "earlier" decides nothing. Silently repainting the payoff screen of an
+interview Griffin had just locked would be Claude overruling a design call on a technicality. The rubric
+already says a real product/taste question does not get forced green; this extends it to design-authority
+conflicts. Four such findings were raised in S40 (open-questions.md) — the largest being the reflect week
+list's gold body text against laws 03 and 06.
+
+**Future impact.** **Resolve these before 1E.7 starts**, because 1E.7 sweeps the palette across five
+surfaces using onboarding as the worked example — whatever gold rule holds there gets copied everywhere.
+
 ## 2026-07-26 (S39) — Design Specification v1.0 adopted, migration split into three passes
 
 **Decision.** Griffin's design system (Claude Design, "Gold voice, cream hand", theme 11i) is canonical:

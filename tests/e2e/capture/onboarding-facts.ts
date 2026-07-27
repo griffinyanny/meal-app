@@ -134,9 +134,7 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
     facts: {
       trayPresent: "amber 'WHAT I CAUGHT' tray between the chips and the tell-me field",
       trayContent:
-        "the chef's one-line reply about adding Thai to cuisines (mock content — judge FORM, not phrasing)",
-      briefDeviation:
-        "the locked brief specifies extracted CHIPS (e.g. 'Thai'); the build renders the reply SENTENCE as one chip",
+        "extracted VALUE chips, not the chef's reply sentence — a single 'Thai' chip here (mock content — judge FORM, not phrasing). The S38 deviation is closed; the build now matches the locked brief.",
     },
     prepare: firstRun,
     navigate: async (page) => {
@@ -360,7 +358,8 @@ export const ONBOARDING_CAPTURE_STATES: CaptureStateDef[] = [
     facts: {
       toast: "'Voice is coming soon. For now, type it and I'll catch it.'",
       honest: "the mic answers rather than failing silently or pretending to listen",
-      placement: "toast does not cover the answer controls it interrupts",
+      placement:
+        "bottom-anchored, so it DOES overlay the confirm + skip stack — that is what a toast does. What it must not do is let them read through it: the panel is fully opaque (not the spec's .94 L5 fill), so nothing ghosts.",
     },
     prepare: firstRun,
     navigate: async (page) => {

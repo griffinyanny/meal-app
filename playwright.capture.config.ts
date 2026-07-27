@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import { baseE2EConfig } from "./tests/e2e/harness/config-factory";
-import { E2E_PORT } from "./tests/e2e/app/env";
+import { E2E_PORT, TEST_USER_EMAIL } from "./tests/e2e/app/env";
 import { STORAGE_STATE_PATH } from "./tests/e2e/app/test-context";
 
 // Layer A capture config: reuses the whole harness (setup chain, mock-gated
@@ -17,7 +17,10 @@ const base = baseE2EConfig({
   testDir: "./tests/e2e",
   storageStatePath: STORAGE_STATE_PATH,
   webServerCommand,
-  webServerEnv: { E2E_AI_MOCK: "1" },
+  // Mirrors playwright.config.ts: the test-mode card only renders for an
+  // allowlisted account, so without this the You capture would silently omit
+  // the surface it exists to photograph.
+  webServerEnv: { E2E_AI_MOCK: "1", DEV_TOOLS_EMAILS: TEST_USER_EMAIL },
 });
 
 export default defineConfig({
