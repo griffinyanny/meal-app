@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#0F0B08;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#F7F2EA;}
+  a{color:#F4EBDC;text-decoration:none;border-bottom:1px solid rgba(244,235,220,.32);}
+  a:hover{color:#FBF5EA;border-bottom-color:rgba(244,235,220,.6);}
+  @keyframes emberSm{0%,100%{transform:scale(1);}50%{transform:scale(1.075);}}
+  @keyframes hotspot{0%,100%{transform:translate(0,0);opacity:.95;}33%{transform:translate(9%,-6%);opacity:1;}66%{transform:translate(-7%,7%);opacity:.86;}}
+  @keyframes glowPulse{0%,100%{box-shadow:0 0 18px -6px rgba(233,179,72,.45);}50%{box-shadow:0 0 30px -6px rgba(233,179,72,.75);}}
+  @media (prefers-reduced-motion:reduce){.amb{animation:none !important;}}
+</style>
+</helmet>
+
+<section style="width:1200px;padding:56px 60px 44px;background:radial-gradient(1100px 700px at 12% -6%,rgba(233,179,72,.08),transparent 58%),#0F0B08;">
+  <div style="max-width:920px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A29484;margin:0 0 10px;">PHASE 1E.5 &middot; PLAN TAB &middot; BUILD SPEC &middot; SHEET 1 OF 2</p>
+    <h1 style="font-size:34px;font-weight:700;letter-spacing:-.6px;color:#F7F2EA;margin:0 0 16px;line-height:1.1;">Plan &middot; Final Direction</h1>
+    <p style="font-size:15px;line-height:1.6;color:#CAC4BC;margin:0 0 14px;text-wrap:pretty;">Not a third exploration. Everything settled across <strong style="color:#F0EBE4;font-weight:600;">Plan Directions</strong> and <strong style="color:#F0EBE4;font-weight:600;">Plan Horizon</strong>, in one ledger, followed by the frames that changed. Both earlier sheets stay as the record; nothing is retired. Wave 2 adds states into these two files rather than starting a fourth.</p>
+    <p style="font-size:13.5px;line-height:1.6;color:#A29484;margin:0 0 8px;text-wrap:pretty;">Sheet 1: the ledger, then <a href="#3a">the door</a> and <a href="#3b">the picker</a> &mdash; the one real redraw in this pass. Sheet 2 (<strong style="color:#CAC4BC;font-weight:600;">Plan Final Direction II</strong>) carries the six-pinned week, streaming, draft&ndash;versus&ndash;confirmed, the toast slot, the corrected Recipes bottom edge, and the non-contiguous week that was cut off mid-frame last time.</p>
+    <p style="font-size:13px;line-height:1.6;color:#8A7C6C;margin:0 0 26px;text-wrap:pretty;">Frame ids continue the series: <strong style="color:#A29484;font-weight:600;">3a&ndash;3e</strong> here, <strong style="color:#A29484;font-weight:600;">3f&ndash;3p</strong> on sheet 2. Where a 3-frame supersedes a 1-frame the caption names it.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:1080px;">
+    <div style="padding:16px 18px;border-radius:18px;background:rgba(233,179,72,.1);border:1px solid rgba(233,179,72,.3);"><p style="font-size:13px;font-weight:600;color:#F0EBE4;margin:0 0 6px;">One door, always present</p><p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">The row at the foot of the ask is the only way into the library from Plan. It works with an empty library and it is the same row inside a day and a meal sheet.</p></div>
+    <div style="padding:16px 18px;border-radius:18px;background:rgba(233,179,72,.1);border:1px solid rgba(233,179,72,.3);"><p style="font-size:13px;font-weight:600;color:#F0EBE4;margin:0 0 6px;">The picker is a place</p><p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">Because it is the only ingress it has to be browsable. It opens on the one thing only this product knows: what you saved and never cooked.</p></div>
+    <div style="padding:16px 18px;border-radius:18px;background:rgba(233,179,72,.1);border:1px solid rgba(233,179,72,.3);"><p style="font-size:13px;font-weight:600;color:#F0EBE4;margin:0 0 6px;">Provenance names the act</p><p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">The eyebrow reads <span style="color:#CAC4BC;">DINNER &middot; PICKED</span>, never a possessive &mdash; it has to survive a second person in the household. The meta carries who.</p></div>
+  </div>
+</section>
+
+<section id="ledger" style="width:1200px;padding:0 60px 60px;background:#0F0B08;">
+  <div style="max-width:920px;margin:0 0 26px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 10px;">THE DECISIONS LEDGER</p>
+    <h2 style="font-size:26px;font-weight:650;letter-spacing:-.4px;color:#F0EBE4;margin:0 0 12px;line-height:1.22;">Settled. Build against this list.</h2>
+    <p style="font-size:14px;line-height:1.6;color:#A29484;margin:0;text-wrap:pretty;">Ids point at the frame that proves the rule. A struck id is a rejected option kept for the reason it was rejected. Six new rules from this pass are marked <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;">NEW</span>.</p>
+  </div>
+
+  <div style="max-width:1080px;display:flex;flex-direction:column;gap:24px;">
+
+    <div style="padding:22px 24px;border-radius:22px;background:rgba(70,58,46,.34);border:1px solid rgba(240,222,190,.11);">
+      <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 16px;">A &middot; ENTRY AND THE LIBRARY</p>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="#3a">3a</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Intent entry is the quiet door.</strong> One row at the foot of the ask &mdash; <em>Cook something I&rsquo;ve saved</em> &middot; <em>I&rsquo;ll build the week around it</em>. Always present, empty library included. <span style="color:#8A7C6C;">Retires <span style="text-decoration:line-through;">1a</span> the chef-proposes block and <span style="text-decoration:line-through;">1c</span> the browse strip as intent-screen options &mdash; 1a only fired when the library had stale candidates, so the door had to exist underneath it anyway.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="#3b">3b</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The picker is the exploration surface.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> Supersedes 1d&rsquo;s flat list. Opens on <em>saved, never cooked</em> as content with the chef&rsquo;s line on it; 1c&rsquo;s browse affordances become four ways through the library, not a filter row; search sits in the sheet header.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="#3c">3c</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Multi-select survives.</strong> Two things you actually want this week is the real behaviour. The hand-off is <em>Give the chef these two</em> with <em>The chef picks the nights</em> above it &mdash; the constraint is the dish, never the schedule.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="#3d">3d</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The empty library is drawn and does not apologise.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> The door is always present, so day one hits this. It states that the week works without it and offers the one action that fills it.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="#3e">3e</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">One picker, three invocations.</strong> Intent screen, a day, a meal sheet. Only the first line and the primary change; the browse structure is identical every time.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1e &middot; <a href="./Plan Final Direction II.dc.html#3l">3l</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The verb is &ldquo;Add to this week&rdquo;.</strong> It lives in the Recipes screen&rsquo;s floating primary slot and never asks for a day. This deletes the Recipes FAB and moves search into the header, per spec &sect;07 Fix 2 &mdash; drawn on sheet 2.</p></div>
+      </div>
+    </div>
+
+    <div style="padding:22px 24px;border-radius:22px;background:rgba(70,58,46,.34);border:1px solid rgba(240,222,190,.11);">
+      <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 16px;">B &middot; THE PICKED MEAL</p>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1g &middot; <a href="./Plan Final Direction II.dc.html#3f">3f</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Provenance is type, not chrome, and the word is PICKED.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> Eyebrow <span style="color:#CAC4BC;">DINNER &middot; PICKED</span> with the 10px bookmark, meta names the source. No badge, no accent, no second card design. <span style="color:#8A7C6C;">Not YOURS &mdash; a possessive breaks the moment a household has two people. Not SAVED &mdash; a chef recipe you favourited is also saved; PICKED names the act. Meta carries who: <em>Griffin&rsquo;s pick &middot; 40 min &middot; scaled to 3</em>.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1f</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The chef answers with a night and a reason,</strong> and servings get said exactly once, in the chef&rsquo;s voice, at the moment of placement &mdash; never as a stepper, never twice.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1g</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">A picked meal&rsquo;s rationale argues placement, not the dish.</strong> The chef&rsquo;s own meals argue for what it is; a picked meal argues for the night it landed on and the leftovers it spends. Same slot, different job.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1j</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The boundary is stated, not enforced silently:</strong> <em>it&rsquo;s your recipe, so I won&rsquo;t rewrite it.</em> The chef scales and places; it does not edit your method.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1i</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Picks survive a regenerate by default,</strong> and the guarantee is stated before the ask, not after it. Dropping them is a deliberate second act.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1k &middot; <a href="./Plan Final Direction II.dc.html#3m">3m</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Too many picks for one week: two options, not three.</strong> <em>All four this week</em> or <em>Two this week, two stay in your recipes.</em> <span style="color:#8A7C6C;">The queue-and-remind option is cut &mdash; it needed a held-recipe concept, a surface and a reminder. V1.5 backlog. 1k&rsquo;s layout is unchanged.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="./Plan Final Direction II.dc.html#3f">3f</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">One presentation that degrades &mdash; no inventory mode.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> As picks accumulate the summary shifts from claiming the dishes to claiming the arrangement, and keeps doing that all the way up. <span style="color:#8A7C6C;">Cuts 1h&rsquo;s five-of-seven threshold: at six of seven the chef still picks the nights, still shops, still spends the leftovers.</span></p></div>
+      </div>
+    </div>
+
+    <div style="padding:22px 24px;border-radius:22px;background:rgba(70,58,46,.34);border:1px solid rgba(240,222,190,.11);">
+      <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 16px;">C &middot; MODIFY, FEEDBACK, FAILURE</p>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1n&ndash;1p</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Three modify rules.</strong> The working and landed ring sits on the changed row&rsquo;s own radius, never the day container&rsquo;s. The acknowledgement is the rewritten rationale in place. Rows never reflow &mdash; errors are the single sanctioned exception.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1o &middot; <a href="./Plan Final Direction II.dc.html#3k">3k</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The toast occupies the action bar&rsquo;s exact slot and geometry.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> Same 96px offset, same 52px height, same 16px radius, same insets &mdash; so it reads as the bar becoming the message, not two objects swapping through one space. It never coexists with the bar. Confirm goes inert while working.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1q&ndash;1s</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">A compact row cannot host the chef&rsquo;s voice.</strong> At three-meal density the row carries title and meta only; the sentence goes to the toast in the bar&rsquo;s slot. This is why the toast exists at all.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1t</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Errors live in the row</strong> &mdash; destructive text under a hairline with the retry beside it. The row grows; nothing above or below moves.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1u &middot; <a href="./Plan Final Direction II.dc.html#3n">3n</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">A slot with no answer yet is provisional, not loading.</strong> No hue, no spinner: <span style="color:#CAC4BC;">rgba(240,222,190,.09)</span> fill, <span style="color:#CAC4BC;">.2</span> line, a muted sentence where the title goes. Its only control is <em>Decide now</em>. <span style="color:#8A7C6C;">&ldquo;Leave it to me&rdquo; is cut &mdash; it needs the chef to wake up later. V1.5 backlog.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="./Plan Final Direction II.dc.html#3g">3g</a> &middot; <a href="./Plan Final Direction II.dc.html#3h">3h</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Generation is the provisional row, repeated.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> The full rail arrives in the first second with every day and slot present and provisional, then resolves in place. Progress is a count of written meals, never a bar. No separate streaming vocabulary exists.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1v &middot; 1w</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Rating is one tap on the thing you just cooked,</strong> and it never blocks the screen. Volume is handled by asking about the week, not each meal.</p></div>
+      </div>
+    </div>
+
+    <div style="padding:22px 24px;border-radius:22px;background:rgba(70,58,46,.34);border:1px solid rgba(240,222,190,.11);">
+      <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 16px;">D &middot; DENSITY, TIME, AND THE BOTTOM EDGE</p>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">2a &middot; 2b</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Days are containers; meals are inset rows.</strong> Fifteen meals fit the same scroll as five dinners. Only dinner carries rationale. Tonight is marked by a time in the eyebrow, not by size.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">2b &middot; 2c</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">A Wednesday morning and a Wednesday evening are different screens on identical data.</strong> Morning: no floating action at all, because there is nothing to do yet. Evening: hero lighting, the week below the fold, a real primary and two escape hatches.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="./Plan Final Direction II.dc.html#3i">3i</a> &middot; <a href="./Plan Final Direction II.dc.html#3j">3j</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Draft and confirmed are different screens too.</strong> <span style="display:inline-block;padding:1px 7px;border-radius:9px;background:rgba(233,179,72,.12);border:1px solid rgba(233,179,72,.34);font-size:11px;font-weight:600;letter-spacing:.6px;color:#F0C265;vertical-align:1px;">NEW</span> A draft has a decision in the floating slot and a warning above it. A confirmed week has no floating action, a grocery row where the decision used to be, and the chef speaking in the past tense.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;"><a href="./Plan Final Direction II.dc.html#3o">3o</a> &middot; <a href="./Plan Final Direction II.dc.html#3p">3p</a></span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">A week is the days you chose, never a calendar with holes.</strong> Unplanned days are not rows; the absence is acknowledged once, at the bottom, with the one control that changes it.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1l</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Tapping a day opens the day sheet.</strong> Three meals, their leftover dependencies, and the same door at the foot. <span style="color:#8A7C6C;">1m&rsquo;s in-rail expansion is held, not killed &mdash; it is the one thing on the still-open list that needs usage to settle.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1x &middot; 1z</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">The grill wall is two frames, together</strong> &mdash; the constraint read at plan time and the one at cook time. <span style="color:#8A7C6C;"><span style="text-decoration:line-through;">1y</span> stays rejected: a third state that restates the second.</span></p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">spec &sect;06</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Exactly one floating layer above the tab bar,</strong> and the screen&rsquo;s contextual primary owns it. No persistent search pill, no FAB, and the toast borrows the same slot rather than adding one.</p></div>
+        <div style="display:flex;gap:14px;align-items:baseline;"><span style="flex:0 0 74px;font-size:11px;font-weight:700;letter-spacing:1px;color:#8A7C6C;padding-top:2px;">1g &middot; 2a</span><p style="flex:1;font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;"><strong style="color:#F0EBE4;font-weight:600;">Titles never open with a verb</strong> &mdash; method belongs in the meta, and when one method covers four or more meals the week absorbs it and the cards drop it. <strong style="color:#F0EBE4;font-weight:600;">A container needs contents:</strong> empty days are 56px rail rows with no surface, and dashed boxes are retired.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="g-door" style="width:1200px;padding:0 60px 60px;background:#0F0B08;">
+  <div style="max-width:920px;margin:0 0 30px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 10px;">CORRECTED FRAMES &middot; GROUP A &middot; THE DOOR AND THE PICKER</p>
+    <h2 style="font-size:26px;font-weight:650;letter-spacing:-.4px;color:#F0EBE4;margin:0 0 12px;line-height:1.22;">One row in, and a place to arrive</h2>
+    <p style="font-size:14px;line-height:1.6;color:#A29484;margin:0;text-wrap:pretty;">The door costs the intent screen 56px and nothing else. Everything 1a and 1c were carrying moves behind it, where it can be a browse surface instead of a dropdown.</p>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:52px;align-items:flex-start;">
+
+    <div id="3a" style="flex:0 0 500px;width:500px;">
+      <div style="min-height:88px;margin-bottom:12px;">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A79A8C;margin:0 0 6px;"><span style="display:inline-block;padding:2px 7px;border-radius:9px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);color:#CAC4BC;margin-right:8px;">3a</span>The door &middot; supersedes 1a, 1b, 1c</p>
+        <p style="font-size:17px;font-weight:600;color:#F7F2EA;margin:0 0 5px;">The ask, with one row underneath it</p>
+        <p style="font-size:12.5px;color:#8A7C6C;margin:0;">Same row in a day sheet and a meal sheet</p>
+      </div>
+      <div style="position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(244,235,220,.1);"><div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;"><div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(560px 420px at 78% -12%,rgba(233,179,72,.13),transparent 62%);"></div><dc-import name="PhoneStatus" time="9:41" hint-size="100%,54px" style="position:absolute;top:0;left:0;right:0;z-index:40;"></dc-import>
+      <div style="position:absolute;inset:0;z-index:10;overflow:hidden;padding:66px 22px 168px;">
+        <div style="display:flex;align-items:center;gap:11px;margin:0 0 14px;"><div style="position:relative;width:34px;height:34px;flex:0 0 auto;"><div class="amb" style="position:relative;width:34px;height:34px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 46% 42%,rgba(240,196,120,.9),rgba(214,158,60,.9) 52%,rgba(130,88,22,.5) 80%);animation:emberSm 4s ease-in-out infinite, glowPulse 4s ease-in-out infinite;"><span style="position:absolute;left:18%;top:14%;width:46%;height:46%;border-radius:50%;background:radial-gradient(circle,rgba(255,244,214,.98),rgba(255,228,168,.5) 55%,transparent 72%);filter:blur(1.2px);animation:hotspot 6.5s ease-in-out infinite;"></span></div><div style="position:absolute;right:-1px;bottom:-1px;width:9px;height:9px;border-radius:50%;background:#E9B348;border:2px solid #0F0B08;"></div></div><p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#F0C265;margin:0;flex:1;">YOUR CHEF</p><span style="font-size:11.5px;color:#8A7C6C;font-weight:500;">Week of Jul 26</span></div>
+        <h2 style="font-size:26px;font-weight:650;line-height:1.22;letter-spacing:-.4px;color:#F0EBE4;margin:0 0 10px;text-wrap:pretty;">Five dinners, ready to cook.</h2>
+        <p style="font-size:14.5px;font-style:italic;line-height:1.5;color:#E0B463;margin:0 0 20px;text-wrap:pretty;">Sunday to Friday, Thursday off, nothing over 30 minutes on a weeknight. Say the word and I&rsquo;ll build it.</p>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 0 9px;"><p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0;">Nights I&rsquo;m cooking for</p><span style="font-size:12.5px;font-weight:600;color:#F7F2EA;">5 dinners</span></div>
+        <div style="display:flex;gap:6px;">
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(244,235,220,.14);border:1px solid rgba(244,235,220,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#F4EBDC;">SUN</span><span style="font-size:15px;font-weight:600;color:#F7F2EA;">26</span></div>
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(244,235,220,.14);border:1px solid rgba(244,235,220,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#F4EBDC;">MON</span><span style="font-size:15px;font-weight:600;color:#F7F2EA;">27</span></div>
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(244,235,220,.14);border:1px solid rgba(244,235,220,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#F4EBDC;">TUE</span><span style="font-size:15px;font-weight:600;color:#F7F2EA;">28</span></div>
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(244,235,220,.14);border:1px solid rgba(244,235,220,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#F4EBDC;">WED</span><span style="font-size:15px;font-weight:600;color:#F7F2EA;">29</span></div>
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(240,222,190,.045);border:1px dashed rgba(240,222,190,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#8A7C6C;">THU</span><span style="font-size:11px;font-weight:600;color:#A29484;">out</span></div>
+          <div style="flex:1;height:58px;border-radius:16px;background:rgba(244,235,220,.14);border:1px solid rgba(244,235,220,.42);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;"><span style="font-size:10.5px;font-weight:700;color:#F4EBDC;">FRI</span><span style="font-size:15px;font-weight:600;color:#F7F2EA;">31</span></div>
+        </div>
+        <div style="height:1px;background:rgba(240,222,190,.09);margin:20px 0;"></div>
+        <div style="display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 6px 6px 16px;border-radius:16px;background:rgba(84,70,56,.46);border:1px solid rgba(240,222,190,.16);">
+          <span style="flex:1;font-size:14.5px;color:#A29484;">Anything different this week?</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><path d="M12 17v4"></path></svg></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;"><span style="padding:9px 13px;border-radius:12px;background:rgba(244,235,220,.1);border:1px solid rgba(244,235,220,.32);font-size:13.5px;color:#F4EBDC;">I want to grill</span><span style="padding:9px 13px;border-radius:12px;background:rgba(244,235,220,.1);border:1px solid rgba(244,235,220,.32);font-size:13.5px;color:#F4EBDC;">Use what&rsquo;s in my fridge</span><span style="padding:9px 13px;border-radius:12px;background:rgba(244,235,220,.1);border:1px solid rgba(244,235,220,.32);font-size:13.5px;color:#F4EBDC;">Kid-friendly</span></div>
+        <button type="button" style="width:100%;margin-top:14px;display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);cursor:pointer;font-family:inherit;text-align:left;">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span style="flex:1;min-width:0;"><span style="display:block;font-size:14.5px;font-weight:600;color:#F7F2EA;">Cook something I&rsquo;ve saved</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:2px;">I&rsquo;ll build the week around it</span></span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+      <div style="position:absolute;bottom:96px;left:16px;right:16px;z-index:38;">
+        <button type="button" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:16px;background:#F4EBDC;border:none;color:#1A140C;font-size:15.5px;font-weight:650;cursor:pointer;font-family:inherit;box-shadow:0 10px 28px -12px rgba(244,235,220,.3);">Build these five nights<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+      </div>
+      <dc-import name="PhoneTabs" hint-size="100%,84px" style="position:absolute;bottom:0;left:0;right:0;z-index:35;"></dc-import></div></div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.55;color:#A99B8B;margin:14px 0 0;text-wrap:pretty;">1b unchanged, with nothing removed: the night selector still opens the screen, the ask and its chips still sit under the hairline, and <em>Build these five nights</em> is still the one tap. The door is the only addition &mdash; last object before the fold, after the chips have offered the cheap edits, so it never competes with the primary. It is a 62px L2 row, and it is the <strong style="color:#F0EBE4;font-weight:600;">only</strong> ingress to the library from Plan: no stale-recipe block that appears conditionally, no browse strip that has to be scrolled past by every user who doesn&rsquo;t want it. Because the row is unconditional it is also droppable verbatim into the day sheet (<a href="#3e">3e</a>) and the meal sheet. The subtitle does the work 1a&rsquo;s block used to do &mdash; it promises the chef will build around the dish rather than merely schedule it.</p></sc-if>
+    </div>
+
+    <div id="3b" style="flex:0 0 500px;width:500px;">
+      <div style="min-height:88px;margin-bottom:12px;">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A79A8C;margin:0 0 6px;"><span style="display:inline-block;padding:2px 7px;border-radius:9px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);color:#CAC4BC;margin-right:8px;">3b</span>The picker &middot; supersedes 1d</p>
+        <p style="font-size:17px;font-weight:600;color:#F7F2EA;margin:0 0 5px;">It opens on what you never cooked</p>
+        <p style="font-size:12.5px;color:#8A7C6C;margin:0;">Invoked from the intent screen &mdash; nothing selected yet</p>
+      </div>
+      <div style="position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(244,235,220,.1);"><div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;"><div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(560px 420px at 78% -12%,rgba(233,179,72,.13),transparent 62%);"></div><dc-import name="PhoneStatus" time="9:41" hint-size="100%,54px" style="position:absolute;top:0;left:0;right:0;z-index:40;"></dc-import>
+      <div style="position:absolute;inset:0;z-index:8;padding:66px 22px 0;opacity:.3;pointer-events:none;">
+        <h2 style="font-size:26px;font-weight:650;line-height:1.22;letter-spacing:-.4px;color:#F0EBE4;margin:0;text-wrap:pretty;">Five dinners, ready to cook.</h2>
+      </div>
+      <div style="position:absolute;inset:0;z-index:12;background:rgba(8,5,3,.5);"></div>
+      <div style="position:absolute;top:76px;left:0;right:0;bottom:0;z-index:20;border-radius:22px 22px 0 0;background:rgba(22,16,11,.94);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(240,222,190,.14);border-bottom:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.7);overflow:hidden;">
+        <div style="padding:10px 22px 14px;">
+          <div style="width:36px;height:4px;border-radius:2px;background:rgba(240,222,190,.3);margin:0 auto 14px;"></div>
+          <p style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;margin:0 0 12px;line-height:1.28;">Cook something you&rsquo;ve saved</p>
+          <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:16px;background:rgba(84,70,56,.46);border:1px solid rgba(240,222,190,.16);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span style="flex:1;font-size:14.5px;color:#A29484;">Search 48 recipes</span>
+          </div>
+        </div>
+        <div style="padding:0 22px 20px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 8px;">Saved, never cooked</p>
+          <p style="font-size:14.5px;font-style:italic;line-height:1.5;color:#E0B463;margin:0 0 14px;text-wrap:pretty;">Nine of these have been waiting since spring. Let&rsquo;s spend one this week.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Sichuan Dry-Fried Green Beans</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in March &middot; 25 min &middot; never cooked</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Lamb Shoulder with Anchovy</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in April &middot; 3 hr &middot; never cooked</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Congee with Ginger and Scallion</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in May &middot; 45 min &middot; never cooked</span></span>
+            </div>
+            <button type="button" style="width:100%;height:40px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:14px;background:transparent;border:none;color:#F4EBDC;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;">Six more<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 10px;">Ways through</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Cooked before</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">23 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Recently saved</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">12 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Imported</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">8 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Everything</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">48 recipes</p></div>
+          </div>
+        </div>
+      </div>
+      </div></div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.55;color:#A99B8B;margin:14px 0 0;text-wrap:pretty;">A sheet at 76px, not a dropdown: it is a place, so it gets a place&rsquo;s geometry (L5, r22 top, the only shadow in the ladder) and the week stays visible behind it. Three structural moves. <strong style="color:#F0EBE4;font-weight:600;">Staleness is content, not a sort</strong> &mdash; the first thing you see is the one read only this product has, and it is the chef who says it, in italic, once. <strong style="color:#F0EBE4;font-weight:600;">Browse is four named ways through</strong>, not four filter chips: a chip implies subtraction from a list you can already see, a tile implies a door. Counts are the whole affordance. <strong style="color:#F0EBE4;font-weight:600;">There is no action bar until something is selected</strong> &mdash; an inert primary is a nag, and the floating slot is reserved for a real action. Checkboxes are r7 at 22px per the metrics floor, unfilled, cream when set (<a href="#3c">3c</a>). Search is in the sheet header because pattern B says search is never a floating object.</p></sc-if>
+    </div>
+
+    <div id="3c" style="flex:0 0 500px;width:500px;">
+      <div style="min-height:88px;margin-bottom:12px;">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A79A8C;margin:0 0 6px;"><span style="display:inline-block;padding:2px 7px;border-radius:9px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);color:#CAC4BC;margin-right:8px;">3c</span>The picker &middot; two selected</p>
+        <p style="font-size:17px;font-weight:600;color:#F7F2EA;margin:0 0 5px;">Give the chef these two</p>
+        <p style="font-size:12.5px;color:#8A7C6C;margin:0;">Scrolled to &ldquo;Cooked before&rdquo; &mdash; the second selection came from there</p>
+      </div>
+      <div style="position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(244,235,220,.1);"><div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;"><div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(560px 420px at 78% -12%,rgba(233,179,72,.13),transparent 62%);"></div><dc-import name="PhoneStatus" time="9:41" hint-size="100%,54px" style="position:absolute;top:0;left:0;right:0;z-index:40;"></dc-import>
+      <div style="position:absolute;inset:0;z-index:12;background:rgba(8,5,3,.5);"></div>
+      <div style="position:absolute;top:76px;left:0;right:0;bottom:0;z-index:20;border-radius:22px 22px 0 0;background:rgba(22,16,11,.94);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(240,222,190,.14);border-bottom:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.7);overflow:hidden;">
+        <div style="padding:10px 22px 14px;">
+          <div style="width:36px;height:4px;border-radius:2px;background:rgba(240,222,190,.3);margin:0 auto 14px;"></div>
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px;">
+            <p style="flex:1;min-width:0;font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;margin:0;line-height:1.28;">Cook something you&rsquo;ve saved</p>
+            <button type="button" style="flex:0 0 auto;height:36px;padding:0 12px;border-radius:12px;background:transparent;border:none;color:#F4EBDC;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;">Clear</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:16px;background:rgba(84,70,56,.46);border:1px solid rgba(240,222,190,.16);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span style="flex:1;font-size:14.5px;color:#A29484;">Search 48 recipes</span>
+          </div>
+        </div>
+        <div style="padding:0 22px 20px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 8px;">Saved, never cooked</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;">
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Lamb Shoulder with Anchovy</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in April &middot; 3 hr &middot; never cooked</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Congee with Ginger and Scallion</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in May &middot; 45 min &middot; never cooked</span></span>
+            </div>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 8px;">Cooked before</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Spaghetti alla Carbonara</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Cooked twice &middot; 40 min &middot; serves 4</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Miso-Glazed Salmon</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Cooked four times &middot; 25 min</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Pancetta and Pea Risotto</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Cooked once &middot; 35 min</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Chicken Shawarma Bowls</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Cooked three times &middot; 30 min</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Slow-Roast Pork Shoulder</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Cooked twice &middot; 4 hr &middot; serves 6</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:22px;left:16px;right:16px;z-index:38;">
+        <p style="font-size:12px;text-align:center;color:#8A7C6C;margin:0 0 9px;">The chef picks the nights.</p>
+        <button type="button" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:16px;background:#F4EBDC;border:none;color:#1A140C;font-size:15.5px;font-weight:650;cursor:pointer;font-family:inherit;box-shadow:0 10px 28px -12px rgba(244,235,220,.3);">Give the chef these two<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+      </div>
+      </div></div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.55;color:#A99B8B;margin:14px 0 0;text-wrap:pretty;">Selection is cream, because a checkbox is something you press &mdash; gold would read as the chef having chosen. The count lives in the verb (<em>these two</em>) rather than a badge, and the caption above it is the whole contract in four words: you name the dishes, the chef names the nights. <strong style="color:#F0EBE4;font-weight:600;">The action bar sits at 22px here, not 96px</strong> &mdash; a sheet covers the tab bar, so there is no bar to clear; the 96px offset exists only to clear one. Selections hold across sections, which is why the second pick can come from <em>Cooked before</em> without the first scrolling out of memory. <em>Clear</em> appears only when something is selected, as type not a control, in the header.</p></sc-if>
+    </div>
+
+    <div id="3d" style="flex:0 0 500px;width:500px;">
+      <div style="min-height:88px;margin-bottom:12px;">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A79A8C;margin:0 0 6px;"><span style="display:inline-block;padding:2px 7px;border-radius:9px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);color:#CAC4BC;margin-right:8px;">3d</span>The picker &middot; nothing saved yet</p>
+        <p style="font-size:17px;font-weight:600;color:#F7F2EA;margin:0 0 5px;">Day one, and the door still works</p>
+        <p style="font-size:12.5px;color:#8A7C6C;margin:0;">No apology, one useful exit</p>
+      </div>
+      <div style="position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(244,235,220,.1);"><div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;"><div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(560px 420px at 78% -12%,rgba(233,179,72,.13),transparent 62%);"></div><dc-import name="PhoneStatus" time="9:41" hint-size="100%,54px" style="position:absolute;top:0;left:0;right:0;z-index:40;"></dc-import>
+      <div style="position:absolute;inset:0;z-index:12;background:rgba(8,5,3,.5);"></div>
+      <div style="position:absolute;top:76px;left:0;right:0;bottom:0;z-index:20;border-radius:22px 22px 0 0;background:rgba(22,16,11,.94);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(240,222,190,.14);border-bottom:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.7);overflow:hidden;">
+        <div style="padding:10px 22px 0;">
+          <div style="width:36px;height:4px;border-radius:2px;background:rgba(240,222,190,.3);margin:0 auto 14px;"></div>
+          <p style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;margin:0 0 30px;line-height:1.28;">Cook something you&rsquo;ve saved</p>
+          <p style="font-size:22px;font-weight:650;line-height:1.32;letter-spacing:-.3px;color:#F0EBE4;margin:0 0 10px;text-wrap:pretty;">Nothing in here yet.</p>
+          <p style="font-size:14.5px;font-style:italic;line-height:1.5;color:#E0B463;margin:0 0 26px;text-wrap:pretty;">This is where recipes land once you keep them. The week doesn&rsquo;t need it &mdash; I&rsquo;ll write you five dinners without a single saved thing.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button type="button" style="display:flex;width:100%;align-items:center;gap:13px;min-height:56px;padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);cursor:pointer;font-family:inherit;text-align:left;">
+              <span style="flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"></path></svg></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Paste a recipe or a link</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:2px;">I&rsquo;ll read it and keep it</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+            <button type="button" style="display:flex;width:100%;align-items:center;gap:13px;min-height:56px;padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);cursor:pointer;font-family:inherit;text-align:left;">
+              <span style="flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Look through the recipes tab</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:2px;">Keep anything and it shows up here</span></span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:22px;left:16px;right:16px;z-index:38;">
+        <button type="button" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:16px;background:#F4EBDC;border:none;color:#1A140C;font-size:15.5px;font-weight:650;cursor:pointer;font-family:inherit;box-shadow:0 10px 28px -12px rgba(244,235,220,.3);">Let the chef write it<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+      </div>
+      </div></div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.55;color:#A99B8B;margin:14px 0 0;text-wrap:pretty;">The rule for this screen is that it must not read as a failure, because the user did nothing wrong and the product works fine without a library. So: <strong style="color:#F0EBE4;font-weight:600;">no illustration, no &ldquo;oops&rdquo;, no disabled search field</strong>. The chef says what the surface is <em>for</em> in the future tense and then hands back the thing that actually works today &mdash; the primary is the way out, and it is the same action the screen behind it was already offering. Two doors sit above it in priority order: the one that fills the library in thirty seconds, then the one that fills it over a month. Both are 56px L2 rows, identical to the picker&rsquo;s recipe rows, so the empty state teaches the shape of the full one.</p></sc-if>
+    </div>
+
+    <div id="3e" style="flex:0 0 500px;width:500px;">
+      <div style="min-height:88px;margin-bottom:12px;">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A79A8C;margin:0 0 6px;"><span style="display:inline-block;padding:2px 7px;border-radius:9px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.14);color:#CAC4BC;margin-right:8px;">3e</span>The picker &middot; invoked from Thursday</p>
+        <p style="font-size:17px;font-weight:600;color:#F7F2EA;margin:0 0 5px;">Destination decided, structure unchanged</p>
+        <p style="font-size:12.5px;color:#8A7C6C;margin:0;">Only the first line and the primary differ from 3b</p>
+      </div>
+      <div style="position:relative;padding:11px;background:#000;border-radius:56px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 0 1px rgba(244,235,220,.1);"><div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;"><div style="position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(560px 420px at 78% -12%,rgba(233,179,72,.13),transparent 62%);"></div><dc-import name="PhoneStatus" time="9:41" hint-size="100%,54px" style="position:absolute;top:0;left:0;right:0;z-index:40;"></dc-import>
+      <div style="position:absolute;inset:0;z-index:12;background:rgba(8,5,3,.5);"></div>
+      <div style="position:absolute;top:76px;left:0;right:0;bottom:0;z-index:20;border-radius:22px 22px 0 0;background:rgba(22,16,11,.94);backdrop-filter:blur(40px) saturate(180%);border:1px solid rgba(240,222,190,.14);border-bottom:none;box-shadow:0 12px 32px -8px rgba(0,0,0,.7);overflow:hidden;">
+        <div style="padding:10px 22px 14px;">
+          <div style="width:36px;height:4px;border-radius:2px;background:rgba(240,222,190,.3);margin:0 auto 14px;"></div>
+          <p style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;margin:0 0 4px;line-height:1.28;">Thursday dinner, from your recipes</p>
+          <p style="font-size:12.5px;color:#8A7C6C;margin:0 0 12px;">Replacing the miso salmon</p>
+          <div style="display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:16px;background:rgba(84,70,56,.46);border:1px solid rgba(240,222,190,.16);">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+            <span style="flex:1;font-size:14.5px;color:#A29484;">Search 48 recipes</span>
+          </div>
+        </div>
+        <div style="padding:0 22px 20px;">
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 8px;">Saved, never cooked</p>
+          <p style="font-size:14.5px;font-style:italic;line-height:1.5;color:#E0B463;margin:0 0 14px;text-wrap:pretty;">Two of these fit a Thursday &mdash; you&rsquo;ve got forty minutes.</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px;">
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Sichuan Dry-Fried Green Beans</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in March &middot; 25 min &middot; never cooked</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Congee with Ginger and Scallion</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">Saved in May &middot; 45 min &middot; never cooked</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:13px;min-height:56px;padding:12px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);opacity:.5;">
+              <span style="flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:rgba(240,222,190,.06);border:1px solid rgba(240,222,190,.2);"></span>
+              <span style="flex:1;min-width:0;"><span style="display:block;font-size:15.5px;font-weight:600;color:#F7F2EA;line-height:1.25;">Lamb Shoulder with Anchovy</span><span style="display:block;font-size:12.5px;color:#8A7C6C;margin-top:3px;">3 hr &mdash; longer than Thursday allows</span></span>
+            </div>
+          </div>
+          <p style="font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A79A8C;margin:0 0 10px;">Ways through</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Cooked before</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">23 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Under 40 min</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">19 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Recently saved</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">12 recipes</p></div>
+            <div style="padding:13px 14px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);"><p style="font-size:14px;font-weight:600;color:#F7F2EA;margin:0 0 3px;">Everything</p><p style="font-size:12.5px;color:#8A7C6C;margin:0;">48 recipes</p></div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;bottom:22px;left:16px;right:16px;z-index:38;">
+        <p style="font-size:12px;text-align:center;color:#8A7C6C;margin:0 0 9px;">I&rsquo;ll rebuild the shop around it.</p>
+        <button type="button" style="width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:9px;border-radius:16px;background:#F4EBDC;border:none;color:#1A140C;font-size:15.5px;font-weight:650;cursor:pointer;font-family:inherit;box-shadow:0 10px 28px -12px rgba(244,235,220,.3);">Put it on Thursday<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></button>
+      </div>
+      </div></div>
+      <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}"><p style="font-size:12.5px;line-height:1.55;color:#A99B8B;margin:14px 0 0;text-wrap:pretty;">The structure holds with the destination decided, which is the test. Four things adapt and nothing else moves: the first line names the slot, a subline names what is being displaced, the chef&rsquo;s staleness sentence gains the constraint the day imposes (<em>you&rsquo;ve got forty minutes</em>), and one <em>way through</em> tile swaps to <em>Under 40 min</em>. <strong style="color:#F0EBE4;font-weight:600;">A recipe that cannot fit the slot dims and says why in its own meta</strong> rather than vanishing &mdash; disappearing rows make the library feel smaller than it is, and the reason is the useful part. Selection is still multi-capable; the primary just names one destination, and a second selection would read <em>Put these on Thursday</em>. The caption carries the consequence the user cannot see: the shop changes.</p></sc-if>
+    </div>
+
+  </div>
+</section>
+
+<section style="width:1200px;padding:0 60px 90px;background:#0F0B08;">
+  <div style="max-width:920px;padding:24px 26px;border-radius:22px;background:rgba(233,179,72,.1);border:1px solid rgba(233,179,72,.3);">
+    <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 10px;">Continued</p>
+    <p style="font-size:15px;line-height:1.6;color:#CAC4BC;margin:0;text-wrap:pretty;">Sheet 2 &mdash; <strong style="color:#F0EBE4;font-weight:600;">Plan Final Direction II</strong> &mdash; carries the remaining corrected frames: the six-pinned week under one degrading model (<a href="./Plan Final Direction II.dc.html#3f">3f</a>), a week being written at both densities (<a href="./Plan Final Direction II.dc.html#3g">3g</a>, <a href="./Plan Final Direction II.dc.html#3h">3h</a>), draft against confirmed (<a href="./Plan Final Direction II.dc.html#3i">3i</a>, <a href="./Plan Final Direction II.dc.html#3j">3j</a>), the toast in the bar&rsquo;s slot (<a href="./Plan Final Direction II.dc.html#3k">3k</a>), the corrected Recipes bottom edge (<a href="./Plan Final Direction II.dc.html#3l">3l</a>), the two redrawn options (<a href="./Plan Final Direction II.dc.html#3m">3m</a>, <a href="./Plan Final Direction II.dc.html#3n">3n</a>), the non-contiguous week that got truncated last time (<a href="./Plan Final Direction II.dc.html#3o">3o</a>, <a href="./Plan Final Direction II.dc.html#3p">3p</a>), and the still-open list.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showNotes: this.props.showNotes ?? true };
+  }
+}
+</script>
+</body>
+</html>

@@ -56,6 +56,15 @@ they don't reach the build by accident.*
   1D reorg goes: the FAB is deleted, search moves into the header (pattern B), and exactly one object floats
   above the tab bar. Already specified by the spec; the design pass made it concrete. **Consequence: the
   1E.5 build touches Recipes, not only Plan.**
+- **[1E.5 — Wave 2, and bigger than it was billed] Divergence: a confirmed week where Tuesday didn't get
+  cooked.** The finished Plan spec lists this as one of four cheap Wave-2 frames. It isn't. **Not cooking a
+  planned night is the normal case**, not an edge case, and it cascades: what happens to the grocery list
+  that was already written, to the leftover chain the next night was eating off, and does the chef re-plan
+  or simply record it. `1w` already built the machinery — the broken-leftover repair, where the gold italic
+  rationale is replaced by destructive body text in the same slot with two one-tap repairs — but it fires on
+  an *edit*. Divergence is the same machinery triggered by **inaction**, which means something has to notice
+  the night passed uncooked. `3j` (the confirmed week) is the calm case and is drawn; this is the other one.
+  Design it before the 1E.5 build scopes the confirmed-week states.
 - **[1E.5] Non-contiguous weeks are drawn but unscoped.** "Not here Monday and Tuesday, I want Thursday and
   Friday, three dinners." The dated rail hosts it unchanged, but the generation side (a week as a *set of
   chosen days* rather than seven slots) has never been specced.

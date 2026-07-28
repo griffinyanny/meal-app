@@ -28,6 +28,15 @@ looks identical to the one before. The hard constraint says a Sunday view and a 
 *meaningfully different*; a draft and a confirmed week probably owe the same. How much visual change does
 confirmation earn? Pulled into the consolidation pass, unanswered as of S41.
 
+### Two small calls the finished Plan spec left open (raised S41)
+Both are one-liners; recording them so they don't get lost between the design and the build.
+- **Gold or cream for the landed ring?** Drawn gold in `3k`. It touches the three-mark budget for 400ms
+  alongside the header orb. The sheet recommends it stays gold — the change was the chef's work, and a
+  cream ring reads as a control you could press. **Claude agrees.** Griffin's call.
+- **Do the picker's four browse tiles push a view, or filter in place?** Drawn as pushes. **Recommend
+  push**: a pushed view carries its own section header and count, which is exactly what makes them read as
+  doors rather than as filter chips (a chip implies subtraction from a list you can already see).
+
 ### Is tapping a day a browsing gesture or an editing one? (raised S41)
 **Question**: the day sheet (`1l`) won over expand-in-place (`1m`) — but the design flagged its own caveat:
 *"1l wins unless day-tapping turns out to be a browsing gesture rather than an editing one."* If users tap a

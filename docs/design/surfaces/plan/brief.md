@@ -1,7 +1,26 @@
 # Plan tab — all-states design brief (Phase 1E.5)
 
-> **Status: OPEN — this is a to-generate brief, not a build spec.** Written S38 (2026-07-25) to kick off the
-> Claude Design pass for **Phase 1E.5 (Plan Design Buildout)**, which gates 1F.
+> **⛳️ STATUS: THE DESIGN PASS IS DONE (S41, 2026-07-27). This file is now the build spec.**
+> Everything below the line marked **SETTLED — the decisions ledger** is what the build implements.
+> The prose further down is retained as the *brief that produced it* — where the two disagree, the
+> ledger wins.
+>
+> ## Design pointer — the durable, re-fetchable record
+> - **Claude Design project:** `https://claude.ai/design/p/8bc73bfa-9683-4b44-ab06-40da9ec78590`
+> - **projectId:** `8bc73bfa-9683-4b44-ab06-40da9ec78590`
+> - **The build spec, two files:**
+>   - `Plan Final Direction.dc.html` — the decisions ledger + the door and the picker (frames `3a`–`3e`).
+>     Local snapshot: `final-direction-1.dc.html`.
+>   - `Plan Final Direction II.dc.html` — frames `3f`–`3p` + the still-open list. Local snapshot:
+>     `final-direction-2.dc.html`.
+> - **The record (superseded, kept for the reasoning):** `Plan Directions.dc.html` (the A/B/C choice —
+>   snapshot `imported-wave1.dc.html`) and `Plan Horizon.dc.html` (the past-R1 build of C — snapshot
+>   `imported-wave15-horizon.TRUNCATED.dc.html`, cut at the 256 KiB `get_file` cap mid-frame at `2b`;
+>   the two lost frames were redrawn as `3o`/`3p`). Neither is needed to build.
+> - **Re-fetch:** `DesignSync.get_file("8bc73bfa-9683-4b44-ab06-40da9ec78590", "<name>.dc.html")`.
+>   ⚠ `get_file` truncates at 256 KiB — check the byte count against the file's real size before trusting
+>   a read. Both Final Direction sheets are under it (73 KiB and 116 KiB).
+> - Build in real shadcn/Tailwind + the spec's surfaces — **never a paste of the generated `.dc.html`.**
 >
 > **⚠️ REVISED S40 (2026-07-27): the palette section below was written before Design Specification v1.0
 > existed and pointed this pass at a palette the codebase has since retired.** If a design was already
@@ -202,7 +221,139 @@ Wednesday cooks itself."
 
 ---
 
-## OPEN — iterate here
+# SETTLED — the decisions ledger (S41). Build against this.
+
+*Source: `Plan Final Direction.dc.html` → §ledger, plus the frames on both sheets. Frame ids in **bold**
+point at the drawing that proves the rule. Rationale for the contested calls is in `decisions.md` (S41).*
+
+## A · Entry and the library
+
+- **Intent entry is the night selector, the ask, then one quiet door.** **`3a`** is `1b` with nothing
+  removed — the night picker (`Nights I'm cooking for · 5 dinners`, with an out-night tappable back on)
+  still opens the screen, the ask and its chips sit under the hairline, and `Build these five nights`
+  is still the one tap. **The night selector is load-bearing: it is the input side of the non-contiguous
+  week (`3o`/`3p`).** A consolidation draft dropped it and it was restored (Griffin, S41).
+- **The library door is a 62px L2 row, last object before the fold** — `Cook something I've saved` /
+  `I'll build the week around it`. Unconditional, works with an empty library, and droppable verbatim into
+  the day sheet and the meal sheet. Retires `1a` (the conditional chef-proposes block) and `1c` (the browse
+  strip) as intent-screen options.
+- **The picker is a place, not a dropdown** (**`3b`**). L5 sheet at 76px, r22 top, the week visible behind
+  it. It opens on **`Saved, never cooked`** as *content* with the chef's italic line on it — not a sort
+  order. Browse is **four named tiles with counts** (doors), never filter chips (subtraction). Search sits
+  in the sheet header per pattern B. **No action bar until something is selected.**
+- **Multi-select survives** (**`3c`**). Selection is cream, never gold — a checkbox is the user's act.
+  The count lives in the verb (`Give the chef these two`) with `The chef picks the nights` above it. The
+  action bar sits at 22px inside a sheet, not 96px: the 96px offset exists only to clear a tab bar.
+- **The empty library does not apologise** (**`3d`**). No illustration, no "oops", no disabled search. It
+  says what the surface is *for* in the future tense, then hands back the action that works today.
+- **One picker, three invocations** (**`3e`**): intent screen, a day, a meal sheet. Only the first line and
+  the primary change. A recipe that cannot fit the slot **dims and says why in its own meta** rather than
+  vanishing.
+- **The verb is `Add to this week`** (**`3l`**), in the Recipes screen's floating primary slot. It never
+  asks for a day — the chef answers with the night.
+
+## B · The picked meal
+
+- **Provenance is `DINNER · PICKED`** — type, not chrome. Eyebrow plus a 10px bookmark, meta names the
+  source. No badge, no accent, no second card design. **Never a possessive**: it has to survive a second
+  person in the household. The meta carries who — `Griffin's pick · 40 min · scaled to 3`.
+- **A chosen recipe is a constraint on the chef, not a scheduler.** The chef still picks the night, builds
+  around it, shops for it and spends the leftovers.
+- **The chef answers with a night and a reason** (`1f`), and **servings are said exactly once**, in the
+  chef's voice, at the moment of placement — never as a bare stepper, never twice.
+- **A picked meal's rationale argues placement, not the dish.** Same slot, different job.
+- **The boundary is stated, not enforced silently**: *"it's your recipe, so I won't rewrite it."*
+- **Picks survive a regenerate by default**, and the guarantee is stated before the ask.
+- **Too many picks → two options, not three** (**`3m``**). The queue-and-remind option is **cut** (V1.5).
+- **One presentation that degrades — no inventory mode** (**`3f`**). As picks accumulate the summary shifts
+  from claiming the dishes to claiming *the arrangement*, and holds that at six, seven, and fifteen meals.
+
+## C · Modify, feedback, failure
+
+- **The meal row is the unit of change feedback**, never the day container. The ring sits on the changed
+  row's own 14px radius inside the day's 18px.
+- **The acknowledgement is the rewritten rationale in place** — the only ack that survives being scrolled
+  past.
+- **Rows never reflow while the chef is thinking.** Errors are the single sanctioned exception: destructive
+  text under a hairline with the retry beside it, the row grows, nothing above or below moves.
+- **The toast occupies the action bar's exact slot and geometry** (**`3k`**) — bottom 96, height 52, radius
+  16, insets 16 — so it reads as the bar *becoming* the message. It never coexists with the bar. Confirm
+  goes inert while working.
+- **A compact row cannot host the chef's voice.** At three-meal density the row carries title and meta
+  only; the sentence goes to the toast. This is why the toast exists at all.
+- **A slot with no answer yet is provisional, not loading** (**`3n`**): `rgba(240,222,190,.09)` fill, `.2`
+  line, a muted sentence where the title goes, **never a spinner**. One control: `Decide now`.
+  "Leave it to me" is **cut** (V1.5).
+- **Generation is the provisional row, repeated** (**`3g`**, **`3h`**). The full rail arrives in the first
+  second with every day and slot present, then resolves in place. **Progress is a count of written meals
+  (`14 of 15`), never a bar.** A pending slot's sentence names its dependency (`Friday, after Wednesday`).
+  There is no separate streaming vocabulary.
+
+## D · Density, time, and the bottom edge
+
+- **Days are containers; meals are inset rows.** Fifteen meals fit the same scroll as five dinners. **Only
+  dinner carries a rationale** — which is why fifteen meals still produce five gold marks, not fifteen.
+- **Draft and confirmed are different screens** (**`3i`**, **`3j`**). A draft has the decision in the
+  floating slot with its consequence above it. **A confirmed week has no floating action at all** — the
+  decision was spent — a grocery row where the argument used to be, meta reading `Set` not `Draft`, the
+  chef in the past tense, flat lighting, and cards keeping meta but losing their placement arguments.
+- **A week is the days you chose, never a calendar with holes** (**`3o`**, **`3p`**). Unplanned days are
+  not rows; the absence is acknowledged once at the bottom with the one control that changes it.
+- **A container needs contents.** Empty days are 56px rail rows with no surface. Dashed boxes are retired.
+- **Tapping a day opens the day sheet** (`1l`), same shell as the meal sheet. `1m`'s in-rail expansion is
+  **held, not killed** — it needs usage to settle.
+- **Exactly one floating layer above the tab bar**, owned by the screen's contextual primary. No persistent
+  search pill, no FAB; the toast borrows the slot rather than adding one.
+- **Titles never open with a cooking verb** (enforced in *generation*, so "Grilled Cheese" keeps its name),
+  and when one method covers four or more meals the week absorbs it once and the cards drop it. The
+  eyebrow fix (`1y`) stays **rejected** — it collides with the provenance marker.
+- **The meta row is one cook time and one serving count.** Markers like `cooks ahead` sit above the title.
+- **The meal sheet is a summary** — rationale at feature size, then rows, free-text as one expanding row.
+  Ingredients and steps never enter Plan.
+
+## Build dependencies this ledger creates
+
+1. **Staleness detection is load-bearing, and it is cheap.** The picker opens on `Saved, never cooked` and
+   the picker is the only ingress, so the query must be real. It already is: `recipes.lastCookedAt` exists
+   and is populated automatically by the S27 cooked-signal harvest, and `sourcePlanId` is indexed — so the
+   query is `lastCookedAt IS NULL AND sourcePlanId IS NULL`. No new column, no inference.
+2. **Servings scaling is a generation task, not arithmetic** — `scaled to 3` appears in five frames.
+3. **`slotType` has no value meaning "the user picked this."** Needed for provenance.
+4. **A library recipe may have no `normalized_ingredients` cache**, so pinning one would hit the normalize
+   path at confirm — the exact latency BUG-004 exists to prevent. Warm it at pick time.
+5. **This build touches Recipes, not only Plan** — the verb takes its floating primary, which deletes the
+   1D search/＋ toolbar and moves search into the header.
+
+## Still open (from the sheet's own list, plus one)
+
+- **Day sheet vs in-rail expansion** — needs usage. `1l` ships.
+- **Gold or cream for the landed ring** — drawn gold; the sheet recommends it stays gold and so do I (the
+  change was the chef's work; a cream ring reads as a control). Griffin's call.
+- **Do the picker's four tiles push a view or filter in place?** — drawn as pushes. Push is right: a pushed
+  view carries its own header and count, which is what makes them doors rather than chips.
+- **Divergence — a confirmed week where Tuesday didn't get cooked.** Wave 2 owes it, and it is bigger than
+  the sheet's billing: not cooking a planned night is the *normal* case, and it cascades into the grocery
+  list, the leftover chain (`1w`'s machinery, triggered by inaction rather than an edit), and whether the
+  chef re-plans.
+
+---
+
+## OPEN — the original brief's list, now mostly answered above
+
+*Retained for provenance. ✅ = answered by the ledger.*
+
+1. ✅ **Day assignment + the moveable week** — the dated rail plus `3o`/`3p`; drag is still deferred.
+2. ✅ **The clarification state** — `1k`/`3m`, general layout, two options plus a freeform row.
+3. ✅ **Draft vs confirmed vs mid-week** — `3i`/`3j`, and `2b`/`2c` for morning vs evening.
+4. ✅ **The expanded meal sheet's summary/full split** (BUG-006) — the row shell.
+5. ✅ **The grill wall** — noun-first titles in generation plus week-level absorption.
+6. ✅ **The null-title card** (BUG-009) — provisional, not loading.
+7. ✅ **Streaming** — the provisional row, repeated.
+8. ⬜ **Offline / degraded** — still undrawn. Wave 2.
+9. ✅ **How the grocery hand-off reads** — `Saying yes writes your grocery list` above the primary on a
+   draft; the grocery row replacing it on a confirmed week.
+
+*(Original numbering below is superseded by the list above.)*
 
 1. **Day assignment + the moveable week** (the dynamism thread). The single highest-value open question.
 2. **The clarification state** (#4) — a general, non-hard-coded layout for the chef asking *you* something.
