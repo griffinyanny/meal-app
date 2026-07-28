@@ -4,6 +4,102 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-27 (S41) — Phase 1E.5: Direction C, and the Plan decisions ledger
+
+**Context.** Two Claude Design waves ran for Plan: `Plan Directions.dc.html` (A/B/C — the structural
+choice) and `Plan Horizon.dc.html` (the past-R1 build of C). Snapshots live at
+`docs/design/surfaces/plan/imported-wave1.dc.html` and `imported-wave15-horizon.TRUNCATED.dc.html` (the
+second is cut at 256 KiB — the `DesignSync.get_file` cap — mid-frame inside `2b`). A consolidation pass
+into a single "Plan · Final Direction" sheet is in flight; this entry records what is settled so far.
+
+**The structural decision — Direction C, and a day is a group.** A/B posed one question: is Plan a
+document you read or a board you arrange? B's dated rail won the structure, A won the voice (the
+feature-size summary, the tonight briefing, the clarification screen whole). The argument that decided it:
+**voice is portable, structure is not** — B's rail can host A's type, but A's card list cannot grow a dated
+spine, leftover dependencies and drag without becoming B. The scaling move is that **a day stops being a
+card and becomes a container**: one glass group per day, one inset row per meal, with dinner carrying the
+title, meta and rationale while lunch and breakfast are single lines. Fifteen meals therefore still produce
+five rationales, not fifteen — the density fear the pass started with dissolves under its own model.
+
+**Decisions carried into the build spec:**
+1. **Intent entry is the quiet door** (`1b`) — a single row at the foot of the ask, "Cook something I've
+   saved / I'll build the week around it". The proactive-offer version (`1a`) and the chip-shelf version
+   (`1c`) are retired *as intent-screen options*; their content moves into the picker. Rationale: `1a` only
+   fires when the library has stale candidates, so the door must exist underneath it regardless.
+2. **The picker becomes the exploration surface**, not a dropdown — it is the only ingress into the library
+   from Plan, so the staleness read ("you saved these and never cooked them") lives in it as content rather
+   than as a sort order, alongside browse affordances and an empty state.
+3. **The meal sheet is a row shell** (`5-iii`) with the rationale at feature size on top so it opens in the
+   chef's voice, and free-text as **one expanding row**, not a permanent field. `5-ii` (steppers + an
+   ingredient table) is rejected outright: it puts ingredient data in Plan, which is the exact thing the
+   sheet-as-summary decision exists to prevent. The deciding property is extensibility — new capability
+   equals new row, and it is the only model that also works as a **day sheet**.
+4. **Tapping a day opens a day sheet sharing the meal sheet's shell** (`1l` over `1m`) — rows, one per meal,
+   plus day-level actions. Expand-in-place was drawn and loses on scroll behaviour and on having nowhere to
+   put day-level actions.
+5. **No food photography; reserve the geometry.** There is no image source — `recipes.imageUrl` exists as a
+   column and is written and read by nothing, and Plan's meals are all AI-generated, so the URL-import path
+   would not populate it either. Cards reserve a thumbnail's space so one could slot in without a redraw.
+6. **The gold budget: gold is the chef speaking, not content you read.** Design Spec §06-C says a chef
+   header spends all three content-layer gold marks so "nothing below may add a fourth", while **law 03
+   explicitly grants the chef's italic rationale colour** — the two rules were never reconciled, and Plan is
+   the only surface carrying both a chef header and a repeated rationale, which is why it surfaced here.
+   Griffin's call: **do not shrink Plan to fit; keep the italic rationale gold.** The resolving line is that
+   gold marks the chef *speaking* — so it does not extend to content the user reads, which also answers the
+   S40 reflect-screen question (`SO HERE'S YOUR WEEK` is a list of decisions, not the chef's italic voice,
+   so it does not qualify). Recorded rather than amending the spec.
+7. **Provenance is `DINNER · PICKED`, never a possessive.** "YOURS" is unambiguous only while R1 is solo and
+   breaks the moment V1.5 puts two people in a household. The meta line carries who once households exist.
+   Mechanism: eyebrow + meta, **no badge, no accent, no second card design** — a pinned meal is the same
+   card, and the real tell is the rationale (a chef-invented meal argues for the dish; a pinned meal argues
+   for the placement).
+8. **No inventory mode.** The design proposed that at five or more pinned recipes out of seven the week
+   drops its summary and presents as a list. Cut: the premise ("the chef has nothing left to arrange") is
+   false — at six of seven the chef still picks nights, shops, and spends leftovers. One presentation that
+   degrades, with the summary shifting from claiming the dishes to claiming the arrangement.
+9. **The action bar transforms into the toast** rather than two objects swapping through the slot. Griffin's
+   priority was that a change must be *visible* even if the user isn't looking at the row that changed; both
+   candidate treatments satisfy that identically, so the tiebreaker was that a persistent toast **above** the
+   bar reopens the two-floating-objects violation §07 Fix 2 forbids and state 2b just corrected.
+10. **The meal row is the unit of change feedback**, never the day container — the ring lands on the row's
+    own 14px radius inside the day's 18px, the acknowledgment **is the rewritten rationale in place** (the
+    only ack that survives being scrolled past), and **rows never reflow while the chef is thinking**. The
+    single exception is an error, which must persist until dealt with and therefore grows the row.
+11. **A container is only drawn when it has something in it.** Absence is provisional type on the rail — a
+    56px row with a date, one muted phrase and one control — never an empty glass box and never a dashed
+    rectangle. One rule fixes the empty day, the out-night and the unplanned day.
+12. **Streaming reuses the provisional-row vocabulary.** A slot not yet written and a slot being written are
+    the same object at different times, so a generating week is the full rail arriving instantly with every
+    slot present and provisional, resolving in place, with "14 of 15 written" as the progress readout.
+13. **The grill wall is fixed in generation and at the week level, not in the eyebrow.** Titles never open
+    with a cooking verb (enforced in generation so "Grilled Cheese" keeps its name), and when one method
+    covers four or more meals the chef states it once at feature size and the word is banned below. The
+    eyebrow fix was drawn and **rejected** because it collides with the provenance marker —
+    `DINNER · YOURS · GRILLED` is not a shippable line.
+
+**Also settled, carried from the pass's own ledger:** the header orb (34px with presence dot and byline,
+never a hero orb on Plan) · confirm is scroll-conditional, never a persistent CTA bar · the reasoning gets a
+door ("Why this week?"), the quietest control on the screen · the meta row is one cook time and one serving
+count with markers above the title (**answers BUG-008**) · the sheet is a summary with ingredients and steps
+staying in Recipes (**answers BUG-006**) · a titleless slot is provisional, not loading (**answers
+BUG-009**) · out-nights are first-class card states.
+
+**Future impact.**
+- **1E.5's build touches Recipes, not only Plan** — the pinning verb takes the Recipes screen's single
+  floating primary, which retires the 1D floating search/＋ toolbar per spec §07 Fix 2.
+- **Library-into-plan is a scope addition to R1 that Griffin has not formally ratified.** It is designed in
+  full and logged in `idea-backlog.md` with its two build consequences (`slotType` has no "user chose this"
+  value; a library recipe without a `normalized_ingredients` cache hits the normalize path at confirm).
+- **Two capabilities were drawn and deliberately cut** so they cannot reach the build by accident: a
+  held-recipe queue with a reminder, and the chef deferring a decision to resolve later. Both are logged as
+  V1.5.
+- **The design horizon for this pass is past R1 by instruction** (Griffin, S41) — controls with no backend
+  are drawn anyway and cut at R1 scoping. The `Dinner / Lunch / Breakfast` scope control is the live example:
+  it reverses the S36 call to omit dead toggles from the onboarding hand-off, and that reversal is
+  deliberate, because S36 was a *build* decision and this is a design artifact.
+
+---
+
 ## 2026-07-27 (S40) — 1E.5's DESIGN pass runs in parallel with 1E.7; only the BUILD is ordered
 
 **Decision.** The "1E.7 before 1E.5" rule constrains the **build**, not the design. Griffin's Claude Design

@@ -6,7 +6,52 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### Is library-into-plan formally in R1 scope? (raised S41)
+**Question**: the 1E.5 design pass found that recipes flow **into** the library four ways and nothing flows
+back out — there is no way to say "I want to cook this specific thing this week." Griffin's words: *"That
+should be something that we include in R1."* It is now designed in full (picker, the chef's answer +
+servings, pinned card, mixed week, regenerate-with-pins, modifying a meal you own, the chef pushing back),
+but it has **never been added to a scope doc**, and the rule is that nothing gets built that isn't in one.
+- **Cheaper than it looks**: `meal_plan_slots.recipeId` already FKs to `recipes`, and grocery generation
+  reads ingredients off the recipe row — so it is UI plus a generation-prompt change, not a schema project.
+- **Not free either**: it touches the **Recipes tab** (the verb takes its floating primary), the generation
+  prompt (planning around fixed slots), `slotType` (no value means "the user chose this"), and the confirm
+  path (a library recipe with no `normalized_ingredients` cache hits the normalize step — the exact latency
+  BUG-004 exists to prevent).
+- **Decide before 1E.5's scope doc is written**, since it changes the phase's size materially. Full detail
+  in `idea-backlog.md` → Incoming (S41).
+
+### Draft versus confirmed — the same week, twice (raised S41)
+**Question**: every frame across both Plan design waves says `Draft ·`. Confirming is the single most
+consequential action on the surface — it writes the grocery list — and the week that follows it currently
+looks identical to the one before. The hard constraint says a Sunday view and a Wednesday view must look
+*meaningfully different*; a draft and a confirmed week probably owe the same. How much visual change does
+confirmation earn? Pulled into the consolidation pass, unanswered as of S41.
+
+### Is tapping a day a browsing gesture or an editing one? (raised S41)
+**Question**: the day sheet (`1l`) won over expand-in-place (`1m`) — but the design flagged its own caveat:
+*"1l wins unless day-tapping turns out to be a browsing gesture rather than an editing one."* If users tap a
+day mostly to *look* at it, a sheet is heavy for a glance and expand-in-place is right. Not answerable from a
+static frame; it wants the interactive prototype or real use. Low stakes to reverse before build, high after.
+
+### Does the week-wrapped screen imply cost tracking we don't have? (raised S41)
+**Question**: the week-wrapped close-out shows `12 cooked · 3 skipped · $94 spent`, and the review screen's
+status row carries `~$87`. **We have no cost model for a recipe, a plan, or a grocery list** — those numbers
+are currently fictional. Either drop them from the design or scope real estimation. Related: the LLM
+cost-per-user model (idea-backlog, S35) is about *our* costs, not the user's groceries — this is a different
+number. Pairs with grocery ordering (V2), where real prices would arrive anyway.
+
 ### The gold budget: Design Spec v1.0 vs the reflect design you locked (raised S40)
+> **Update (S41): the Plan pass produced a resolving line.** Griffin's call was to keep the chef's gold
+> italic rationale on Plan and not shrink the surface to fit §06-C — because **law 03 explicitly grants the
+> italic rationale colour**, so the spec contradicts itself rather than Plan violating it. The line that
+> resolves both surfaces: **gold marks the chef *speaking*, not content you read.** Applied to the four
+> onboarding conflicts below, that keeps the orb, byline and hook gold and drops `SO HERE'S YOUR WEEK`'s
+> week list to `text.primary` — it is a list of decisions you read, not the chef's italic voice. That is the
+> "middle path" already described at the bottom of this entry, now with a principle behind it rather than a
+> budget count. **Still needs Griffin's explicit ratification before 1E.7 copies it onto five surfaces.**
+> Recorded in decisions.md (S41).
+
 **Question**: four places in onboarding use gold in ways **Design Spec v1.0 forbids**, and in every one of
 them the build is faithful to a **Claude Design pass you ran**. The spec says it wins where an earlier
 screen disagrees — but it was authored in the same session as the reflect design, so "earlier" is doing no

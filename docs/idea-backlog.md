@@ -1,5 +1,65 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S41) — harvested from the 1E.5 Plan design pass
+
+*Everything below surfaced during the Claude Design waves for Plan (`Plan Directions.dc.html`,
+`Plan Horizon.dc.html`, snapshotted under `docs/design/surfaces/plan/`). Several are capabilities the
+**design drew as if they existed** — those are marked ⚠ and were deliberately cut from the drawings so
+they don't reach the build by accident.*
+
+- **[R1 — NEEDS A SCOPE CALL] Cook a recipe you already have: library → plan.** The biggest gap the pass
+  found, and it has no prior backlog entry. Recipes flow **into** the library four ways (generated, URL
+  import, favourited off a plan, cooked) and **nothing flows back out** — there is no way to say "I want to
+  cook this specific thing this week", which is mainstream behaviour we have no answer to. The data spine
+  already supports it: `meal_plan_slots.recipeId` is an FK to `recipes` with a `recipeStatus` lifecycle, and
+  the grocery pipeline reads ingredients off the recipe row, so this is a UI + generation-prompt problem, not
+  a schema one. **Two primitives cover five entry points:** a **picker** (invoked from the intent screen, a
+  day, or a meal sheet) and an **"Add to this week" verb** that lives on a recipe wherever a recipe appears.
+  **The framing that keeps it on-thesis: a chosen recipe is a CONSTRAINT ON THE CHEF, not a replacement for
+  it** — the chef still picks the night, builds around it, shops for it and spends the leftovers. Designed in
+  full (picker, the chef's answer + servings, the pinned card, the mixed week, regenerate-with-pins,
+  modifying a meal you own, the chef pushing back). **Two build consequences to carry:** `slotType` has no
+  value meaning "the user chose this", and a library recipe may have no `normalized_ingredients` cache, so it
+  would hit the normalize path at confirm — the exact latency BUG-004 exists to prevent.
+- **⚠ [V1.5] Held-recipe queue + reminder.** From the chef-pushback screen: "two now, two in the queue — the
+  other two wait for next Sunday and I'll remind you." Needs a held-recipe concept, a surface to see and
+  manage it, and a reminder trigger. **Cut from the R1 drawing** (Griffin, S41) — the option now reads "two
+  this week, two stay in your recipes", which needs no new concept because they are already saved.
+- **⚠ [V1.5] Chef deferred decisions — the chef withholding on purpose.** From the null-title slot:
+  *"Wednesday depends on how much chicken Monday leaves. I'll settle it Tuesday night."* A slot the chef
+  deliberately leaves unwritten and resolves later on its own. Arguably the product thesis in one sentence
+  and no competitor does it — but it needs a resolve trigger and a fallback for when the user doesn't open
+  the app that day. **Cut from the R1 drawing** (Griffin, S41); the slot keeps "Decide now" only.
+- **[post-1E.5] Stale-library nudge as an intent chip.** Griffin chose the quiet door (`1b`) for the intent
+  screen over the version where the chef proactively offers recipes you saved and never cooked — the
+  proactive block only fires when stale candidates exist, so the door has to exist underneath it anyway.
+  What's deferred is the moment the chef *volunteers*. Cheap way back to it later without new furniture: the
+  intent screen already has a chip row, so a stale-library nudge becomes a chip variant (`Cook that lamb
+  ragù`). The staleness read itself moved **into the picker** as content rather than a sort order.
+- **[1E.5] Rate-the-week screen.** "Rate them" needs a destination — at eighteen meals a row of thumbs is a
+  screen, with a bulk affordance ("They were all fine — marks the twelve and closes this"), two states per
+  row rather than five stars (the chef needs a direction, not a score), and only cooked meals listed because
+  a skip is already an answer. The primary is **"Save and plan next week"**, not "Done" — rating is a step in
+  the ritual, not a chore with an exit. Also what gives week-wrapped somewhere to live.
+- **[V1.5] Repeat a week in one tap.** From the week-wrapped close-out: *"Save the carbonara week — cook the
+  whole thing again in one tap."* Nothing in the system saves or replays a week today. Pairs with the
+  library-into-plan work above (a saved week is a set of pinned recipes).
+- **[V2] Spend readout on the week.** Week-wrapped shows `12 cooked · 3 skipped · $94 spent`. We have no cost
+  model for a plan or a grocery list at all, so the number is currently fictional. Either drop it from the
+  design or scope real cost estimation — it pairs with the existing grocery-ordering (V2) and pricing work.
+- **[post-MVP] The chef learns from skips.** *"You skipped Thursday, which you always do, so I'll stop
+  planning it."* An inference over behaviour that turns an observation into a decision. Sits with the already
+  deferred "proactive pattern-detection nudges" item from 1E — same class, and this is the well-mannered
+  version (a stated conclusion, not a nag).
+- **[1E.7 / 1F] Recipes tab bottom edge, per spec §07 Fix 2.** The pinning verb takes the Recipes screen's
+  single floating primary ("Add to this week"), which means the shipped floating search/＋ toolbar from the
+  1D reorg goes: the FAB is deleted, search moves into the header (pattern B), and exactly one object floats
+  above the tab bar. Already specified by the spec; the design pass made it concrete. **Consequence: the
+  1E.5 build touches Recipes, not only Plan.**
+- **[1E.5] Non-contiguous weeks are drawn but unscoped.** "Not here Monday and Tuesday, I want Thursday and
+  Friday, three dinners." The dated rail hosts it unchanged, but the generation side (a week as a *set of
+  chosen days* rather than seven slots) has never been specced.
+
 ## Incoming (S40)
 
 - **[1E.5] Dish titles repeat their intent's verb — "Grilled X" seven times.** Layer B (S40) on the
