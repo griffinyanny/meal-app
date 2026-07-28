@@ -4,6 +4,101 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 43 — 2026-07-27/28 (1E.5 OPENED — the Plan rebuild's structural spine)
+
+**The job:** write `scope-1E.5.md`, give Griffin a read on the still-opens, then open the build —
+rebuild Plan in real components to `surfaces/plan/brief.md`'s decisions ledger.
+
+**Result: 1E.5 → 🔨 building. Slice 1 is roughly half done.** The fast gauntlet is green
+(**lint + typecheck clean, 531 unit passing**, up from 480). **The E2E suite is NOT green** — see
+"What's owed" below. Work is on branch `session-43-1e5-plan-rebuild`, deliberately **not** merged to
+`main`, because the auto-merge rule is gated on green.
+
+### Griffin's three calls at phase open
+
+| Call | Decision | Note |
+|---|---|---|
+| The `$94 spent` / `~$87` cost numbers | **Scope LLM estimation now** | Claude recommended dropping them (no cost model; an LLM estimate is ungrounded; it is the one figure on the screen a user can audit against a real receipt; real prices arrive free with V2 grocery ordering). Griffin chose to build it. |
+| Library-into-plan | **In R1, as Slice 2** | Confirms his S41 "that should be something that we include in R1" and gives it the scope-doc entry it never had. |
+| Divergence (a confirmed week where Tuesday wasn't cooked) | **State expressible only** | The rendering lands here; the cascade (list repair, leftover chain, re-plan) is 1D's deferred mid-week resync wearing a different hat. |
+
+**Two of the brief's four still-opens closed without needing him.** The **landed ring** was already
+settled *and shipped* — S42 ratified the gold line and moved the shimmer and ring indigo → gold under
+exactly that rule, so the brief's list simply predates its own answer. The **picker's four tiles push**,
+because a pushed view carries its own header and count, which is what makes a tile a door; a filter chip
+implies subtraction from a list you can already see, contradicting "the picker is a place, not a
+dropdown." **Day-sheet-vs-expand stays open on purpose** — `1l` ships because it is a second invocation
+of a sheet shell we build anyway, and `1m` needs usage rather than a frame.
+
+### A scope crossing, recorded rather than drifted
+
+**Spec §12 item 04's floating-primary half pulls forward 1F → 1E.5.** `Add to this week` needs the
+Recipes screen's single floating primary, and the 1D search/＋ toolbar occupies that exact pixel. They
+cannot be sequenced apart without building the Recipes bottom edge twice. Logged as a change-log line in
+both `scope-1E.5.md` and `scope-v1.md` per the pull-forward rule. Squaring the nav's top corners stays 1F.
+
+### What the build actually found
+
+1. **`mealType` was never plumbed to the client.** The DB column exists and `plan.current` already
+   returned it, but `PlanSlot` and `DisplayMeal` dropped it — the shipped Plan tab had **no concept of
+   which meal of the day a slot holds**. Harmless while R1 generates dinners only, except that the
+   ledger's entire density rule is built on it. Added now; it is one field through three types and the
+   difference between a rail that can express the ledger and one that cannot.
+2. **BUG-008 was broader than the tracker described.** Filed as "prints the cook time twice"; the real
+   defect is that **the meta row had no contract at all** — it appended `estTimeMinutes`, then servings,
+   then *every tag verbatim*. The row is now one cook time and one serving count, and a time-shaped tag
+   is **dropped rather than deduped**, because a card can state one cook time honestly and
+   `estTimeMinutes` is the structured one. Locked by regressions for both the disagreeing case
+   (`95 min` vs tag `"90 min"`) and the everyday agreeing one (`30 min … 30 min`).
+3. **A ledger rule the server cannot yet honour.** §C says *the meal row is the unit of change feedback,
+   never the day container* — but `plan.modify` returns changed **days**, not slot ids. At R1's
+   one-dinner-per-day those coincide, so dates resolve to cookable rows and it is exactly right today; at
+   the three-meal density the same ledger specifies, a whole-day change would ring all three rows.
+   **The server owes `changedSlotIds`** — logged as **BUG-023**, not reachable in production today.
+4. **Reuse beat rebuild on the orb.** `ChefPresence` already existed in onboarding, so it moved to
+   `components/shared/` and gained the 34px header and 20px toast sizes. The app has one chef, not two.
+   Same precedent as the relocated `TalkToChefSheet`.
+
+### One deliberate deviation from the frames
+
+Frames `3i`/`3j` draw a leftover night's meta as `20 min · Sunday's pork`. **We have no column naming a
+leftover's source**, and the ledger's rule ("one cook time and one serving count") is the narrower one —
+so servings holds that slot rather than parsing the source out of rationale prose. Slice 2's provenance
+gives the meta its real second fact. Flagged because it is a visible difference from the drawing.
+
+### W6 — cost estimation, built to the guardrails rather than to the frame
+
+Display half only. Three rules make the dishonest rendering inexpressible: **always tilde-prefixed**
+(never a bare figure), **never cents** (`$86.40` claims a resolution the model does not have; rounded not
+truncated, since a low guess reads worse at the till), and **null rather than `$0`** (zero is a claim;
+absence is the truth). The `estCostCents` column and the generation output that fills it are still owed,
+so `estimateCents` arrives null and every estimate surface renders nothing.
+
+**Still owed from Griffin:** the `$94 spent` copy call. `~$87` reads as an estimate because the tilde does
+that work; **"spent" is a past-tense factual claim about money he actually handed over**, and it is the
+single most auditable string on the surface. `~$94 est.` costs nothing and is true.
+
+### What's owed — and why E2E is red
+
+The rail changed the DOM the Plan specs select against. This is **spec migration, not a regression in
+behaviour**, and the specs must be *extended to the new model*, never weakened:
+
+- **`reviewHero`** anchors on the heading `"Your week, ready to review"` — deleted by design; the chef
+  header replaced it. A `data-testid="plan-rail"` anchor now exists to replace it.
+- **`cardChip`** — the AI action chips left the card. Per the ledger the meal row carries title and meta
+  only; the chips live in the meal sheet, so the M-series must route through the sheet.
+- **The in-card `Reworking …` label** is gone — §C replaced it with a ring on the row plus the toast in
+  the action bar's slot.
+
+**Estimated blast radius: ~26 of 78 specs** (drawer 7, modify 7, regenerate 5, plus elapsed/error).
+Groceries, Recipes, You and onboarding are untouched.
+
+**Also still to build in Slice 1:** W3 (the toast in the bar's slot), W7 (the summary meal sheet + day
+sheet — closes BUG-006), W6's server half, week-wrapped on the rail, the new seed states, the `P`/`C`
+specs, and `/visual-qa`. **Slice 2 is untouched.**
+
+---
+
 ## Session 42 — 2026-07-27 (1E.7 CLOSED — the app-wide spec sweep, and the gold line)
 
 **The job:** ratify the gold line and apply it, then sweep spec §12 items 01/02/06 plus the pre-spec

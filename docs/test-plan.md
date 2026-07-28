@@ -12,6 +12,17 @@ background scroll). Full suite: **30 passing, 0 findings** (`npm run test:e2e`).
 Plan-tab mechanics are now machine-covered end to end except the low-risk G/R/W
 generate/review rows. D3 — the pointer-lockup regression — is verified sound.
 
+> **⚠️ S43 — THE PLAN SPECS BELOW ARE MID-MIGRATION (BUG-024).** Phase 1E.5 rebuilt the Plan tab onto the
+> day-container rail, which replaced the DOM the D / M / RG / E / X specs select against, so ~26 of 78
+> fail on branch `session-43-1e5-plan-rebuild`. **This is spec migration owed by an intentional rebuild,
+> not a behaviour regression.** Three causes: `reviewHero` anchors on the deleted heading "Your week,
+> ready to review" (a `data-testid="plan-rail"` anchor now replaces it); `cardChip` expects AI action
+> chips on the card, but the ledger moved them into the meal sheet; and the in-card `Reworking …` label
+> became a gold ring on the changed row plus the toast in the action bar's slot. **Extend the specs to the
+> new interaction model — do not weaken assertions to force green.** New `P` (rail) and `C` (cost) spec
+> families are owed, and the **ADVERSARIAL** seed needs re-pointing: two of its three findings (BUG-008's
+> double time, BUG-009's permanent "Thinking…") are *expected* renderings under the new rules.
+
 ## Setup / preconditions
 - Dev server: `PORT=3001 npm run dev` (FFOS owns 3000). Sign in via the DevTools
   console snippet.

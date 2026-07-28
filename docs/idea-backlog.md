@@ -36,15 +36,15 @@ they don't reach the build by accident.*
   What's deferred is the moment the chef *volunteers*. Cheap way back to it later without new furniture: the
   intent screen already has a chip row, so a stale-library nudge becomes a chip variant (`Cook that lamb
   ragù`). The staleness read itself moved **into the picker** as content rather than a sort order.
-- **[1E.5] Rate-the-week screen.** "Rate them" needs a destination — at eighteen meals a row of thumbs is a
+- **[1F — re-tagged from 1E.5, S43] Rate-the-week screen.** "Rate them" needs a destination — at eighteen meals a row of thumbs is a
   screen, with a bulk affordance ("They were all fine — marks the twelve and closes this"), two states per
   row rather than five stars (the chef needs a direction, not a score), and only cooked meals listed because
   a skip is already an answer. The primary is **"Save and plan next week"**, not "Done" — rating is a step in
-  the ritual, not a chore with an exit. Also what gives week-wrapped somewhere to live.
+  the ritual, not a chore with an exit. Also what gives week-wrapped somewhere to live. **Re-tagged 1E.5 → 1F (S43):** this is a *new screen* with its own primary and a bulk affordance, not a Plan state — a fidelity rebuild should not grow a screen. 1E.5 renders week-wrapped on the rail; where "Rate them" *goes* is 1F's.
 - **[V1.5] Repeat a week in one tap.** From the week-wrapped close-out: *"Save the carbonara week — cook the
   whole thing again in one tap."* Nothing in the system saves or replays a week today. Pairs with the
   library-into-plan work above (a saved week is a set of pinned recipes).
-- **[V2] Spend readout on the week.** Week-wrapped shows `12 cooked · 3 skipped · $94 spent`. We have no cost
+- **[V2 — partially pulled into 1E.5, S43] Spend readout on the week.** Week-wrapped shows `12 cooked · 3 skipped · $94 spent`. We have no cost
   model for a plan or a grocery list at all, so the number is currently fictional. Either drop it from the
   design or scope real cost estimation — it pairs with the existing grocery-ordering (V2) and pricing work.
 - **[post-MVP] The chef learns from skips.** *"You skipped Thursday, which you always do, so I'll stop

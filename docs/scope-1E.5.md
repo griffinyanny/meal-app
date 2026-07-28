@@ -341,6 +341,28 @@ defects, so the state must be re-pointed at what is ugly under the *new* rules.
 4. **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape. Not a
    1E.5 blocker but it is the next thing after this phase.
 
+## Build status
+
+**Branch `session-43-1e5-plan-rebuild` — NOT merged to `main`.** The auto-merge rule is gated on green
+and the E2E suite is red (BUG-024). Fast gauntlet green: lint, typecheck, **531 unit** (was 480).
+
+| WS | State | Note |
+|---|---|---|
+| **W1** rail | ✅ built | `rail-helpers.ts`, `rail/meal-row.tsx`, `rail/day-container.tsx`, `rail/plan-rail.tsx`. **BUG-008 fixed in code.** |
+| **W2** chosen days | ✅ built | `groupIntoDays` + `unplannedSpan`; the closing line and its one control. |
+| **W5** generation | ✅ built | `streaming-plan.tsx` is now the rail + `CountSlot`. **BUG-009 fixed in code.** |
+| **W4** time states | 🔨 partial | Draft/confirmed (`plan-review.tsx`) + mid-week (`plan-midweek.tsx`) done. **Week-wrapped still on the old cards.** |
+| **W3** modify/toast | 🔨 partial | `ToastSlot` + the gold working ring exist; `use-plan-modify` not yet routed through them, `modify-status-pills.tsx` not yet retired. |
+| **W6** cost | 🔨 partial | Display + guardrails + tests done. **Server half owed:** `estCostCents` column, migration, generation output, prompt rule. Renders nothing until then. |
+| **W7** meal sheet | ⬜ | BUG-006 still open. Day sheet not started. |
+| **W8–W10** Slice 2 | ⬜ | Untouched. |
+
+**Gates:** unit ✅ · E2E ❌ (BUG-024) · `P`/`C` specs ⬜ · seed states ⬜ · `/visual-qa` ⬜ · Layer B ⬜ ·
+critic ⬜ · Griffin's taste ⬜.
+
+**Do first next session: BUG-024.** Until the Plan specs migrate to the rail's DOM, the rebuild has no
+mechanical gate and every later workstream compounds on an unverified base.
+
 ## Change log
 
 | Date | Change | Why |

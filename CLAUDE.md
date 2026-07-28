@@ -16,7 +16,21 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-**Phase 1E.7 (design-system sweep) is ✅ CLOSED — S42, 2026-07-27. M5.7 met.** **Next: 1E.5's BUILD** — rebuild Plan in real components to `docs/design/surfaces/plan/brief.md` (the design pass landed S41; the brief is the build spec). Read `docs/whats-next.md` first.
+**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN and roughly half through Slice 1 — S43, 2026-07-27/28.** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+
+**Work is on branch `session-43-1e5-plan-rebuild`, deliberately NOT merged to `main`** — the auto-merge rule is gated on green and the E2E suite is red. **Fast gauntlet green: lint + typecheck clean, 531 unit** (up from 480).
+
+**⚠️ START NEXT SESSION WITH BUG-024.** The 1E.5 rail replaced the DOM the Plan E2E specs select against, so ~26 of 78 fail at `beforeEach`. This is **spec migration owed by an intentional rebuild, not a behaviour regression** — but until it lands the Plan tab has *no mechanical gate*, and every remaining workstream compounds on an unverified base. Three causes: `reviewHero`'s heading is gone (use the new `data-testid="plan-rail"` anchor), the AI action chips moved off the card into the meal sheet, and the in-card `Reworking …` label became a gold ring on the row plus the toast in the action bar's slot. **Do not weaken assertions to force green.**
+
+**The phase runs in two slices** (decisions.md, S43). **Slice 1** = Plan's own states (ledger §C/§D); **Slice 2** = library-into-plan, which **Griffin confirmed into R1 scope this session** and which carries all five of the brief's named build dependencies — which is why Slice 1 stands alone. **Spec §12 item 04's floating-primary half pulls forward 1F → 1E.5**, because `Add to this week` needs the pixel the 1D search/＋ toolbar occupies.
+
+**Built:** the rail (days are containers, meals are inset rows; only dinner carries a rationale, which is what holds the surface inside law 06 at every density), the chosen-days week (unplanned days are not rows; the absence is stated once at the bottom), generation as the provisional row repeated (a count, never a bar), and draft-vs-confirmed as genuinely different screens (the floating action *disappears* once confirmed — the decision was spent). **BUG-008 and BUG-009 are fixed in code**, unit-locked but ungated until the specs migrate. **Still owed in Slice 1:** W3's toast wiring, W7's summary meal sheet (BUG-006), W6's server half, week-wrapped, the new seed states, the `P`/`C` specs, and `/visual-qa`.
+
+**BUG-008 was broader than tracked** — not "prints the cook time twice" but *the meta row had no contract at all*. It is now one cook time and one serving count; **time-shaped tags are dropped rather than deduped**, because a card can state one cook time honestly and `estTimeMinutes` is the structured one. Non-time tags become markers above the title.
+
+**Owed to Griffin:** the `$94 spent` copy call. `~$87` reads as an estimate; **"spent" is a past-tense factual claim about money he actually handed over**, and it is the most auditable string on the surface. Recommendation: `~$94 est.` Also still carried: `DEV_TOOLS_EMAILS` in Vercel Production (fourth session), and scope-v1's closed-beta question. — History below is retained for context.
+
+### Prior phase — 1E.7 (design-system sweep), ✅ CLOSED S42, 2026-07-27, M5.7 met
 
 **The whole app now runs on Design Specification v1.0** — every cool-white alpha warmed to `rgba(240,222,190,x)`, each surface carrying exactly one of the three named wash recipes, every radius on the eight-rung scale, and **the pre-spec `:root` family retired to an alias layer over the `--spec-*` tokens** rather than deleted (those names are the bridge Tailwind's `@theme inline` and every `ui/` primitive read). The consequential alias is **`--primary`, indigo `#3A86FF` → cream** — every `bg-primary` in the app is a button and §01 admits no third accent, so this repainted every primary button in the product. `.glass-surface`/`.glass-card`/`.glass-sheet` survive as names but are now aliases onto the elevation ladder; the **tab bar** could not come with them (chrome sits darker than the floor, glass sits lighter) and says `.spec-chrome` at its one call site. **Do not add a new colour value anywhere but the `--spec-*` block.**
 

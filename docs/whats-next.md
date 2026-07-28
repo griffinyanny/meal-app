@@ -1,8 +1,103 @@
 # What's Next
 
-Last updated: 2026-07-27 (Session 42)
+Last updated: 2026-07-28 (Session 43)
 
-## ▶ NEXT SESSION — 1E.7 is CLOSED. Open **1E.5's BUILD**: rebuild Plan to the landed design.
+## ▶ NEXT SESSION — 1E.5 is OPEN and half-built. **Migrate the Plan E2E specs FIRST.**
+
+**S43 opened 1E.5 and built the rebuild's structural spine.** Scope doc: [scope-1E.5.md](scope-1E.5.md).
+Work is on branch **`session-43-1e5-plan-rebuild`**, deliberately **not merged to `main`**.
+
+**Fast gauntlet green: lint + typecheck clean, 531 unit passing** (up from 480).
+**The E2E suite is RED, and that is the first job next session.**
+
+### ⚠️ Start here: BUG-024 — the Plan specs select against a DOM that no longer exists
+
+The rail replaced the card list, so ~26 of 78 specs fail at `beforeEach`. **This is spec migration owed by
+an intentional rebuild, not a behaviour regression** — but until it lands, the Plan tab has *no mechanical
+gate*, and every remaining workstream would compound on an unverified base.
+
+Three causes, all in `tests/e2e/app/selectors.ts` plus the specs that use it:
+
+1. **`reviewHero`** anchors on the heading `"Your week, ready to review"` — deleted by design when the
+   chef header replaced the hero card. A `data-testid="plan-rail"` anchor now exists to take its place.
+2. **`cardChip`** expects the AI action chips on the card. The ledger moved them: the meal row carries
+   title and meta only, and the chips live in the meal sheet. The M-series must route through the sheet.
+3. **The in-card `Reworking …` label** is gone — §C replaced it with a gold ring on the changed row plus
+   the toast in the action bar's slot.
+
+**Do not weaken the assertions to force green.** Extend them to the new interaction model.
+
+### Then finish Slice 1
+
+- **W3** — route `use-plan-modify` through `ToastSlot`; retire `modify-status-pills.tsx`. The toast takes
+  the primary's exact box (bottom 96, height 52, radius 16, insets 16) so the bar *becomes* the message,
+  and Confirm goes inert while working.
+- **W7** — the summary meal sheet (**closes BUG-006**: it currently embeds the whole `RecipeView`) plus
+  the day sheet, which is the same shell with the first line and primary swapped.
+- **W6's server half** — `estCostCents` column + migration, the generation output that fills it, and the
+  prompt rule. The display half and its guardrails are already built and tested.
+- **Week-wrapped** onto the rail — the last screen still on the old cards.
+- **New seed states** (`CONFIRMED`, `PROVISIONAL`, `GENERATING`, `CHOSEN_DAYS`, `DENSE`, uncooked-past-day)
+  and the `P`/`C` specs. **`ADVERSARIAL` needs re-pointing, not preserving** — two of its three findings
+  are now *expected* renderings under the new rules.
+- Then `/visual-qa` Layer A → Layer B (W1's title rule and W6's cost output both change generation).
+
+### ⚠️ Your call, and it blocks a frame
+
+**The `$94 spent` copy.** `~$87` reads as an estimate because the tilde does that work. **"Spent" is a
+past-tense factual claim about money you actually handed over** — the single most auditable string on the
+surface, because you have a receipt. `~$94 est.` costs nothing and is true. I'll use that unless you say
+otherwise, but I'd rather you chose it.
+
+### Still your action (carried, fourth session running)
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated).
+Test mode is invisible and inert until you do.
+
+### Also still open
+- **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape.
+- **Day-sheet vs in-rail expansion** — `1l` ships; `1m` needs usage, not a frame. Revisit after you run a
+  real week on the rebuilt tab.
+
+**⭐ Model recommendation: Opus 4.8.** The spec migration is mechanical reading-and-rewriting against a
+known DOM change, and the remaining workstreams are execution against a locked ledger. No new
+architecture. The one judgement call — how the M-series expresses "the chef is working" now that the
+label became a ring plus a toast — is a small design read, not a structural one.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — 1E.5 is OPEN and half-built (S43). Read docs/whats-next.md, docs/scope-v1.md and
+docs/scope-1E.5.md first, then give me the ≤6-line scope check. Work is on branch
+session-43-1e5-plan-rebuild, NOT merged to main because E2E is red. Fast gauntlet is green (lint,
+typecheck, 531 unit). Start with BUG-024: the Plan E2E specs select against the DOM the new rail
+replaced — reviewHero's heading is gone (use the data-testid="plan-rail" anchor), the AI action chips
+moved off the card into the meal sheet, and the in-card "Reworking…" label became a gold ring plus the
+toast. Migrate the specs to the new interaction model; do NOT weaken assertions to force green. Then
+finish Slice 1: W3 (route use-plan-modify through ToastSlot, retire modify-status-pills), W7 (the summary
+meal sheet + day sheet — closes BUG-006), W6's server half (estCostCents column + migration + generation
+output + prompt rule), week-wrapped onto the rail, then the new seed states and P/C specs, then
+/visual-qa. Re-point the ADVERSARIAL seed — two of its three findings are expected renderings now. Also
+tell me your read on the "$94 spent" copy call before you build that frame. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather not touch the rebuild):
+```
+Resume meal app — leave the 1E.5 branch (session-43-1e5-plan-rebuild) alone this session and burn down
+bugs on main instead: BUG-020 (retryFailed never awaits in-flight saves, so "All saved." can be shown
+over a save that hasn't landed) and BUG-021 (a failed skipOnboarding still walks the user out to Plan)
+first, since the interview fires once per account and I'm about to run it for real. Then BUG-011/BUG-012
+(householdSize ↔ composition desync putting two contradictory numbers in the same chef prompt, and the
+You tab saying "4 adults" for 2 adults + 2 children — same root), then BUG-010 (household_composition
+ships with a column DEFAULT so a default is indistinguishable from an answer; needs a migration) and
+BUG-013 (finishOnboarding trusts client-supplied memory text). Read docs/whats-next.md +
+docs/bug-tracker.md first, give me the ≤6-line scope check, keep 480 unit + 78 E2E green on main.
+On Opus 4.8.
+```
+
+---
+
+## ⚠️ S42 (superseded by S43 above — 1E.5 is now open and building)
+
+## ▶ 1E.7 is CLOSED. Open **1E.5's BUILD**: rebuild Plan to the landed design.
 
 **S42 swept the app onto Design Spec v1.0 and ratified the gold line.** 1E.7 → ✅, M5.7 met.
 **480 unit + 78 E2E green, lint + typecheck clean, `/visual-qa` re-captured across all five surfaces.**

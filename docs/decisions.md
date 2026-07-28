@@ -4,6 +4,72 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-27 (S43) — 1E.5 splits into two slices; library-into-plan enters R1
+
+**Decision.** Phase 1E.5 builds in two slices. **Slice 1** is Plan's own states (ledger §C/§D): the rail,
+the chosen-days week, modify/toast/failure, the four time states, generation, the summary meal sheet, and
+cost estimation. **Slice 2** is library-into-plan: the picker, the picked meal, and the `Add to this week`
+verb.
+
+**Rationale.** Slice 1 depends on nothing in Slice 2 and is shippable alone, so the split buys two
+reviewable `/visual-qa` passes instead of one unreviewable diff — the same argument that justified
+splitting 1E.7 out of 1F. It also means the signature surface's rebuild can land even if library-into-plan
+slips.
+
+**Library-into-plan is formally in R1**, resolving the open question raised S41. Griffin's S41 words —
+*"That should be something that we include in R1"* — reaffirmed at S43. It had been designed in full but
+never written into a scope doc, and the rule is that nothing gets built that isn't in one. Cheap on the
+data spine (`meal_plan_slots.recipeId` already FKs to `recipes`); not free on the edges (Recipes tab,
+generation prompt, `slotType`, the confirm path).
+
+**Future impact.** All five of the brief's named build dependencies belong to Slice 2, which is exactly
+why Slice 1 stands alone.
+
+## 2026-07-27 (S43) — Spec §12 item 04's floating-primary half pulls forward 1F → 1E.5
+
+**Decision.** The `Add to this week` verb takes the Recipes screen's single floating primary, which
+requires deleting the 1D floating search/＋ toolbar and moving search into the header. That is spec §12
+item **04**, previously assigned to 1F. It moves into 1E.5. **Squaring the nav's top corners stays in 1F.**
+
+**Rationale.** The verb and the old toolbar want the same pixel. Sequencing them apart would mean building
+the Recipes bottom edge twice. Recorded as a change-log line in `scope-v1.md` per the pull-forward rule
+rather than allowed to drift.
+
+## 2026-07-27 (S43) — Cost estimation is built, over the recommendation to drop it
+
+**Decision (Griffin).** Scope LLM cost estimation now, rather than removing the design's `~$87` and
+`$94 spent` figures.
+
+**Claude's recommendation was to drop them**, on three grounds: we have no cost model, so the only cheap
+implementation is an ungrounded LLM guess; a dollar figure is the one number on the screen a user can
+audit against a real receipt, which makes being wrong uniquely expensive to trust in everything else the
+chef claims; and real per-line prices arrive free with V2 grocery ordering, so building estimation now
+means building it twice. `idea-backlog.md` already routed the spend readout to V2.
+
+**Griffin chose to build it.** Implemented with guardrails that make the dishonest rendering
+inexpressible: always tilde-prefixed, never cents (rounded rather than truncated — a low guess reads worse
+at the till), and null rather than `$0`. The week-wrapped figure estimates over the **confirmed grocery
+list** (a real, item-level artifact) rather than the plan, which is the better-grounded of the two inputs.
+
+**Still open:** the word "spent". `~$87` reads as an estimate; `$94 spent` is a past-tense factual claim.
+Recommendation is `~$94 est.` — Griffin's call.
+
+## 2026-07-27 (S43) — The meta row has a contract: one cook time, one serving count
+
+**Decision.** Plan's meal-card meta row prints a cook time and a serving count, nothing else. Tags never
+enter it. A tag that looks like a duration is **dropped, not deduped**.
+
+**Rationale.** BUG-008 was filed as "prints the cook time twice", but the real defect was that the meta
+row had no contract at all — it appended `estTimeMinutes`, then servings, then every tag verbatim. Dropping
+rather than deduping is the load-bearing part: a card can state one cook time honestly, and
+`estTimeMinutes` is the structured one. Anything else a tag might say becomes a **marker above the title**,
+where it can never be mistaken for a second duration.
+
+**Future impact.** Slice 2 gives the meta its one legitimate third part — provenance (`Griffin's pick`).
+Frames `3i`/`3j` also draw a leftover source (`Sunday's pork`) in the servings slot; **we deliberately did
+not build that**, because no column names a leftover's source and inventing it from rationale prose is
+guessing.
+
 ## 2026-07-27 (S42) — The gold line: gold marks the chef SPEAKING, not content you read
 
 **Griffin ratified this, and it replaces counting marks with a rule you can apply.** It resolves the
