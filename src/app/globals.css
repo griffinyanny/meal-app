@@ -193,6 +193,23 @@
     border: 1px solid rgba(240, 222, 190, 0.14);
     box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.7);
   }
+  /* A slot with no answer yet — mid-generation, or deliberately undecided (1E.5
+     ledger §C). Deliberately hueless: it is the SAME warm neutral as .spec-inset
+     at a higher alpha, not a state colour, because "no meal here yet" is not a
+     warning and not the chef speaking. Never pair it with a spinner — a
+     permanent "Thinking…" is a lie after ten seconds (BUG-009). */
+  .spec-provisional {
+    background: rgba(240, 222, 190, 0.09);
+    border: 1px solid rgba(240, 222, 190, 0.2);
+  }
+  /* The 36px cream-tinted control ("Decide now", "Add a night", "Add days").
+     Cream is what you press (§01), so an inline control that invites a tap
+     carries the action colour at low alpha rather than the neutral of
+     .spec-control, which reads as chrome. */
+  .spec-control-cream {
+    background: rgba(244, 235, 220, 0.1);
+    border: 1px solid rgba(244, 235, 220, 0.32);
+  }
   /* Lighting (spec §03). One wash per screen, entering once from above, always
      gold, never animated, always beneath the content layer. `hero` is the only
      recipe permitted two stops and is reserved for screens the orb is on. */
@@ -342,6 +359,26 @@
     }
   }
 
+  /* The chef, working. The same breath at 1.6s instead of 4s — a faster pulse,
+     not a different animation, so "thinking" reads as the same creature under
+     load rather than a second indicator. Never the only carrier of the state:
+     the header's status label says "Writing" in words beside it. */
+  .ember-thinking {
+    animation-duration: 1.6s;
+  }
+
+  /* A change landed. One shot, gold, on the changed ROW's own radius — the
+     chef's work is what is being marked, and §C makes the row (never the day
+     container) the unit of change feedback. */
+  @keyframes landedRing {
+    0% {
+      box-shadow: 0 0 0 1.5px rgba(233, 179, 72, 0.55);
+    }
+    100% {
+      box-shadow: 0 0 0 1.5px rgba(233, 179, 72, 0);
+    }
+  }
+
   .ember-ring {
     animation: ember-ring-out 3.4s ease-out infinite;
   }
@@ -421,6 +458,13 @@
     .ember-ring,
     .ember-steam {
       opacity: 0;
+    }
+    /* The landed ring resolves to nothing, so stopping it mid-flight would
+       leave a permanent gold outline on the row. Suppress it outright — the
+       rewritten rationale is the acknowledgement that survives (§C), and it is
+       text, so nothing is lost. */
+    .animate-\[landedRing_1\.4s_ease-out_1\] {
+      animation: none !important;
     }
   }
 }

@@ -9,7 +9,7 @@ import {
   type BabyStage,
   type HouseholdComposition,
 } from "@/lib/household";
-import { ChefStatus } from "./chef-presence";
+import { ChefStatus } from "@/components/shared/chef-presence";
 import { CountRow, PrimaryAction, QuietAction } from "./answer-controls";
 import { CaughtTray, TellMeField } from "./tell-me-field";
 

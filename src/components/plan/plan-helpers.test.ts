@@ -16,6 +16,7 @@ function meal(overrides: Partial<DisplayMeal> = {}): DisplayMeal {
     relative: null,
     timeframe: "upcoming",
     slotType: "recipe",
+    mealType: "dinner",
     title: "Chicken Tikka",
     description: null,
     rationale: null,

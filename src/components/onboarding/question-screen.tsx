@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChefStatus } from "./chef-presence";
+import { ChefStatus } from "@/components/shared/chef-presence";
 import {
   OptionCards,
   OptionChips,

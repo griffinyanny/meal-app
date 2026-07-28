@@ -1,74 +1,75 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { BottomBar } from "./bottom-bar";
-import { MealCard } from "./meal-card";
+import { type DisplayMeal, type HydrationView } from "./plan-helpers";
 import { PastMealRow } from "./past-meal-row";
-import { type DisplayMeal, type HydrationView, isCookable } from "./plan-helpers";
+import { ChefHeader } from "./rail/chef-header";
+import { PlanRail } from "./rail/plan-rail";
 
 export interface PlanMidweekProps {
   meals: DisplayMeal[];
+  weekStart: string;
   isConfirmed: boolean;
   isConfirming: boolean;
   onConfirm: () => void;
   onTalkToChef: () => void;
   onTapMeal: (meal: DisplayMeal) => void;
-  onChipClick: (meal: DisplayMeal, chip: string) => void;
   onFeedback: (meal: DisplayMeal, feedback: "thumbs_up" | "thumbs_down") => void;
   onStartOver: () => void;
-  pendingDate: string | null;
-  pendingLabel: string;
-  changedDates: string[];
+  workingMealIds: ReadonlySet<string>;
+  landedMealIds: ReadonlySet<string>;
   hydrationByDate: Record<string, HydrationView>;
 }
 
+/**
+ * The Wednesday-evening view — the best proof of "dynamically assembled, not
+ * templated".
+ *
+ * Mid-week is a CONFIRMED week partway through, so it inherits the confirmed
+ * screen's rules (§D): no floating action, the chef in the past tense, cards
+ * carrying meta rather than placement arguments. What it adds is the past —
+ * days already cooked, which collapse to feedback rows because the only thing
+ * left to say about them is whether they were any good.
+ */
 export function PlanMidweek({
   meals,
-  isConfirmed,
-  isConfirming,
-  onConfirm,
+  weekStart,
   onTalkToChef,
   onTapMeal,
-  onChipClick,
   onFeedback,
   onStartOver,
-  pendingDate,
-  pendingLabel,
-  changedDates,
-  hydrationByDate,
+  workingMealIds,
+  landedMealIds,
 }: PlanMidweekProps) {
-  const tonight = meals.find((m) => m.timeframe === "tonight");
   const past = meals.filter((m) => m.timeframe === "past");
-  const upcoming = meals.filter((m) => m.timeframe === "upcoming");
-
-  const cardAffordance = (meal: DisplayMeal) => ({
-    working: pendingDate !== null && pendingDate === meal.date,
-    workingLabel: pendingLabel,
-    justChanged: !!meal.date && changedDates.includes(meal.date),
-    hydration: meal.date ? hydrationByDate[meal.date] : undefined,
-  });
+  const ahead = meals.filter((m) => m.timeframe !== "past");
 
   return (
-    <div className="space-y-6 pb-4">
-      {tonight && isCookable(tonight.slotType) && (
-        <div className="space-y-2">
-          <div className="rounded-2xl ring-1 ring-primary/30">
-            <MealCard
-              meal={tonight}
-              onTap={() => onTapMeal(tonight)}
-              onChipClick={(chip) => onChipClick(tonight, chip)}
-              {...cardAffordance(tonight)}
-            />
-          </div>
-        </div>
-      )}
+    <>
+      <ChefHeader
+        status="Set"
+        summary="Here's the rest of your week."
+        onRevise={onTalkToChef}
+        reviseLabel="Something's off"
+      />
+
+      <PlanRail
+        meals={ahead}
+        weekStart={weekStart}
+        // Tonight and the days ahead keep their arguments: unlike a settled
+        // week you have already read, these are decisions still in front of you.
+        showRationale
+        showAddControls
+        workingMealIds={workingMealIds}
+        landedMealIds={landedMealIds}
+        onOpenMeal={onTapMeal}
+      />
 
       {past.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-[11px] font-medium tracking-widest text-muted-foreground">
+        <section className="mt-7">
+          <p className="m-0 mb-2.5 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
             EARLIER THIS WEEK
           </p>
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             {past.map((meal, i) => (
               <PastMealRow
                 key={meal.id ?? i}
@@ -77,60 +78,21 @@ export function PlanMidweek({
               />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {upcoming.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[11px] font-medium tracking-widest text-muted-foreground">
-            COMING UP
-          </p>
-          {upcoming.map((meal, i) => (
-            <MealCard
-              key={meal.id ?? meal.date ?? i}
-              meal={meal}
-              onTap={() => onTapMeal(meal)}
-              onChipClick={(chip) => onChipClick(meal, chip)}
-              {...cardAffordance(meal)}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="space-y-1">
+      <div className="mt-6">
+        <span className="text-[13.5px] text-[var(--spec-text-caption)]">
+          Starting fresh?{" "}
+        </span>
         <button
           type="button"
-          onClick={onTalkToChef}
-          className="block text-sm text-primary/90 transition-colors hover:text-primary"
+          onClick={onStartOver}
+          className="text-[13.5px] text-[var(--spec-text-muted)] underline-offset-2 transition-colors hover:text-[var(--spec-text-primary)]"
         >
-          Anything to adjust for the rest of the week? Talk to the Chef →
+          Plan a new week →
         </button>
-        {/* Regenerate entry point — more muted than the tweak action above,
-            since starting fresh replaces the confirmed week. */}
-        <div>
-          <span className="text-sm text-muted-foreground">Starting fresh? </span>
-          <button
-            type="button"
-            onClick={onStartOver}
-            className="text-sm text-muted-foreground underline-offset-2 transition-colors hover:text-foreground"
-          >
-            Plan a new week →
-          </button>
-        </div>
       </div>
-
-      {!isConfirmed && (
-        <BottomBar>
-          <div className="glass-sheet flex items-center justify-between rounded-2xl px-4 py-3">
-            <span className="text-sm text-muted-foreground">
-              {upcoming.length} {upcoming.length === 1 ? "meal" : "meals"} ahead
-            </span>
-            <Button size="sm" onClick={onConfirm} disabled={isConfirming}>
-              {isConfirming ? "Saving…" : "Looks good →"}
-            </Button>
-          </div>
-        </BottomBar>
-      )}
-    </div>
+    </>
   );
 }

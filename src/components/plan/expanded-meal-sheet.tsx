@@ -14,9 +14,9 @@ import {
   type DisplayMeal,
   type HydrationView,
   isCookable,
-  metaLine,
   scopedRequest,
 } from "./plan-helpers";
+import { metaLine } from "./rail-helpers";
 
 export interface ExpandedMealSheetProps {
   meal: DisplayMeal | null;
