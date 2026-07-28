@@ -61,7 +61,7 @@ export function DebugHud() {
         data-testid="debug-hud-toggle"
         aria-label="Toggle debug HUD"
         onClick={() => setOpen((o) => !o)}
-        className="fixed left-2 top-2 z-[60] rounded-full bg-black/60 px-2 py-1 font-mono text-[11px] text-white/80"
+        className="fixed left-2 top-2 z-[60] rounded-full bg-black/60 px-2 py-1 font-mono text-[11px] text-[rgba(240,222,190,0.8)]"
       >
         🐛
       </button>
@@ -69,7 +69,7 @@ export function DebugHud() {
       {open && (
         <div
           data-testid="debug-hud-panel"
-          className="fixed inset-x-2 bottom-24 z-[60] max-h-[50vh] overflow-auto rounded-xl border border-white/15 bg-black/85 p-3 font-mono text-[11px] leading-snug text-white/90 backdrop-blur"
+          className="fixed inset-x-2 bottom-24 z-[60] max-h-[50vh] overflow-auto rounded-xl border border-[rgba(240,222,190,0.15)] bg-black/85 p-3 font-mono text-[11px] leading-snug text-[rgba(240,222,190,0.9)] backdrop-blur"
         >
           <div className="mb-2 flex items-center justify-between">
             <span className="font-semibold">DEBUG HUD</span>
@@ -78,14 +78,14 @@ export function DebugHud() {
                 type="button"
                 data-testid="debug-hud-copy"
                 onClick={copy}
-                className="rounded bg-white/10 px-2 py-0.5"
+                className="rounded-[7px] bg-[rgba(240,222,190,0.1)] px-2 py-0.5"
               >
                 {copied ? "Copied ✓" : "Copy"}
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded bg-white/10 px-2 py-0.5"
+                className="rounded-[7px] bg-[rgba(240,222,190,0.1)] px-2 py-0.5"
               >
                 Close
               </button>

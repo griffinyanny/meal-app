@@ -51,8 +51,8 @@ export function ChipAdder({
         placeholder={placeholder}
         aria-label={label}
         className={cn(
-          "w-36 rounded-[11px] border bg-white/[0.06] px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
-          danger ? "border-[rgba(255,105,97,0.4)]" : "border-white/20"
+          "w-36 rounded-[12px] border bg-[rgba(240,222,190,0.06)] px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
+          danger ? "border-[rgba(217,106,91,0.4)]" : "border-[rgba(240,222,190,0.2)]"
         )}
       />
     );
@@ -64,10 +64,10 @@ export function ChipAdder({
       onClick={() => setAdding(true)}
       aria-label={label}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[11px] border border-dashed px-3 py-2 text-sm font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-[12px] border border-dashed px-3 py-2 text-sm font-medium transition-colors",
         danger
-          ? "border-[rgba(255,105,97,0.4)] text-[#FF9B94] hover:bg-[rgba(255,69,58,0.08)]"
-          : "border-white/20 text-muted-foreground hover:bg-white/[0.04]"
+          ? "border-[rgba(217,106,91,0.4)] text-[var(--spec-destructive-text)] hover:bg-[rgba(217,106,91,0.08)]"
+          : "border-[rgba(240,222,190,0.2)] text-muted-foreground hover:bg-[rgba(240,222,190,0.04)]"
       )}
     >
       <Plus className="size-3.5" strokeWidth={2.4} />

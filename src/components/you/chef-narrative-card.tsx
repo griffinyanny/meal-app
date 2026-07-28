@@ -21,7 +21,7 @@ export function ChefNarrativeCard({ narrative, isNew, onOpenChef }: ChefNarrativ
         {isNew ? "We've just met." : "Here's what I know about you."}
       </h1>
 
-      <div className="glass-surface rounded-[21px] px-[18px] pb-4 pt-[18px]">
+      <div className="glass-surface rounded-[22px] px-[18px] pb-4 pt-[18px]">
         <p className="text-[0.97rem] leading-[1.55] text-foreground [text-wrap:pretty]">
           {narrative}
         </p>
@@ -35,7 +35,7 @@ export function ChefNarrativeCard({ narrative, isNew, onOpenChef }: ChefNarrativ
       <button
         type="button"
         onClick={onOpenChef}
-        className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[14px] bg-primary py-3.5 text-[0.95rem] font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_rgba(58,134,255,0.6)] transition-colors hover:bg-primary/90"
+        className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-[14px] bg-primary py-3.5 text-[0.95rem] font-semibold text-primary-foreground shadow-[0_8px_24px_-8px_rgba(244,235,220,0.4)] transition-colors hover:bg-primary/90"
       >
         <Mic className="size-[18px]" strokeWidth={2} />
         Talk to the chef

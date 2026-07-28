@@ -53,7 +53,7 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
             type="button"
             onClick={onEdit}
             aria-label="Tell the chef what changed"
-            className="flex size-7 items-center justify-center rounded-[9px] border border-white/10 bg-white/[0.05] text-[#C7C7CC] transition-colors hover:bg-white/10"
+            className="flex size-7 items-center justify-center rounded-[9px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
           >
             <Pencil className="size-3.5" strokeWidth={1.9} />
           </button>
@@ -61,7 +61,7 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
             type="button"
             onClick={() => onRemove(memory)}
             aria-label="Remove this memory"
-            className="flex size-7 items-center justify-center rounded-[9px] border border-white/10 bg-white/[0.05] text-[#C7C7CC] transition-colors hover:bg-white/10"
+            className="flex size-7 items-center justify-center rounded-[9px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
           >
             <X className="size-3.5" strokeWidth={1.9} />
           </button>

@@ -6,7 +6,7 @@ $ARGUMENTS
 
 You are running the visual QA loop: drive the app to each UI state, **look at the actual screenshots** (you read images natively), critique them against the rubric, fix what fails, and iterate — so the UI is polished BEFORE Griffin reviews. This catches "the code says one thing, the screen shows another," which DOM/behavior tests miss.
 
-Grounding: read `docs/design/visual-qa-rubric.md` (the rubric) and `docs/design/Guidelines.md` (the visual system) first. Full design in `~/.claude/plans/*` (visual QA plan) and `tests/e2e/capture/`.
+Grounding: read `docs/design/visual-qa-rubric.md` (the rubric) and **`docs/design/system/design-spec.dc.html`** — Design Specification v1.0, theme 11i, canonical since S39 — as the visual system. Judge against **its six laws**. `docs/design/Guidelines.md` is SUPERSEDED: read it for the anti-pattern list only and ignore its colour values entirely (it still names the retired `#0E0E10` floor and `#3A86FF` accent). `docs/design/PROJECT-CONTEXT.md` carries the current build state, including which items are still deliberately un-migrated. Full design in `~/.claude/plans/*` (visual QA plan) and `tests/e2e/capture/`.
 
 ## Two layers
 - **Layer A (mock, free, deterministic)** — `npx playwright test -c playwright.capture.config.ts` (add `E2E_REUSE_BUILD=1` if the app build is current). Placeholder content → judges LAYOUT / rendering / design-system / right-state-showing. NOT content quality.

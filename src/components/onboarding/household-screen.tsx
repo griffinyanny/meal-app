@@ -77,7 +77,7 @@ export function HouseholdScreen({
         Who am I cooking for?
       </h2>
 
-      <div className="overflow-hidden rounded-[20px] spec-control">
+      <div className="overflow-hidden rounded-[18px] spec-control">
         <CountRow
           label="Adults"
           value={composition.adults}
@@ -142,11 +142,17 @@ export function HouseholdScreen({
                 onClick={() => patch({ babyStage: s.value })}
                 aria-pressed={stage === s.value}
                 data-testid={`onboarding-baby-stage-${s.value}`}
+                // Cream, matching every other selected chip in the interview.
+                // These were the one gold-control outlier in the flow: gold
+                // marks the chef speaking, and a chip you tap is your hand, not
+                // the chef's voice. The amber NOTE around them stays gold —
+                // gold.soft is the chef's speech container and this is the chef
+                // narrating an assumption it made.
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors",
                   stage === s.value
-                    ? "border-[rgba(233,179,72,0.6)] bg-[rgba(233,179,72,0.2)] text-[var(--spec-text-primary)]"
-                    : "border-[rgba(233,179,72,0.28)] bg-transparent text-[var(--spec-text-muted)] hover:bg-[rgba(233,179,72,0.1)]"
+                    ? "border-[var(--spec-action)]/60 bg-[var(--spec-action)]/15 text-[var(--spec-text-primary)]"
+                    : "border-[rgba(240,222,190,0.10)] bg-transparent text-[var(--spec-text-muted)] hover:bg-[rgba(240,222,190,0.07)]"
                 )}
               >
                 {s.label}

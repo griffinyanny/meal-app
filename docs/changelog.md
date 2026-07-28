@@ -4,6 +4,69 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 42 — 2026-07-27 (1E.7 CLOSED — the app-wide spec sweep, and the gold line)
+
+**The job:** ratify the gold line and apply it, then sweep spec §12 items 01/02/06 plus the pre-spec
+`:root` retirement across every surface, so 1E.5's Plan build lands on a palette we are keeping.
+
+**Result: 1E.7 → ✅ CLOSED, M5.7 met.** Detail in [scope-1E.7.md](scope-1E.7.md).
+
+### The gold line — ratified, and it resolved more than it was asked to
+
+> **Gold marks the chef speaking, not content you read.**
+
+Griffin's call. It replaces counting marks with a rule you can apply, and it arbitrates a **contradiction
+inside the spec** rather than a violation in the build: law 03 explicitly grants the chef's italic
+rationale accent colour while law 06 caps gold at three marks in the content layer. A budget count cannot
+settle that. The speaking/reading distinction does, and it gives the same answer on Plan and onboarding.
+
+All four S40 conflicts closed: `SO HERE'S YOUR WEEK` → `text.primary` (its arrows to `text.muted`, since
+they were cream and cream is what you press); the intro's gold icon tiles → bare muted icons, which is
+what the reflect screen's own guesses list already did two screens later; the baby-stage chips → cream
+like every other selected chip, with the amber note around them staying gold; the caught-tray chip →
+neutral inset inside a tray that stays gold. It also settled a question nobody asked it to: the shimmer
+bar and the landed highlight ring went **indigo → gold**, because both mark the chef *working* — which is
+the same answer the Plan design pass reached independently for its own landed ring (S41).
+
+**Flagged, not changed:** Griffin wrote "orb/byline/hook stay gold," but in the build the byline is
+**cream** and the hook is **`text.feature`**. "Stay" read as *leave alone*, so neither was escalated —
+raising a 25px hook to gold is a visual change, not a mechanical sweep. His call.
+
+### The sweep — 40 files
+
+**Item 01** was the mechanical part and behaved: every `white/x` utility → `[rgba(240,222,190,x)]` at the
+same alpha, scripted so the alpha could not drift. Zero cool white remains in `src/`.
+
+**Item 02 was not what the spec said it was.** "Normalise the ambient wash — the rest carry six different
+gold opacities" describes the *design frames*. In the build, Plan, Recipes, Groceries and You had **no
+ambient wash at all**; only onboarding did. So the item was additive: each surface got a named recipe for
+the first time, assigned by role — `ambient` where the chef is talking to you (Plan, You), `flat` where
+you are working in a dense list (Recipes, Groceries), `hero` reserved for the orb.
+
+**"Retire the `:root` family" became an alias layer, not a deletion.** Those names are the bridge that
+Tailwind's `@theme inline` block and every shadcn primitive read; deleting them meant rewriting ~200 class
+usages for no visual gain. Each now aliases the spec token that plays its role, so no independent colour
+value survives. The consequential one is `--primary`, **indigo → cream**, which repaints every primary
+button in the app — correct per §01 (there is no third accent) and the single most visible change here.
+
+**Item 06** found the radius scale was a multiplier chain landing on 7.2 / 9.6 / 16.8 / 21.6 — none of
+them rungs. The named Tailwind steps now *are* the rungs, and ~20 off-scale sites moved onto them.
+
+### Three things worth knowing for next time
+
+1. **Two greps said "clean" while three indigo glows were still live.** `rgba(58,134,255,x)` inside
+   `shadow-[…]` does not match a search for the token name or for `bg-`/`border-`/`text-`. They surfaced
+   only on reading the diff — cream buttons with blue halos under them. Search by *value*, not by role.
+2. **The worked example was not exempt.** Onboarding carried four off-rung radii and an iOS-grey literal
+   of its own. "Match the worked example" means match its token discipline, not assume it is finished.
+3. **`PROJECT-CONTEXT.md` was stale again** — it still told Claude Design that Plan/Recipes/Groceries/You
+   were "the before, do not sample colours from them." That is the exact failure mode S40 caught. Rewritten
+   to say the migration is done and to name the three things that are still deliberately un-migrated.
+
+**480 unit + 78 E2E green, lint + typecheck clean, `/visual-qa` re-capture across all five surfaces.**
+
+---
+
 ## Session 40 — 2026-07-26 (1E CLOSED — the three gates, run for real)
 
 **The job:** close 1E by clearing its three gates in order. S39 had invalidated every S38 clearance by

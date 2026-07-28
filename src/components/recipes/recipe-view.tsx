@@ -100,7 +100,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
         <ol className="space-y-4">
           {recipe.steps.map((step) => (
             <li key={step.number} className="flex gap-3 text-sm">
-              <span className="shrink-0 size-6 rounded-full bg-white/5 flex items-center justify-center text-xs font-medium text-muted-foreground">
+              <span className="shrink-0 size-6 rounded-full bg-[rgba(240,222,190,0.05)] flex items-center justify-center text-xs font-medium text-muted-foreground">
                 {step.number}
               </span>
               <div>
@@ -123,7 +123,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
           {recipe.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground"
+              className="text-xs px-2 py-0.5 rounded-full bg-[rgba(240,222,190,0.05)] text-muted-foreground"
             >
               {tag}
             </span>

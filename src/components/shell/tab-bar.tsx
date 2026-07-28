@@ -15,8 +15,12 @@ export function TabBar() {
   const pathname = usePathname();
 
   return (
+    // Chrome, not glass (spec §04): the nav has to sit DARKER than the floor so
+    // content scrolling underneath dims rather than brightens. It was on
+    // glass-surface, which is the L2 lighter rung — the one thing the glass
+    // trio's merge onto the elevation ladder could not carry.
     <nav
-      className="glass-surface fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 rounded-t-2xl"
+      className="spec-chrome fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 rounded-t-[18px]"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center justify-around h-16 px-2">
@@ -27,10 +31,15 @@ export function TabBar() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-xl transition-colors",
+                // Gold, and it is one of the few places law 02 names outright:
+                // "gold is reserved for the chef's presence — the orb, the live
+                // dot, THE ACTIVE TAB, the chef's own voice." It does not spend
+                // any of law 06's three-gold budget either, because persistent
+                // chrome is a constant rather than an accent.
+                "flex flex-1 flex-col items-center justify-center gap-0.5 min-h-[44px] rounded-[12px] transition-colors",
                 isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-[var(--spec-gold)]"
+                  : "text-[var(--spec-text-muted)] hover:text-[var(--spec-text-primary)]"
               )}
               aria-label={label}
             >

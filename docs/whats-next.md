@@ -1,8 +1,113 @@
 # What's Next
 
-Last updated: 2026-07-26 (Session 40)
+Last updated: 2026-07-27 (Session 42)
 
-## ▶ NEXT SESSION — 1E is CLOSED. Open **1E.7**: the mechanical design-system sweep.
+## ▶ NEXT SESSION — 1E.7 is CLOSED. Open **1E.5's BUILD**: rebuild Plan to the landed design.
+
+**S42 swept the app onto Design Spec v1.0 and ratified the gold line.** 1E.7 → ✅, M5.7 met.
+**480 unit + 78 E2E green, lint + typecheck clean, `/visual-qa` re-captured across all five surfaces.**
+Detail: [scope-1E.7.md](scope-1E.7.md).
+
+### The gold line is ratified and applied
+
+> **Gold marks the chef speaking, not content you read.**
+
+It closed the S40 gold-budget question and all four onboarding conflicts, and it settled the S41
+landed-ring question by the same rule (the shimmer bar and the highlight ring went **indigo → gold**,
+because both mark the chef *working*). It is now the arbiter for every gold call in the Plan build.
+
+**⚠️ One thing in your instruction disagreed with the build, so I left it alone.** You wrote
+"orb/byline/hook stay gold." The orb is gold. The **byline** (`HERE'S WHAT I'M THINKING`) is currently
+**cream**, and the **hook** is **`text.feature`** — neither is gold today. I read "stay" as *leave
+alone* and did not escalate them, because raising a 25px hook to gold is a visual change rather than a
+mechanical sweep. Under your own rule both are the chef speaking and would be defensible in gold. **Your
+call** — it is a two-line change either way.
+
+### What the sweep actually found (three things worth carrying forward)
+
+1. **Item 02 was not what the spec said it was.** "Normalise the ambient wash — the rest carry six
+   different gold opacities" describes the **design frames**. In the build, Plan / Recipes / Groceries /
+   You had **no ambient wash at all**. So the item was additive: each surface got a named recipe for the
+   first time. `ambient` where the chef talks to you (Plan, You), `flat` where you work in a dense list
+   (Recipes, Groceries), `hero` reserved for the orb.
+2. **"Retire the `:root` family" had to become an alias layer, not a deletion** — those names are the
+   bridge Tailwind's `@theme inline` and every shadcn primitive read. The consequential alias is
+   **`--primary`, indigo → cream**, which repaints every primary button in the app. Correct per §01
+   (there is no third accent), and **the single most visible change in this sweep** — worth a look.
+3. **Two clean greps still missed three live indigo glows.** `rgba(58,134,255,x)` hides inside
+   `shadow-[…]`, so searching by token name or by `bg-`/`text-`/`border-` finds nothing. They surfaced
+   only on reading the diff: cream buttons with blue halos under them. Also: **the worked example was not
+   exempt** — onboarding carried four off-rung radii and an iOS-grey literal of its own.
+
+### Repairs made to the QA apparatus itself (they were about to grade against the retired palette)
+
+- **`PROJECT-CONTEXT.md`** still told Claude Design that Plan/Recipes/Groceries/You were "the before —
+  do not sample colours from them." That is the exact divergence S40 caught. Rewritten, and it now names
+  the three things still deliberately un-migrated.
+- **`docs/design/visual-qa-rubric.md` §(b)** was checking for a "warm near-black bg (`#0E0E10`–`#141418`)"
+  — the floor I just retired. It would have **passed the old palette and failed the new one.** Rewritten
+  against the spec's six laws, with the gold line as the documented tie-breaker and an explicit
+  do-not-flag list for the 1F items.
+- **`.claude/commands/visual-qa.md`** named `Guidelines.md` as the visual system. Re-pointed at the spec.
+
+### ⚠️ Still your action (carried, third session running)
+**Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated).
+Test mode is invisible and inert until you do, and it is what makes re-running the interview free.
+
+### Also still open
+- **scope-v1's closed-beta question** — parked *for* 1E, and 1E closed without it. It gates 1F's shape.
+- **The four Plan still-opens from S41** — day-sheet-vs-expand (needs usage, not a frame), the landed
+  ring (now answered by the gold line: gold), the picker's four tiles (recommend push), and the
+  **fictional `$94 spent` / `~$87`** on the week-wrapped and review screens. We have no cost model for a
+  recipe, a plan or a list — either drop those numbers from the design or scope real estimation. **Decide
+  before the build reaches those two states.**
+
+### Next up: 1E.5's build
+The design pass landed S41 and `surfaces/plan/brief.md` is the build spec — a decisions ledger plus five
+named build dependencies. The palette it builds against is now the one shipping, which was the whole
+point of ordering 1E.7 first.
+
+**⭐ Model recommendation: Opus 4.8.** The brief has already made the design decisions, so this is a
+large but well-specified build: rebuild Plan's states in real components, honour the five build
+dependencies (staleness query, servings scaling as a generation task, a `slotType` for user-picked, warm
+the normalize cache at pick time, and the Recipes toolbar change item 04 implies), extend the E2E specs,
+and re-run visual-QA. That is execution against a locked spec, not new architecture. Read
+`brief.md`'s "Still open" list before starting — three of the four are yours to call.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — 1E.7 is CLOSED (S42). The whole app is on Design Spec v1.0: every cool-white alpha
+warmed, each surface carries one of the three named wash recipes, radii on the eight-rung scale, and the
+pre-spec :root family retired to an alias layer over --spec-* (including --primary indigo → cream, which
+repainted every button). The gold line is ratified and applied: gold marks the chef speaking, not content
+you read. 480 unit + 78 E2E green, visual-QA re-captured across all five surfaces. Read
+docs/whats-next.md, docs/scope-v1.md and docs/design/surfaces/plan/brief.md first, then give me the
+≤6-line scope check. Then open 1E.5's BUILD — rebuild Plan in real components to brief.md's decisions
+ledger, honouring its five named build dependencies, and write a scope-1E.5.md first. Before you start:
+give me your read on brief.md's four still-opens, especially the $94 spent / ~$87 cost numbers, since we
+have no cost model and those two states can't be built until I decide. Keep 480 unit + 78 E2E green and
+extend the specs for every new Plan state. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs first):
+```
+Resume meal app — 1E.7 is CLOSED (S42), the app is on Design Spec v1.0. Skip the 1E.5 build this session
+and clear the open bug list instead: BUG-020 (retryFailed never awaits in-flight saves, so "All saved."
+can be shown over a save that hasn't landed) and BUG-021 (a failed skipOnboarding still walks the user
+out to Plan) first, since the interview fires once per account and I'm about to run it for real. Then
+BUG-011/BUG-012 (householdSize ↔ composition desync putting two contradictory numbers in the same chef
+prompt, and the You tab saying "4 adults" for 2 adults + 2 children — same root), then BUG-010
+(household_composition ships with a column DEFAULT so a default is indistinguishable from an answer;
+needs a migration) and BUG-013 (finishOnboarding trusts client-supplied memory text). Read
+docs/whats-next.md + docs/bug-tracker.md first, give me the ≤6-line scope check, keep 480 unit + 78 E2E
+green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S40 (superseded by S42 above — 1E.7 is now closed)
+
+## ▶ 1E is CLOSED. Open **1E.7**: the mechanical design-system sweep.
 
 **S40 closed 1E by clearing its three gates for real.** 5 of 6 phases done, M5 met.
 **480 unit + 78 E2E green, planner eval 7/7, lint + typecheck clean.** Branch `session-33-you-tab-audit`.

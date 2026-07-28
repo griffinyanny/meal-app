@@ -25,10 +25,10 @@ export function ConstraintChip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[11px] border py-2 pl-3 pr-2 text-sm font-semibold",
+        "inline-flex items-center gap-1.5 rounded-[12px] border py-2 pl-3 pr-2 text-sm font-semibold",
         danger
-          ? "border-[rgba(255,69,58,0.34)] bg-[rgba(255,69,58,0.14)] text-[#FFD9D6]"
-          : "border-white/10 bg-white/[0.06] font-medium text-[#E5E5EA]"
+          ? "border-[rgba(217,106,91,0.32)] bg-[rgba(217,106,91,0.14)] text-[#F0D8D3]"
+          : "border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.06)] font-medium text-[var(--spec-text-primary)]"
       )}
     >
       {display}
@@ -36,7 +36,7 @@ export function ConstraintChip({
         <span
           className={cn(
             "text-[11px] font-semibold",
-            danger ? "text-[rgba(255,217,214,0.7)]" : "text-muted-foreground"
+            danger ? "text-[rgba(240,216,211,0.7)]" : "text-muted-foreground"
           )}
         >
           {subLabel}
@@ -47,8 +47,8 @@ export function ConstraintChip({
         onClick={onRemove}
         aria-label={`Remove ${display}`}
         className={cn(
-          "-mr-0.5 flex size-5 items-center justify-center rounded-md transition-colors hover:bg-white/10",
-          danger ? "text-[#FF9B94]" : "text-muted-foreground"
+          "-mr-0.5 flex size-5 items-center justify-center rounded-[7px] transition-colors hover:bg-[rgba(240,222,190,0.1)]",
+          danger ? "text-[var(--spec-destructive-text)]" : "text-muted-foreground"
         )}
       >
         <X className="size-3.5" strokeWidth={2.2} />

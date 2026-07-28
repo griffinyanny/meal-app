@@ -25,7 +25,7 @@ export function WeekWrappedState({
 
   return (
     <div className="space-y-6 pb-4">
-      <div className="glass-surface space-y-3 rounded-2xl p-5">
+      <div className="glass-surface space-y-3 rounded-[22px] p-5">
         <p className="text-[11px] font-medium tracking-widest text-muted-foreground">
           YOUR CHEF
         </p>

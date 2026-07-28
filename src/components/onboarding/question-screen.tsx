@@ -138,11 +138,11 @@ export function QuestionScreen({
               zero-width element is invisible to both users and assertions. */}
           <div
             data-testid="onboarding-value-meter"
-            className="h-[5px] overflow-hidden rounded-[3px] bg-[rgba(240,222,190,0.08)]"
+            className="h-[5px] overflow-hidden rounded-full bg-[rgba(240,222,190,0.08)]"
           >
             <div
               data-testid="onboarding-value-meter-fill"
-              className="h-full rounded-[3px] bg-[var(--spec-gold-tint)] transition-[width] duration-500"
+              className="h-full rounded-full bg-[var(--spec-gold-tint)] transition-[width] duration-500"
               style={{ width: `${Math.round(meter * 100)}%` }}
             />
           </div>

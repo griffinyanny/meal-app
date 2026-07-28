@@ -27,7 +27,7 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
         <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           Still learning
         </p>
-        <div className="rounded-[20px] border border-dashed border-white/[0.13] bg-white/[0.02] px-[22px] py-7 text-center">
+        <div className="rounded-[18px] border border-dashed border-[rgba(240,222,190,0.13)] bg-[rgba(240,222,190,0.02)] px-[22px] py-7 text-center">
           <div className="mx-auto mb-3.5 flex size-[46px] items-center justify-center rounded-[14px] bg-primary/10">
             <Eye className="size-[22px] text-primary" strokeWidth={1.7} />
           </div>
@@ -60,7 +60,7 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-[14px] border border-white/10 bg-white/[0.04] py-3 text-[0.8rem] font-semibold text-[#C7C7CC] transition-colors hover:bg-white/[0.07]"
+          className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-[14px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.04)] py-3 text-[0.8rem] font-semibold text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.07)]"
         >
           {expanded ? "Show less" : `${hidden} more the chef remembers`}
           <ChevronDown

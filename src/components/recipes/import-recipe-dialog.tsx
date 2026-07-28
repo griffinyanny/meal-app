@@ -37,7 +37,7 @@ export function ImportRecipeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-sheet rounded-t-3xl sm:rounded-2xl max-w-[400px]">
+      <DialogContent className="glass-sheet rounded-t-[22px] sm:rounded-[22px] max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link2 className="size-4 text-primary" />
@@ -51,7 +51,7 @@ export function ImportRecipeDialog({
             type="url"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="bg-white/5 border-white/8"
+            className="bg-[rgba(240,222,190,0.05)] border-[rgba(240,222,190,0.08)]"
             disabled={importRecipe.isPending}
           />
 

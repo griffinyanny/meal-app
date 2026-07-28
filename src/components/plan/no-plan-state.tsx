@@ -102,7 +102,7 @@ export function NoPlanState({
               type="button"
               onClick={() => onGenerate(s)}
               disabled={isGenerating}
-              className="rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-sm text-foreground/90 transition-colors hover:bg-white/10 disabled:opacity-60"
+              className="rounded-full border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] px-3.5 py-2 text-sm text-foreground/90 transition-colors hover:bg-[rgba(240,222,190,0.1)] disabled:opacity-60"
             >
               {s}
             </button>
@@ -117,7 +117,7 @@ export function NoPlanState({
           placeholder="Or just start talking. What sounds good?"
           rows={3}
           disabled={isGenerating}
-          className="min-h-24 resize-none bg-white/5 pr-12 text-base"
+          className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-12 text-base"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSubmit) {
               onGenerate(text.trim());
@@ -142,7 +142,7 @@ export function NoPlanState({
           onClick={() => onGenerate(text.trim() || undefined)}
           disabled={isGenerating}
           data-testid="plan-build-first-week"
-          className="w-full rounded-[15px] bg-primary px-4 py-4 text-[16px] font-semibold text-primary-foreground shadow-[0_10px_30px_-8px_rgba(58,134,255,0.75)] disabled:opacity-60"
+          className="w-full rounded-[16px] bg-primary px-4 py-4 text-[16px] font-semibold text-primary-foreground shadow-[0_10px_30px_-8px_rgba(244,235,220,0.45)] disabled:opacity-60"
         >
           Build my first week
         </button>

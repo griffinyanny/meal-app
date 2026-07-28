@@ -88,7 +88,7 @@ export function TalkToChefSheet({
                   type="button"
                   onClick={() => setText(s)}
                   disabled={isSubmitting}
-                  className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:bg-white/10 disabled:opacity-60"
+                  className="shrink-0 rounded-full border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] px-3.5 py-1.5 text-sm text-foreground/90 transition-colors hover:bg-[rgba(240,222,190,0.1)] disabled:opacity-60"
                 >
                   {s}
                 </button>
@@ -104,7 +104,7 @@ export function TalkToChefSheet({
               rows={3}
               autoFocus
               disabled={isSubmitting}
-              className="min-h-24 resize-none bg-white/5 pr-12 text-base"
+              className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-12 text-base"
               onKeyDown={(e) => {
                 // Enter submits; Shift+Enter inserts a newline. Ignore Enter
                 // while an IME composition is active (don't submit mid-compose).

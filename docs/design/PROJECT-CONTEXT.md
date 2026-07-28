@@ -73,10 +73,24 @@ canonical as of S39 (2026-07-26). Where an earlier screen or an earlier version 
 with it, IT WINS.** `Guidelines.md` is the *superseded* aesthetic canon — read it for the anti-pattern
 list only, and ignore its colour values entirely.
 
-**The app is mid-migration, and you must design against the END state, not the current screens.**
-Onboarding was migrated in S39 and is the **worked example — match it**. Plan, Recipes, Groceries and
-You are still on the retired palette until phase 1E.7 sweeps them. So: **do not sample colours from a
-screenshot of Plan/Recipes/Groceries/You. They are the "before".**
+**As of 2026-07-27 (S42, phase 1E.7) the mechanical migration is DONE and the whole app is on the spec
+palette.** Every surface — Plan, Recipes, Groceries, You, Onboarding, the shell and the shadcn
+primitives — runs on the `--spec-*` tokens: every cool-white alpha is warm, every radius is on the
+eight-rung scale, each screen carries one of the three named wash recipes, and the pre-spec `:root`
+family is now an alias layer over the spec tokens with no independent colour values of its own. The
+retired indigo `#3A86FF` is gone from the build entirely, including `--primary`, which is now cream.
+**Screenshots of any surface are safe to sample from again.**
+
+**Three things are still deliberately un-migrated, and they are the ONLY places the build knowingly
+disagrees with the spec.** All three are routed to 1F (spec §12 items 03/04/05/07), where each gets its
+own visual-QA pass:
+- the **iOS green `#30D158`** cooked/complete checks in `recipe-card`, `cooked-strip` and the Groceries
+  header (item 03 → `#9CB86F`);
+- the **amber `#FF9F0A`** merge/dedupe markers in Groceries — the spec has no caution hue on purpose,
+  because amber is the chef, so this one needs a semantic decision rather than a token swap;
+- the **double bottom bar** on Recipes (item 04) and the icon-only hit targets (item 05).
+
+**Design against the spec on all three anyway** — they are the "before", the rest of the app is not.
 
 **Token pin — the SPEC values (`--spec-*` in `src/app/globals.css`):**
 - **Floor `#0F0B08`** — warm near-black. NOT `#0E0E10`, which was the cool floor this replaced.

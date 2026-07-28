@@ -82,7 +82,7 @@ export function RecipeToolbar({
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           data-testid="recipe-add"
-          className="grid place-items-center size-[54px] rounded-full bg-primary text-primary-foreground shadow-[0_18px_46px_-14px_rgba(58,134,255,0.55)] active:scale-95 transition-transform cursor-pointer"
+          className="grid place-items-center size-[54px] rounded-full bg-primary text-primary-foreground shadow-[0_18px_46px_-14px_rgba(244,235,220,0.35)] active:scale-95 transition-transform cursor-pointer"
         >
           <Plus className="size-6" />
         </button>
@@ -108,7 +108,7 @@ function MenuItem({
       role="menuitem"
       onClick={onClick}
       data-testid={testid}
-      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-left hover:bg-white/5 transition-colors cursor-pointer"
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-left hover:bg-[rgba(240,222,190,0.05)] transition-colors cursor-pointer"
     >
       {icon}
       {label}

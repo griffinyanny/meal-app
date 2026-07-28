@@ -20,7 +20,7 @@ function capitalize(s: string): string {
 }
 
 function Divider() {
-  return <div className="h-px bg-white/[0.06]" />;
+  return <div className="h-px bg-[rgba(240,222,190,0.06)]" />;
 }
 
 // The calmer soft-constraints card: dislikes + cuisines (direct chip edit) plus a

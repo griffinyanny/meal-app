@@ -22,14 +22,14 @@ export function SafetyConstraintsCard({
   return (
     <div
       data-testid="you-safety-card"
-      className="rounded-[18px] border border-[rgba(255,69,58,0.28)] bg-[rgba(255,69,58,0.07)] px-4 py-[15px]"
+      className="rounded-[18px] border border-[rgba(217,106,91,0.28)] bg-[rgba(217,106,91,0.09)] px-4 py-[15px]"
     >
       <div className="mb-2.5 flex items-center gap-2">
         <AlertTriangle className="size-4 text-destructive" strokeWidth={2} />
-        <span className="text-[0.8rem] font-bold tracking-[0.2px] text-[#FF6961]">
+        <span className="text-[0.8rem] font-bold tracking-[0.2px] text-[var(--spec-destructive-text)]">
           I never cook with
         </span>
-        <span className="ml-auto text-[10.5px] font-semibold tracking-[0.6px] text-[rgba(255,105,97,0.75)]">
+        <span className="ml-auto text-[10.5px] font-semibold tracking-[0.6px] text-[rgba(227,155,146,0.75)]">
           SAFETY-CRITICAL
         </span>
       </div>

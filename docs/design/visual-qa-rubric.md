@@ -1,6 +1,6 @@
 # Visual QA Rubric — the judge's constitution
 
-How Claude critiques a captured screenshot. Grounded in `Guidelines.md` (the visual system) + `brief-plan-states.md` (per-state briefs). Purpose: catch "the code says one thing, the screen shows another" and surface polish, **before** Griffin reviews. Structured to keep the judgment consistent and anchored, not vibes.
+How Claude critiques a captured screenshot. Grounded in **`system/design-spec.dc.html`** (Design Specification v1.0 — the visual system, canonical since S39) + `brief-plan-states.md` (per-state briefs). Purpose: catch "the code says one thing, the screen shows another" and surface polish, **before** Griffin reviews. Structured to keep the judgment consistent and anchored, not vibes.
 
 **How to use:** for each state in a run's `manifest.json`, Read its PNG and grade the four sections below. The manifest carries `facts` (what should be true), `observed` (what the debug HUD reported — DOM ground truth), and `assertedState`. Anchor on those; do not free-associate.
 
@@ -20,19 +20,40 @@ The strongest hallucination defense: `assertedState` was machine-verified before
 - Any fact asserted-true but not visibly true → **that gap is the bug.** Severity high (or blocker if the whole state is wrong).
 - If `captureStatus !== "ok"` in the manifest, that state failed its pre-shot state check — treat as a blocker signal on its own.
 
-## (b) Design-system adherence — binary checklist, each cites Guidelines
-PASS/FAIL each; a FAIL on a §7 hard rule is a blocker.
-- [ ] Dark mode: warm near-black bg (`#0E0E10`–`#141418` family), NOT pure black, NOT light mode. (§4 Color, §7)
-- [ ] Glass surfaces: cards read as translucent/layered, not flat opaque boxes. (§4 Components)
-- [ ] **No emojis in app chrome** (headers, buttons, labels). (§6, §7 — hard rule)
-- [ ] Single accent color, used sparingly for CTAs/active states only. (§4 Color)
-- [ ] No floating AI FAB / sparkle button. (§3, §7)
-- [ ] No persistent chat/input bar pinned to the bottom. (§3, §7)
-- [ ] Named/descriptive loading states, never a bare spinner. (§5, §7)
-- [ ] No confetti / celebration / "You did it!". (§7)
-- [ ] No bright-on-bright color stacking. (§7)
-- [ ] No cartoon/mascot/"No X yet!" empty-state art. (§7)
-- [ ] Bold typographic hierarchy (confident headers vs muted meta). (§4 Typography)
+## (b) Design-system adherence — binary checklist
+PASS/FAIL each. **The colour and geometry half is judged against Design Specification v1.0's six laws**
+(`system/design-spec.dc.html` §00), which is canonical since S39 and beats any earlier screen. The
+anti-pattern half still cites `Guidelines.md` §7, which survives as the anti-pattern list only — **ignore
+its colour values, they name the retired `#0E0E10` floor and `#3A86FF` accent.** A FAIL on a §7 hard rule
+or on law 04 is a blocker.
+
+**The six laws:**
+- [ ] **Law 01 — light enters once, from above, and it is always gold.** Exactly one radial wash per screen, off-canvas at the top, under the content layer, never animated. No second light source, **no cream wash** (the spec calls this the most common drift), no second hue.
+- [ ] **Law 02 — gold is who the app is; cream is what you press.** Gold only for the chef's presence: the orb, the live dot, **the active tab**, the chef's own voice. Cream for the hand: every filled button, link and interactive accent. Never both inside one control, never swapped.
+- [ ] **Law 03 — nothing you read twice is accent-coloured.** Titles, body, metadata, labels: cream-white through warm grey. The only coloured type is the chef's *italic* rationale and the `YOUR CHEF` byline that introduces it.
+- [ ] **Law 04 — no cool white, ever.** Every border, scrim and low-alpha fill is warm. Any `rgba(255,255,255,x)` is a **blocker**, not a nitpick — it reads blue against this floor.
+- [ ] **Law 05 — a label is type, a control is a surface.** Nothing decorative wears a pill. Fill + border ⇒ it must respond to a tap. If it only names something, it is flat uppercase type with no container.
+- [ ] **Law 06 — count the accents.** Per viewport: at most **three** gold marks in the content layer, exactly **one** filled cream button, at most **one** semantic hue. The active tab sits outside the count (persistent chrome is a constant). If a screen can't be legible inside the budget, the hierarchy is wrong, not the budget.
+- [ ] **Geometry (§11):** every radius on the eight-rung scale (7/9/12/14/16/18/22/46) or a deliberate capsule; nested surfaces step down one rung and never match.
+
+**The tie-breaker when two laws disagree** (Griffin's ratified line, S42): **gold marks the chef *speaking*,
+not content you read.** Law 03 grants the italic rationale colour while law 06 counts marks against it —
+when they collide, ask who is talking. The chef's voice keeps gold; a list of decisions you read does not.
+
+**Still deliberately un-migrated — do NOT flag these as new findings** (spec §12 items 03/04/05/07, routed
+to 1F, see `PROJECT-CONTEXT.md`): the iOS-green `#30D158` cooked/complete checks, the amber `#FF9F0A`
+Groceries merge markers, the Recipes double bottom bar, and icon-only controls under 44px.
+
+**Anti-patterns (Guidelines §7 — hard rules):**
+- [ ] Glass surfaces: cards read as translucent/layered, not flat opaque boxes.
+- [ ] **No emojis in app chrome** (headers, buttons, labels).
+- [ ] No floating AI FAB / sparkle button.
+- [ ] No persistent chat/input bar pinned to the bottom.
+- [ ] Named/descriptive loading states, never a bare spinner.
+- [ ] No confetti / celebration / "You did it!".
+- [ ] No bright-on-bright color stacking.
+- [ ] No cartoon/mascot/"No X yet!" empty-state art.
+- [ ] Bold typographic hierarchy (confident headers vs muted meta).
 
 **Approved exception (do NOT false-flag):** small, muted, all-caps **eyebrow/section labels** ("YOUR CHEF", "EARLIER THIS WEEK", "HOW'D IT GO", "TONIGHT · WEDNESDAY") are intended and correct. Only large all-caps **headers** are forbidden (§7). Grade eyebrows as PASS.
 

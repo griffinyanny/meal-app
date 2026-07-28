@@ -149,7 +149,7 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
 
       {/* Modify dialog */}
       <Dialog open={modifyOpen} onOpenChange={setModifyOpen}>
-        <DialogContent className="glass-sheet rounded-t-3xl sm:rounded-2xl max-w-[400px]">
+        <DialogContent className="glass-sheet rounded-t-[22px] sm:rounded-[22px] max-w-[400px]">
           <DialogHeader>
             <DialogTitle>Modify recipe</DialogTitle>
           </DialogHeader>
@@ -158,7 +158,7 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               placeholder='e.g. "Make it dairy-free" or "Double the servings" or "Add more spice"'
               value={modification}
               onChange={(e) => setModification(e.target.value)}
-              className="min-h-[80px] bg-white/5 border-white/8 resize-none"
+              className="min-h-[80px] bg-[rgba(240,222,190,0.05)] border-[rgba(240,222,190,0.08)] resize-none"
               disabled={modifyMutation.isPending}
             />
             {modifyMutation.error && (

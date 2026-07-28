@@ -4,6 +4,74 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-27 (S42) — The gold line: gold marks the chef SPEAKING, not content you read
+
+**Griffin ratified this, and it replaces counting marks with a rule you can apply.** It resolves the
+S40 gold-budget question (four onboarding conflicts) and the S41 Plan question (whether Plan's italic
+rationale had to shrink to fit §06-C) with one sentence, and it gives the same answer on both surfaces.
+
+**Why a principle beat the budget.** Design Spec v1.0 contradicts itself here rather than the build
+violating it: **law 03 explicitly grants the chef's italic rationale accent colour**, while **law 06
+caps gold at three marks in the content layer**. A budget count cannot arbitrate that, because the
+count says the rationale is over quota and law 03 says it is the one thing gold is *for*. The
+speaking/reading distinction dissolves it — the rationale is the chef talking, so it is not competing
+for a budget with content.
+
+**The line.** *Gold marks the chef speaking, not content you read.* Cream is still what you press
+(§01, unchanged); gold is still the chef (law 02, unchanged). What the line adds is which *half* of
+the chef gets it: its voice, not the artifacts of its work.
+
+**Applied — the four S40 conflicts, all four resolved:**
+
+| Conflict | Call | Why |
+|---|---|---|
+| `SO HERE'S YOUR WEEK` — 3–6 lines of gold body text | → `text.primary` | A list of decisions **about** your week. You read it, and on the deep state there are six of them. Not the chef's italic voice. The arrows dropped to `text.muted` at the same time, for a second reason: they were cream, and cream is what you press — a marker glyph beside a paragraph is not pressable |
+| The intro's three explainer rows in gold icon tiles | → bare `text.muted` icons | A decorative container (law 05) carrying gold on a non-chef element (law 02). The reflect screen's own guesses list already did this the spec-correct way, so the flow disagreed with itself about the same object two screens apart |
+| The baby-stage chips as gold controls | → cream, matching every other selected chip | A chip you tap is your hand, not the chef's voice. The amber **note** containing them stays gold — `gold.soft` is defined as the chef's speech container, and the note is the chef narrating an assumption it made |
+| The caught tray's `Thai` chip as a gold pill | → neutral warm inset | The **tray** stays gold-soft (the chef saying "here's what I caught"); each chip inside it is a value the user supplied |
+
+**What stays gold, by the same rule:** the orb everywhere; the `YOUR CHEF` eyebrow; the reflect hook;
+the unsaved note ("One thing: X didn't save. I'll try again…"); **Plan's italic rationale**; and — new
+this session — the `.shimmer-bar` and `.animate-highlight-ring`, which went indigo → gold because both
+mark the chef *working*. That last one also settles the S41 landed-ring question the same way.
+
+**⚠️ One thing Griffin's phrasing and the build disagree about.** He wrote "orb/byline/hook stay gold."
+The orb is gold; the byline (`HERE'S WHAT I'M THINKING`) is currently **cream** and the hook is
+**`text.feature`**, not gold. "Stay" reads as *leave alone*, so both were left alone and neither was
+escalated — but under this rule both are the chef speaking and would be defensible in gold. Flagged for
+his call rather than silently changed, because raising a 25px hook to gold is a visual escalation, not
+a mechanical sweep.
+
+**Future impact.** This is now the arbiter for every gold decision in 1E.5's Plan build and 1F's
+surface pass. When the two laws disagree again, ask who is talking.
+
+## 2026-07-27 (S42) — "Retire the pre-spec `:root` family" means repoint, not delete
+
+**The 1E.7 checklist said "every surface adopts the `--spec-*` tokens; the pre-spec `:root` family
+retires."** Taken literally that is a deletion, which would mean rewriting ~200 class usages across
+the app — every `bg-background`, `border-border`, `text-muted-foreground` and every shadcn component
+under `ui/` reads those names through Tailwind's `@theme inline` block. Instead each pre-spec token
+became an **alias onto the spec token that plays its role**.
+
+**This satisfies the actual goal.** The point was never the variable names; it was that there must not
+be two palettes to accidentally mix inside one surface (the failure mode globals.css warned about after
+pass 1). After the repoint there is one palette, reachable under two sets of names, and no independent
+colour value survives outside the `--spec-*` block.
+
+**The one alias with a large visual consequence, called out rather than buried:** `--primary` went
+**`#3A86FF` → `var(--spec-action)` (cream)**. Indigo is not a colour in this system — §01 admits cream
+(what you press) and gold (the chef), and no third accent. Every `bg-primary` in the app is a button,
+so the alias is the whole of the fix, but it repaints every primary button in the product.
+
+**Two derived tokens were added rather than invented:** `--spec-raise-1` / `--spec-raise-2`, each the
+composite of an elevation utility over the floor, for the handful of shadcn slots used as *solid* fills
+behind other blurred surfaces. Deriving them from the ladder is what keeps a solid card and a
+`.spec-glass` card reading as one material instead of two.
+
+**Future impact.** 1F's item 03/04/05/07 pass and 1E.5's Plan build both write against `--spec-*`
+directly. The bridge exists for `ui/` primitives and inherited class names, not as a place to add new
+colour.
+
 ## 2026-07-27 (S41) — Phase 1E.5: Direction C, and the Plan decisions ledger
 
 **Context.** Two Claude Design waves ran for Plan: `Plan Directions.dc.html` (A/B/C — the structural

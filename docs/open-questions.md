@@ -50,16 +50,24 @@ are currently fictional. Either drop them from the design or scope real estimati
 cost-per-user model (idea-backlog, S35) is about *our* costs, not the user's groceries — this is a different
 number. Pairs with grocery ordering (V2), where real prices would arrive anyway.
 
-### The gold budget: Design Spec v1.0 vs the reflect design you locked (raised S40)
-> **Update (S41): the Plan pass produced a resolving line.** Griffin's call was to keep the chef's gold
-> italic rationale on Plan and not shrink the surface to fit §06-C — because **law 03 explicitly grants the
-> italic rationale colour**, so the spec contradicts itself rather than Plan violating it. The line that
-> resolves both surfaces: **gold marks the chef *speaking*, not content you read.** Applied to the four
-> onboarding conflicts below, that keeps the orb, byline and hook gold and drops `SO HERE'S YOUR WEEK`'s
-> week list to `text.primary` — it is a list of decisions you read, not the chef's italic voice. That is the
-> "middle path" already described at the bottom of this entry, now with a principle behind it rather than a
-> budget count. **Still needs Griffin's explicit ratification before 1E.7 copies it onto five surfaces.**
-> Recorded in decisions.md (S41).
+### ✅ RESOLVED S42 — The gold budget: Design Spec v1.0 vs the reflect design you locked (raised S40)
+> **CLOSED 2026-07-27 (S42). Griffin ratified the line: gold marks the chef *speaking*, not content you
+> read.** All four conflicts below are resolved and built. `SO HERE'S YOUR WEEK` dropped to `text.primary`
+> (and its arrows to `text.muted` — they were cream, and cream is what you press); the intro's gold icon
+> tiles became bare muted icons, matching what the reflect screen's guesses list already did; the
+> baby-stage chips became cream like every other selected chip, with their amber note staying gold; the
+> caught-tray chip became a neutral warm inset inside a tray that stays gold. The orb, the `YOUR CHEF`
+> eyebrow, the reflect hook, the unsaved note and Plan's italic rationale all keep gold — and the shimmer
+> bar plus the landed highlight ring went indigo → gold under the same rule, which also settles the S41
+> landed-ring question. Full per-conflict reasoning in decisions.md (S42); swept in scope-1E.7.md.
+>
+> **One residual for Griffin, not blocking:** his phrasing was "orb/byline/hook stay gold," but in the
+> build the byline (`HERE'S WHAT I'M THINKING`) is **cream** and the hook is **`text.feature`** — neither
+> is gold today. "Stay" was read as *leave alone*, so neither was escalated. Under the ratified rule both
+> are the chef speaking and would be defensible in gold. Raising them is a visual escalation rather than a
+> mechanical sweep, so it is his call.
+>
+> *Original entry retained below for provenance.*
 
 **Question**: four places in onboarding use gold in ways **Design Spec v1.0 forbids**, and in every one of
 them the build is faithful to a **Claude Design pass you ran**. The spec says it wins where an earlier
