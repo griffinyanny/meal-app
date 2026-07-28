@@ -4,7 +4,7 @@ import type { DisplayMeal } from "./plan-helpers";
 import { writtenCount } from "./rail-helpers";
 import { ChefHeader } from "./rail/chef-header";
 import { PlanRail } from "./rail/plan-rail";
-import { CountSlot } from "./rail/floating-slot";
+import { CountSlot, SLOT_PADDING_BARE } from "./rail/floating-slot";
 
 export interface StreamingPlanProps {
   chefSummary?: string;
@@ -61,6 +61,7 @@ export function StreamingPlan({
         ingredientPreview: [],
         tags: [],
         estTimeMinutes: null,
+        estCostCents: null,
         servings: null,
         chips: [],
         feedback: null,
@@ -73,7 +74,7 @@ export function StreamingPlan({
   const { written, total } = writtenCount(withPlaceholders);
 
   return (
-    <>
+    <div className={SLOT_PADDING_BARE}>
       <ChefHeader
         status={total > 0 ? `Writing · ${written} of ${total}` : "Writing"}
         summary={chefSummary ?? null}
@@ -85,6 +86,6 @@ export function StreamingPlan({
         showRationale
       />
       {total > 0 ? <CountSlot written={written} total={total} /> : null}
-    </>
+    </div>
   );
 }

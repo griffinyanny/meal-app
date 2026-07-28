@@ -84,6 +84,25 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("never what they already own");
   });
 
+  it("should ask for a cost estimate it is allowed to decline", () => {
+    // W6 (Phase 1E.5). The estimate is the ONE figure on the surface a user can
+    // audit against a real receipt, so the prompt's job is not to get a number
+    // out of the model — it is to constrain what the number means and to leave
+    // an honest exit. All four halves are asserted because dropping any one of
+    // them produces a plausible, wrong figure rather than a visible failure:
+    //   • cents, so a returned float or a dollars-not-cents answer is caught
+    //     downstream by the validator instead of rendering as $1,400
+    //   • staples excluded, or every meal silently carries the same $8 of oil
+    //   • reuse counted once, or the week's sum double-charges the dill the
+    //     reuse rule exists to finish
+    //   • null allowed, because a refusal is a better answer than a guess
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("estCostCents");
+    expect(prompt).toContain("never count pantry staples");
+    expect(prompt).toContain("already pays for");
+    expect(prompt).toContain("Return null rather than guessing");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });

@@ -29,6 +29,7 @@ function meal(overrides: Partial<DisplayMeal> = {}): DisplayMeal {
     ingredientPreview: [],
     tags: [],
     estTimeMinutes: null,
+    estCostCents: null,
     servings: null,
     chips: [],
     feedback: null,

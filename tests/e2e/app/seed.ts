@@ -135,7 +135,7 @@ export async function seedPlanState(
       spec.slots.map((s) => ({
         householdId: ctx.householdId,
         planId: plan.id,
-        mealType: "dinner" as const,
+        mealType: s.mealType ?? ("dinner" as const),
         date: s.date,
         slotType: s.slotType,
         title: s.title,
@@ -143,6 +143,7 @@ export async function seedPlanState(
         ingredientPreview: s.ingredientPreview,
         slotTags: s.slotTags,
         estTimeMinutes: s.estTimeMinutes,
+        estCostCents: s.estCostCents ?? null,
         chips: s.chips,
         servings: s.servings,
         rationale: s.rationale,

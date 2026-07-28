@@ -3,14 +3,21 @@
 import Link from "next/link";
 import { ChevronRight, ShoppingBag } from "lucide-react";
 import { type DisplayMeal, type HydrationView, isCookable } from "./plan-helpers";
+import type { PlanDay } from "./rail-helpers";
 import { ChefHeader } from "./rail/chef-header";
 import { PlanRail } from "./rail/plan-rail";
-import { PrimarySlot } from "./rail/floating-slot";
-// W6 (cost estimation) is display-ready but has no data behind it yet: the
-// `estCostCents` column and the generation output that fills it are the server
-// half, still unbuilt. `estimateCents` arrives null until then, and every
-// estimate surface renders nothing rather than a zero (cost-helpers, rule 3).
-import { formatEstimate } from "./cost-helpers";
+import {
+  PrimarySlot,
+  ToastSlot,
+  SLOT_PADDING_BARE,
+  SLOT_PADDING_DRAFT,
+  type SlotToast,
+} from "./rail/floating-slot";
+// W6 (cost estimation). The estimate is summed from the slots' own generated
+// numbers, so a week the model declined to price renders no row rather than a
+// zero (cost-helpers, rule 3). `estimateCents` overrides the sum — the confirmed
+// week's number comes from the grocery list's real items, not the plan.
+import { formatEstimate, sumSlotEstimates } from "./cost-helpers";
 
 export interface PlanReviewProps {
   chefSummary: string | null;
@@ -21,6 +28,12 @@ export interface PlanReviewProps {
   onConfirm: () => void;
   onTalkToChef: () => void;
   onTapMeal: (meal: DisplayMeal) => void;
+  onTapDay: (day: PlanDay) => void;
+  /** The one control on a provisional row (§C) — a direct ask, not a form. */
+  onDecide: (meal: DisplayMeal) => void;
+  /** The one control beside the absence the rail states at the bottom (§D). */
+  onAddDays: () => void;
+  onAddNight: (date: string) => void;
   onStartOver: () => void;
   /** Which rows the chef is rewriting, and which just changed. */
   workingMealIds: ReadonlySet<string>;
@@ -29,6 +42,8 @@ export interface PlanReviewProps {
   /** Item count on the generated list — only exists once confirmed. */
   groceryItemCount?: number | null;
   estimateCents?: number | null;
+  /** When set, the chef owns the slot and the primary is not rendered (§C). */
+  toast?: SlotToast | null;
 }
 
 function cookableCount(meals: DisplayMeal[]): number {
@@ -70,16 +85,21 @@ export function PlanReview({
   onConfirm,
   onTalkToChef,
   onTapMeal,
+  onTapDay,
+  onDecide,
+  onAddDays,
+  onAddNight,
   onStartOver,
   workingMealIds,
   landedMealIds,
   groceryItemCount,
   estimateCents,
+  toast,
 }: PlanReviewProps) {
-  const estimate = formatEstimate(estimateCents);
+  const estimate = formatEstimate(estimateCents ?? sumSlotEstimates(meals));
 
   return (
-    <>
+    <div className={isConfirmed ? SLOT_PADDING_BARE : SLOT_PADDING_DRAFT}>
       <ChefHeader
         status={isConfirmed ? "Set" : "Draft"}
         summary={chefSummary}
@@ -131,9 +151,40 @@ export function PlanReview({
         workingMealIds={workingMealIds}
         landedMealIds={landedMealIds}
         onOpenMeal={onTapMeal}
+        onOpenDay={onTapDay}
+        onDecide={onDecide}
+        onAddDays={onAddDays}
+        onAddNight={onAddNight}
       />
 
+      {/* The regenerate airlock's draft door. The chef header carries ONE revise
+          control and frame 3i spends it on "Something's off" (the modify door),
+          so re-prompting needs its own — and it cannot be a second floating
+          object (§D allows exactly one). This is the foot link the mid-week
+          screen already uses for the same job, which is why it reads as an
+          existing pattern rather than a new one. Confirmed weeks don't render
+          it: there the header's revise door IS "Plan a new week". */}
       {isConfirmed ? null : (
+        <div className="mt-6">
+          <span className="text-[13.5px] text-[var(--spec-text-caption)]">
+            Not the week you asked for?{" "}
+          </span>
+          <button
+            type="button"
+            onClick={onStartOver}
+            className="text-[13.5px] text-[var(--spec-text-muted)] underline-offset-2 transition-colors hover:text-[var(--spec-text-primary)]"
+          >
+            Start over →
+          </button>
+        </div>
+      )}
+
+      {/* ONE OCCUPANT. The toast does not sit above the bar, it REPLACES it —
+          the bar becoming the message is the whole point of them sharing a box.
+          A confirmed week has neither unless the chef is mid-change. */}
+      {toast ? (
+        <ToastSlot {...toast} />
+      ) : isConfirmed ? null : (
         <PrimarySlot
           label={confirmLabel(meals)}
           consequence={
@@ -145,6 +196,6 @@ export function PlanReview({
           inert={isConfirming || workingMealIds.size > 0}
         />
       )}
-    </>
+    </div>
   );
 }

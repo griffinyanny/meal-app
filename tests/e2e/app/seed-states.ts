@@ -8,6 +8,14 @@ import { todayISO, addDaysISO } from "../../../src/components/plan/plan-helpers"
 export type PlanState =
   | "EMPTY"
   | "DRAFT"
+  // 1E.5 · the rail's own states. DRAFT and CONFIRMED are genuinely different
+  // screens now (§D), so a seed that only differed by a status column would no
+  // longer be testing anything.
+  | "CONFIRMED"
+  | "PROVISIONAL"
+  | "CHOSEN_DAYS"
+  | "DENSE"
+  | "UNCOOKED_PAST"
   | "MIDWEEK"
   | "ELAPSED_CONFIRMED"
   | "ELAPSED_DRAFT"
@@ -30,6 +38,10 @@ function weekdayName(isoDate: string): string {
 
 export interface SeedSlotInput {
   date: string;
+  // 1E.5: the rail renders every meal type, and its density rule ("days are
+  // containers, meals are inset rows") only shows up at two-plus meals a day —
+  // so the seed has to be able to produce them. Defaults to dinner.
+  mealType?: "breakfast" | "lunch" | "dinner" | "snack";
   slotType: SlotType;
   title: string | null;
   description: string | null;
@@ -39,6 +51,8 @@ export interface SeedSlotInput {
   chips: string[];
   servings: number;
   rationale: string | null;
+  // W6 · what this meal adds to the shop, in cents. Null = the model declined.
+  estCostCents?: number | null;
 }
 
 export interface SeedPlanSpec {
@@ -87,6 +101,7 @@ function seededSlot(
     chips,
     servings: 2,
     rationale: "Seeded for E2E.",
+    estCostCents: 1500,
   };
 }
 
@@ -120,6 +135,24 @@ function buildWeek(
 //
 // Capture/visual-QA only: it is NOT a behavior-spec state. The E2E specs assert
 // on stable seeded titles, and these deliberately aren't stable-looking.
+//
+// ⚠️ RE-POINTED AT 1E.5 (S44). Two of this state's three original findings are
+// now EXPECTED renderings rather than defects, so preserving it unchanged would
+// have made it grade the rail against rules the rail deliberately replaced:
+//
+//   • the double cook time (BUG-008) is fixed by the meta-row contract — a
+//     time-shaped tag is dropped, so day 0's "90 min" beside estTimeMinutes 95
+//     is now proof the rule WORKS rather than proof it is broken. Kept, because
+//     it is still the input that would break a naive implementation.
+//   • the null-title slot (BUG-009) is no longer a "Thinking…" card; it is the
+//     provisional row, which is correct by design. Kept for the same reason.
+//   • the oversized chip row is GONE as a stress case — the rail carries no
+//     chips at all, so there is nothing left for it to stress.
+//
+// What is adversarial about the NEW rules is different, so three cases replace
+// it: a day dense enough that the container has to hold three rows of mixed
+// type, a rationale long enough to test the one place gold body text is allowed,
+// and a cost estimate at the far end of what the validator will admit.
 const ADVERSARIAL_LONG_TITLE =
   "Slow-Braised Gochujang Short Ribs with Charred Scallion Salsa Verde, " +
   "Crispy Garlic Confit and a Whipped Sesame Labneh";
@@ -157,15 +190,20 @@ function adversarialSlots(weekStart: string): SeedSlotInput[] {
     rationale: null,
   });
 
-  // 2 — chips present but empty-ish/oversized: a chip row that can't lay out on
-  // one line, plus a single-character chip.
+  // 2 — the longest thing the chef is allowed to say, on the one row licensed
+  // to say it. Gold body text is capped at three marks by law 06, so a rationale
+  // that runs to four lines is where "the chef speaking" stops being a highlight
+  // and starts being a paragraph. Plus a marker above the title, which is the
+  // only other thing competing for the eyebrow.
   slots.push({
     ...base(2),
-    chips: [
-      "Make it dramatically spicier than it already is tonight",
-      "x",
-      "Swap the protein",
-    ],
+    rationale:
+      "Wednesday is the night this week actually turns, so this one leans on " +
+      "Sunday's braise and asks almost nothing of you — twenty minutes, one " +
+      "pan, and the last of the herbs from Monday finished off rather than " +
+      "thrown away at the weekend.",
+    slotTags: ["cooks ahead", "45 min"],
+    estCostCents: 19_900,
   });
 
   // 3-5 — three near-identical cards. If the UI leans on the title alone to
@@ -174,17 +212,39 @@ function adversarialSlots(weekStart: string): SeedSlotInput[] {
     slots.push({ ...base(offset), title: ADVERSARIAL_NEAR_DUPLICATE });
   }
 
-  // 6 — the de-emphasized case: eating out has no recipe content at all.
+  // 6 — a night out. Under the rail this is no longer a de-emphasized CARD; it
+  // is a 56px line with no surface, which is the rule that replaced it.
   slots.push({
     ...base(6),
     slotType: "eating_out",
-    title: "Eating out",
+    title: null,
     description: null,
     ingredientPreview: [],
     slotTags: [],
     estTimeMinutes: null,
     chips: [],
     rationale: null,
+    estCostCents: null,
+  });
+
+  // 5 also gets a second and third meal, so one day in the state is at the
+  // density the container rule exists for while its neighbours are not — the
+  // mixed case, which is harder to lay out than either uniform one.
+  const dense = base(5);
+  slots.push({
+    ...dense,
+    mealType: "lunch",
+    title: "Leftover Gochujang Short Rib Bowls With Everything In Them",
+    rationale: "A rationale a compact row must refuse to print.",
+    estTimeMinutes: 12,
+  });
+  slots.push({
+    ...dense,
+    mealType: "breakfast",
+    title: "Eggs",
+    rationale: "The shortest title on the surface, beside the longest.",
+    estTimeMinutes: null,
+    estCostCents: null,
   });
 
   return slots;
@@ -209,6 +269,22 @@ export function buildSeedSpec(
       return buildWeek(addDaysISO(today, -8), "confirmed", 7, opts);
     case "ELAPSED_DRAFT":
       return buildWeek(addDaysISO(today, -8), "draft", 7, opts);
+    case "CONFIRMED":
+      // A settled week that has NOT started yet — the one seed that isolates
+      // "the decision was spent" from "some of it is already in the past".
+      // MIDWEEK cannot do this job: it always carries cooked days.
+      return {
+        ...buildWeek(today, "confirmed", 5, opts),
+        chefSummary: "That's the week. Your list is ready.",
+      };
+    case "PROVISIONAL":
+      return provisionalWeek(today, opts);
+    case "CHOSEN_DAYS":
+      return chosenDaysWeek(today, opts);
+    case "DENSE":
+      return denseWeek(today, opts);
+    case "UNCOOKED_PAST":
+      return uncookedPastWeek(today, opts);
     case "ADVERSARIAL":
       return {
         status: "draft",
@@ -219,4 +295,106 @@ export function buildSeedSpec(
         slots: adversarialSlots(today),
       };
   }
+}
+
+// ── 1E.5 seed states ───────────────────────────────────────────────────────
+
+// A week with a hole in it. The provisional slot is NOT a loading state and NOT
+// an error: it is a night with no answer yet, and the rule that matters is that
+// you can still confirm the week around it (BUG-009). The description carries
+// the sentence the row shows in place of a title.
+function provisionalWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  const week = buildWeek(today, "draft", 5, opts);
+  week.slots[3] = {
+    ...week.slots[3]!,
+    title: null,
+    description: "Friday, after Wednesday",
+    rationale: null,
+    ingredientPreview: [],
+    slotTags: [],
+    estTimeMinutes: null,
+    chips: [],
+    estCostCents: null,
+  };
+  return { ...week, chefSummary: "Four nights settled, one still open." };
+}
+
+// A WEEK IS THE DAYS YOU CHOSE (§D). Non-contiguous is the NORMAL shape, not an
+// edge case — "not here Mon/Tue, want Thursday and Friday". Offsets 0, 3, 4
+// leave a real gap the rail must acknowledge once at the bottom rather than
+// drawing as empty rows, plus an eating-out night that is a rail line, not a card.
+function chosenDaysWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  const pick = (offset: number) =>
+    seededSlot(
+      today,
+      offset,
+      opts?.chipOverrides?.[offset] ?? ["Make it spicier", "Swap the protein"]
+    );
+  const eatingOut: SeedSlotInput = {
+    ...pick(2),
+    slotType: "eating_out",
+    title: null,
+    description: null,
+    ingredientPreview: [],
+    slotTags: [],
+    estTimeMinutes: null,
+    chips: [],
+    rationale: null,
+    estCostCents: null,
+  };
+  return {
+    status: "draft",
+    weekStart: today,
+    chefSummary: "Three dinners, and Tuesday you're out.",
+    slots: [pick(0), eatingOut, pick(3), pick(4)],
+  };
+}
+
+// Fifteen meals in the same scroll as five dinners — the density the container
+// rule exists for. Only the dinners carry a rationale, which is the mechanism
+// that keeps fifteen meals inside law 06's three-gold-mark budget.
+function denseWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  const slots: SeedSlotInput[] = [];
+  for (let day = 0; day < 5; day++) {
+    const dinner = seededSlot(
+      today,
+      day,
+      opts?.chipOverrides?.[day] ?? ["Make it spicier", "Swap the protein"]
+    );
+    slots.push(dinner);
+    slots.push({
+      ...dinner,
+      mealType: "lunch",
+      title: `Seeded ${weekdayName(dinner.date)} Lunch`,
+      rationale: "A rationale the compact row must NOT print.",
+      estTimeMinutes: 15,
+      estCostCents: 700,
+    });
+    slots.push({
+      ...dinner,
+      mealType: "breakfast",
+      title: `Seeded ${weekdayName(dinner.date)} Breakfast`,
+      rationale: "A rationale the compact row must NOT print.",
+      estTimeMinutes: 10,
+      estCostCents: 400,
+    });
+  }
+  return {
+    status: "draft",
+    weekStart: today,
+    chefSummary: "Fifteen meals, five shops' worth of nothing wasted.",
+    slots,
+  };
+}
+
+// Divergence, RENDERING ONLY (Griffin, S43). A confirmed week where a planned
+// night simply did not get cooked. The cascade — list repair, the leftover
+// chain, whether the chef re-plans — is explicitly out of 1E.5; what has to be
+// true here is only that the layout can SAY it, so a later phase isn't blocked
+// by a screen that cannot express the state.
+function uncookedPastWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  return {
+    ...buildWeek(addDaysISO(today, -2), "confirmed", 6, opts),
+    chefSummary: "Here's the rest of your week.",
+  };
 }

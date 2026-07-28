@@ -82,6 +82,12 @@ export const mealPlanSlots = pgTable(
       .default([]),
     slotTags: jsonb("slot_tags").$type<string[]>().default([]),
     estTimeMinutes: integer("est_time_minutes"),
+    // What this meal is likely to add to the shop, in whole cents (Phase 1E.5 ·
+    // W6). Emitted at GENERATION time rather than computed client-side, so it
+    // survives a modify and a re-hydration the way every other slot fact does.
+    // Nullable on purpose: a week the model gave no number for renders no
+    // number, never a zero — a zero is a claim, absence is the truth.
+    estCostCents: integer("est_cost_cents"),
     chips: jsonb("chips").$type<string[]>().default([]),
     servings: integer("servings").default(2),
     rationale: text("rationale"),

@@ -2,7 +2,12 @@
 
 import type { DisplayMeal } from "../plan-helpers";
 import { dayTitle } from "../plan-helpers";
-import { groupIntoDays, isAbsentDay, unplannedSpan } from "../rail-helpers";
+import {
+  groupIntoDays,
+  isAbsentDay,
+  unplannedSpan,
+  type PlanDay,
+} from "../rail-helpers";
 import { AbsentDayRow, DayContainer } from "./day-container";
 
 export interface PlanRailProps {
@@ -15,7 +20,10 @@ export interface PlanRailProps {
   workingMealIds?: ReadonlySet<string>;
   landedMealIds?: ReadonlySet<string>;
   onOpenMeal?: (meal: DisplayMeal) => void;
-  onOpenDay?: (date: string) => void;
+  /** Tapping a day's date opens the day sheet (§D, `1l`). */
+  onOpenDay?: (day: PlanDay) => void;
+  /** Adding a night to a day nobody planned — a different act, same rail. */
+  onAddNight?: (date: string) => void;
   onDecide?: (meal: DisplayMeal) => void;
   onAddDays?: () => void;
 }
@@ -48,6 +56,7 @@ export function PlanRail({
   landedMealIds,
   onOpenMeal,
   onOpenDay,
+  onAddNight,
   onDecide,
   onAddDays,
 }: PlanRailProps) {
@@ -66,8 +75,8 @@ export function PlanRail({
               date={day.date}
               label={reason}
               action={
-                showAddControls && onOpenDay
-                  ? { label: "Add a night", onClick: () => onOpenDay(day.date) }
+                showAddControls && onAddNight
+                  ? { label: "Add a night", onClick: () => onAddNight(day.date) }
                   : undefined
               }
             />
@@ -82,6 +91,7 @@ export function PlanRail({
             workingMealIds={workingMealIds}
             landedMealIds={landedMealIds}
             onOpenMeal={onOpenMeal}
+            onOpenDay={onOpenDay}
             onDecide={onDecide}
             provisionalSentence={provisionalSentence}
           />

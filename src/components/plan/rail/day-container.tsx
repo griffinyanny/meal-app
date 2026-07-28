@@ -11,16 +11,67 @@ import {
 } from "../rail-helpers";
 import { MealRowCompact, MealRowFeature, ProvisionalRow } from "./meal-row";
 
-/** The 38px date column. A label, not a calendar — it never implies a grid. */
+/**
+ * The 38px date column. A label, not a calendar — it never implies a grid.
+ *
+ * It is also THE DAY'S TAP TARGET (§D, `1l`): the day container itself cannot
+ * be, because at every density its interior is already covered by rows that
+ * open their own meal. The date is the one part of a day that belongs to the
+ * day rather than to anything in it.
+ */
 function DateColumn({
   date,
   muted,
   connector,
+  onOpen,
+  label,
 }: {
   date: string;
   muted?: boolean;
   connector: boolean;
+  onOpen?: () => void;
+  label?: string;
 }) {
+  const content = (
+    <>
+      <span
+        className={cn(
+          "text-[10.5px] font-bold tracking-[1.3px]",
+          muted ? "text-[var(--spec-text-caption)]" : "text-[var(--spec-text-muted)]"
+        )}
+      >
+        {shortDayName(date).toUpperCase()}
+      </span>
+      <span
+        className={cn(
+          "text-[16px] font-semibold leading-[1.2]",
+          muted ? "text-[var(--spec-text-muted)]" : "text-[var(--spec-text-primary)]"
+        )}
+      >
+        {dayOfMonth(date)}
+      </span>
+    </>
+  );
+
+  if (onOpen) {
+    return (
+      <div className="flex w-[38px] flex-none flex-col items-center pt-1">
+        <button
+          type="button"
+          data-day-date={date}
+          aria-label={label ?? `Open ${date}`}
+          onClick={onOpen}
+          className="flex flex-col items-center font-[inherit]"
+        >
+          {content}
+        </button>
+        {connector ? (
+          <span className="mt-1.5 w-px flex-1 bg-[rgba(240,222,190,0.12)]" />
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-[38px] flex-none flex-col items-center pt-1">
       <span
@@ -67,7 +118,15 @@ export function AbsentDayRow({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <div className="flex min-h-[56px] items-center gap-[11px]">
+    // Carries `data-meal-date` like a real row does. A night you're out is
+    // still a day the chef can CHANGE — a whole-week modify that clears Tuesday
+    // reports Tuesday as changed, and the acknowledgement scrolls to it by this
+    // attribute. Without it the scroll silently no-ops on the one day whose
+    // change is hardest to notice.
+    <div
+      data-meal-date={date}
+      className="flex min-h-[56px] items-center gap-[11px]"
+    >
       <DateColumn date={date} muted connector={false} />
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
         <span className="text-[14px] text-[var(--spec-text-muted)]">{label}</span>
@@ -95,6 +154,7 @@ export interface DayContainerProps {
   workingMealIds?: ReadonlySet<string>;
   landedMealIds?: ReadonlySet<string>;
   onOpenMeal?: (meal: DisplayMeal) => void;
+  onOpenDay?: (day: PlanDay) => void;
   onDecide?: (meal: DisplayMeal) => void;
   /** The sentence a provisional slot shows in place of a title. */
   provisionalSentence: (meal: DisplayMeal) => string;
@@ -116,6 +176,7 @@ export function DayContainer({
   workingMealIds,
   landedMealIds,
   onOpenMeal,
+  onOpenDay,
   onDecide,
   provisionalSentence,
 }: DayContainerProps) {
@@ -156,7 +217,12 @@ export function DayContainer({
 
   return (
     <div className="flex items-stretch gap-[11px]">
-      <DateColumn date={day.date} connector={!isLast} />
+      <DateColumn
+        date={day.date}
+        connector={!isLast}
+        onOpen={onOpenDay ? () => onOpenDay(day) : undefined}
+        label={`Open ${day.dayName.charAt(0)}${day.dayName.slice(1).toLowerCase()}`}
+      />
       {solo ? (
         <div className="min-w-0 flex-1">{rows}</div>
       ) : (

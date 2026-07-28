@@ -12,12 +12,13 @@ import { StreamingPlan } from "./streaming-plan";
 import { PlanReview } from "./plan-review";
 import { PlanMidweek } from "./plan-midweek";
 import { WeekWrappedState } from "./week-wrapped-state";
-import { ModifyStatusPills } from "./modify-status-pills";
 import { TalkToChefSheet } from "@/components/shared/talk-to-chef-sheet";
-import { ExpandedMealSheet } from "./expanded-meal-sheet";
+import { PlanSheet } from "./sheet/plan-sheet";
+import { usePlanSheet } from "./use-plan-sheet";
 import { usePlanModify } from "./use-plan-modify";
 import { usePlanHydration } from "./use-plan-hydration";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
+import type { PlanDay } from "./rail-helpers";
 import { takeHandoff } from "@/lib/onboarding/handoff";
 import { seedChips } from "@/lib/onboarding/synthesize";
 import {
@@ -39,6 +40,12 @@ const GENERAL_SUGGESTIONS = [
   "Something quick — I'm exhausted",
 ];
 
+// The weekday label for a date already on the plan. Reads it off the rendered
+// meals rather than recomputing UTC arithmetic that plan-helpers already owns.
+function dayNameOf(meals: DisplayMeal[], date: string): string {
+  return meals.find((m) => m.date === date)?.dayName ?? "";
+}
+
 function greeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return "Good morning";
@@ -54,10 +61,6 @@ export function PlanPageClient() {
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatScope, setChatScope] = useState<DisplayMeal | null>(null);
-  // Track the expanded meal by id (not a frozen snapshot) so the sheet reflects
-  // live changes — a recipe finishing hydration flips writing→full in place.
-  const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
-  const [expandedOpen, setExpandedOpen] = useState(false);
 
   // Regenerate flow: routes back through the intent-capture screen so a new
   // plan carries fresh weekly intent instead of a blind reroll.
@@ -103,6 +106,17 @@ export function PlanPageClient() {
     };
   }, [seedPrefsQuery.data, seedRequest]);
 
+  const plan = planQuery.data;
+  const persistedMeals = useMemo<DisplayMeal[]>(
+    () => (plan ? plan.slots.map(slotToDisplayMeal) : []),
+    [plan]
+  );
+
+  // Declared before usePlanModify because that hook's onDone callback closes
+  // this sheet on success. Hook ORDER is what React cares about, and it is
+  // stable either way.
+  const sheet = usePlanSheet(persistedMeals);
+
   // In-place AI-working affordance (see docs/idea-backlog "Something is
   // happening"): pending state where the user is looking, a highlight on the
   // changed day, and a scroll-independent pill for whole-week changes.
@@ -111,14 +125,14 @@ export function PlanPageClient() {
     changedDates,
     ack,
     modifyError,
+    toast,
     runModify,
-    retry,
     cancelInFlight,
     dismissAck,
     clearError,
   } = usePlanModify((source) => {
     if (source === "chat") setChatOpen(false);
-    else if (source === "expanded") setExpandedOpen(false);
+    else sheet.close();
   });
 
   const {
@@ -155,11 +169,6 @@ export function PlanPageClient() {
     onSettled: () => utils.plan.current.invalidate(),
   });
 
-  const plan = planQuery.data;
-  const persistedMeals = useMemo<DisplayMeal[]>(
-    () => (plan ? plan.slots.map(slotToDisplayMeal) : []),
-    [plan]
-  );
   const streamedMeals = useMemo<DisplayMeal[]>(() => {
     const list = streamed?.meals ?? [];
     return list
@@ -188,14 +197,18 @@ export function PlanPageClient() {
   function openChat(scope: DisplayMeal | null) {
     clearError();
     setChatScope(scope);
-    setExpandedOpen(false);
+    sheet.close();
     setChatOpen(true);
+  }
+
+  function openDay(day: PlanDay) {
+    clearError();
+    sheet.openDay(day.date);
   }
 
   function openExpanded(meal: DisplayMeal) {
     clearError();
-    setExpandedMealId(meal.id ?? null);
-    setExpandedOpen(true);
+    sheet.openMeal(meal);
     // Jump this meal's recipe to the front of the hydration walk so it's ready
     // fastest for the sheet the user just opened.
     prioritize(meal.id);
@@ -229,14 +242,6 @@ export function PlanPageClient() {
     hydrationEnabled
   );
 
-  // The live expanded meal, resolved from the current plan each render.
-  const expandedMeal = useMemo(
-    () =>
-      expandedMealId
-        ? persistedMeals.find((m) => m.id === expandedMealId) ?? null
-        : null,
-    [expandedMealId, persistedMeals]
-  );
 
   // THE MEAL ROW IS THE UNIT OF CHANGE FEEDBACK, NEVER THE DAY CONTAINER
   // (1E.5 ledger §C) — the ring sits on the changed row's own 14px radius
@@ -317,6 +322,7 @@ export function PlanPageClient() {
             isConfirmed={isConfirmed}
             onStartOver={startOver}
             onFeedback={onFeedback}
+            toast={slotToast}
           />
         );
       }
@@ -330,21 +336,35 @@ export function PlanPageClient() {
         onConfirm: () => confirmMutation.mutate({ planId: plan.id }),
         onTalkToChef: () => openChat(null),
         onTapMeal: openExpanded,
+        onTapDay: openDay,
+        // §C/§D's named controls. Each is a ONE-TAP ASK, not a form: the chef
+        // already knows the week, so the only thing a picker would add is a
+        // decision the user came here to avoid making.
+        onDecide: (meal: DisplayMeal) =>
+          runModify(
+            `Decide ${dayTitle(meal.dayName)}'s dinner for me.`,
+            meal,
+            "expanded"
+          ),
+        onAddDays: () =>
+          runModify("Add dinners for the nights I haven't planned.", null, "chat"),
+        onAddNight: (date: string) =>
+          runModify(
+            `Cook something on ${dayTitle(dayNameOf(persistedMeals, date))} after all.`,
+            null,
+            "chat"
+          ),
         onStartOver: startOver,
         workingMealIds,
         landedMealIds,
         hydrationByDate,
+        toast: slotToast,
       };
 
       return showMidweek ? (
         <PlanMidweek {...weekProps} onFeedback={onFeedback} />
       ) : (
-        <PlanReview
-          {...weekProps}
-          chefSummary={plan.chefSummary}
-          // W6 server half unbuilt: no estCostCents column yet, so no estimate.
-          estimateCents={null}
-        />
+        <PlanReview {...weekProps} chefSummary={plan.chefSummary} />
       );
     }
 
@@ -383,10 +403,13 @@ export function PlanPageClient() {
     ? `Change ${dayTitle(chatScope.dayName)}'s dinner`
     : "What are you thinking?";
 
-  const sheetOpen = chatOpen || expandedOpen;
-  // Pills only make sense over a rendered plan — never over the intent screen
-  // or a streaming generation (where a stale modify result could land).
-  const showPills = !sheetOpen && !intentMode && !isStreaming;
+  const sheetOpen = chatOpen || sheet.open;
+  // The toast only makes sense over a rendered plan — never over the intent
+  // screen or a streaming generation (where a stale modify result could land,
+  // and where the count already owns the slot). It is also suppressed behind an
+  // open sheet: the sheet shows its own pending line and its own retry, and a
+  // message at bottom-96 under a sheet is a message nobody can read.
+  const slotToast = !sheetOpen && !intentMode && !isStreaming ? toast : null;
 
   const derivedState = isStreaming
     ? "streaming"
@@ -447,24 +470,9 @@ export function PlanPageClient() {
 
       {renderBody()}
 
-      {/* Modify feedback (whole-week ack + inline-error retry) lives at the
-          bottom anchor, not a top toast. Gated to a rendered plan so a stale
-          result can't float over the intent screen or a streaming generation. */}
-      {showPills && (
-        <ModifyStatusPills
-          ack={ack}
-          errorMessage={modifyError?.message ?? null}
-          onDismissAck={dismissAck}
-          onRetry={retry}
-        />
-      )}
-
       <TalkToChefSheet
         open={chatOpen}
-        onOpenChange={(o) => {
-          setChatOpen(o);
-          if (!o) clearError();
-        }}
+        onOpenChange={setChatOpen}
         onSubmit={handleChatSubmit}
         isSubmitting={pending?.source === "chat"}
         suggestions={GENERAL_SUGGESTIONS}
@@ -473,23 +481,25 @@ export function PlanPageClient() {
         modifyError={modifyError?.source === "chat" ? modifyError.message : null}
       />
 
-      <ExpandedMealSheet
-        meal={expandedMeal}
-        open={expandedOpen}
-        onOpenChange={(o) => {
-          setExpandedOpen(o);
-          if (!o) clearError();
-        }}
-        onModify={(req) => runModify(req, expandedMeal, "expanded")}
-        onTalkToChef={openChat}
-        isModifying={pending?.source === "expanded"}
+      {/* Dismissing a sheet no longer clears a failed modify. The sheet used to
+          be the error's only home, so closing it was the dismissal; now the
+          toast owns the slot and the retry survives the sheet going away. A
+          fresh action still clears it — see openChat / openExpanded. */}
+      <PlanSheet
+        target={sheet.target}
+        open={sheet.open}
+        onOpenChange={sheet.setOpen}
+        onModify={(req) =>
+          runModify(req, sheet.meal, sheet.meal ? "expanded" : "day")
+        }
+        onTalkToChef={() => openChat(sheet.meal)}
+        onOpenMeal={openExpanded}
+        isModifying={pending?.source === "expanded" || pending?.source === "day"}
         workingLabel={pending?.label}
         modifyError={
-          modifyError?.source === "expanded" ? modifyError.message : null
+          modifyError && modifyError.source !== "chat" ? modifyError.message : null
         }
-        hydration={
-          expandedMeal?.date ? hydrationByDate[expandedMeal.date] : undefined
-        }
+        hydration={sheet.meal?.date ? hydrationByDate[sheet.meal.date] : undefined}
       />
     </div>
   );

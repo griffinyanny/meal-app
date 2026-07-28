@@ -1,9 +1,15 @@
 "use client";
 
 import { type DisplayMeal, type HydrationView } from "./plan-helpers";
+import type { PlanDay } from "./rail-helpers";
 import { PastMealRow } from "./past-meal-row";
 import { ChefHeader } from "./rail/chef-header";
 import { PlanRail } from "./rail/plan-rail";
+import {
+  ToastSlot,
+  SLOT_PADDING_BARE,
+  type SlotToast,
+} from "./rail/floating-slot";
 
 export interface PlanMidweekProps {
   meals: DisplayMeal[];
@@ -13,11 +19,17 @@ export interface PlanMidweekProps {
   onConfirm: () => void;
   onTalkToChef: () => void;
   onTapMeal: (meal: DisplayMeal) => void;
+  onTapDay: (day: PlanDay) => void;
+  onDecide: (meal: DisplayMeal) => void;
+  onAddDays: () => void;
+  onAddNight: (date: string) => void;
   onFeedback: (meal: DisplayMeal, feedback: "thumbs_up" | "thumbs_down") => void;
   onStartOver: () => void;
   workingMealIds: ReadonlySet<string>;
   landedMealIds: ReadonlySet<string>;
   hydrationByDate: Record<string, HydrationView>;
+  /** Mid-week has no primary to replace, but the chef still gets the slot. */
+  toast?: SlotToast | null;
 }
 
 /**
@@ -35,16 +47,21 @@ export function PlanMidweek({
   weekStart,
   onTalkToChef,
   onTapMeal,
+  onTapDay,
+  onDecide,
+  onAddDays,
+  onAddNight,
   onFeedback,
   onStartOver,
   workingMealIds,
   landedMealIds,
+  toast,
 }: PlanMidweekProps) {
   const past = meals.filter((m) => m.timeframe === "past");
   const ahead = meals.filter((m) => m.timeframe !== "past");
 
   return (
-    <>
+    <div className={SLOT_PADDING_BARE}>
       <ChefHeader
         status="Set"
         summary="Here's the rest of your week."
@@ -62,6 +79,10 @@ export function PlanMidweek({
         workingMealIds={workingMealIds}
         landedMealIds={landedMealIds}
         onOpenMeal={onTapMeal}
+        onOpenDay={onTapDay}
+        onDecide={onDecide}
+        onAddDays={onAddDays}
+        onAddNight={onAddNight}
       />
 
       {past.length > 0 && (
@@ -93,6 +114,8 @@ export function PlanMidweek({
           Plan a new week →
         </button>
       </div>
-    </>
+
+      {toast ? <ToastSlot {...toast} /> : null}
+    </div>
   );
 }
