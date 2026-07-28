@@ -15,7 +15,7 @@ interface OrganizeToggleProps {
 export function OrganizeToggle({ mode, onChange }: OrganizeToggleProps) {
   return (
     <div
-      className="glass-surface inline-flex gap-1 rounded-[11px] p-[3px]"
+      className="glass-surface inline-flex gap-1 rounded-[12px] p-[3px]"
       role="tablist"
       aria-label="Organize the list"
     >

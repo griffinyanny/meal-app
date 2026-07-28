@@ -49,7 +49,7 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
           type="button"
           onClick={onDecline}
           data-testid="onboarding-deepen-no"
-          className="w-full rounded-[15px] border border-[rgba(240,222,190,0.10)] bg-[rgba(240,222,190,0.04)] px-4 py-[15px] text-[15px] font-semibold text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.07)]"
+          className="w-full rounded-[16px] border border-[rgba(240,222,190,0.10)] bg-[rgba(240,222,190,0.04)] px-4 py-[15px] text-[15px] font-semibold text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.07)]"
         >
           Just build my week
         </button>

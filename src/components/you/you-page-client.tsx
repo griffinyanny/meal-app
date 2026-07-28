@@ -177,7 +177,7 @@ export function YouPageClient() {
   if (preferencesQuery.isLoading || memoriesQuery.isLoading || accountQuery.isLoading) {
     return (
       <div className="px-[22px] pt-14">
-        <div className="h-64 animate-pulse rounded-[21px] bg-white/[0.04]" />
+        <div className="h-64 animate-pulse rounded-[22px] bg-[rgba(240,222,190,0.04)]" />
       </div>
     );
   }

@@ -33,7 +33,7 @@ export default function LoginPage() {
         <div className="space-y-3">
           <button
             onClick={signInWithGoogle}
-            className="w-full glass-card px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+            className="w-full glass-card px-4 py-3 rounded-xl text-sm font-medium text-foreground hover:bg-[rgba(240,222,190,0.05)] transition-colors flex items-center justify-center gap-2"
             aria-label="Sign in with Google"
           >
             <GoogleIcon />

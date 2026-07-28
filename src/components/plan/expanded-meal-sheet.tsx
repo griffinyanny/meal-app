@@ -143,7 +143,7 @@ function ExpandedMealContent({
                 type="button"
                 onClick={() => onModify(action.request)}
                 disabled={isModifying}
-                className="glass-card rounded-xl px-4 py-3 text-left text-sm transition-all hover:bg-white/5 active:scale-[0.99] active:opacity-80 disabled:opacity-60"
+                className="glass-card rounded-xl px-4 py-3 text-left text-sm transition-all hover:bg-[rgba(240,222,190,0.05)] active:scale-[0.99] active:opacity-80 disabled:opacity-60"
               >
                 {action.label}
               </button>
@@ -188,7 +188,7 @@ function PreviewPills({ meal }: { meal: DisplayMeal }) {
       {meal.ingredientPreview.map((ing) => (
         <span
           key={ing}
-          className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 text-xs text-foreground/80"
+          className="rounded-full border border-[rgba(240,222,190,0.08)] bg-[rgba(240,222,190,0.05)] px-2.5 py-1 text-xs text-foreground/80"
         >
           {ing}
         </span>

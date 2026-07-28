@@ -82,7 +82,7 @@ export function GroceryRow({
       ref={drag?.setNodeRef}
       style={drag?.style}
       className={cn(
-        !isFirst && "border-t border-white/5",
+        !isFirst && "border-t border-[rgba(240,222,190,0.05)]",
         drag?.isDragging && "opacity-40"
       )}
       data-testid="grocery-row"
@@ -104,7 +104,7 @@ export function GroceryRow({
             "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] border transition-colors",
             item.isChecked
               ? "border-primary bg-primary"
-              : "border-white/30 bg-transparent"
+              : "border-[rgba(240,222,190,0.3)] bg-transparent"
           )}
         >
           {item.isChecked && (
@@ -168,7 +168,7 @@ export function GroceryRow({
             type="button"
             onClick={() => beginEdit("qty")}
             className={cn(
-              "shrink-0 rounded-md bg-white/[0.04] px-1.5 py-0.5 text-[13px]",
+              "shrink-0 rounded-md bg-[rgba(240,222,190,0.04)] px-1.5 py-0.5 text-[13px]",
               qtyLabel ? "text-muted-foreground" : "text-muted-foreground/45"
             )}
           >
@@ -224,7 +224,7 @@ export function GroceryRow({
           <button
             type="button"
             onClick={() => onSplit(item.id)}
-            className="mt-2 rounded-[10px] border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[12px] font-semibold hover:bg-white/[0.08]"
+            className="mt-2 rounded-[12px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] px-3 py-1.5 text-[12px] font-semibold hover:bg-[rgba(240,222,190,0.08)]"
           >
             Split into separate items
           </button>

@@ -46,7 +46,7 @@ export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowPr
         type="button"
         onClick={() => setActive(true)}
         data-testid={testId}
-        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-white/15 px-4 py-3.5 text-left text-sm font-medium text-muted-foreground hover:border-white/25 hover:text-foreground"
+        className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-[rgba(240,222,190,0.15)] px-4 py-3.5 text-left text-sm font-medium text-muted-foreground hover:border-[rgba(240,222,190,0.25)] hover:text-foreground"
       >
         <Plus className="size-[18px]" />
         Add an item
@@ -60,7 +60,7 @@ export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowPr
         "flex items-center gap-2.5 rounded-2xl px-3.5 py-3",
         variant === "top"
           ? "glass-card"
-          : "border border-primary/50 bg-[rgba(34,34,42,0.7)]"
+          : "border border-primary/50 bg-[rgba(240,222,190,0.07)]"
       )}
     >
       <Plus className="size-[18px] shrink-0 text-primary" />
@@ -82,7 +82,7 @@ export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowPr
           onClick={onOpenChef}
           aria-label="Talk to the chef"
           data-testid="grocery-open-chef"
-          className="flex size-[34px] shrink-0 items-center justify-center rounded-[10px] bg-primary/15 text-primary"
+          className="flex size-[34px] shrink-0 items-center justify-center rounded-[12px] bg-primary/15 text-primary"
         >
           <Brain className="size-[18px]" strokeWidth={1.8} />
         </button>

@@ -130,7 +130,11 @@ export function CaughtTray({ items }: CaughtTrayProps) {
         {items.map((item) => (
           <span
             key={item}
-            className="inline-flex items-center rounded-[10px] border border-[rgba(233,179,72,0.34)] bg-[rgba(233,179,72,0.14)] px-2.5 py-1.5 text-[13px] font-semibold text-[var(--spec-text-body)]"
+            // Neutral inset, not a gold pill. The TRAY is gold-soft and stays
+            // that way — it is the chef saying "here's what I caught" — but
+            // each chip inside it is a value the user supplied, and gold marks
+            // the chef speaking rather than the content it heard.
+            className="inline-flex items-center rounded-[12px] border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.07)] px-2.5 py-1.5 text-[13px] font-semibold text-[var(--spec-text-primary)]"
           >
             {item}
           </span>

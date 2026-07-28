@@ -35,7 +35,7 @@ export function OptionCards({ options, selected, onToggle }: OptionCardsProps) {
               {o.label}
             </span>
             {o.sub && (
-              <span className="mt-1 text-[12px] text-[rgba(235,235,245,0.5)]">{o.sub}</span>
+              <span className="mt-1 text-[12px] text-[var(--spec-text-muted)]">{o.sub}</span>
             )}
           </button>
         );
@@ -124,7 +124,7 @@ export function CountRow({
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           aria-label={`One fewer ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[11px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
         >
           <Minus className="size-4" />
         </button>
@@ -139,7 +139,7 @@ export function CountRow({
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           aria-label={`One more ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[11px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
         >
           <Plus className="size-4" />
         </button>

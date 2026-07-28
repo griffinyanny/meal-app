@@ -35,7 +35,7 @@ export function StaplesRow({ onList, onAdd }: StaplesRowProps) {
             type="button"
             onClick={() => onAdd(s.name, s.category)}
             data-testid="staple-chip"
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-white/8 bg-[rgba(34,34,42,0.6)] px-3.5 py-2 text-[13.5px] font-medium text-foreground transition-colors hover:border-white/15"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[rgba(240,222,190,0.08)] bg-[rgba(240,222,190,0.06)] px-3.5 py-2 text-[13.5px] font-medium text-foreground transition-colors hover:border-[rgba(240,222,190,0.15)]"
           >
             <Plus className="size-3.5 text-primary" strokeWidth={2.4} />
             {capitalizeName(s.name)}

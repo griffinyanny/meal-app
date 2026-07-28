@@ -10,7 +10,7 @@ export interface AccountFooterProps {
 // Quiet account/household basics at the bottom of the tab (feature #1).
 export function AccountFooter({ account, onSignOut }: AccountFooterProps) {
   return (
-    <div className="mt-6 rounded-[18px] border border-white/[0.07] bg-white/[0.02] p-4">
+    <div className="mt-6 rounded-[18px] border border-[rgba(240,222,190,0.07)] bg-[rgba(240,222,190,0.02)] p-4">
       <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
         Account
       </p>

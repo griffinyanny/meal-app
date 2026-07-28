@@ -217,7 +217,14 @@ export function ReflectScreen({
             </div>
           )}
 
-          {/* 3 — the consequences. */}
+          {/* 3 — the consequences.
+              Gold marks the chef SPEAKING, not content you read (Griffin's
+              call, S42). These lines are a list of decisions about your week —
+              you read them, and on the deep state there are six of them — so
+              they take text.primary. The chef's own voice on this screen keeps
+              its gold: the orb, and the unsaved note below. The arrows drop to
+              muted for a second reason: cream is what you press, and a marker
+              glyph beside a paragraph is not pressable. */}
           <div data-testid="onboarding-week-decisions">
             <p className="m-0 mb-[13px] text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
               SO HERE&apos;S YOUR WEEK
@@ -226,10 +233,10 @@ export function ReflectScreen({
               {decisions.map((decision) => (
                 <div key={decision} className="flex items-start gap-2.5">
                   <ArrowRight
-                    className="mt-1 size-[15px] flex-none text-[var(--spec-action)]"
+                    className="mt-1 size-[15px] flex-none text-[var(--spec-text-muted)]"
                     strokeWidth={2.2}
                   />
-                  <p className="m-0 text-[15px] leading-[1.45] text-[var(--spec-gold-voice)] text-pretty">
+                  <p className="m-0 text-[15px] leading-[1.45] text-[var(--spec-text-primary)] text-pretty">
                     {decision}
                   </p>
                 </div>

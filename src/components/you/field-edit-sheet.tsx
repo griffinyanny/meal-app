@@ -79,10 +79,10 @@ export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheet
                   type="button"
                   onClick={() => save({ dietaryFramework: opt })}
                   className={cn(
-                    "flex items-center justify-between rounded-xl border px-4 py-3 text-left text-[0.95rem] capitalize transition-colors",
+                    "flex items-center justify-between rounded-[18px] border px-4 py-3 text-left text-[0.95rem] capitalize transition-colors",
                     opt === dietary
                       ? "border-primary/50 bg-primary/10 text-foreground"
-                      : "border-white/10 bg-white/[0.04] text-foreground hover:bg-white/[0.07]"
+                      : "border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.04)] text-foreground hover:bg-[rgba(240,222,190,0.07)]"
                   )}
                 >
                   {opt}
@@ -160,7 +160,7 @@ function Stepper({
   const dec = () => onChange(Math.max(min, value - step));
   const inc = () => onChange(Math.min(max, value + step));
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3">
+    <div className="flex items-center justify-between rounded-[18px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.04)] px-4 py-3">
       <span className="text-[0.9rem] text-foreground">{label}</span>
       <div className="flex items-center gap-3">
         <button
@@ -168,7 +168,7 @@ function Stepper({
           onClick={dec}
           disabled={value <= min}
           aria-label={`Decrease ${label}`}
-          className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-foreground disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-full border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.06)] text-foreground disabled:opacity-40"
         >
           <Minus className="size-4" />
         </button>
@@ -180,7 +180,7 @@ function Stepper({
           onClick={inc}
           disabled={value >= max}
           aria-label={`Increase ${label}`}
-          className="flex size-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-foreground disabled:opacity-40"
+          className="flex size-9 items-center justify-center rounded-full border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.06)] text-foreground disabled:opacity-40"
         >
           <Plus className="size-4" />
         </button>

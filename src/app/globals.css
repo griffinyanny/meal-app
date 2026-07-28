@@ -43,61 +43,35 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  /* The eight-rung radius scale (spec §11, migration item 06). Radius is a
+     function of height, so the named steps ARE the rungs — a multiplier chain
+     off one `--radius` produced 7.2 / 9.6 / 16.8 / 21.6 / 26.4, none of which
+     are on the scale. Rungs 16 and 46 have no Tailwind name on purpose: 16 is
+     written `rounded-[16px]` at the handful of primary buttons that take it
+     (the onboarding idiom), and 46 belongs to the screen itself, which we do
+     not round. */
+  --radius-sm: 7px; /* checkboxes, radios, toggle knobs — under 26px */
+  --radius-md: 9px; /* badges, counts, micro-pills — 26–30px */
+  --radius-lg: 12px; /* chips, segmented inners, small icon buttons — 32–38px */
+  --radius-xl: 14px; /* icon buttons, toasts, secondary + ghost buttons — 40–46px */
+  --radius-2xl: 18px; /* bottom action bar, list cards, inset groups */
+  --radius-3xl: 22px; /* feature cards, sheets */
+  --radius-4xl: 22px; /* alias — there is no rung above 22 short of the screen */
 }
 
 :root {
-  --background: #0E0E10;
-  --foreground: #F5F5F7;
-  --card: #1A1A1E;
-  --card-foreground: #F5F5F7;
-  --popover: #1A1A1E;
-  --popover-foreground: #F5F5F7;
-  --primary: #3A86FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #22222A;
-  --secondary-foreground: #F5F5F7;
-  --muted: #22222A;
-  --muted-foreground: #8E8E93;
-  --accent: #3A86FF;
-  --accent-foreground: #FFFFFF;
-  --destructive: #FF453A;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: #3A86FF;
-  --chart-1: #3A86FF;
-  --chart-2: #5E5CE6;
-  --chart-3: #30D158;
-  --chart-4: #FF9F0A;
-  --chart-5: #FF453A;
-  --radius: 0.75rem;
-  --sidebar: #1A1A1E;
-  --sidebar-foreground: #F5F5F7;
-  --sidebar-primary: #3A86FF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #22222A;
-  --sidebar-accent-foreground: #F5F5F7;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #3A86FF;
-
   /* ── Design Specification v1.0, theme 11i ("Gold voice, cream hand") ────────
      Source of truth: docs/design/system/design-spec.dc.html (Claude Design,
      S39). The spec document itself is deliberately literal — no tokens, no
      utilities — because it has to be copy-pasteable by anyone reading it. Our
      codebase is the opposite case: the same values appear across dozens of
-     components, and the migration lands in three passes (onboarding now, the
-     mechanical app-wide sweep before 1E.5, the rest in 1F). Tokens are what
-     make passes 2 and 3 a swap instead of a rewrite.
+     components, and the migration landed in three passes (onboarding S39, the
+     mechanical app-wide sweep S42, the surface-specific rest in 1F). Tokens
+     are what made passes 2 and 3 a swap instead of a rewrite.
 
-     ONLY the onboarding flow consumes these today. Everything else still runs
-     on the tokens above until pass 2 — do not mix the two families inside one
-     surface, because half-migrated is worse-looking than either end state.
+     As of the 1E.7 sweep (S42) these are the ONLY colour authority in the
+     product. The shadcn/Tailwind bridge below is an alias layer over them, not
+     a second palette — there is no longer a pre-spec family to mix with.
 
      Law 04: every neutral is warm. There is no rgba(255,255,255,x) below, and
      there must never be one — cool white on this floor is the exact blue cast
@@ -128,6 +102,62 @@
   --spec-destructive: #D96A5B;
   --spec-destructive-text: #E39B92;
   --spec-success: #9CB86F;
+
+  /* Two opaque steps off the floor, for the handful of places that genuinely
+     cannot be translucent (shadcn's --card/--popover/--secondary, which are
+     used as solid fills behind other blurred surfaces). Each is the composite
+     of the matching elevation utility over the floor, so a solid card and a
+     .spec-glass card read as the same rung rather than two materials. */
+  --spec-raise-1: #251E17; /* = .spec-glass over the floor */
+  --spec-raise-2: #2F261E; /* = .spec-control over the floor */
+
+  /* ── shadcn / Tailwind bridge ───────────────────────────────────────────────
+     These names are consumed by `@theme inline` above and by every component
+     under ui/, so they cannot be deleted — but they no longer carry values of
+     their own. Each is an alias onto the spec token that plays its role, which
+     is what "retire the pre-spec :root family" means in practice: one palette,
+     reachable under two sets of names.
+
+     The load-bearing change is --primary. It was #3A86FF, and indigo is not a
+     colour in this system: spec §01 says cream is what you press and gold is
+     the chef, with no third accent. Every `bg-primary` in the app is a button,
+     so aliasing it to the cream action is both correct and the whole of the
+     fix. */
+  --background: var(--spec-floor);
+  --foreground: var(--spec-text-primary);
+  --card: var(--spec-raise-1);
+  --card-foreground: var(--spec-text-primary);
+  --popover: var(--spec-raise-1);
+  --popover-foreground: var(--spec-text-primary);
+  --primary: var(--spec-action);
+  --primary-foreground: var(--spec-action-on);
+  --secondary: var(--spec-raise-2);
+  --secondary-foreground: var(--spec-text-primary);
+  --muted: var(--spec-raise-2);
+  --muted-foreground: var(--spec-text-muted);
+  /* shadcn uses --accent for hover/active surfaces, never for an accent hue —
+     so it takes the raised neutral, not gold. Gold is never a hover state. */
+  --accent: var(--spec-raise-2);
+  --accent-foreground: var(--spec-text-primary);
+  --destructive: var(--spec-destructive);
+  --border: rgba(240, 222, 190, 0.08);
+  --input: rgba(240, 222, 190, 0.10);
+  /* Focus ring marks a control, so it is cream rather than gold. */
+  --ring: var(--spec-action);
+  --chart-1: var(--spec-gold);
+  --chart-2: var(--spec-gold-tint);
+  --chart-3: var(--spec-success);
+  --chart-4: var(--spec-gold-voice);
+  --chart-5: var(--spec-destructive);
+  --radius: 12px;
+  --sidebar: var(--spec-raise-1);
+  --sidebar-foreground: var(--spec-text-primary);
+  --sidebar-primary: var(--spec-action);
+  --sidebar-primary-foreground: var(--spec-action-on);
+  --sidebar-accent: var(--spec-raise-2);
+  --sidebar-accent-foreground: var(--spec-text-primary);
+  --sidebar-border: rgba(240, 222, 190, 0.08);
+  --sidebar-ring: var(--spec-action);
 }
 
 /* The elevation ladder (spec §04). A surface may only ever sit one step above
@@ -199,37 +229,50 @@
 }
 
 @layer utilities {
+  /* The pre-spec glass trio, now aliases onto the elevation ladder above
+     (1E.7, S42). They keep their names because the component rule mandates
+     them and 48 call sites read them, but they no longer describe a second
+     material: `glass-surface` and `glass-card` are both L2 glass, and
+     `glass-sheet` is the L5 floating surface. The one role that did NOT
+     survive the merge is the tab bar, which was on glass-surface and is
+     chrome — it now says `.spec-chrome` at its single call site, because
+     chrome sits DARKER than the floor and glass sits lighter, and one utility
+     cannot be both. */
   .glass-surface {
-    background: rgba(26, 26, 30, 0.72);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(70, 58, 46, 0.4);
+    backdrop-filter: blur(32px) saturate(115%);
+    -webkit-backdrop-filter: blur(32px) saturate(115%);
+    border: 1px solid rgba(240, 222, 190, 0.11);
   }
 
   .glass-sheet {
-    background: rgba(26, 26, 30, 0.96);
+    background: rgba(22, 16, 11, 0.94);
     backdrop-filter: blur(40px) saturate(180%);
     -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(240, 222, 190, 0.14);
     border-bottom: none;
   }
 
   .glass-card {
-    background: rgba(34, 34, 42, 0.60);
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-xl);
+    background: rgba(70, 58, 46, 0.4);
+    backdrop-filter: blur(32px) saturate(115%);
+    -webkit-backdrop-filter: blur(32px) saturate(115%);
+    border: 1px solid rgba(240, 222, 190, 0.11);
+    /* Rung 18 — list cards. Was --radius-xl, which is the 14px icon-button
+       rung after item 06 renumbered the scale. */
+    border-radius: 18px;
   }
 
-  /* Indeterminate "AI is working" bar — a primary-tinted highlight sweeping
-     across a thin track. Shares the streaming vocabulary so a modify-in-flight
-     reads as the same family as a plan generating. Element sets its own size. */
+  /* Indeterminate "AI is working" bar — a gold highlight sweeping across a thin
+     track. Shares the streaming vocabulary so a modify-in-flight reads as the
+     same family as a plan generating. Gold rather than the old indigo because
+     this is the chef working, which is exactly what law 02 reserves gold for.
+     Element sets its own size. */
   .shimmer-bar {
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(58, 134, 255, 0.7),
+      rgba(233, 179, 72, 0.7),
       transparent
     );
     background-size: 200% 100%;
@@ -246,17 +289,20 @@
   }
 
   /* One-shot highlight the instant an AI change lands, drawing the eye to the
-     card that just changed, then fading so it doesn't linger. */
+     card that just changed, then fading so it doesn't linger. Gold, and gold is
+     right here for the same reason the shimmer is: the ring marks the chef's
+     work landing, not a control you could press. It is also the resolution the
+     Plan design pass reached for its own landed ring (open-questions, S41). */
   .animate-highlight-ring {
     animation: highlight-ring-fade 1.5s ease-out forwards;
   }
 
   @keyframes highlight-ring-fade {
     0% {
-      box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.55);
+      box-shadow: 0 0 0 2px rgba(233, 179, 72, 0.55);
     }
     100% {
-      box-shadow: 0 0 0 2px rgba(58, 134, 255, 0);
+      box-shadow: 0 0 0 2px rgba(233, 179, 72, 0);
     }
   }
 

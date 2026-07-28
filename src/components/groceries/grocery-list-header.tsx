@@ -46,7 +46,7 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
         </div>
       </div>
 
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/[0.07]">
+      <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(240,222,190,0.07)]">
         <div
           className="h-full rounded-full bg-primary transition-[width] duration-300"
           style={{ width: `${pct}%` }}

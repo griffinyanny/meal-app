@@ -44,7 +44,7 @@ export function GenerateRecipeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-sheet rounded-t-3xl sm:rounded-2xl max-w-[400px]">
+      <DialogContent className="glass-sheet rounded-t-[22px] sm:rounded-[22px] max-w-[400px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="size-4 text-primary" />
@@ -57,7 +57,7 @@ export function GenerateRecipeDialog({
             placeholder="What are you in the mood for?"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[80px] bg-white/5 border-white/8 resize-none"
+            className="min-h-[80px] bg-[rgba(240,222,190,0.05)] border-[rgba(240,222,190,0.08)] resize-none"
             disabled={generate.isPending}
           />
 
@@ -65,7 +65,7 @@ export function GenerateRecipeDialog({
             {SUGGESTION_CHIPS.map((chip) => (
               <button
                 key={chip}
-                className="text-xs px-2.5 py-1 rounded-full bg-white/5 text-muted-foreground hover:bg-white/10 transition-colors"
+                className="text-xs px-2.5 py-1 rounded-full bg-[rgba(240,222,190,0.05)] text-muted-foreground hover:bg-[rgba(240,222,190,0.1)] transition-colors"
                 onClick={() => setPrompt(chip)}
                 disabled={generate.isPending}
               >

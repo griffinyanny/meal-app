@@ -150,7 +150,7 @@ export function MealCard({
                     type="button"
                     onClick={() => onChipClick?.(chip)}
                     disabled={!onChipClick}
-                    className="pointer-events-auto rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-foreground/90 transition-all hover:bg-white/10 active:scale-95 active:opacity-80 disabled:pointer-events-none disabled:cursor-default disabled:opacity-60"
+                    className="pointer-events-auto rounded-full border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] px-3 py-1 text-xs text-foreground/90 transition-all hover:bg-[rgba(240,222,190,0.1)] active:scale-95 active:opacity-80 disabled:pointer-events-none disabled:cursor-default disabled:opacity-60"
                   >
                     {chip}
                   </button>

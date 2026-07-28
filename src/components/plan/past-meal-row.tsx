@@ -28,7 +28,7 @@ export function PastMealRow({ meal, onFeedback }: PastMealRowProps) {
           onClick={() => onFeedback("thumbs_up")}
           aria-label="Liked it"
           className={cn(
-            "rounded-full p-1.5 transition-colors hover:bg-white/10",
+            "rounded-full p-1.5 transition-colors hover:bg-[rgba(240,222,190,0.1)]",
             meal.feedback === "thumbs_up"
               ? "text-primary"
               : "text-muted-foreground"
@@ -41,7 +41,7 @@ export function PastMealRow({ meal, onFeedback }: PastMealRowProps) {
           onClick={() => onFeedback("thumbs_down")}
           aria-label="Didn't like it"
           className={cn(
-            "rounded-full p-1.5 transition-colors hover:bg-white/10",
+            "rounded-full p-1.5 transition-colors hover:bg-[rgba(240,222,190,0.1)]",
             meal.feedback === "thumbs_down"
               ? "text-primary"
               : "text-muted-foreground"

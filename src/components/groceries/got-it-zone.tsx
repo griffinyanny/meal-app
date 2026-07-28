@@ -48,7 +48,7 @@ export function GotItZone({ items, onUncheck, onClear }: GotItZoneProps) {
       </div>
 
       {open && (
-        <ul className="glass-card mt-2.5 divide-y divide-white/5 overflow-hidden">
+        <ul className="glass-card mt-2.5 divide-y divide-[rgba(240,222,190,0.05)] overflow-hidden">
           {items.map((item) => (
             <li key={item.id}>
               <button

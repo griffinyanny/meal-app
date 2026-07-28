@@ -38,11 +38,18 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
 
         <div className="flex flex-col gap-[13px]">
           {POINTS.map(({ Icon, text }) => (
+            // Bare muted icons, exactly as the reflect screen's guesses list
+            // already does it. These were gold tiles: a decorative container
+            // (law 05) carrying gold on a non-chef element (law 02), and the
+            // flow disagreed with itself about the same object two screens
+            // apart. The chef's gold on this screen is the orb and the YOUR
+            // CHEF eyebrow — an explainer row is content you read.
             <div key={text} className="flex items-start gap-3">
-              <div className="flex size-7 flex-none items-center justify-center rounded-[9px] bg-[rgba(233,179,72,0.14)]">
-                <Icon className="size-[15px] text-[var(--spec-gold-tint)]" strokeWidth={2} />
-              </div>
-              <p className="m-0 mt-0.5 text-[14.5px] leading-[1.4] text-[#E5E5EA]">{text}</p>
+              <Icon
+                className="mt-[3px] size-[15px] flex-none text-[var(--spec-text-muted)]"
+                strokeWidth={1.9}
+              />
+              <p className="m-0 text-[14.5px] leading-[1.4] text-[var(--spec-text-body)]">{text}</p>
             </div>
           ))}
         </div>
