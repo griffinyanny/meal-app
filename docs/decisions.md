@@ -4,6 +4,42 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-28 (S44) — The day sheet and the meal sheet are ONE drawer
+
+**Decision.** `1l`'s day sheet is not a second `<Drawer>` that resembles the meal sheet; both render
+inside a single `PlanSheet` whose `target` is either a meal or a day. Opening a meal from inside a day
+**replaces** the target rather than stacking a sheet on top of one.
+
+**Rationale.** The ledger says "the same shell, first line and primary swapped", and building it as two
+drawers made that phrase decorative. It also reintroduced a known hazard: coexisting vaul drawers are
+exactly what produced the `pointer-events: none` lockup that D3 exists to guard, and the two-drawer
+version put both sheets on screen for the length of an exit animation (P7 caught it as a strict-mode
+violation on `drawer-title`). Collapsing them takes a drawer *out* of the tree rather than adding one.
+
+**Future impact.** Slice 2's picker is a third invocation of the same shell. It should be a third
+`target` kind, not a fourth drawer.
+
+## 2026-07-28 (S44) — An out-of-range cost estimate is dropped, never clamped
+
+**Decision.** `validateMeal` accepts a per-slot estimate in `(0, $200]` and returns `null` for anything
+else. It does not clamp to the nearest bound.
+
+**Rationale.** Clamping invents a number. The whole guardrail set for W6 exists because this is the one
+figure on the surface a user can check against a real receipt, and the design rule already says absence
+beats a figure we made up ("a zero is a claim; absence is the truth"). A clamped $200 is a claim too.
+The prompt is written to match: *"Return null rather than guessing when you genuinely cannot — a missing
+number is fine, a wrong one is not."*
+
+## 2026-07-28 (S44) — The Plan tab's controls are chef requests, not pickers
+
+**Decision.** `Decide now`, `Add days` and `Add a night` each fire a single natural-language
+`plan.modify` request. None of them opens a day picker, a stepper, or a form.
+
+**Rationale.** The chef already knows the week; a picker's only contribution would be handing back the
+decision the user opened the app to avoid making. It is also the product's own thesis — "the AI generates
+the UI; the user is here to react" — applied to the three controls the ledger names. The toast now
+narrates the work, so a one-tap ask is legible rather than silent.
+
 ## 2026-07-27 (S43) — 1E.5 splits into two slices; library-into-plan enters R1
 
 **Decision.** Phase 1E.5 builds in two slices. **Slice 1** is Plan's own states (ledger §C/§D): the rail,

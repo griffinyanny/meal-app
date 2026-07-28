@@ -12,16 +12,20 @@ background scroll). Full suite: **30 passing, 0 findings** (`npm run test:e2e`).
 Plan-tab mechanics are now machine-covered end to end except the low-risk G/R/W
 generate/review rows. D3 — the pointer-lockup regression — is verified sound.
 
-> **⚠️ S43 — THE PLAN SPECS BELOW ARE MID-MIGRATION (BUG-024).** Phase 1E.5 rebuilt the Plan tab onto the
-> day-container rail, which replaced the DOM the D / M / RG / E / X specs select against, so ~26 of 78
-> fail on branch `session-43-1e5-plan-rebuild`. **This is spec migration owed by an intentional rebuild,
-> not a behaviour regression.** Three causes: `reviewHero` anchors on the deleted heading "Your week,
-> ready to review" (a `data-testid="plan-rail"` anchor now replaces it); `cardChip` expects AI action
-> chips on the card, but the ledger moved them into the meal sheet; and the in-card `Reworking …` label
-> became a gold ring on the changed row plus the toast in the action bar's slot. **Extend the specs to the
-> new interaction model — do not weaken assertions to force green.** New `P` (rail) and `C` (cost) spec
-> families are owed, and the **ADVERSARIAL** seed needs re-pointing: two of its three findings (BUG-008's
-> double time, BUG-009's permanent "Thinking…") are *expected* renderings under the new rules.
+> **✅ S44 — THE PLAN SPECS ARE MIGRATED (BUG-024 closed).** Phase 1E.5 rebuilt the Plan tab onto the
+> day-container rail, which replaced the DOM the D / M / RG / E / X specs selected against — **21 of 78
+> red**. All five causes are now handled and the suite is **90 green**: `reviewHero` → the
+> `data-testid="plan-rail"` anchor; the AI chips moved into the meal sheet (`runMealAction` opens it
+> first); the in-card `Reworking …` label became a gold ring on the row, asserted by **computed
+> `box-shadow`** rather than a class name; the standalone `Talk to the Chef` button became the chef
+> header's `Something's off`; and `Start over →` — which the rebuild had dropped outright — came back as
+> the foot link under the rail (BUG-026). **Assertions were extended, never weakened**: M1 proves the
+> ring is on the changed row and nowhere else, M5 measures the toast against the confirm bar's real
+> bounding box, M6 proves every chef action goes inert rather than that one tap was silently dropped.
+>
+> New families: **`P` — the rail** (P1–P9) and **`C` — cost** (C1–C4). New seed states: `CONFIRMED`,
+> `PROVISIONAL`, `CHOSEN_DAYS`, `DENSE`, `UNCOOKED_PAST`. **ADVERSARIAL is re-pointed, not preserved** —
+> see below.
 
 ## Setup / preconditions
 - Dev server: `PORT=3001 npm run dev` (FFOS owns 3000). Sign in via the DevTools
@@ -171,7 +175,40 @@ The capture harness (Claude reads the PNGs, critiques vs `docs/design/visual-qa-
 - **Recipes** — `recipes.capture.ts` (S28): library, cooked-filter, drafts-expanded, create-menu, empty.
 S28 gate: 0 blockers, 0 high across all 11 Groceries+Recipes states.
 
-### ADVERSARIAL state (Plan, S37)
+### `P` — the rebuilt rail (Phase 1E.5, S44)
+
+| ID | Case | Seed | Status |
+|----|------|------|--------|
+| P1 | Days are containers, meals are inset rows — 15 meals across 5 day containers | `DENSE` | 🟢 |
+| P2 | Only dinner carries a rationale, at every density — 15 meals → **5** gold marks (the seed gives lunch/breakfast one each, so this fails if the row prints what it is given rather than what its type may say) | `DENSE` | 🟢 |
+| P3 | The meta row is one cook time and one serving count; a time-shaped tag is **dropped**, not deduped (BUG-008) | `ADVERSARIAL` | 🟢 |
+| P4 | A slot with no answer is provisional, not loading: dependency sentence, no spinner, `Decide now`, and **confirm stays live** at the reduced count (BUG-009) | `PROVISIONAL` | 🟢 |
+| P5 | A week is the days you chose — unplanned days are not rows; absence stated exactly once | `CHOSEN_DAYS` | 🟢 |
+| P6 | Draft and confirmed are different screens — primary/`Draft`/rationales/`Start over` vs none of them + the grocery row + `Set` | `DRAFT`, `CONFIRMED` | 🟢 |
+| P7 | Tapping a day opens the day sheet; a meal row inside it hands off to the meal sheet **in the same drawer** | `DENSE` | 🟢 |
+| P8 | The meal sheet is a summary, not a recipe — chips ask, rows go; no ingredients, no steps (BUG-006) | `DRAFT` | 🟢 |
+| P9 | The absence carries the one control that changes it (`Add days`), and a draft's gap does not | `CONFIRMED`, `CHOSEN_DAYS` | 🟢 |
+
+### `C` — cost estimation (Phase 1E.5 W6, S44)
+
+| ID | Case | Seed | Status |
+|----|------|------|--------|
+| C1 | The draft's consequence line carries the summed per-slot estimate | `DRAFT` | 🟢 |
+| C2 | Never cents, always a tilde — no `$105.00`, no bare figure | `DRAFT` | 🟢 |
+| C3 | A night nobody is cooking contributes nothing, and no `$0` appears anywhere | `CHOSEN_DAYS` | 🟢 |
+| C4 | A partially-priced week sums what it has and says so honestly | `PROVISIONAL` | 🟢 |
+
+### ADVERSARIAL state (Plan, S37 — **re-pointed S44**)
+
+> **Two of its three original findings are now EXPECTED renderings.** BUG-008's double cook time and
+> BUG-009's permanent "Thinking…" are both fixed by design, so the state's day 0 and day 1 are now proof
+> the rules *work* rather than proof they are broken — kept, because they are still the inputs that would
+> break a naive implementation. The oversized **chip row is gone as a stress case**: the rail carries no
+> chips at all, so there is nothing left for it to stress. Three cases replace it — a four-line gold
+> rationale (the one place gold body text is licensed), one dense day among solo days (mixed density is
+> harder to lay out than either uniform case), and a cost estimate at the top of what the validator
+> admits (19900c → must still render `~$199`, never with cents).
+
 `seedPlanState("ADVERSARIAL")` — capture-only, not a behavior-spec state. Every other
 seed is well-behaved by design, so the pleasant case was the only case Layer A ever
 photographed. This one makes the ugly cases deterministic: an overlong title, a slot

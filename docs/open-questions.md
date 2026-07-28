@@ -6,6 +6,35 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### 🔴 Where does `Start over →` belong on a draft? (raised S44)
+The 1E.5 rebuild **dropped the regenerate airlock's draft door entirely** (BUG-026): the chef header
+carries one revise control and frame `3i` spends it on `Something's off` (→ Talk to the Chef), so there
+was no way to re-prompt a draft at all. The brief's state inventory §3 keeps that door and scope-1E.5's
+acceptance criteria require RG1–RG5 not to regress, so it had to come back — but the frames do not draw
+the bottom of the scroll, so **where** is a judgement call, not a locked decision.
+
+Restored as the **foot link under the rail**, reusing the pattern `plan-midweek.tsx` already uses for the
+same job (adds no new object, doesn't breach §D's one-floating-layer rule). Visual-QA's medium M2 notes
+it now sits in a ~100px void between the last rail row and the consequence line. Alternatives: a second
+control in the chef header beside `Something's off`; or fold it into the Talk-to-Chef sheet as an escape
+row. **Griffin's call.**
+
+### 🔴 The `$94 spent` copy — still owed, and it now blocks W6's last build step (raised S43)
+Claude's recommendation, unchanged: **`~$94 est.`** — or, preferably, **drop the number from
+week-wrapped entirely** and keep it only on review. The asymmetry decides it: `~$87` on review is a
+forecast and nobody can falsify a forecast, but "spent" is a **past-tense factual claim about money the
+user handed over**, and it is the only string in the product they can check against a receipt in their
+pocket. When the estimate is off by $20 — and it will be, with no price data, no store and no region —
+the conclusion is not "the estimator is rough", it is "the app makes things up", and that suspicion
+transfers to the plan and the list.
+
+Wrapped is a **recap**; its job is "how did the week go", and a cost figure there invites arithmetic
+instead of reflection in the one frame where the receipt is most likely to hand. Review needs the number
+because it is an input to a decision about to be made.
+
+**Consequence today:** wrapped renders no cost at all (the honest null-safe state), and **W6's
+week-wrapped half is not built** — it also needs a grocery-list query `plan.current` does not make.
+
 ### ✅ RESOLVED S43 — Is library-into-plan formally in R1 scope? (raised S41)
 > **CLOSED 2026-07-27 (S43). YES — it is in R1, as Slice 2 of phase 1E.5**, reaffirming Griffin's S41
 > "That should be something that we include in R1." Written into `scope-1E.5.md` (W8–W10) with all five

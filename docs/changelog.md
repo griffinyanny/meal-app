@@ -4,6 +4,83 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 44 — 2026-07-28 (BUG-024 closed; 1E.5 Slice 1 CODE-COMPLETE)
+
+**The job:** migrate the Plan E2E specs to the rail's DOM (BUG-024), then finish Slice 1 — W3's toast
+wiring, W7's meal + day sheets, W6's server half, week-wrapped, the new seed states, the `P`/`C` specs,
+and `/visual-qa`.
+
+**Result: all of it, plus five defects the migration surfaced.**
+**538 unit + 91 E2E, 90 green** (was 531 unit + 21 of 78 E2E red), lint + typecheck clean, migration
+`0007` applied, `/visual-qa` Layer A at **0 blockers / 0 high**. The one red is **GR7**, the known drag
+flake (BUG-019, recurrence #2) — green in isolation, and nothing this session touched Groceries.
+
+### BUG-024: the tracked cause list was incomplete
+
+21 of 78 specs were red, not the ~26 estimated. Three causes were logged; **five** were real. The two
+untracked ones were the interesting ones:
+
+- **The standalone `Talk to the Chef` button is gone.** The whole-week chef door is now the chef header's
+  `Something's off`. Took M4/M5/M7.
+- **`Start over →` vanished from the draft screen entirely** (**BUG-026**). The header carries ONE revise
+  control and frame `3i` spends it on the modify door, so **the regenerate airlock became unreachable
+  from a draft** — a dropped feature, not a stale selector. The brief's state inventory §3 keeps that
+  door and scope-1E.5's acceptance criteria require RG1–RG5 not to regress. Restored as the foot link
+  under the rail, reusing the pattern `plan-midweek.tsx` already had. **Placement is Griffin's call** —
+  frame `3i` does not draw the bottom of the scroll.
+
+**Assertions came out stronger, not weaker.** M1 now proves the ring lands on the changed row *and
+nowhere else*, reading the **computed `box-shadow`** rather than a class name — §C's rule is that the
+ring is *gold*, and a class match would pass just as happily on a grey one. M5 measures the toast against
+the confirm bar's real bounding box on all four dimensions. M6 proves every chef action goes inert rather
+than that one tap was silently dropped.
+
+### The four other defects the migration surfaced
+
+| ID | What | Why it mattered |
+|---|---|---|
+| **BUG-025** | The floating slot was `absolute`, so it anchored to the bottom of the **content** and scrolled away | On a seven-day draft, `Confirm 7 dinners` was only reachable at the very end of the scroll. The frame's "bottom 96" is a distance from the screen edge; on a phone canvas those are the same thing, in the app they are not. Now `fixed`. |
+| **BUG-027** | §D's 168px/108px scroll padding was never built | Nothing below the rail could clear the floating primary. Compounded BUG-025. |
+| **BUG-028** | The Plan tab had **no heading at all** | Deleting the hero took the surface's only `<h2>`; the chef's claim replaced it as a `<p>`. `ChefHeader`'s summary is now an `<h2>` on every Plan state. |
+| **BUG-029** | A failed modify became unreachable once you dismissed the sheet | Every modify now starts in a sheet, a failing sheet stays open, the pill was gated on `!sheetOpen`, and closing the sheet cleared the error. X1 was fixme'd rather than weakened, then **fixed by W3** — and is now stronger than the test it replaced. |
+
+### Slice 1's remaining workstreams
+
+- **W3** — `use-plan-modify` derives ONE `toast` (priority error → working → ack, so a failure can never
+  be buried under an ack of something that then failed). The slot renders the toast **or** the primary,
+  never both — enforced structurally rather than by z-index. `modify-status-pills.tsx` and its
+  now-orphaned `bottom-bar.tsx` deleted.
+- **W7** — **BUG-006 closed.** One `PlanSheet` drawer, two subjects. "The same shell" is meant literally:
+  building the day sheet as a second `<Drawer>` put two on screen at once for the length of an exit
+  animation (P7 caught it), which is the same class as the pointer-events lockup D3 guards. Collapsing
+  them also takes a drawer *out* of the tree.
+- **W6 server half** — `est_cost_cents` + migration `0007` (applied), schema → validator → slot values →
+  display → the review sum, plus the prompt rule. **An implausible estimate is dropped to null, never
+  clamped**: clamping invents a number, and this is the one figure a user can audit against a receipt.
+- **Week-wrapped** onto the rail's vocabulary, keeping its in-place thumbs because the `Rate them`
+  destination is 1F.
+
+### `/visual-qa` Layer A — 0 blockers / 0 high
+
+**Two HIGH findings, both fixed in-loop, both the same shape:** `Decide now` (§C) and `Add days` / `Add a
+night` (§D) were built into `PlanRail` and **never supplied by any caller** — ledger bullets with neither
+code nor an explicit deferral. Both are now one-tap chef requests rather than pickers, gated by P4 and
+the new P9. Three mediums carried for Griffin: compact rows truncate titles at ~20 chars, the
+`Start over` foot link sits in a void, and seven gold rationales reads as texture rather than voice.
+Full write-up in `tests/e2e/captures/A-2026-07-28T14-17-42-005Z/critique.md`.
+
+### Deliberately NOT built
+
+- **W6's week-wrapped half.** The scope wants wrapped to estimate over the confirmed grocery list's real
+  items, not the plan. That needs a query `plan.current` does not make, was outside the session's stated
+  W6 ask, and is **blocked behind Griffin's `$94 spent` copy call** regardless. Wrapped renders no cost
+  today — the honest null-safe state rather than a plan-sum wearing the list's label.
+- **The `Move it` group** (`Move to another day` / `Skip tonight`), drawn in wave 1's meal sheet but in
+  none of W7's scope bullets. Drag-to-move is explicitly V1.5, and `Move to another day` needs a day
+  picker that is neither drawn nor scoped.
+
+---
+
 ## Session 43 — 2026-07-27/28 (1E.5 OPENED — the Plan rebuild's structural spine)
 
 **The job:** write `scope-1E.5.md`, give Griffin a read on the still-opens, then open the build —

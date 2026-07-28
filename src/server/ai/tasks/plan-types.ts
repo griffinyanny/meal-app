@@ -17,6 +17,12 @@ const DAYS_IN_WEEK = 7;
 const MAX_INGREDIENT_PREVIEW = 12;
 const MAX_TAGS = 6;
 const MAX_CHIPS = 2;
+// The outer bound on a believable per-meal grocery estimate (W6). A dinner for
+// six can honestly reach $60; $200 cannot, so anything above this is a model
+// error rather than an expensive meal. Out-of-range estimates are DROPPED to
+// null rather than clamped: clamping would invent a number, and the whole
+// guardrail set for this feature says absence beats a figure we made up.
+const MAX_SLOT_COST_CENTS = 20_000;
 
 export interface ValidatedMeal {
   date: string; // ISO YYYY-MM-DD, derived from weekStart + dayOffset
@@ -27,6 +33,7 @@ export interface ValidatedMeal {
   ingredientPreview: string[];
   tags: string[];
   estTimeMinutes: number | null;
+  estCostCents: number | null;
   servings: number;
   chips: string[];
 }
@@ -95,6 +102,17 @@ function validateMeal(
       Number.isFinite(meal.estTimeMinutes) &&
       meal.estTimeMinutes >= 0
         ? meal.estTimeMinutes
+        : null,
+    // A night you're eating out costs money too, but not money this app can
+    // see, and the grocery list is what the estimate is about — so only a
+    // cookable slot carries one.
+    estCostCents:
+      isCookable &&
+      meal.estCostCents != null &&
+      Number.isInteger(meal.estCostCents) &&
+      meal.estCostCents > 0 &&
+      meal.estCostCents <= MAX_SLOT_COST_CENTS
+        ? meal.estCostCents
         : null,
     servings,
     chips: isCookable ? cleanStrings(meal.chips, MAX_CHIPS) : [],
@@ -177,6 +195,7 @@ export function toSlotValues(meal: ValidatedMeal) {
     ingredientPreview: meal.ingredientPreview,
     slotTags: meal.tags,
     estTimeMinutes: meal.estTimeMinutes,
+    estCostCents: meal.estCostCents,
     chips: meal.chips,
     servings: meal.servings,
     rationale: meal.rationale,

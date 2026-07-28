@@ -14,7 +14,33 @@ import { ChefPresence } from "@/components/shared/chef-presence";
 // bottom edge is the strongest possible signal that nothing is being asked of
 // you — that absence is the state, not a missing feature.
 
-const SLOT = "absolute bottom-24 left-4 right-4 z-[38]";
+// FIXED, not absolute. The frame's "bottom 96" is a distance from the screen's
+// edge, and on a phone canvas those are the same thing — but in the app the
+// scroll container is the document, so an absolutely-positioned slot anchors to
+// the bottom of the CONTENT and scrolls away. A floating layer you have to
+// scroll to find is not floating. `fixed` positions against the viewport, which
+// costs the column its centring, so the slot borrows the tab bar's trick.
+const SLOT =
+  "fixed inset-x-0 bottom-24 z-[38] mx-auto w-full max-w-[430px] px-4";
+
+// What the surfaces below owe the slot in scroll padding (§D). A draft has to
+// clear the 52px primary AND the consequence line above it; a confirmed week
+// has no floating action at all, which is why the number drops.
+export const SLOT_PADDING_DRAFT = "pb-[168px]";
+export const SLOT_PADDING_BARE = "pb-[108px]";
+
+/**
+ * What is in the slot right now, when it isn't the primary.
+ *
+ * One value, not three independently-rendered pills — the slot has exactly one
+ * occupant and the rule is structural, so it is expressed as a type rather than
+ * as a z-index race between an ack, an error and a working label.
+ */
+export interface SlotToast {
+  message: string;
+  tone?: "chef" | "error";
+  action?: { label: string; onClick: () => void };
+}
 
 /** The decision, with its consequence stated above it (draft only). */
 export function PrimarySlot({
@@ -82,42 +108,38 @@ export function CountSlot({ written, total }: { written: number; total: number }
  * The 16px radius is a deliberate departure from the 14px toast rung: the rung
  * follows the SLOT it occupies, and this slot is the 52px primary's.
  */
-export function ToastSlot({
-  message,
-  tone = "chef",
-  action,
-}: {
-  message: string;
-  tone?: "chef" | "error";
-  action?: { label: string; onClick: () => void };
-}) {
+export function ToastSlot({ message, tone = "chef", action }: SlotToast) {
   const isError = tone === "error";
   return (
-    <div
-      className={cn(SLOT, "spec-floating flex h-[52px] items-center gap-[11px] rounded-2xl px-4")}
-      role="status"
-      aria-live="polite"
-    >
-      {isError ? null : <ChefPresence size="toast" />}
-      <p
-        className={cn(
-          "m-0 min-w-0 flex-1 truncate text-[13.5px] leading-[1.35]",
-          isError
-            ? "text-[var(--spec-destructive-text)]"
-            : "italic text-[var(--spec-gold-voice)]"
-        )}
+    <div className={SLOT}>
+      <div
+        data-testid="plan-toast"
+        data-tone={tone}
+        className="spec-floating flex h-[52px] items-center gap-[11px] rounded-2xl px-4"
+        role={isError ? "alert" : "status"}
+        aria-live="polite"
       >
-        {message}
-      </p>
-      {action ? (
-        <button
-          type="button"
-          onClick={action.onClick}
-          className="flex-none text-[13px] font-semibold text-[var(--spec-action)]"
+        {isError ? null : <ChefPresence size="toast" />}
+        <p
+          className={cn(
+            "m-0 min-w-0 flex-1 truncate text-[13.5px] leading-[1.35]",
+            isError
+              ? "text-[var(--spec-destructive-text)]"
+              : "italic text-[var(--spec-gold-voice)]"
+          )}
         >
-          {action.label}
-        </button>
-      ) : null}
+          {message}
+        </p>
+        {action ? (
+          <button
+            type="button"
+            onClick={action.onClick}
+            className="flex-none text-[13px] font-semibold text-[var(--spec-action)]"
+          >
+            {action.label}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

@@ -1,97 +1,106 @@
 # What's Next
 
-Last updated: 2026-07-28 (Session 43)
+Last updated: 2026-07-28 (Session 44)
 
-## ▶ NEXT SESSION — 1E.5 is OPEN and half-built. **Migrate the Plan E2E specs FIRST.**
+## ▶ NEXT SESSION — 1E.5 Slice 1 is CODE-COMPLETE. **Layer B, then Slice 2.**
 
-**S43 opened 1E.5 and built the rebuild's structural spine.** Scope doc: [scope-1E.5.md](scope-1E.5.md).
-Work is on branch **`session-43-1e5-plan-rebuild`**, deliberately **not merged to `main`**.
+**S44 closed BUG-024 and finished Slice 1.** Scope doc: [scope-1E.5.md](scope-1E.5.md).
+Work is on branch **`session-43-1e5-plan-rebuild`**, still not merged — Layer B and your taste pass are
+the remaining gates.
 
-**Fast gauntlet green: lint + typecheck clean, 531 unit passing** (up from 480).
-**The E2E suite is RED, and that is the first job next session.**
+**538 unit + 91 E2E, 90 green** (was 531 unit + **21 of 78 E2E red**), lint + typecheck clean, migration
+`0007` applied, **`/visual-qa` Layer A at 0 blockers / 0 high**. The one red is **GR7** — the known
+`@dnd-kit` drag flake (BUG-019, recurrence #2), green in isolation, untouched by this session's work.
 
-### ⚠️ Start here: BUG-024 — the Plan specs select against a DOM that no longer exists
+### What the spec migration found — this is the headline
 
-The rail replaced the card list, so ~26 of 78 specs fail at `beforeEach`. **This is spec migration owed by
-an intentional rebuild, not a behaviour regression** — but until it lands, the Plan tab has *no mechanical
-gate*, and every remaining workstream would compound on an unverified base.
+BUG-024's tracked cause list had three entries. **Five were real**, and the two untracked ones were the
+consequential ones. Migrating the specs then surfaced **five more defects** in the rebuild itself
+(BUG-025 through BUG-029), including a `Confirm` bar that scrolled off the bottom of a seven-day draft
+and a Plan tab with no heading at all. **None of these were visible from the code.** They are the
+argument for the ordering, in evidence.
 
-Three causes, all in `tests/e2e/app/selectors.ts` plus the specs that use it:
+### ⚠️ Two things are yours
 
-1. **`reviewHero`** anchors on the heading `"Your week, ready to review"` — deleted by design when the
-   chef header replaced the hero card. A `data-testid="plan-rail"` anchor now exists to take its place.
-2. **`cardChip`** expects the AI action chips on the card. The ledger moved them: the meal row carries
-   title and meta only, and the chips live in the meal sheet. The M-series must route through the sheet.
-3. **The in-card `Reworking …` label** is gone — §C replaced it with a gold ring on the changed row plus
-   the toast in the action bar's slot.
+**1. The `$94 spent` copy call — still owed, and now it blocks a build step.** My read, unchanged and
+argued at length last session: **`~$94 est.`**, or better, **drop the number from week-wrapped
+altogether** and keep it only on review. The asymmetry is what decides it — a forecast can't be
+falsified, but "spent" is a past-tense claim about money you handed over, and it's the only string in the
+product you can check against a receipt in your pocket. Review needs the number (it's an input to a
+decision). Wrapped doesn't; it's a recap, and a cost figure there invites arithmetic instead of
+reflection. **Wrapped renders no cost today** — the honest null-safe state. W6's wrapped half is blocked
+on this either way.
 
-**Do not weaken the assertions to force green.** Extend them to the new interaction model.
+**2. Where `Start over →` belongs on a draft.** The rebuild dropped it entirely (BUG-026) and I restored
+it as a foot link under the rail, reusing the pattern mid-week already had. Frame `3i` doesn't draw the
+bottom of the scroll, so this is my reading, not a locked decision — and visual-QA flagged that it now
+sits in a ~100px void between the rail and the consequence line. **Say if you want it elsewhere.**
 
-### Then finish Slice 1
+### ⭐ Next up: Layer B, then Slice 2
 
-- **W3** — route `use-plan-modify` through `ToastSlot`; retire `modify-status-pills.tsx`. The toast takes
-  the primary's exact box (bottom 96, height 52, radius 16, insets 16) so the bar *becomes* the message,
-  and Confirm goes inert while working.
-- **W7** — the summary meal sheet (**closes BUG-006**: it currently embeds the whole `RecipeView`) plus
-  the day sheet, which is the same shell with the first line and primary swapped.
-- **W6's server half** — `estCostCents` column + migration, the generation output that fills it, and the
-  prompt rule. The display half and its guardrails are already built and tested.
-- **Week-wrapped** onto the rail — the last screen still on the old cards.
-- **New seed states** (`CONFIRMED`, `PROVISIONAL`, `GENERATING`, `CHOSEN_DAYS`, `DENSE`, uncooked-past-day)
-  and the `P`/`C` specs. **`ADVERSARIAL` needs re-pointing, not preserving** — two of its three findings
-  are now *expected* renderings under the new rules.
-- Then `/visual-qa` Layer A → Layer B (W1's title rule and W6's cost output both change generation).
+**Layer B is owed before the phase can close** and it is the one gate that can still find something real.
+Two generation changes are invisible to the mock by construction: **W1's title rule** (titles never open
+with a cooking verb; a method covering four-plus meals gets absorbed into the week) and **W6's cost
+output**, which is a brand-new field the real model has never been asked for. The S40 precedent is the
+reason to take this seriously — Layer B caught "reusing olive oil from day 0" printing onto a user-facing
+card, which no amount of mock testing could have.
 
-### ⚠️ Your call, and it blocks a frame
+Then **Slice 2** (W8–W10: the picker, the picked meal, `Add to this week`) with all five of the brief's
+named build dependencies.
 
-**The `$94 spent` copy.** `~$87` reads as an estimate because the tilde does that work. **"Spent" is a
-past-tense factual claim about money you actually handed over** — the single most auditable string on the
-surface, because you have a receipt. `~$94 est.` costs nothing and is true. I'll use that unless you say
-otherwise, but I'd rather you chose it.
+### Carried from visual-QA, non-gating
+Compact rows truncate titles at ~20 chars (only reachable once lunch/breakfast generation ships); seven
+gold rationales reads as texture rather than voice at high dinner counts. Both in
+`tests/e2e/captures/A-2026-07-28T14-17-42-005Z/critique.md`.
 
-### Still your action (carried, fourth session running)
+### Still your action (carried, fifth session)
 **Set `DEV_TOOLS_EMAILS` in Vercel Production** to your address (and your wife's, comma-separated).
 Test mode is invisible and inert until you do.
 
 ### Also still open
 - **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape.
-- **Day-sheet vs in-rail expansion** — `1l` ships; `1m` needs usage, not a frame. Revisit after you run a
-  real week on the rebuilt tab.
+- **Day-sheet vs in-rail expansion** (`1m`) — `1l` ships; `1m` needs usage, not a frame.
 
-**⭐ Model recommendation: Opus 4.8.** The spec migration is mechanical reading-and-rewriting against a
-known DOM change, and the remaining workstreams are execution against a locked ledger. No new
-architecture. The one judgement call — how the M-series expresses "the chef is working" now that the
-label became a ring plus a toast — is a small design read, not a structural one.
+**⭐ Model recommendation: Opus 4.8.** Layer B is reading real model output for quality and judging copy
+against a rule — exactly the work 4.8 is good at, and the same call that caught the S40 defects. Slice 2
+is a large but well-specified build against a locked ledger with five named dependencies. No new
+architecture in either.
 
 **Copy-paste kickoff prompt:**
 ```
-Resume meal app — 1E.5 is OPEN and half-built (S43). Read docs/whats-next.md, docs/scope-v1.md and
-docs/scope-1E.5.md first, then give me the ≤6-line scope check. Work is on branch
-session-43-1e5-plan-rebuild, NOT merged to main because E2E is red. Fast gauntlet is green (lint,
-typecheck, 531 unit). Start with BUG-024: the Plan E2E specs select against the DOM the new rail
-replaced — reviewHero's heading is gone (use the data-testid="plan-rail" anchor), the AI action chips
-moved off the card into the meal sheet, and the in-card "Reworking…" label became a gold ring plus the
-toast. Migrate the specs to the new interaction model; do NOT weaken assertions to force green. Then
-finish Slice 1: W3 (route use-plan-modify through ToastSlot, retire modify-status-pills), W7 (the summary
-meal sheet + day sheet — closes BUG-006), W6's server half (estCostCents column + migration + generation
-output + prompt rule), week-wrapped onto the rail, then the new seed states and P/C specs, then
-/visual-qa. Re-point the ADVERSARIAL seed — two of its three findings are expected renderings now. Also
-tell me your read on the "$94 spent" copy call before you build that frame. On Opus 4.8.
+Resume meal app — 1E.5 Slice 1 is CODE-COMPLETE (S44). BUG-024 is closed: the Plan specs are migrated to
+the rail, 538 unit + 90 of 91 E2E green (GR7 is the known drag flake, BUG-019), /visual-qa Layer A at 0
+blockers/0 high, migration 0007 applied.
+Branch session-43-1e5-plan-rebuild. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1E.5.md
+first, then give me the ≤6-line scope check. Then run Layer B (npm run test:capture:live) — it's the one
+gate that can still find something real, because two generation changes are invisible to the mock: W1's
+title rule (no cooking verbs opening titles, a method covering 4+ meals absorbed into the week) and W6's
+brand-new estCostCents field, which the real model has never been asked for. Judge the cost estimates for
+plausibility, not just presence. Then open Slice 2 (W8-W10: the picker, the picked meal, Add to this
+week) honouring all five of the brief's named build dependencies, and extend the specs with the L family.
+Two calls are mine and I'll answer them at the top: the $94 spent copy, and where Start over belongs on a
+draft. On Opus 4.8.
 ```
 
-**Design-independent alternative** (if you'd rather not touch the rebuild):
+**Design-independent alternative** (if you'd rather burn down bugs than build Slice 2):
 ```
-Resume meal app — leave the 1E.5 branch (session-43-1e5-plan-rebuild) alone this session and burn down
-bugs on main instead: BUG-020 (retryFailed never awaits in-flight saves, so "All saved." can be shown
-over a save that hasn't landed) and BUG-021 (a failed skipOnboarding still walks the user out to Plan)
-first, since the interview fires once per account and I'm about to run it for real. Then BUG-011/BUG-012
-(householdSize ↔ composition desync putting two contradictory numbers in the same chef prompt, and the
-You tab saying "4 adults" for 2 adults + 2 children — same root), then BUG-010 (household_composition
-ships with a column DEFAULT so a default is indistinguishable from an answer; needs a migration) and
-BUG-013 (finishOnboarding trusts client-supplied memory text). Read docs/whats-next.md +
-docs/bug-tracker.md first, give me the ≤6-line scope check, keep 480 unit + 78 E2E green on main.
-On Opus 4.8.
+Resume meal app — 1E.5 Slice 1 is CODE-COMPLETE (S44), 538 unit + 90 of 91 E2E green on branch
+session-43-1e5-plan-rebuild. Run Layer B first (npm run test:capture:live) to close out Slice 1's last
+mechanical gate — W1's title rule and W6's new estCostCents field are both invisible to the mock. Then
+skip Slice 2 this session and clear the open bug list instead: BUG-020 (retryFailed never awaits
+in-flight saves, so "All saved." can be shown over a save that hasn't landed) and BUG-021 (a failed
+skipOnboarding still walks the user out to Plan) first, since the interview fires once per account.
+Then BUG-011/BUG-012 (householdSize ↔ composition desync putting two contradictory numbers in the same
+chef prompt), then BUG-010 (household_composition ships with a column DEFAULT) and BUG-013
+(finishOnboarding trusts client-supplied memory text). Read docs/whats-next.md + docs/bug-tracker.md
+first, give me the ≤6-line scope check, keep 538 unit + 90 of 91 E2E green (GR7 is a known flake). On Opus 4.8.
 ```
+
+---
+
+## ⚠️ S43 (superseded by S44 above — BUG-024 is closed and Slice 1 is code-complete)
+
+### S43 opened 1E.5 and built the rebuild's structural spine. Its "start with BUG-024" brief was executed in S44; the five-cause finding is recorded in the changelog.
 
 ---
 

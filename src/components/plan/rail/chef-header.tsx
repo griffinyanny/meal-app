@@ -45,8 +45,12 @@ export function ChefHeader({
         </span>
       </div>
 
+      {/* An h2, not a p. The chef's claim IS this screen's heading — and when
+          the rail replaced the "Your week, ready to review" hero it took the
+          Plan tab's only heading with it, leaving the surface with no landmark
+          at all for assistive tech. The type is unchanged; only the element is. */}
       {summary ? (
-        <p
+        <h2
           className={cn(
             "m-0 text-[22px] font-[650] leading-[1.32] tracking-[-0.3px] text-[var(--spec-text-feature)]",
             rationale ? "mb-2" : "mb-4"
@@ -54,7 +58,7 @@ export function ChefHeader({
           style={{ textWrap: "pretty" }}
         >
           {summary}
-        </p>
+        </h2>
       ) : null}
 
       {rationale ? (

@@ -33,6 +33,10 @@ function freshMeal(dayOffset: number): AIMeal {
     ingredientPreview: ["olive oil", "garlic", "seasonal veg"],
     tags: ["30 min"],
     estTimeMinutes: 30,
+    // The real model now returns a per-meal grocery estimate (W6), so the mock
+    // does too — a fixture that omits it would make the cost row green against
+    // a shape the live pipeline no longer produces.
+    estCostCents: 1400,
     servings: 2,
     chips: ["Make it vegetarian", "Swap the protein"],
   };
@@ -66,6 +70,7 @@ function reworkedMeal(dayOffset: number, originalTitle: string | null): AIMeal {
     ingredientPreview: ["fresh herbs", "lemon", "greens"],
     tags: ["light", "25 min"],
     estTimeMinutes: 25,
+    estCostCents: 1100,
     servings: 2,
     chips: ["Make it heartier", "Swap the protein"],
   };

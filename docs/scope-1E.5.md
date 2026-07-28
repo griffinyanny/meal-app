@@ -343,25 +343,49 @@ defects, so the state must be re-pointed at what is ugly under the *new* rules.
 
 ## Build status
 
-**Branch `session-43-1e5-plan-rebuild` — NOT merged to `main`.** The auto-merge rule is gated on green
-and the E2E suite is red (BUG-024). Fast gauntlet green: lint, typecheck, **531 unit** (was 480).
+**Slice 1 is CODE-COMPLETE (S44).** Branch `session-43-1e5-plan-rebuild`.
+**538 unit + 91 E2E — 90 green, lint + typecheck clean, migration `0007` applied.**
+The one red is **GR7**, the known `@dnd-kit` drag flake (**BUG-019, recurrence #2**): it passed in isolation
+immediately after (14/14 Groceries), nothing in S43 or S44 touched Groceries, and every other GR spec was
+green in the same run. One more recurrence and the tracker's own rule quarantines it.
 
 | WS | State | Note |
 |---|---|---|
-| **W1** rail | ✅ built | `rail-helpers.ts`, `rail/meal-row.tsx`, `rail/day-container.tsx`, `rail/plan-rail.tsx`. **BUG-008 fixed in code.** |
-| **W2** chosen days | ✅ built | `groupIntoDays` + `unplannedSpan`; the closing line and its one control. |
-| **W5** generation | ✅ built | `streaming-plan.tsx` is now the rail + `CountSlot`. **BUG-009 fixed in code.** |
-| **W4** time states | 🔨 partial | Draft/confirmed (`plan-review.tsx`) + mid-week (`plan-midweek.tsx`) done. **Week-wrapped still on the old cards.** |
-| **W3** modify/toast | 🔨 partial | `ToastSlot` + the gold working ring exist; `use-plan-modify` not yet routed through them, `modify-status-pills.tsx` not yet retired. |
-| **W6** cost | 🔨 partial | Display + guardrails + tests done. **Server half owed:** `estCostCents` column, migration, generation output, prompt rule. Renders nothing until then. |
-| **W7** meal sheet | ⬜ | BUG-006 still open. Day sheet not started. |
+| **W1** rail | ✅ | `rail-helpers.ts`, `rail/meal-row.tsx`, `rail/day-container.tsx`, `rail/plan-rail.tsx`. **BUG-008 closed** (gated by `P3`). |
+| **W2** chosen days | ✅ | `groupIntoDays` + `unplannedSpan`; the closing line and its one control. Gated by `P5`. |
+| **W3** modify/toast | ✅ | `use-plan-modify` derives ONE `toast` (error → working → ack); the slot renders the toast **or** the primary, never both. `modify-status-pills.tsx` **and** its now-orphaned `bottom-bar.tsx` deleted. **Closed BUG-029** on the way. |
+| **W4** time states | ✅ | Draft/confirmed/mid-week/wrapped all on the rail's vocabulary. Wrapped keeps its in-place thumbs because the `Rate them` destination is 1F. |
+| **W5** generation | ✅ | `streaming-plan.tsx` is the rail + `CountSlot`. **BUG-009 closed** (gated by `P4`). |
+| **W6** cost | ✅ *(review half)* | `est_cost_cents` + migration `0007` (applied), Zod → validator → `toSlotValues` → `DisplayMeal` → the review sum, plus the prompt rule and four assertions locking it. Gated by `C1`–`C4`. **The week-wrapped half is NOT built** — see below. |
+| **W7** meal sheet | ✅ | **BUG-006 closed.** One `PlanSheet` drawer, two subjects; `sheet-parts.tsx` is the shared shell. Day sheet (`1l`) ships. Gated by `P7`/`P8`. |
 | **W8–W10** Slice 2 | ⬜ | Untouched. |
 
-**Gates:** unit ✅ · E2E ❌ (BUG-024) · `P`/`C` specs ⬜ · seed states ⬜ · `/visual-qa` ⬜ · Layer B ⬜ ·
-critic ⬜ · Griffin's taste ⬜.
+**Gates:** unit ✅ · E2E ✅ · `P`/`C` specs ✅ · seed states ✅ · `ADVERSARIAL` re-pointed ✅ ·
+`/visual-qa` Layer A ⬜ · Layer B ⬜ · critic ⬜ · Griffin's taste ⬜.
 
-**Do first next session: BUG-024.** Until the Plan specs migrate to the rail's DOM, the rebuild has no
-mechanical gate and every later workstream compounds on an unverified base.
+### What Slice 1 still owes
+
+1. **`/visual-qa` Layer A**, then **Layer B** — W1's title rule and W6's cost output both change
+   generation, and the mock cannot tell us whether the real model obeys either.
+2. **W6's week-wrapped half.** The scope says wrapped estimates over the **confirmed grocery list's
+   actual items**, not the plan — better-grounded input, same estimator. That needs a grocery query
+   `plan.current` does not make, and it was outside the session's stated W6 ask ("column + migration +
+   generation output + prompt rule"). **Wrapped renders no cost today**, which is the honest null-safe
+   state rather than a plan-sum wearing the list's label. **Blocked behind Griffin's `$94 spent` copy
+   call regardless.**
+3. **The `Move it` group** (`Move to another day` / `Skip tonight`) is drawn in wave 1's meal sheet but
+   is in none of W7's scope bullets; drag-to-move is explicitly V1.5 and `Move to another day` needs a
+   day picker that is neither drawn nor scoped. **Deliberately not built** — logged here rather than
+   quietly added.
+
+### Findings the rebuild owed, found by migrating the specs
+
+The spec migration was not bookkeeping — it surfaced five defects, four of them invisible from the code
+alone. **BUG-025** (the floating slot was `absolute`, so the confirm bar scrolled away on a seven-day
+draft), **BUG-026** (the draft's regenerate door was dropped entirely), **BUG-027** (§D's scroll padding
+was never built), **BUG-028** (deleting the hero left the Plan tab with no heading at all), **BUG-029**
+(a failed modify became unreachable once you dismissed the sheet). All five fixed. This is the argument
+for the "migrate before you build further" ordering, in evidence.
 
 ## Change log
 

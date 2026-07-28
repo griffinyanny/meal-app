@@ -27,6 +27,11 @@ export const aiMealSchema = z.object({
   tags: z.array(z.string()),
   estTimeMinutes: z.number().int().nullable(),
   servings: z.number().int().nullable(),
+  // Rough grocery cost for this meal, in whole cents (Phase 1E.5 · W6). Asked
+  // for at generation time so it survives modify + re-hydration. Nullable
+  // because a model that will not guess must be able to say so — the surface
+  // renders nothing rather than a zero.
+  estCostCents: z.number().int().nullable(),
   // Two short, meal-specific modification suggestions (e.g. "Make it spicier").
   chips: z.array(z.string()),
 });

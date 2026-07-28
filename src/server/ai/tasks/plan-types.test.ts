@@ -21,6 +21,7 @@ function meal(overrides: Partial<AIPlan["meals"][number]> = {}) {
     ingredientPreview: ["salmon", "bok choy", "ginger"],
     tags: ["Fish", "Asian"],
     estTimeMinutes: 35,
+    estCostCents: 1600,
     servings: 2,
     chips: ["Make it spicier", "Swap protein"],
     ...overrides,
@@ -135,6 +136,41 @@ describe("validatePlan", () => {
     expect(m.chips).toHaveLength(2);
   });
 
+  // W6 · cost estimation. The guardrail is that an implausible estimate becomes
+  // NO estimate rather than a clamped one — the surface can honestly say nothing,
+  // and a number the user can check against a receipt has to be earned.
+  it.each([
+    ["zero", 0],
+    ["negative", -500],
+    ["absurdly high", 250_00],
+    ["fractional cents", 1234.5],
+  ])("should drop a %s cost estimate to null rather than clamp it", (_label, estCostCents) => {
+    const plan = validatePlan(
+      { chefSummary: "A week.", meals: [meal({ estCostCents })] },
+      ctx
+    );
+    expect(plan.meals[0].estCostCents).toBeNull();
+  });
+
+  it("should keep a plausible cost estimate", () => {
+    const plan = validatePlan(
+      { chefSummary: "A week.", meals: [meal({ estCostCents: 1850 })] },
+      ctx
+    );
+    expect(plan.meals[0].estCostCents).toBe(1850);
+  });
+
+  it("should not carry a cost estimate on a night nobody is cooking", () => {
+    const plan = validatePlan(
+      {
+        chefSummary: "A week.",
+        meals: [meal({ slotType: "eating_out", title: null, estCostCents: 4000 })],
+      },
+      ctx
+    );
+    expect(plan.meals[0].estCostCents).toBeNull();
+  });
+
   it("should throw when no usable meals remain", () => {
     const plan: AIPlan = {
       chefSummary: "A week.",
@@ -198,6 +234,7 @@ describe("toSlotValues", () => {
       ingredientPreview: ["salmon", "bok choy", "ginger"],
       slotTags: ["Fish", "Asian"],
       estTimeMinutes: 35,
+      estCostCents: 1600,
       chips: ["Make it spicier", "Swap protein"],
       servings: 2,
       rationale: "Fresh fish right after the shopping run.",

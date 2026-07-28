@@ -125,6 +125,7 @@ For each meal provide:
 - 4-6 key ingredients as short preview pills — names only, no quantities (e.g. "salmon", "bok choy", "ginger")
 - 1-3 short tags: cuisine and/or effort (e.g. "Italian", "One-pan", "Light")
 - An estimated total time in minutes
+- An estimated grocery cost in whole US cents (estCostCents) — what THIS meal adds to the shop for the servings given, at ordinary supermarket prices. Count only what has to be bought for it; never count pantry staples like oil, salt, or spices, and never count an ingredient a different meal this week already pays for (reuse is free the second time). If a meal is built on another meal's leftovers, its cost is what it adds, which is often close to nothing. Return null rather than guessing when you genuinely cannot — a missing number is fine, a wrong one is not, because the person can check this figure against a real receipt.
 - Exactly 2 modification chips specific to this meal. Each chip is a short tappable ACTION — verb-first, imperative, a change someone might plausibly want from THIS dish (e.g. "Make it spicier", "Swap the protein", "Add a hearty side"). Never a bare attribute or nutrition label: "Light", "Plant-based", "Iron-rich" are all wrong — qualities belong in tags; chips are things to DO. Never offer a quality the dish already has (a light salad doesn't get "Make it lighter" — it might get "Make it heartier").
 
 Use dayOffset 0-6, where 0 is the first day of the week. At most one meal per day.

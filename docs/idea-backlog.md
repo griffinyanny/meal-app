@@ -1,5 +1,25 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S44) — surfaced building 1E.5 Slice 1
+
+- **[1E.5 Slice 2 / V1.5] The meal sheet's `Move it` group.** Wave 1's settled meal-sheet drawing carries
+  a third group — `Move to another day` and `Skip Tuesday` — grouped separately *because they change the
+  week rather than the meal*. It is in **none of W7's scope bullets**, drag-to-move is explicitly V1.5,
+  and `Move to another day` needs a day picker that is neither drawn nor scoped. **Deliberately not
+  built** (S44) rather than quietly added. `Skip tonight` is the cheaper half — the modify pipeline
+  already clears a night to `eating_out` — and would slot in with Slice 2's sheet work.
+- **[1F] Compact rows truncate the title at ~20 characters.** The nested row spends a fixed 62px on its
+  meal-type label plus a trailing slot on the cook time, leaving the title — the thing being scanned —
+  the remainder. Not reachable today (R1 generates dinners only, so no day is ever nested), which is why
+  visual-QA graded it medium. Revisit when lunch/breakfast generation ships.
+- **[1F] Seven gold rationales reads as texture rather than voice.** The ledger licenses one per dinner
+  ("fifteen meals still produce five gold marks"), and at five it reads as the chef making a case per
+  night. At seven it starts reading as a typographic treatment applied to a list. Cheapest lever if it
+  bothers Griffin: drop the rationale on days already past on the mid-week screen.
+- **[V1.5] `plan.modify` should return `changedSlotIds`.** Already tracked as BUG-023; restated here
+  because W3's toast made the row-level ring visible enough that the day-level fallback is now the one
+  imprecise thing left in the modify loop.
+
 ## Incoming (S41) — harvested from the 1E.5 Plan design pass
 
 *Everything below surfaced during the Claude Design waves for Plan (`Plan Directions.dc.html`,

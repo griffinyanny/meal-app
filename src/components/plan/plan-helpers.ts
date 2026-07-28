@@ -34,6 +34,8 @@ export interface DisplayMeal {
   ingredientPreview: string[];
   tags: string[];
   estTimeMinutes: number | null;
+  /** Rough grocery cost for this meal in cents (W6). Null = no estimate. */
+  estCostCents: number | null;
   servings: number | null;
   chips: string[];
   feedback: "thumbs_up" | "thumbs_down" | null;
@@ -52,6 +54,7 @@ export interface PlanSlot {
   ingredientPreview: string[] | null;
   slotTags: string[] | null;
   estTimeMinutes: number | null;
+  estCostCents: number | null;
   chips: string[] | null;
   servings: number | null;
   rationale: string | null;
@@ -119,6 +122,7 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
     ingredientPreview: slot.ingredientPreview ?? [],
     tags: slot.slotTags ?? [],
     estTimeMinutes: slot.estTimeMinutes,
+    estCostCents: slot.estCostCents,
     servings: slot.servings,
     chips: slot.chips ?? [],
     feedback: slot.feedback,
@@ -138,6 +142,7 @@ export interface StreamedMealLike {
   ingredientPreview?: (string | undefined)[];
   tags?: (string | undefined)[];
   estTimeMinutes?: number | null;
+  estCostCents?: number | null;
   servings?: number | null;
   chips?: (string | undefined)[];
 }
@@ -167,6 +172,7 @@ export function streamedMealToDisplay(
     ),
     tags: (meal.tags ?? []).filter((s): s is string => typeof s === "string"),
     estTimeMinutes: meal.estTimeMinutes ?? null,
+    estCostCents: meal.estCostCents ?? null,
     servings: meal.servings ?? null,
     chips: (meal.chips ?? []).filter((s): s is string => typeof s === "string"),
     feedback: null,
