@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, CheckSquare, Clock, Mic } from "lucide-react";
-import { ChefPresence } from "./chef-presence";
+import { ChefPresence } from "@/components/shared/chef-presence";
 
 export interface IntroScreenProps {
   onStart: () => void;

@@ -23,6 +23,7 @@ import { seedChips } from "@/lib/onboarding/synthesize";
 import {
   type DisplayMeal,
   dayTitle,
+  isCookable,
   isPlanElapsed,
   scopedRequest,
   slotToDisplayMeal,
@@ -184,10 +185,6 @@ export function PlanPageClient() {
     );
   }
 
-  function handleChipClick(meal: DisplayMeal, chip: string) {
-    runModify(scopedRequest(chip, meal), meal, "inline");
-  }
-
   function openChat(scope: DisplayMeal | null) {
     clearError();
     setChatScope(scope);
@@ -241,17 +238,45 @@ export function PlanPageClient() {
     [expandedMealId, persistedMeals]
   );
 
-  const cardAffordance = {
-    pendingDate: pending?.date ?? null,
-    pendingLabel: pending?.label ?? "",
-    changedDates,
-    hydrationByDate,
-  };
+  // THE MEAL ROW IS THE UNIT OF CHANGE FEEDBACK, NEVER THE DAY CONTAINER
+  // (1E.5 ledger §C) — the ring sits on the changed row's own 14px radius
+  // inside the day's 18px.
+  //
+  // `plan.modify` reports changed DAYS, so we resolve each one to the cookable
+  // rows on it. At R1's one-dinner-per-day that is exactly row-level. At the
+  // multi-meal density the ledger also specifies, a whole-day change would ring
+  // all three rows — the server owes `changedSlotIds` before that density ships
+  // (tracked; not reachable today because generation produces dinners only).
+  const idsOnDates = useMemo(
+    () => (dates: string[]) =>
+      new Set(
+        persistedMeals
+          .filter((m) => !!m.id && !!m.date && dates.includes(m.date) && isCookable(m.slotType))
+          .map((m) => m.id!)
+      ),
+    [persistedMeals]
+  );
+
+  // Read through to a local first: the React Compiler infers `pending` as the
+  // dependency and refuses to preserve a memo keyed on `pending?.date`.
+  const pendingDate = pending?.date ?? null;
+  const workingMealIds = useMemo(
+    () => (pendingDate ? idsOnDates([pendingDate]) : new Set<string>()),
+    [pendingDate, idsOnDates]
+  );
+  const landedMealIds = useMemo(
+    () => idsOnDates(changedDates),
+    [changedDates, idsOnDates]
+  );
 
   function renderBody() {
     if (isStreaming) {
       return (
-        <StreamingPlan chefSummary={streamed?.chefSummary} meals={streamedMeals} />
+        <StreamingPlan
+          chefSummary={streamed?.chefSummary}
+          meals={streamedMeals}
+          weekStart={weekStart}
+        />
       );
     }
 
@@ -299,26 +324,37 @@ export function PlanPageClient() {
       // PlanReview and PlanMidweek share every prop but chefSummary/onFeedback.
       const weekProps = {
         meals: persistedMeals,
+        weekStart: plan.weekStart,
         isConfirmed,
         isConfirming: confirmMutation.isPending,
         onConfirm: () => confirmMutation.mutate({ planId: plan.id }),
         onTalkToChef: () => openChat(null),
         onTapMeal: openExpanded,
-        onChipClick: handleChipClick,
         onStartOver: startOver,
-        ...cardAffordance,
+        workingMealIds,
+        landedMealIds,
+        hydrationByDate,
       };
 
       return showMidweek ? (
         <PlanMidweek {...weekProps} onFeedback={onFeedback} />
       ) : (
-        <PlanReview {...weekProps} chefSummary={plan.chefSummary} />
+        <PlanReview
+          {...weekProps}
+          chefSummary={plan.chefSummary}
+          // W6 server half unbuilt: no estCostCents column yet, so no estimate.
+          estimateCents={null}
+        />
       );
     }
 
     if (streamedMeals.length > 0 || streamed?.chefSummary) {
       return (
-        <StreamingPlan chefSummary={streamed?.chefSummary} meals={streamedMeals} />
+        <StreamingPlan
+          chefSummary={streamed?.chefSummary}
+          meals={streamedMeals}
+          weekStart={weekStart}
+        />
       );
     }
 
