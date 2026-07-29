@@ -4,6 +4,77 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-29 (S45) — Cost is a forecast, so it only appears where a decision is pending
+
+**Decision.** The week-wrapped screen renders **no cost figure**. The estimate appears on the draft's
+consequence line (`Saying yes writes your grocery list · ~$87`) and on the confirmed week's grocery row
+(`~$87 estimated`), and nowhere else. W6's "wrapped estimates over the confirmed grocery list" scope line
+is retired.
+
+**Rationale (Griffin, taking the recommendation).** The asymmetry is the whole argument. A forecast cannot
+be falsified — `~$87` is a claim about a shop you have not done. `$94 spent` is a past-tense claim about
+money you already handed over, and it is **the only string in the product a person can check against a
+receipt in their pocket.** Get it wrong once and every other number the chef states is worth less. Beyond
+accuracy: review *needs* the number because it is an input to a decision; wrapped is a recap, and a cost
+figure there invites arithmetic instead of reflection.
+
+**Future impact.** Real prices arrive free with V2 grocery ordering, when the API returns actual line
+prices. At that point a *reconciled* figure on wrapped becomes defensible, because it would no longer be
+an estimate wearing a past tense. Revisit then, not before.
+
+---
+
+## 2026-07-29 (S45) — Provenance is a column, not a slot type
+
+**Decision.** "The user picked this recipe" is recorded as a nullable `meal_plan_slots.picked_recipe_id`
+FK. A picked slot keeps `slotType: "recipe"`. The ledger's `DINNER · PICKED` eyebrow derives from the
+column. This **overrides build dependency 3** in `brief.md` and `scope-1E.5.md`, which called for a new
+`slotType` enum value.
+
+**Rationale.** Three, in order of weight.
+
+1. **The enum value is actively dangerous.** The cookability predicate
+   `slotType === "recipe" || slotType === "leftover"` is duplicated in **eight** places across client and
+   server — including `grocery.ts` and `grocery-collect.ts`. Adding a fifth enum value means editing all
+   eight, and missing either grocery site means **a meal the person deliberately chose never reaches the
+   grocery list**: silent, and the worst possible failure for this feature. A picked slot that stays
+   `"recipe"` is already included by all eight.
+2. **The column is required regardless.** W9's "picks survive a regenerate by default" has to re-pin
+   *which* library recipe, and build dependency 4 has to warm *that* recipe's normalize cache at pick time.
+   `recipeId` cannot serve — hydration owns and overwrites it. An enum value carries no identity, so
+   choosing it would have meant adding this column in Slice 2 anyway, after paying the eight-call-site tax.
+3. **The ledger is satisfied.** "Provenance is `DINNER · PICKED` — type, not chrome" is a statement about
+   *rendering*: the eyebrow states it the way it states `DINNER`, rather than wearing a badge or an accent.
+   Derived from a column, it renders identically.
+
+**Future impact.** The eight-way duplication of the cookability predicate is now a known latent hazard,
+logged rather than fixed — nothing in this build depends on it, and extracting it would be an unrelated
+eight-file refactor. **Any future change to `slotType` must extract it first.**
+
+---
+
+## 2026-07-29 (S45) — A rule the model cannot obey belongs in code, not in the prompt
+
+**Decision.** W1's "a method covering four or more meals is absorbed into the week" is enforced by
+`src/server/ai/tasks/absorb-method.ts` inside `validatePlan`, not by the chef prompt. The narrower "titles
+never open with a cooking method" stays a prompt rule.
+
+**Rationale.** Layer B round 2 asked for *"I want to grill"* **with the absorption rule in the system
+prompt** and returned seven of seven "Grilled X" — S40's original finding reproduced verbatim. The model
+was not disobeying: the person explicitly asked to grill, and a style clause cannot outrank the request it
+competes with. That is the tell that this was never a generation problem. *"Does one word open four or
+more titles"* is a string test, and string tests belong in code where they are deterministic and free.
+
+**The design constraint that came with it:** absorption is a **precondition** for dropping. The method is
+stripped from the cards only when `chefSummary` already says it, so the information always survives exactly
+once rather than being silently deleted.
+
+**Future impact.** A useful split to reuse: prompt rules are for things the model can be *persuaded* of;
+code is for things that can be *checked*. Any style rule stated as a count ("at most N", "four or more") is
+a candidate for the second category.
+
+---
+
 ## 2026-07-28 (S44) — The day sheet and the meal sheet are ONE drawer
 
 **Decision.** `1l`'s day sheet is not a second `<Drawer>` that resembles the meal sheet; both render

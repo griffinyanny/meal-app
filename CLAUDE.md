@@ -16,7 +16,24 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN — Slice 1 is CODE-COMPLETE (S44, 2026-07-28).** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN — Slice 1 is DONE through Layer B (S45, 2026-07-29); Slice 2 has its spine.** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+
+**Work is on branch `session-43-1e5-plan-rebuild`, in a git worktree at `../meal-app-1e5`** (a concurrent process took the main checkout mid-session and created `session-43-access-gate`; nothing was lost). **549 unit green, lint + typecheck clean, migrations `0007` + `0008` applied, `/visual-qa` Layer A at 0 blockers / 0 high, Layer B run three times.** ⚠️ **GR7 failed again — BUG-019 recurrence #3, which trips the tracker's own quarantine threshold.**
+
+**LAYER B IS THE STORY OF S45. Four defects, none visible to the mock, and one was caused by the previous Layer B's own fix.**
+
+- **BUG-031 🔴 — the chef named a day that hadn't happened and didn't have the ingredient.** *"Uses the leftover fresh dill from Monday"* printed on a **Thursday**, on a Wed→Tue week whose Monday was four days later and carried fried rice. **S40's fix caused it:** S40 caught "reusing olive oil from day 0" and told the prompt to use weekday names — but nothing ever told the model *which* weekdays, so it mapped `dayOffset` onto a Monday start. That made the fix a **downgrade, not a repair**: "day 0" looks like a bug and gets reported; "Tuesday" looks correct and quietly misinforms. Fixed structurally — `buildPlanStreamParams` now takes `weekStart` and sends a real day map in the **user** message. Verified live.
+- **BUG-033 — W1's title rule was marked ✅ in the scope table and was never in the prompt at all.** Found by grepping for it while judging the very run that existed to verify it. **The four-or-more half now lives in code** (`absorb-method.ts`), because round 2 asked for "I want to grill" *with the prompt rule in place* and returned **seven of seven "Grilled X"** — S40's finding verbatim. A style clause cannot outrank the request it competes with, and "does one word open four or more titles" is a string test. ⚠️ **The code path has not fired live yet** — round 3 produced no method-opening titles.
+- **BUG-032 — the reuse rule had colonised the chef's voice**, 7 of 7 rationales arguing waste. Capped at two; 2 of 7 live. This was also the cause behind Layer A's "seven gold rationales read as texture, not voice."
+- **BUG-030 — the Layer B capture spec was the one Plan file S44's migration missed**, so round 1 paid for three real generations and threw them away against the deleted hero. **A stale selector fails loudly and free everywhere else in the suite; here it fails silently and bills you.**
+
+**W6 judged rather than counted:** 63/63 slots priced, zero nulls. Ranking stable and right (salmon dearest in every week, **$12.00 in three independent runs**); level soft — **$44–$74** for seven dinners for two across runs of the *same* prompt, low end ~30% under a real shop.
+
+**Griffin's two calls (S45), both as recommended.** (1) **The cost number comes off week-wrapped entirely** — it lives on review and the confirmed grocery row. **W6 closes**; the wrapped half is descoped, not owed. (2) **`Start over →` stays a foot link under the rail, gap tightened.**
+
+**Slice 2 landed its spine, not its entry points.** **Provenance is a nullable `picked_recipe_id` column, NOT a `slotType` enum value** (Griffin ratified the deviation from build dependency 3): the cookability test `slotType === "recipe" || slotType === "leftover"` is duplicated in **eight** places, two in the grocery collector, so a new enum value could silently drop a deliberately-chosen meal from the shop — and the column carries *which* recipe, which regenerate-survival and pick-time cache-warming both need anyway. `DINNER · PICKED` derives from data; new `PICKED` seed state + `L1`–`L4`. **W8 (picker) and W10 (Recipes bottom edge) are not built.**
+
+**Also open:** BUG-034 (the chef summary runs 6-7 lines and pushes the first meal below the fold — decide before Griffin's taste pass), BUG-035 (1 real generation in 9 timed out at 90s), `DEV_TOOLS_EMAILS` in Vercel Production (sixth session), scope-v1's closed-beta question. — History below is retained for context.
 
 **Work is on branch `session-43-1e5-plan-rebuild`, still not merged to `main`** — Layer B and Griffin's taste pass are the remaining gates. **538 unit + 91 E2E (90 green), lint + typecheck clean, migration `0007` applied, `/visual-qa` Layer A at 0 blockers / 0 high.** The one red is GR7, the known `@dnd-kit` drag flake (BUG-019, recurrence #2) — green in isolation.
 

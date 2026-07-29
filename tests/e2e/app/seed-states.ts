@@ -16,6 +16,10 @@ export type PlanState =
   | "CHOSEN_DAYS"
   | "DENSE"
   | "UNCOOKED_PAST"
+  // W9 · a week the person put one of their own recipes into. Seeded rather
+  // than performed: the picker (W8) is not built yet, so this proves the
+  // PROVENANCE half of the ledger independently of the entry point.
+  | "PICKED"
   | "MIDWEEK"
   | "ELAPSED_CONFIRMED"
   | "ELAPSED_DRAFT"
@@ -53,6 +57,11 @@ export interface SeedSlotInput {
   rationale: string | null;
   // W6 · what this meal adds to the shop, in cents. Null = the model declined.
   estCostCents?: number | null;
+  // W9 · the person chose this night's dish out of their library. The seeder
+  // creates a real library recipe and points `pickedRecipeId` at it, because
+  // the column is a live FK — a fabricated uuid would insert-fail rather than
+  // render, and the whole point of the state is to prove the eyebrow.
+  picked?: boolean;
 }
 
 export interface SeedPlanSpec {
@@ -285,6 +294,8 @@ export function buildSeedSpec(
       return denseWeek(today, opts);
     case "UNCOOKED_PAST":
       return uncookedPastWeek(today, opts);
+    case "PICKED":
+      return pickedWeek(today, opts);
     case "ADVERSARIAL":
       return {
         status: "draft",
@@ -396,5 +407,39 @@ function uncookedPastWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
   return {
     ...buildWeek(addDaysISO(today, -2), "confirmed", 6, opts),
     chefSummary: "Here's the rest of your week.",
+  };
+}
+
+// W9 · a draft the person put one of their own recipes into.
+//
+// ONE picked night among six chef-proposed ones, on purpose. The ledger's rule
+// is that a pick is a constraint on the chef rather than a scheduler, so the
+// state worth photographing is the MIXED one — a rail where a picked row and a
+// proposed row sit together and the only difference is the eyebrow. A week of
+// all-picked meals would prove the eyebrow renders while hiding the thing that
+// actually matters, which is that it reads as a type rather than as chrome.
+//
+// It is a DRAFT because §B says the chef answers a pick with a night and a
+// reason, and that conversation only exists before the week is agreed.
+function pickedWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  const week = buildWeek(today, "draft", 7, opts);
+  return {
+    ...week,
+    chefSummary:
+      "I built the week around the carbonara you picked — it's your recipe, " +
+      "so I won't rewrite it.",
+    slots: week.slots.map((slot, i) =>
+      i === 1
+        ? {
+            ...slot,
+            title: "Spaghetti alla Carbonara",
+            picked: true,
+            // §B: a picked meal's rationale argues PLACEMENT, not the dish.
+            // The chef did not choose the food and has nothing to say about it.
+            rationale:
+              "Put it midweek so the guanciale gets used while it's fresh.",
+          }
+        : slot
+    ),
   };
 }

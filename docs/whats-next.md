@@ -1,8 +1,136 @@
 # What's Next
 
-Last updated: 2026-07-28 (Session 44)
+Last updated: 2026-07-29 (Session 45)
 
-## ▶ NEXT SESSION — 1E.5 Slice 1 is CODE-COMPLETE. **Layer B, then Slice 2.**
+## ▶ NEXT SESSION — Layer B is CLEARED. **Quarantine GR7, then build W8 + W10.**
+
+**S45 ran Layer B three times and it found four real defects.** All four are fixed and three are verified
+live. Slice 2's provenance spine landed; its two entry points did not. Scope doc:
+[scope-1E.5.md](scope-1E.5.md).
+
+Work is on **`session-43-1e5-plan-rebuild`, in a git worktree at `../meal-app-1e5`** — a concurrent
+process took the main checkout mid-session and made `session-43-access-gate` from `main`. **Nothing was
+lost**, but you now have two working trees; tidy up with `git worktree remove ../meal-app-1e5` once this
+branch merges.
+
+**549 unit green, lint + typecheck clean, migrations `0007` + `0008` applied, Layer A 0/0, Layer B ×3.**
+
+### ⚠️ GR7 hit the quarantine threshold — do this first
+
+**BUG-019 recurrence #3.** The tracker's own disposition said one more recurrence quarantines it, and this
+is it. Three sessions running, nothing in any of them touched Groceries, every other GR spec green in the
+same runs. **The suite is now reliably training us to ignore a red**, which is exactly how a real Groceries
+regression ships. Fix the drag properly (stepped pointer-moves, wait on the `@dnd-kit` overlay to mount,
+assert persisted `aisleOrder` rather than rendered order) — it is the same machinery W10 is about to touch
+anyway.
+
+### What Layer B found — including one defect the last Layer B created
+
+1. **BUG-031 🔴 — the chef named a day that hadn't happened yet and didn't have the ingredient.**
+   *"Uses the leftover fresh dill from Monday"*, printed on a **Thursday**, on a Wed→Tue week whose Monday
+   was four days later and served fried rice. **S40's own fix caused this.** S40 caught "reusing olive oil
+   from day 0" and told the prompt to use weekday names — but nothing ever told the model *which* weekdays,
+   so it mapped `dayOffset` onto a Monday start. **That made the S40 fix a downgrade rather than a repair:**
+   "day 0" looks like a bug and gets reported; "Tuesday" looks correct and quietly misinforms. Fixed
+   structurally — the user message now carries a real day map. Verified live.
+2. **BUG-033 — W1's title rule was marked ✅ in the scope table and was never in the prompt at all.** Found
+   by grepping for it while judging the run that existed to verify it. The four-or-more half now lives in
+   **code**, because round 2 asked for "I want to grill" *with the prompt rule in place* and returned
+   **seven of seven "Grilled X"** — S40's finding verbatim. A style clause cannot outrank the request it
+   competes with. ⚠️ **The code path has not fired live** (round 3 produced no method-opening titles), so
+   it is a guarantee on paper.
+3. **BUG-032 — the reuse rule had colonised the chef's voice**, 7 of 7 rationales arguing waste. Capped at
+   two; 2 of 7 live. Also the cause behind Layer A's "seven gold rationales read as texture, not voice."
+4. **BUG-030 — the Layer B capture spec was the one Plan file S44's migration missed.** Round 1 paid for
+   three real generations and threw them away against the deleted hero. A stale selector fails loudly and
+   free everywhere else in the suite; **here it fails silently and bills you.**
+
+**W6, judged rather than counted:** 63/63 slots priced, zero nulls, no clamping. The ranking is stable and
+right — salmon the dearest night in every week, at exactly **$12.00 in three independent runs**. The level
+is soft: **$44–$74** for seven dinners for two across runs of the *same* prompt, low end ~30% under a real
+shop. Not a blocker (the row says "estimate"), but under-estimating is the worse direction. Two cheap
+levers if you want them: price the whole meal rather than the headline protein, and name the servings count
+in the cost instruction.
+
+### ⚠️ One thing is yours, and it's the first thing you'll see
+
+**BUG-034 — the chef's summary runs six to seven lines and pushes the first meal below the fold.** Every
+real week opened on a wall of text. **Layer A is blind to it** because every seeded summary is one short
+line, so no amount of mock testing would have shown you this. Three options, not equivalent: cap the prompt
+at ONE sentence (cheapest, loses the chef's range), clamp the render to ~3 lines with the rest on tap
+(keeps the voice, adds an interaction the ledger doesn't have), or drop the type size on long strings.
+**Worth doing regardless: give the seed states a realistic summary**, or Layer A stays blind to this whole
+class. See `tests/e2e/captures/B-2026-07-29T13-24-16-923Z/live-fridge.png`.
+
+### Your two calls from last session — both taken as recommended
+- **The cost number is off week-wrapped.** It lives on review and the confirmed grocery row. **W6 closes**;
+  the wrapped half is descoped rather than owed, so its grocery query is no longer needed.
+- **`Start over →` stays a foot link, gap tightened.** Plus the week's closing line drops 56px → 38px when
+  it carries no control — most of the flagged void was button-sized space with no button in it.
+
+### ⭐ Next up: W8 + W10, against a spine that already exists
+
+**W9's spine landed and is gated by `L1`–`L4`.** Provenance is a nullable **`picked_recipe_id` column, not
+a `slotType` enum value** — you ratified the deviation from build dependency 3, because the cookability
+test is duplicated in **eight** places (two in the grocery collector, where a miss silently drops a
+deliberately-chosen meal from the shop), and the column carries *which* recipe, which regenerate-survival
+and pick-time cache-warming both need anyway. `DINNER · PICKED` now derives from data.
+
+**What's left:** **W8** (the picker — settled approach: a *third subject on the existing `PlanSheet`*,
+swapping content in place rather than stacking a second drawer, since D2's vaul pointer-events bug and §D's
+one-floating-layer rule both argue against stacking) and **W10** (frame `3l` resolved the ambiguity — it is
+the Recipes **detail** screen that takes `Add to this week`; "FAB deleted, search into the header" is the
+**library** screen's half). Build dependencies 2 (servings scaling as a generation task) and 4 (warm the
+normalize cache at pick time, on the existing `bgAiProcedure` 30/min bucket) ride along.
+
+### Also still open
+- **`DEV_TOOLS_EMAILS` in Vercel Production** — sixth session. Test mode is invisible and inert until you
+  set it.
+- **BUG-035** — 1 real generation in 9 timed out server-side at 90s. Worth knowing whether that path shows
+  the user a named failure or a spinner that never resolves.
+- **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape.
+
+**⭐ Model recommendation: Opus 4.8.** W8 and W10 are a large but well-specified build against a locked
+ledger and a spine that now exists, with two named build dependencies and E2E coverage already written for
+the half that landed. No new architecture. The GR7 quarantine is mechanical test work in the same file W10
+touches.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S45 cleared Layer B and it found four real defects, all fixed: BUG-031 (the chef named a
+weekday that hadn't happened and didn't have the ingredient — S40's own "use weekday names" fix caused it,
+because nothing ever told the model which weekdays; fixed by sending a real day map, verified live),
+BUG-033 (W1's title rule was marked done and was never in the prompt at all — the four-or-more half now
+lives in code, since "I want to grill" beat the prompt rule 7/7), BUG-032 (the reuse rule had colonised the
+chef's voice, 7/7 rationales arguing waste; capped, now 2/7), and BUG-030 (the Layer B capture spec was
+stale and burned three real generations). Slice 2's spine landed: picked_recipe_id + migration 0008 +
+DINNER · PICKED, gated by L1-L4. 549 unit green, worktree at ../meal-app-1e5 on branch
+session-43-1e5-plan-rebuild. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1E.5.md first, then
+give me the ≤6-line scope check. Then: (1) quarantine or properly fix GR7 — BUG-019 just hit recurrence #3
+and the tracker's own rule says it's due; (2) build W8 (the picker, as a third subject on the existing
+PlanSheet — no stacked drawer) and W10 (Add to this week on the Recipes DETAIL screen per frame 3l, plus
+deleting the library's floating toolbar), honouring build dependencies 2 and 4; (3) extend the L family to
+cover them. Tell me your read on BUG-034 (the chef summary runs six-to-seven lines and pushes the first
+meal below the fold) before you start — it's mine to call and Layer A can't see it. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs than build the picker):
+```
+Resume meal app — S45 cleared Layer B (four defects found and fixed, see docs/whats-next.md). Skip W8/W10
+this session and clear the bug list instead, in this order: GR7/BUG-019 first (recurrence #3, the tracker's
+own quarantine threshold — fix the @dnd-kit drag properly rather than retrying), then BUG-034 (the chef
+summary pushes the first meal below the fold — give the seed states a realistic summary too, or Layer A
+stays blind to the whole class), then BUG-035 (a real generation timed out at 90s — find out whether that
+path shows a named failure or a spinner that never resolves), then BUG-020 and BUG-021 (a failed save
+reported as "All saved."; a failed skip that still walks the user out), then BUG-011/BUG-012 (householdSize
+↔ composition desync putting two contradictory numbers in one chef prompt). Read docs/whats-next.md +
+docs/bug-tracker.md first, give me the ≤6-line scope check, keep 549 unit green. Worktree at
+../meal-app-1e5 on branch session-43-1e5-plan-rebuild. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S44 (superseded by S45 above — Layer B ran and found four defects)
 
 **S44 closed BUG-024 and finished Slice 1.** Scope doc: [scope-1E.5.md](scope-1E.5.md).
 Work is on branch **`session-43-1e5-plan-rebuild`**, still not merged — Layer B and your taste pass are

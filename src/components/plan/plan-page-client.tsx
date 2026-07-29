@@ -452,6 +452,12 @@ export function PlanPageClient() {
       title: m.title,
       recipeStatus: m.recipeStatus,
       recipeId: m.recipeId,
+      // W6's output is otherwise unobservable from outside: the review sums it
+      // into one string and a null slot renders nothing at all, so a week the
+      // model priced badly and a week it declined to price look identical on
+      // screen. Layer B judges these per-slot, which is where implausibility
+      // actually shows up — a plausible sum can hide a $2 salmon night.
+      estCostCents: m.estCostCents,
     })),
   }));
 

@@ -6,7 +6,16 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### 🔴 Where does `Start over →` belong on a draft? (raised S44)
+### ✅ RESOLVED S45 — Where does `Start over →` belong on a draft? (raised S44)
+> **CLOSED 2026-07-29 (S45). It stays the foot link under the rail, with the gap tightened.**
+> Griffin took the recommendation. The argument that decided it: mid-week already uses this exact pattern
+> for the same job, so it reads as existing vocabulary rather than a new object, and the end of the scroll
+> then offers both doors — accept (the floating Confirm) and reject (the link). The ~100px void was a
+> spacing bug, not a placement argument: `mt-6` → `mt-[13px]` (just off the rail's own 9px gap, so the link
+> belongs to the week rather than to the decision), and the week's closing line drops from a 56px rail row
+> to 38px when it carries no control — most of the void was button-sized space with no button in it.
+
+<details><summary>Original question (S44)</summary>
 The 1E.5 rebuild **dropped the regenerate airlock's draft door entirely** (BUG-026): the chef header
 carries one revise control and frame `3i` spends it on `Something's off` (→ Talk to the Chef), so there
 was no way to re-prompt a draft at all. The brief's state inventory §3 keeps that door and scope-1E.5's
@@ -19,7 +28,18 @@ it now sits in a ~100px void between the last rail row and the consequence line.
 control in the chef header beside `Something's off`; or fold it into the Talk-to-Chef sheet as an escape
 row. **Griffin's call.**
 
-### 🔴 The `$94 spent` copy — still owed, and it now blocks W6's last build step (raised S43)
+</details>
+
+### ✅ RESOLVED S45 — The `$94 spent` copy (raised S43)
+> **CLOSED 2026-07-29 (S45). The number comes off week-wrapped entirely.** Griffin took the
+> recommendation. Cost now appears only where a decision is pending: the draft's consequence line and the
+> confirmed week's grocery row, both of which name themselves as estimates. **W6 closes** — the wrapped
+> half is descoped rather than owed, so the grocery-list query it needed is no longer required, and
+> "wrapped renders no cost" is the intended state rather than a gap. Recorded in decisions.md; revisit only
+> when V2 grocery ordering returns real line prices, at which point a *reconciled* figure would no longer be
+> an estimate wearing a past tense.
+
+<details><summary>Original question (S43)</summary>
 Claude's recommendation, unchanged: **`~$94 est.`** — or, preferably, **drop the number from
 week-wrapped entirely** and keep it only on review. The asymmetry decides it: `~$87` on review is a
 forecast and nobody can falsify a forecast, but "spent" is a **past-tense factual claim about money the
@@ -34,6 +54,7 @@ because it is an input to a decision about to be made.
 
 **Consequence today:** wrapped renders no cost at all (the honest null-safe state), and **W6's
 week-wrapped half is not built** — it also needs a grocery-list query `plan.current` does not make.
+</details>
 
 ### ✅ RESOLVED S43 — Is library-into-plan formally in R1 scope? (raised S41)
 > **CLOSED 2026-07-27 (S43). YES — it is in R1, as Slice 2 of phase 1E.5**, reaffirming Griffin's S41

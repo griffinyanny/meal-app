@@ -163,9 +163,15 @@ export function PlanReview({
           object (§D allows exactly one). This is the foot link the mid-week
           screen already uses for the same job, which is why it reads as an
           existing pattern rather than a new one. Confirmed weeks don't render
-          it: there the header's revise door IS "Plan a new week". */}
+          it: there the header's revise door IS "Plan a new week".
+
+          13px, not 24: Layer A's M2 found the link belonging to neither the
+          rail above nor the primary below. It belongs to the RAIL — it is the
+          week's last statement, not the decision's — so the margin sits just
+          off the rail's own 9px gap. Griffin settled the placement itself
+          (S45): foot link, gap tightened. */}
       {isConfirmed ? null : (
-        <div className="mt-6">
+        <div className="mt-[13px]">
           <span className="text-[13.5px] text-[var(--spec-text-caption)]">
             Not the week you asked for?{" "}
           </span>

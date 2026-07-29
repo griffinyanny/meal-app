@@ -28,20 +28,22 @@ export interface MealRowProps {
   working?: boolean;
   /** One-shot highlight after a change lands. Gold: it marks the chef's work. */
   landed?: boolean;
-  /** Provenance eyebrow — Slice 2 sets this for a recipe the user chose. */
-  picked?: boolean;
   onOpen?: (meal: DisplayMeal) => void;
 }
 
+// PROVENANCE IS TYPE, NOT CHROME (ledger §B): "PICKED" joins the eyebrow the
+// way "DINNER" does — no badge, no accent, no second card design. Derived from
+// the meal rather than threaded down as a prop, because a prop would have to
+// cross three components to reach here and could go stale against the row it
+// describes; the fact lives on the slot, so the row reads it there.
 function Eyebrow({
   meal,
-  picked,
   trailing,
 }: {
   meal: DisplayMeal;
-  picked?: boolean;
   trailing?: string | null;
 }) {
+  const picked = meal.pickedRecipeId != null;
   const markers = markersOf(meal);
   const label = [
     meal.mealType.toUpperCase(),
@@ -83,7 +85,6 @@ export function MealRowFeature({
   showRationale,
   working,
   landed,
-  picked,
   onOpen,
 }: MealRowProps) {
   const solo = density === "solo";
@@ -111,7 +112,6 @@ export function MealRowFeature({
     >
       <Eyebrow
         meal={meal}
-        picked={picked}
         trailing={
           !solo && meal.estTimeMinutes ? formatDuration(meal.estTimeMinutes) : null
         }

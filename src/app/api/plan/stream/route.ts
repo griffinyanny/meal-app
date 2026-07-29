@@ -127,7 +127,11 @@ export async function POST(req: Request): Promise<Response> {
 
   const weekStart = planStartDate(new Date());
   const chef = await getChefContext(db, householdId, user.id);
-  const params = buildPlanStreamParams({ request: parsed.data.request, ...chef });
+  const params = buildPlanStreamParams({
+    weekStart,
+    request: parsed.data.request,
+    ...chef,
+  });
 
   const result = generateStream<AIPlan>({
     ...params,

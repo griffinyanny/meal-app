@@ -4,6 +4,72 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 45 — 2026-07-29 (Layer B: four defects; Slice 2's spine)
+
+**The job:** run Layer B against Slice 1, judge W1's title rule and W6's cost output on real content, then
+open Slice 2. **Layer B found four real defects and fixing them took the session**, so Slice 2 landed its
+provenance spine (W9) and its two entry points (W8/W10) did not. That trade is recorded in scope-1E.5's
+change log rather than discovered later.
+
+### Griffin's two calls, both taken as recommended
+1. **`$94 spent` → the number comes off week-wrapped entirely.** Cost lives on review and on the confirmed
+   grocery row. **W6 closes** — the wrapped half is descoped, not owed, and the grocery-list query it
+   needed is no longer required.
+2. **`Start over →` stays a foot link under the rail, gap tightened.** `mt-6` → `mt-[13px]` (just off the
+   rail's own 9px gap, so the link belongs to the week rather than to the decision), and the week's closing
+   line drops from a 56px rail row to 38px when it carries no control — most of the void Layer A flagged
+   was button-sized space with no button in it.
+
+### What Layer B found — the gate earned its keep for the third phase running
+
+Three rounds, nine real generations, and **one of the defects was caused by the previous Layer B's fix.**
+
+- **BUG-030** — `plan-live.capture.ts` was the one Plan file S44's BUG-024 migration missed. It still
+  waited on the deleted "Your week, ready to review" hero, so round 1 ran three real generations, paid for
+  them, and threw them away. **A stale selector fails loudly and free everywhere else in the suite; here it
+  fails silently and bills you.** Re-anchored on `confirmBar` — deliberately not `planRail`, since W5 makes
+  the rail arrive in the first second and resolve in place, so the rail proves nothing about whether
+  generation finished.
+- **BUG-031 🔴** — *"Uses the leftover fresh dill from **Monday**"* printed on a Thursday, on a Wed→Tue
+  week whose Monday was four days later and carried fried rice. **S40's own fix caused this**: it told the
+  model to use weekday names instead of `day 0`, but nothing ever told it *which* weekdays, so it mapped
+  `dayOffset` onto a Monday start. That made the S40 fix a downgrade rather than a repair — "day 0" looks
+  like a bug and gets reported, "Tuesday" looks correct and quietly misinforms. Fixed **structurally**: the
+  user message now carries a real day map. Verified live in round 3.
+- **BUG-032** — the reuse rule had colonised the chef's voice: **7 of 7** rationales arguing waste. S40
+  verified reuse *works*; nobody checked whether it *dominates*. Capped at two; **2 of 7 live in round 3**.
+  This was also the cause behind Layer A's standing "seven gold rationales read as texture" finding.
+- **BUG-033** — **W1's title rule was marked ✅ in the scope table and was never in the prompt at all.**
+  Found by grepping for it while judging the run that existed to verify it. The four-or-more half is now
+  enforced **in code**, because round 2 asked for "I want to grill" *with the prompt rule in place* and
+  returned **seven of seven "Grilled X"** — S40's original finding, verbatim. A style clause cannot outrank
+  the request it competes with, and "does one word open four or more titles" is a string test.
+
+**W6 judged, not counted:** 63/63 slots priced, zero nulls, no clamping. Ranking is stable and right —
+salmon the most expensive night in every week, at exactly **$12.00 in three independent runs**. Level is
+soft: **$44–$74** for seven dinners for two across runs of the *same* prompt, with the low end ~30% under a
+real shop. Under-estimating is the worse direction; flagged with two cheap levers, not fixed.
+
+Two more logged and not fixed: **BUG-034** (the chef summary runs six to seven lines and pushes the first
+meal below the fold — invisible to Layer A because every seeded summary is one short line) and **BUG-035**
+(1 real generation in 9 timed out server-side at 90s).
+
+### Slice 2 — the spine, and a ratified deviation
+**Build dependency 3 says `slotType` needs a new enum value. It does not, and shouldn't.** The cookability
+test `slotType === "recipe" || slotType === "leftover"` is duplicated in **eight** places, two of them in
+the grocery collector — a new enum value means a meal the person deliberately chose can silently never
+reach the shop. A nullable `picked_recipe_id` (migration `0008`) changes none of the eight, and carries
+what the enum could not: *which* recipe, which is what "picks survive a regenerate" and dependency 4's
+cache-warming both need. Griffin ratified. `DINNER · PICKED` now derives from data rather than from the
+prop S44 left unwired; new `PICKED` seed state (real recipe, real FK) and specs `L1`–`L4`.
+
+### Housekeeping
+A concurrent process checked out `main` and created `session-43-access-gate` mid-session, taking the
+working tree. Nothing was lost. Work moved to a **git worktree** at `../meal-app-1e5` so both branches can
+be checked out at once.
+
+---
+
 ## Session 44 — 2026-07-28 (BUG-024 closed; 1E.5 Slice 1 CODE-COMPLETE)
 
 **The job:** migrate the Plan E2E specs to the rail's DOM (BUG-024), then finish Slice 1 — W3's toast

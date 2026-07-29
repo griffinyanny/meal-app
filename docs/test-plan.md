@@ -198,6 +198,25 @@ S28 gate: 0 blockers, 0 high across all 11 Groceries+Recipes states.
 | C3 | A night nobody is cooking contributes nothing, and no `$0` appears anywhere | `CHOSEN_DAYS` | 🟢 |
 | C4 | A partially-priced week sums what it has and says so honestly | `PROVISIONAL` | 🟢 |
 
+### `L` — library into plan (Phase 1E.5 Slice 2, S45)
+
+Slice 2's entry points (W8's picker, W10's `Add to this week`) are **not built**. These four cover the
+**provenance spine** — the `picked_recipe_id` column and the eyebrow it drives — by seeding a pick rather
+than performing one. Deliberate: the ledger's provenance rule is a claim about *rendering*, true or false
+independently of how the pick got there, so writing it now means the picker lands next session against
+coverage that already exists instead of shipping both halves and guessing which one is wrong.
+
+| ID | Case | Seed | Status |
+|----|------|------|--------|
+| L1 | A picked meal states `DINNER · PICKED` **as its whole eyebrow** — asserted on the full string, not a substring, so a badge rendered elsewhere on the card cannot pass | `PICKED` | 🟢 |
+| L2 | A chef-proposed meal **in the same week** carries no provenance — the half that makes L1 mean something, since an eyebrow that never varies is decoration | `PICKED` | 🟢 |
+| L3 | A picked meal's rationale argues **placement, not the dish** (§B) — catches a future generation change quietly making the chef review a recipe the person already chose | `PICKED` | 🟢 |
+| L4 | The boundary is **stated, not enforced silently**: "it's your recipe, so I won't rewrite it" | `PICKED` | 🟢 |
+
+**Owed with W8/W10:** the picker opening on `Saved, never cooked`; the four tiles pushing; multi-select
+count in the verb; no action bar until selection; the empty library; an unfittable recipe dimming with a
+reason; `Add to this week` from the Recipes **detail** screen; picks surviving a regenerate.
+
 ### ADVERSARIAL state (Plan, S37 — **re-pointed S44**)
 
 > **Two of its three original findings are now EXPECTED renderings.** BUG-008's double cook time and

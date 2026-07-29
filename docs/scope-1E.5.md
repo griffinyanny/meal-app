@@ -356,24 +356,54 @@ green in the same run. One more recurrence and the tracker's own rule quarantine
 | **W3** modify/toast | ✅ | `use-plan-modify` derives ONE `toast` (error → working → ack); the slot renders the toast **or** the primary, never both. `modify-status-pills.tsx` **and** its now-orphaned `bottom-bar.tsx` deleted. **Closed BUG-029** on the way. |
 | **W4** time states | ✅ | Draft/confirmed/mid-week/wrapped all on the rail's vocabulary. Wrapped keeps its in-place thumbs because the `Rate them` destination is 1F. |
 | **W5** generation | ✅ | `streaming-plan.tsx` is the rail + `CountSlot`. **BUG-009 closed** (gated by `P4`). |
-| **W6** cost | ✅ *(review half)* | `est_cost_cents` + migration `0007` (applied), Zod → validator → `toSlotValues` → `DisplayMeal` → the review sum, plus the prompt rule and four assertions locking it. Gated by `C1`–`C4`. **The week-wrapped half is NOT built** — see below. |
+| **W6** cost | ✅ **CLOSED (S45)** | `est_cost_cents` + migration `0007`, Zod → validator → `toSlotValues` → `DisplayMeal` → the review sum, prompt rule, four assertions, gated by `C1`–`C4`. **The week-wrapped half is descoped, not owed** — Griffin's S45 call was to drop the number from wrapped entirely and keep cost on review (see change log). Wrapped rendering no cost is now the intended state rather than a gap. |
 | **W7** meal sheet | ✅ | **BUG-006 closed.** One `PlanSheet` drawer, two subjects; `sheet-parts.tsx` is the shared shell. Day sheet (`1l`) ships. Gated by `P7`/`P8`. |
-| **W8–W10** Slice 2 | ⬜ | Untouched. |
+| **W9** picked meal | 🔨 **spine only (S45)** | `picked_recipe_id` + migration `0008` (applied), threaded slot → `DisplayMeal` → the eyebrow, which now derives `DINNER · PICKED` from data rather than the prop S44 left unwired. New `PICKED` seed state (a real library recipe, real FK) + `L1`–`L4`. **Provenance renders; nothing can create a pick yet** — that is W8/W10. §B's servings line ("scaled to 3") and the who-clause wait for a picker that knows whose pick it is. |
+| **W8** picker | ⬜ | Approach settled, not built: a **third subject on the existing `PlanSheet`**, swapping content in place when invoked from a meal sheet rather than stacking a second drawer (D2's vaul pointer-events class of bug, and §D's one-floating-layer rule, both argue against stacking). |
+| **W10** verb + Recipes edge | ⬜ | Frame `3l` resolved an ambiguity in the scope text: it is the Recipes **detail** screen that gets `Add to this week` in the floating primary. "FAB deleted, search moved to the header" is the **library** screen's half. |
 
 **Gates:** unit ✅ · E2E ✅ · `P`/`C` specs ✅ · seed states ✅ · `ADVERSARIAL` re-pointed ✅ ·
 `/visual-qa` Layer A ⬜ · Layer B ⬜ · critic ⬜ · Griffin's taste ⬜.
 
+### What Layer B found (S45) — the gate earned its keep for the third phase running
+
+Three rounds, nine real generations. **Four defects, none of them visible to the mock**, and one of them was
+caused by the previous Layer B's own fix:
+
+- **BUG-030** — the Layer B capture spec was the one Plan file S44's migration missed, so round 1 paid for
+  three real generations and threw them away against a deleted hero. It is the only spec in the suite whose
+  staleness costs money instead of a red test.
+- **BUG-031 🔴** — "Uses the leftover fresh dill from **Monday**" printed on a Thursday, in a week with no
+  earlier Monday and no dill on the one it named. **S40's fix caused it**: telling the model to use weekday
+  names without ever telling it the weekdays meant it mapped `dayOffset` onto a Monday start. Fixed
+  structurally by sending a real day map; verified correct live.
+- **BUG-032** — the reuse rule had colonised the chef's voice, 7 of 7 rationales arguing waste. Capped at
+  two; down to 2 of 7 live.
+- **BUG-033** — W1's title rule was **marked ✅ here and never written into generation**. The four-or-more
+  half now lives in code, because round 2 proved a prompt clause loses to an explicit "I want to grill"
+  (seven of seven "Grilled X", S40's finding verbatim).
+
+**W6's estimates, judged rather than counted:** 63/63 slots priced across nine weeks, zero nulls, no
+clamping. The *ranking* is stable and correct — salmon the most expensive night in every week, priced at
+exactly $12.00 in three independent runs; chickpea stew and fried rice cheapest. The *level* is soft:
+week sums ranged **$44–$74** for seven dinners for two across runs of the same prompt, and the low end is
+roughly 30% under a real shop. Under-estimating is the worse direction. Two cheap levers if Griffin wants
+them: price the whole meal rather than the headline protein, and name the servings count in the cost
+instruction. Not a blocker — the review row is honest about being an estimate.
+
 ### What Slice 1 still owes
 
-1. **`/visual-qa` Layer A**, then **Layer B** — W1's title rule and W6's cost output both change
-   generation, and the mock cannot tell us whether the real model obeys either.
-2. **W6's week-wrapped half.** The scope says wrapped estimates over the **confirmed grocery list's
-   actual items**, not the plan — better-grounded input, same estimator. That needs a grocery query
-   `plan.current` does not make, and it was outside the session's stated W6 ask ("column + migration +
-   generation output + prompt rule"). **Wrapped renders no cost today**, which is the honest null-safe
-   state rather than a plan-sum wearing the list's label. **Blocked behind Griffin's `$94 spent` copy
-   call regardless.**
-3. **The `Move it` group** (`Move to another day` / `Skip tonight`) is drawn in wave 1's meal sheet but
+1. ~~`/visual-qa` Layer A, then Layer B~~ — **both done.** Layer A cleared 0 blockers / 0 high (S44);
+   Layer B ran three rounds in S45 and is written up above.
+2. ~~W6's week-wrapped half.~~ **Descoped by Griffin (S45)** — the number comes off wrapped entirely, so
+   there is no grocery-list query to write and no copy call left open. Wrapped rendering no cost is the
+   answer, not a gap.
+3. **A Layer B re-run is owed once, on the absorption path.** `absorb-method.ts` is unit-tested against
+   round 2's exact seven-title output, but round 3 produced zero method-opening titles so **the code path
+   never fired live**. It is a guarantee on paper until a live "I want to grill" walks through it.
+4. **BUG-034 (the six-line chef summary) wants a decision before Griffin's taste pass** — it is the first
+   thing he will see on a real week, and the seeds cannot show it to him.
+5. **The `Move it` group** (`Move to another day` / `Skip tonight`) is drawn in wave 1's meal sheet but
    is in none of W7's scope bullets; drag-to-move is explicitly V1.5 and `Move to another day` needs a
    day picker that is neither drawn nor scoped. **Deliberately not built** — logged here rather than
    quietly added.
@@ -391,6 +421,9 @@ for the "migrate before you build further" ordering, in evidence.
 
 | Date | Change | Why |
 |---|---|---|
+| 2026-07-29 (S45) | **W6's week-wrapped cost is DESCOPED — the number comes off wrapped entirely.** Cost now lives only on the review consequence line and the confirmed week's grocery row, both of which say "estimate" in their own words. W6 → closed. | Griffin's call, taking the recommendation. The asymmetry decides it: a forecast cannot be falsified, but `$94 spent` is a past-tense claim about money already handed over, and it is the one string in the product the person can check against a receipt in their pocket. Review needs the number (it is an input to a decision); wrapped is a recap, and a cost figure there invites arithmetic instead of reflection. Side effect: the grocery-list query the wrapped half needed is no longer owed. |
+| 2026-07-29 (S45) | **DEVIATION from build dependency 3: provenance is a nullable `picked_recipe_id` column, NOT a new `slotType` enum value.** A picked slot stays `slotType: "recipe"`; the `DINNER · PICKED` eyebrow derives from the column. Migration `0008`. | Griffin ratified. Three reasons, in order of weight. (1) **The enum value is dangerous**: `slotType === "recipe" \|\| slotType === "leftover"` is duplicated in **eight** places across client and server, two of them in the grocery collector — miss either and a meal the person *deliberately chose* silently never reaches the shop. A column changes none of the eight, because they all already include `"recipe"`. (2) **The column is needed anyway**: W9's "picks survive a regenerate" must re-pin *which* library recipe, and dependency 4 must warm *that* recipe's normalize cache — `recipeId` cannot serve, since hydration owns and overwrites it. An enum value carries no identity. (3) **The ledger is unharmed**: "provenance is type, not chrome" is a rendering rule about the eyebrow stating it the way it states DINNER, and it renders identically either way. The eight-way duplication is logged as its own cleanup rather than fixed here, since nothing now depends on it. |
+| 2026-07-29 (S45) | **Slice 2 split: W9's spine landed, W8/W10 did not.** Layer B found four real defects and fixing them took the session. | Deliberate, and stated rather than discovered: the picker is the *entry point* to a provenance model, and landing the model first means W8 arrives next session against `L1`–`L4` that already exist. Shipping both at once would have meant finding out which half was wrong with no coverage on either. |
 | 2026-07-27 (S43) | **Doc created; 1E.5 opened.** Split into **Slice 1** (Plan's own states, W1–W7) and **Slice 2** (library into plan, W8–W10). | Slice 1 depends on nothing in Slice 2 and is shippable alone; two reviewable `/visual-qa` passes beat one unreviewable diff — the same argument that split 1E.7 out of 1F. |
 | 2026-07-27 (S43) | **Library-into-plan formally enters R1 scope** as Slice 2, resolving the open question raised S41. It had been designed in full but never written into a scope doc. | Griffin's S41 words — *"That should be something that we include in R1"* — reaffirmed at S43. Recipes flow into the library four ways and nothing flows back out; the data spine (`meal_plan_slots.recipeId` → `recipes`) already supports it, so it is UI + a generation-prompt change, not a schema project. |
 | 2026-07-27 (S43) | **PULL-FORWARD: spec §12 item 04's floating-primary half moves 1F → 1E.5.** The `Add to this week` verb takes the Recipes screen's single floating primary, which requires deleting the 1D search/＋ toolbar and moving search into the header. Squaring the nav's top corners stays in 1F. | Required by the pull-forward rule in scope-v1. The verb cannot occupy the floating slot while the old toolbar is in it — the two are the same pixel. Sequencing them apart would mean building the Recipes bottom edge twice. |
