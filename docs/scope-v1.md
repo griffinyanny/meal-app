@@ -161,11 +161,17 @@ line here (a decision, not drift). Same for pushing R1 items out.
 ## Open release-scope questions
 
 1. Does 1F include a small closed beta beyond Griffin + wife, or is two-user validation enough to ship R1? (Decide during 1E.)
+   - **Still Griffin's call, but no longer blocked on build work (S43a).** The *mechanism* shipped
+     ahead of the decision: `SITE_ACCESS_CODE` + `ALLOWED_EMAILS` (see [decisions.md](decisions.md)).
+     Inviting a tester is now appending an email to an env var and sending them an `/invite?code=…`
+     link — no code change, no deploy of a diff. So the question is purely "do we want outside eyes
+     on R1," with the cost of saying yes reduced to near zero.
 
 ## Change log
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-28 | **Closed-beta access gate added to R1 (S43a), unplanned.** Two env-driven gates: `SITE_ACCESS_CODE` (404s the whole app, login screen included, without an invite cookie) and `ALLOWED_EMAILS` (who may hold an account). Both off when unset, so going public is deleting two env vars rather than a code change. | Griffin asked whether the production URL was publicly reachable. It was — signup was open to any Google account, with the OpenAI key exposed at 150 calls/day/user and no global cap. Unblocks the closed-beta question above at near-zero cost. |
 | 2026-07-10 | Doc created (S19). R1 boundary = solo-user MVP; S9 cuts (sharing UI, realtime, cook mode → V1.5) confirmed by Griffin. | Release-level visibility ask; reconciles master-plan text vs actual build scope |
 | 2026-07-10 (S19) | 1C → ✅ complete (2 of 6 → 3 of 6 phases done); 1D → next | All 13 1C items met; chip/variety quality verified on real model |
 | 2026-07-13 (S20) | Claude Design adopted as default design partner (replaces Figma Make); design-pass gate added to the workflow | Design system lives in code → Claude Design reads it directly; 1D Groceries is the first trial. See decisions.md + `docs/design/design-workflow.md` |
