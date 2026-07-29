@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import type { AIPlan, AIMeal, AIPlanModification, SlotType } from "@/lib/plan-schema";
+import { absorbRepeatedMethod } from "./absorb-method";
 
 // Pure schemas live in @/lib/plan-schema (client-safe). This module adds the
 // server-side bound-checking/sanitization that the strict-mode schema can't
@@ -144,7 +145,10 @@ export function validatePlan(
 
   meals.sort((a, b) => a.date.localeCompare(b.date));
 
-  return { chefSummary, meals };
+  // W1: a method covering four or more meals is the WEEK's, not each card's.
+  // Enforced here because two Layer-B rounds proved the prompt cannot hold it
+  // against an explicit "I want to grill" (absorb-method.ts).
+  return { chefSummary, meals: absorbRepeatedMethod(meals, chefSummary) };
 }
 
 export interface ValidatedModification {

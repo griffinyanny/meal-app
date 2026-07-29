@@ -131,6 +131,47 @@ export async function seedPlanState(
       })
       .returning();
 
+    // W9 · a picked slot points at a REAL library recipe, so the FK resolves and
+    // the row is genuinely what the picker will later produce. `sourcePlanId`
+    // stays null deliberately: a picked recipe came out of the deliberate
+    // library, not out of a plan draft, and that is exactly the distinction the
+    // staleness query (build dependency 1) reads.
+    const pickedTitles = spec.slots.filter((s) => s.picked).map((s) => s.title);
+    const pickedIdByTitle = new Map<string, string>();
+    if (pickedTitles.length > 0) {
+      const rows = await db
+        .insert(schema.recipes)
+        .values(
+          pickedTitles.map((title) => ({
+            householdId: ctx.householdId,
+            title: title ?? "Picked recipe",
+            // Not "plan_generated": this recipe existed BEFORE the plan and is
+            // the reason the slot looks the way it does. Getting this wrong
+            // would also put it in the Recipes tab's drafts shelf instead of
+            // the library it was chosen from.
+            sourceType: "ai_generated" as const,
+            servings: 4,
+            totalTimeMinutes: 40,
+            // Required, and real rather than empty on purpose: build dependency
+            // 4 says a picked recipe may have no `normalized_ingredients` cache,
+            // so the state that exercises pick-time cache warming next session
+            // needs actual ingredients to normalize.
+            ingredients: [
+              { qty: "150", unit: "g", item: "guanciale" },
+              { qty: "60", unit: "g", item: "pecorino" },
+              { qty: "3", unit: "", item: "eggs" },
+              { qty: "200", unit: "g", item: "spaghetti" },
+            ],
+            steps: [
+              { number: 1, text: "Render the guanciale." },
+              { number: 2, text: "Toss off the heat." },
+            ],
+          }))
+        )
+        .returning();
+      rows.forEach((r) => pickedIdByTitle.set(r.title, r.id));
+    }
+
     await db.insert(schema.mealPlanSlots).values(
       spec.slots.map((s) => ({
         householdId: ctx.householdId,
@@ -147,6 +188,9 @@ export async function seedPlanState(
         chips: s.chips,
         servings: s.servings,
         rationale: s.rationale,
+        pickedRecipeId: s.picked
+          ? (pickedIdByTitle.get(s.title ?? "") ?? null)
+          : null,
       }))
     );
 

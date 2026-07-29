@@ -67,6 +67,7 @@ export function StreamingPlan({
         feedback: null,
         recipeId: null,
         recipeStatus: "none",
+        pickedRecipeId: null,
       });
     }
   }

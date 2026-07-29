@@ -1,0 +1,3 @@
+ALTER TABLE "meal_plan_slots" ADD COLUMN "picked_recipe_id" uuid;--> statement-breakpoint
+ALTER TABLE "meal_plan_slots" ADD CONSTRAINT "meal_plan_slots_picked_recipe_id_recipes_id_fk" FOREIGN KEY ("picked_recipe_id") REFERENCES "public"."recipes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "meal_plan_slots_picked_recipe_id_idx" ON "meal_plan_slots" USING btree ("picked_recipe_id");

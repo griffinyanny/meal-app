@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import type { DisplayMeal } from "../plan-helpers";
 import { dayTitle } from "../plan-helpers";
 import {
@@ -98,8 +99,19 @@ export function PlanRail({
         );
       })}
 
+      {/* 56px is the EMPTY-DAY rail row height and it is sized for a day. This
+          is not a day — it is the week's closing line, and it only needs that
+          height when it carries the control. A draft renders no control (§D:
+          a draft's gaps aren't holes yet), so there the row is a caption and a
+          hairline floating in button-sized space, which is most of the void
+          Layer A flagged under the Start-over link (M2). */}
       {missing ? (
-        <div className="flex min-h-[56px] items-center gap-[11px]">
+        <div
+          className={cn(
+            "flex items-center gap-[11px]",
+            showAddControls && onAddDays ? "min-h-[56px]" : "min-h-[38px]"
+          )}
+        >
           {/* Empty rail gutter: the closing line is about the week, not a day. */}
           <div className="w-[38px] flex-none" />
           <div className="flex min-w-0 flex-1 items-center gap-2.5">

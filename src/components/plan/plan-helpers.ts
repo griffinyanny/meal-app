@@ -42,6 +42,13 @@ export interface DisplayMeal {
   // Background hydration: the linked full recipe (once ready) and its lifecycle.
   recipeId: string | null;
   recipeStatus: RecipeStatus;
+  /**
+   * The library recipe the PERSON chose for this night (W9). Distinct from
+   * `recipeId`, which hydration owns and overwrites — this one records a
+   * decision and survives it, which is what lets a pick outlive a regenerate.
+   * Null on everything the chef proposed itself.
+   */
+  pickedRecipeId: string | null;
 }
 
 export interface PlanSlot {
@@ -57,6 +64,7 @@ export interface PlanSlot {
   estCostCents: number | null;
   chips: string[] | null;
   servings: number | null;
+  pickedRecipeId: string | null;
   rationale: string | null;
   feedback: "thumbs_up" | "thumbs_down" | null;
   recipeId: string | null;
@@ -128,6 +136,7 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
     feedback: slot.feedback,
     recipeId: slot.recipeId,
     recipeStatus: slot.recipeStatus,
+    pickedRecipeId: slot.pickedRecipeId,
   };
 }
 
@@ -178,6 +187,9 @@ export function streamedMealToDisplay(
     feedback: null,
     recipeId: null,
     recipeStatus: "none",
+    // A streaming meal is always the chef's own proposal. A pick predates the
+    // generation it constrains, so it is never discovered mid-stream.
+    pickedRecipeId: null,
   };
 }
 

@@ -88,6 +88,26 @@ export const mealPlanSlots = pgTable(
     // Nullable on purpose: a week the model gave no number for renders no
     // number, never a zero — a zero is a claim, absence is the truth.
     estCostCents: integer("est_cost_cents"),
+    // The library recipe the PERSON chose for this night (Phase 1E.5 · W9).
+    //
+    // Provenance is deliberately NOT a slotType value. The ledger's "provenance
+    // is type, not chrome" is a rendering rule — the eyebrow states PICKED the
+    // way it states DINNER, instead of wearing a badge — and it is satisfied by
+    // deriving the eyebrow from this column. Encoding it in slotType instead
+    // would mean teaching all EIGHT copies of the
+    // `slotType === "recipe" || slotType === "leftover"` cookability test about
+    // a provenance concept, and missing either of the two in the grocery
+    // collector would silently drop a deliberately-chosen meal from the shop.
+    // A picked slot stays slotType "recipe", so every one of them already
+    // includes it. (Griffin ratified the deviation, S45.)
+    //
+    // It also carries what the enum value could not: WHICH recipe. W9's "picks
+    // survive a regenerate" has to re-pin it, and dependency 4 has to warm that
+    // recipe's normalize cache at pick time. `recipeId` cannot serve — hydration
+    // overwrites it.
+    pickedRecipeId: uuid("picked_recipe_id").references(() => recipes.id, {
+      onDelete: "set null",
+    }),
     chips: jsonb("chips").$type<string[]>().default([]),
     servings: integer("servings").default(2),
     rationale: text("rationale"),
@@ -103,5 +123,6 @@ export const mealPlanSlots = pgTable(
     index("meal_plan_slots_household_id_idx").on(table.householdId),
     index("meal_plan_slots_plan_id_idx").on(table.planId),
     index("meal_plan_slots_recipe_id_idx").on(table.recipeId),
+    index("meal_plan_slots_picked_recipe_id_idx").on(table.pickedRecipeId),
   ]
 );
