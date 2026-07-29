@@ -113,6 +113,13 @@ describe("shouldBlockRequest", () => {
     expect(shouldBlockRequest("/no-access-x", undefined, "secret")).toBe(true);
   });
 
+  it("should block robots.txt too, since a gated site shows nothing at all", () => {
+    // Deliberate: robots.txt is exempt from the SESSION redirect in the proxy
+    // (so crawlers can read it when the gate is off) but NOT from Gate 1.
+    expect(shouldBlockRequest("/robots.txt", undefined, "secret")).toBe(true);
+    expect(shouldBlockRequest("/robots.txt", undefined, null)).toBe(false);
+  });
+
   it("should exempt the exact path only, not everything beneath it", () => {
     expect(shouldBlockRequest("/invite/anything", undefined, "secret")).toBe(true);
     expect(shouldBlockRequest("/no-access/x", undefined, "secret")).toBe(true);

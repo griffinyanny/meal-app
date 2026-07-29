@@ -35,10 +35,18 @@ export async function updateSession(request: NextRequest) {
   // here because both are reached WITHOUT a session by design — /invite is the
   // step before signing in, and /no-access is shown immediately after being
   // signed out. Omitting them would bounce both to /login and strand the user.
+  //
+  // /robots.txt is here for the same reason and was caught in live verification:
+  // the proxy matcher excludes _next/* and image extensions but NOT .txt, so a
+  // crawler asking for robots.txt was being 307'd to /login and never read the
+  // Disallow. Kept INSIDE the matcher rather than excluded from it, so that
+  // Gate 1 still 404s it when the gate is on — when nothing is visible, robots
+  // .txt should not be either.
   const isAuthPage =
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname === "/invite" ||
     request.nextUrl.pathname === "/no-access" ||
+    request.nextUrl.pathname === "/robots.txt" ||
     request.nextUrl.pathname.startsWith("/auth");
 
   // Large sessions (e.g. Google OAuth) get chunked by @supabase/ssr into
