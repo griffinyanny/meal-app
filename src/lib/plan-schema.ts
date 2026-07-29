@@ -32,6 +32,14 @@ export const aiMealSchema = z.object({
   // because a model that will not guess must be able to say so — the surface
   // renders nothing rather than a zero.
   estCostCents: z.number().int().nullable(),
+  // Which picked recipe this meal IS, as a 1-based reference into the picks the
+  // prompt listed (Phase 1E.5 · W8). Null on a meal the chef chose itself.
+  //
+  // A NUMBERED REF, NEVER A DB ID — the same ID-safety pattern grocery-talk uses:
+  // the model is never shown a uuid and can never emit one, so a hallucinated
+  // identifier resolves to nothing instead of to somebody else's recipe. The
+  // server maps ref → id against the household-scoped list it sent.
+  pickedRef: z.number().int().nullable(),
   // Two short, meal-specific modification suggestions (e.g. "Make it spicier").
   chips: z.array(z.string()),
 });

@@ -1,5 +1,31 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S46) — surfaced building 1E.5 Slice 2 (W8 + W10)
+
+- **[V1.5, with household sharing] §B's who-clause on a picked meal.** The ledger draws
+  `Griffin's pick · 40 min · scaled to 3`, and the rule that provenance is **never a possessive in the
+  eyebrow** exists precisely *because* a second person will one day be in the household. The meta renders
+  `40 min · scaled to 2` today and stops there: the clause needs a display name, R1 has no surface that
+  holds one, and inventing a source to render "Griffin's" for a solo user builds the hardest half of a
+  V1.5 feature for zero present value. **Ships with household sharing UI**, where the name becomes real.
+- **[V1.5] §B's "too many picks → two options" conversation (frame `3m`).** `MAX_PICKS_PER_ASK` is 4 and
+  the picker will hand the chef four; what does not exist is the *conversation* — a pre-selected
+  recommendation ("two this week, two stay in your recipes") and its alternative, with the chef's reason
+  being a **cooking** reason rather than a capacity one. It is a distinct screen with its own primary, and
+  it only fires when the chef judges a week over-constrained — a judgement generation is not currently
+  asked to make. **Deliberately not built (S46)** rather than quietly skipped.
+- **[1F] The eight-way duplicated cookability test.** `slotType === "recipe" || slotType === "leftover"`
+  appears in eight places, two of them in the grocery collector. S45 chose a `picked_recipe_id` column
+  over a `slotType` enum value *partly* to avoid touching all eight — which means the duplication is still
+  there, still load-bearing, and still one missed call-site away from silently dropping a deliberately
+  chosen meal from the shop. Nothing depends on fixing it, which is exactly why it will not get fixed by
+  accident. One shared `isCookable()` predicate.
+- **[1F] The picker cannot reach a recipe that is not in `recipe.list`'s first 200.** The picker derives
+  from the same cached list the Recipes tab uses, capped at 200 by that query. Correct for V1 household
+  scale (dozens) and it keeps the picker free to open; it becomes wrong at a few hundred saved recipes,
+  and the failure is silent — the recipe simply is not there. Revisit with pagination or a dedicated
+  picker query if the library ever gets large.
+
 ## Incoming (S44) — surfaced building 1E.5 Slice 1
 
 - **[1E.5 Slice 2 / V1.5] The meal sheet's `Move it` group.** Wave 1's settled meal-sheet drawing carries

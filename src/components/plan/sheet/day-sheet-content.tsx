@@ -3,6 +3,7 @@
 import { type DisplayMeal, dayTitle } from "../plan-helpers";
 import { dayOfMonth, metaLine, shortDayName, type PlanDay } from "../rail-helpers";
 import {
+  LibraryDoor,
   SheetBody,
   SheetChip,
   SheetGroup,
@@ -10,6 +11,7 @@ import {
   SheetRow,
   SheetStatus,
 } from "./sheet-parts";
+import type { PickerInvocation } from "../picker/picker-content";
 
 // Day-level asks. These change the DAY rather than a dish, which is the whole
 // reason the day gets a sheet of its own — at one dinner a day the distinction
@@ -38,6 +40,7 @@ export function DaySheetContent({
   onModify,
   onTalkToChef,
   onOpenMeal,
+  onOpenPicker,
   isModifying,
   workingLabel,
   modifyError,
@@ -46,6 +49,7 @@ export function DaySheetContent({
   onModify: (request: string) => void;
   onTalkToChef: () => void;
   onOpenMeal: (meal: DisplayMeal) => void;
+  onOpenPicker: (invocation: PickerInvocation) => void;
   isModifying: boolean;
   workingLabel?: string;
   modifyError?: string | null;
@@ -95,6 +99,23 @@ export function DaySheetContent({
           label="Something else? Tell your chef"
           disabled={isModifying}
           onClick={onTalkToChef}
+        />
+      </SheetGroup>
+
+      {/* The picker, invoked from a DAY. Same door, same picker; only the first
+          line and the primary differ from the intent screen's (§A, `3e`). The
+          day carries no cook-time ceiling of its own, so nothing dims here. */}
+      <SheetGroup label="TAKE IT SOMEWHERE">
+        <LibraryDoor
+          sublabel={`I'll put it on ${dayTitle(day.dayName)}`}
+          onClick={() =>
+            onOpenPicker({
+              headline: `${dayTitle(day.dayName)} dinner, from your recipes`,
+              subline: cooking.length > 0 ? `Replacing ${cooking[0]!.title}` : null,
+              dayName: dayTitle(day.dayName),
+              replacingDate: day.date,
+            })
+          }
         />
       </SheetGroup>
 

@@ -131,6 +131,35 @@ export async function seedPlanState(
       })
       .returning();
 
+    // W8 · the library the picker reads. Inserted before the slots so a spec that
+    // performs a pick has something to pick, and with fixed ids so an assertion
+    // can name one.
+    if (spec.library && spec.library.length > 0) {
+      await db.insert(schema.recipes).values(
+        spec.library.map((r) => ({
+          id: r.id,
+          householdId: ctx.householdId,
+          title: r.title,
+          sourceType: r.sourceType,
+          // Never a plan draft: `sourcePlanId IS NULL` is half of build
+          // dependency 1's staleness query, and a library seeded as drafts would
+          // make the picker's opening content silently empty.
+          sourcePlanId: null,
+          lastCookedAt: r.lastCookedAt ? new Date(r.lastCookedAt) : null,
+          totalTimeMinutes: r.totalTimeMinutes,
+          servings: r.servings,
+          // Real ingredients, because build dependency 4 warms the normalize
+          // cache from them at pick time — an empty list would make the warm a
+          // silent no-op and the coverage a lie.
+          ingredients: [
+            { qty: "1", unit: "lb", item: "the main thing" },
+            { qty: "2", unit: "tbsp", item: "olive oil" },
+          ],
+          steps: [{ number: 1, text: "Cook it." }],
+        }))
+      );
+    }
+
     // W9 · a picked slot points at a REAL library recipe, so the FK resolves and
     // the row is genuinely what the picker will later produce. `sourcePlanId`
     // stays null deliberately: a picked recipe came out of the deliberate

@@ -4,6 +4,7 @@ import {
   buildUserContext,
 } from "@/server/ai/prompts/chef-system";
 import { aiPlanModificationSchema, type AIPlanModification } from "./plan-types";
+import { buildPicksBlock, type PickInput } from "./plan-picks";
 
 export interface CurrentMealSummary {
   dayOffset: number;
@@ -14,6 +15,10 @@ export interface CurrentMealSummary {
 export interface ModifyPlanInput {
   request: string;
   currentMeals: CurrentMealSummary[];
+  /** W8 · library recipes the person is adding to a week that already exists. */
+  picks?: PickInput[];
+  /** True when the request already names the night (`3e`). See buildPicksBlock. */
+  pickNightNamed?: boolean;
   dietaryFramework?: string;
   restrictions?: string[];
   dislikedFoods?: string[];
@@ -45,10 +50,20 @@ export async function modifyPlan(
     .map((m) => `Day ${m.dayOffset}: ${describeMeal(m)}`)
     .join("\n");
 
-  const body =
-    `<current_plan>\n${planLines}\n</current_plan>\n\n` +
-    `<user_request>\n${input.request.trim()}\n</user_request>\n\n` +
-    `Return only the changes.`;
+  const picks = buildPicksBlock(
+    input.picks ?? [],
+    input.householdSize,
+    input.pickNightNamed
+  );
+
+  const body = [
+    `<current_plan>\n${planLines}\n</current_plan>`,
+    `<user_request>\n${input.request.trim()}\n</user_request>`,
+    picks,
+    `Return only the changes.`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return generateStructured({
     task: "plan-modify",

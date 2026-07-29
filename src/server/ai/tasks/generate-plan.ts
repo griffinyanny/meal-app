@@ -3,6 +3,7 @@ import {
   buildUserContext,
 } from "@/server/ai/prompts/chef-system";
 import { aiPlanSchema } from "./plan-types";
+import { buildPicksBlock, type PickInput } from "./plan-picks";
 
 const WEEKDAYS = [
   "Sunday",
@@ -52,6 +53,8 @@ export interface PlanGenerationInput {
   /** ISO YYYY-MM-DD of dayOffset 0. Required: without it the model guesses. */
   weekStart: string;
   request?: string;
+  /** W8 · library recipes the person chose. A constraint, never a schedule. */
+  picks?: PickInput[];
   dietaryFramework?: string;
   restrictions?: string[];
   dislikedFoods?: string[];
@@ -82,12 +85,15 @@ export function buildPlanStreamParams(input: PlanGenerationInput) {
   // data, and buildPlanSystemPrompt() is asserted static (no interpolation).
   const dayMap = buildDayMap(input.weekStart);
 
+  // Picks go BELOW the request and ABOVE the instruction to plan, because they
+  // are the strongest constraint in the message and the last thing read before
+  // the ask carries the most weight. Same reason the day map sits where it does.
+  const picks = buildPicksBlock(input.picks ?? [], input.householdSize);
+
   return {
     task: "plan-generate" as const,
     system: buildPlanSystemPrompt(),
-    prompt: context
-      ? `${context}\n\n${dayMap}\n\n${intent}`
-      : `${dayMap}\n\n${intent}`,
+    prompt: [context, dayMap, picks, intent].filter(Boolean).join("\n\n"),
     schema: aiPlanSchema,
   };
 }

@@ -21,7 +21,10 @@ function scrollToMealDate(date: string | null): void {
 // "inline" is gone: the rail moved the chips off the card, so there is no
 // longer a modify that starts anywhere but a sheet. "day" is the day sheet
 // (§D, `1l`), which asks about the whole day rather than one dish.
-export type ModifySource = "chat" | "expanded" | "day";
+// "picker" is W8's: the person handed over a recipe rather than asking in words.
+// It is a source and not a separate machine because what lands is the same thing
+// — a rewritten week, a toast, and rows to highlight.
+export type ModifySource = "chat" | "expanded" | "day" | "picker";
 
 interface Pending {
   date: string | null;
@@ -31,9 +34,16 @@ interface Pending {
 
 interface ModifyError {
   message: string;
-  request: string;
-  scope: DisplayMeal | null;
   source: ModifySource;
+  /**
+   * How to run the same ask again.
+   *
+   * A closure rather than the request string, because a pick's ask is a list of
+   * recipe ids and a modify's is a sentence — and a retry that had to
+   * reconstruct which of those it was would be a third place the two could
+   * diverge.
+   */
+  replay: () => void;
 }
 
 export interface PlanModify {
@@ -48,6 +58,8 @@ export interface PlanModify {
     scope: DisplayMeal | null,
     source: ModifySource
   ) => void;
+  /** W8 · hand the chef recipes instead of a sentence. Same landing, same toast. */
+  runPick: (recipeIds: string[], replacingDate: string | null) => void;
   retry: () => void;
   cancelInFlight: () => void;
   dismissAck: () => void;
@@ -72,6 +84,15 @@ export function usePlanModify(
   // late modify response can't clobber a plan the user has since replaced.
   const token = useRef(0);
   const modifyMutation = trpc.plan.modify.useMutation();
+  const pickMutation = trpc.plan.pick.useMutation();
+  // BUILD DEPENDENCY 4 — WARM THE NORMALIZE CACHE AT PICK TIME, NOT AT CONFIRM.
+  //
+  // A library recipe may have no `normalized_ingredients`, and confirm is the one
+  // moment in the product where an AI round-trip is unaffordable — the exact
+  // latency BUG-004 exists to prevent. `bgAiProcedure` puts this on its own
+  // 30/min bucket so it can never 429 a user-visible call, and it is idempotent,
+  // so firing it on a recipe that is already cached costs one no-op query.
+  const normalizeMutation = trpc.plan.normalizeSlot.useMutation();
 
   // The changed-day highlight is a one-shot flash; clear it once it has faded.
   useEffect(() => {
@@ -125,9 +146,62 @@ export function usePlanModify(
           setPending(null);
           setModifyError({
             message: "That didn't take — try again?",
-            request,
-            scope,
             source,
+            replay: () => runModify(request, scope, source),
+          });
+        },
+      }
+    );
+  }
+
+  function runPick(recipeIds: string[], replacingDate: string | null) {
+    if (pending) return; // one active plan → one active change
+    setModifyError(null);
+    const issued = ++token.current;
+    setPending({
+      date: replacingDate,
+      label: "Working it into your week…",
+      source: "picker",
+    });
+    pickMutation.mutate(
+      {
+        recipeIds,
+        ...(replacingDate ? { replacingDate } : {}),
+      },
+      {
+        onSuccess: (data) => {
+          if (issued !== token.current) return;
+          utils.plan.current.setData(undefined, () => data.plan);
+          utils.plan.current.invalidate();
+          setChangedDates(data.changedDates);
+          // ALWAYS narrated, even when a night was named. The chef answering
+          // with a night IS the payoff of a pick (§B), and a person who tapped
+          // a recipe and got a silently rewritten row would never learn which
+          // night it landed on or why.
+          setAck({
+            text: data.chefResponse,
+            firstDate: data.changedDates[0] ?? null,
+          });
+          setPending(null);
+          onDone("picker");
+
+          // Fire-and-forget, after the week is on screen: the person is reading
+          // the placement while this fills the cache confirm would otherwise pay
+          // for. A failure here is a no-op — confirm re-normalizes that one
+          // recipe, which is the pre-W8 behaviour rather than a regression.
+          for (const slot of data.plan.slots) {
+            if (slot.pickedRecipeId && data.changedDates.includes(slot.date)) {
+              normalizeMutation.mutate({ slotId: slot.id });
+            }
+          }
+        },
+        onError: () => {
+          if (issued !== token.current) return;
+          setPending(null);
+          setModifyError({
+            message: "That didn't take — try again?",
+            source: "picker",
+            replay: () => runPick(recipeIds, replacingDate),
           });
         },
       }
@@ -138,7 +212,7 @@ export function usePlanModify(
     const err = modifyError;
     if (!err) return;
     setModifyError(null);
-    runModify(err.request, err.scope, err.source);
+    err.replay();
   }
 
   // Abandon any in-flight modify result — called when a fresh generation starts
@@ -188,6 +262,7 @@ export function usePlanModify(
     modifyError,
     toast,
     runModify,
+    runPick,
     retry,
     cancelInFlight,
     dismissAck: () => setAck(null),

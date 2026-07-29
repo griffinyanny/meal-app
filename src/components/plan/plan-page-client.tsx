@@ -20,6 +20,7 @@ import { usePlanHydration } from "./use-plan-hydration";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
 import type { PlanDay } from "./rail-helpers";
 import { takeHandoff } from "@/lib/onboarding/handoff";
+import { takePickHandoff } from "@/lib/plan/pick-handoff";
 import { seedChips } from "@/lib/onboarding/synthesize";
 import {
   type DisplayMeal,
@@ -65,6 +66,23 @@ export function PlanPageClient() {
   // Regenerate flow: routes back through the intent-capture screen so a new
   // plan carries fresh weekly intent instead of a blind reroll.
   const [intentMode, setIntentMode] = useState(false);
+
+  // W8 · recipes chosen on the intent screen, before any week exists. They are
+  // held here rather than written anywhere: there is no plan to attach them to
+  // yet, and the generation POST is where they become a constraint.
+  const [intentPicks, setIntentPicks] = useState<{ id: string; title: string }[]>(
+    []
+  );
+
+  // W10 · a recipe chosen on the Recipes tab when there was no week to put it
+  // in. Read once on mount, same as the onboarding hand-off and for the same
+  // reason it cannot be read during render: the server has no sessionStorage.
+  useEffect(() => {
+    const carried = takePickHandoff();
+    if (!carried) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIntentPicks([carried]);
+  }, []);
 
   // Hand-off from the onboarding interview (Phase 1E #4). The interview ends in
   // THIS screen, pre-filled — door #3, one way to start a week. Read once on
@@ -127,6 +145,7 @@ export function PlanPageClient() {
     modifyError,
     toast,
     runModify,
+    runPick,
     cancelInFlight,
     dismissAck,
     clearError,
@@ -181,7 +200,52 @@ export function PlanPageClient() {
     // Abandon any in-flight modify so its late result can't clobber the new plan.
     cancelInFlight();
     setIntentMode(false);
-    submitGeneration(request ? { request } : {});
+    sheet.close();
+    const pickedRecipeIds = intentPicks.map((p) => p.id);
+    submitGeneration({
+      ...(request ? { request } : {}),
+      ...(pickedRecipeIds.length > 0 ? { pickedRecipeIds } : {}),
+    });
+    // Cleared once handed over: they are now the week's, and leaving them here
+    // would re-apply them to the NEXT generation as well as this one. Picks the
+    // person wants carried across a regenerate are carried by the server, off
+    // the plan itself, which is the only place that stays true.
+    setIntentPicks([]);
+  }
+
+  // The picker, invoked from the intent screen — no week exists yet, so the
+  // choice is held locally and rides along with the generation POST.
+  function openIntentPicker() {
+    clearError();
+    sheet.openPicker({
+      headline: "Cook something you've saved",
+      subline: null,
+    });
+  }
+
+  // THE CHEF ANSWERS WITH A NIGHT (§B) — this never sends a day for the pick,
+  // only the night being displaced, which is a fact about the week rather than
+  // an instruction about where the recipe goes.
+  function handlePick(picks: { id: string; title: string }[]) {
+    const invocation = sheet.picker;
+    if (!invocation) return;
+
+    // On the intent screen there is no week to change: the pick becomes an input
+    // to generation instead. Two different verbs, one picker — which is the
+    // point of holding the invocation as data rather than as two components.
+    if (!plan || persistedMeals.length === 0 || intentMode) {
+      setIntentPicks((current) => {
+        const known = new Set(current.map((p) => p.id));
+        return [...current, ...picks.filter((p) => !known.has(p.id))];
+      });
+      sheet.close();
+      return;
+    }
+
+    runPick(
+      picks.map((p) => p.id),
+      invocation.replacingDate ?? null
+    );
   }
 
   // Free-form chef submit. When the sheet was opened scoped to a meal, anchor
@@ -219,6 +283,12 @@ export function PlanPageClient() {
     dismissAck();
     setIntentMode(true);
   }
+
+  // How many of the current week's nights are the person's own recipes — the
+  // number §B's survival guarantee is about.
+  const carriedPickCount = persistedMeals.filter(
+    (m) => m.pickedRecipeId != null
+  ).length;
 
   const isConfirmed = plan?.status === "confirmed";
   const hasPast = persistedMeals.some((m) => m.timeframe === "past");
@@ -292,6 +362,15 @@ export function PlanPageClient() {
           isGenerating={isStreaming}
           onCancel={() => setIntentMode(false)}
           replaceWarning={isConfirmed}
+          onOpenPicker={openIntentPicker}
+          picks={intentPicks}
+          onRemovePick={(id) =>
+            setIntentPicks((current) => current.filter((p) => p.id !== id))
+          }
+          // Read off the week being replaced, not off `intentPicks` — these are
+          // the picks the SERVER will carry forward, so the sentence and the
+          // behaviour come from the same fact.
+          carriedPickCount={carriedPickCount}
         />
       );
     }
@@ -395,6 +474,11 @@ export function PlanPageClient() {
         onGenerate={handleGenerate}
         isGenerating={isStreaming}
         seed={seed}
+        onOpenPicker={openIntentPicker}
+        picks={intentPicks}
+        onRemovePick={(id) =>
+          setIntentPicks((current) => current.filter((p) => p.id !== id))
+        }
       />
     );
   }
@@ -500,7 +584,21 @@ export function PlanPageClient() {
         }
         onTalkToChef={() => openChat(sheet.meal)}
         onOpenMeal={openExpanded}
-        isModifying={pending?.source === "expanded" || pending?.source === "day"}
+        onOpenPicker={(invocation) => {
+          clearError();
+          sheet.openPicker(invocation);
+        }}
+        onPick={handlePick}
+        // The picker's empty state hands back the action that works today (`3d`).
+        onGenerate={() => {
+          sheet.close();
+          handleGenerate(undefined);
+        }}
+        isModifying={
+          pending?.source === "expanded" ||
+          pending?.source === "day" ||
+          pending?.source === "picker"
+        }
         workingLabel={pending?.label}
         modifyError={
           modifyError && modifyError.source !== "chat" ? modifyError.message : null

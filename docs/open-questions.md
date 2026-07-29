@@ -6,6 +6,28 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### 🔴 OPEN — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
+
+**The framing changed in S46, and it changes what the options are.** This was written up as a copy-length
+problem with three fixes (cap the prompt at one sentence, clamp the render, drop the type size). Reading
+the frame first says it is none of them: **`3i` draws TWO strings** in the chef block — a short claim at
+22px cream (`Five dinners, one shop, nothing wasted.`) and the argument at 14.5px italic gold underneath.
+`chef-header.tsx` already has both props, and `week-wrapped-state.tsx` already passes both.
+**`plan-review.tsx` passes only `summary`**, and generation only ever emits one `chefSummary` — so both of
+the model's sentences land in the 22px heading and the gold slot renders nothing. The model is not
+overwriting; it was asked for one field and filled one field.
+
+**Recommendation: split the output.** `chefSummary` becomes the short claim with a ceiling enforced **in
+code** (BUG-033's lesson: a style clause loses to the request it competes with, and "is this string over N
+characters" is a string test), plus a `chefNote` carrying the argument into the `rationale` prop that
+exists. Costs about what the one-sentence cap costs and lands the frame rather than trimming to fit the bug.
+
+**Already done regardless (S46):** the seed states carry a realistically long summary now, so Layer A can
+see this whole class. It could not before — every seed was one short line, which is exactly why nine lines
+of 22px type had never appeared in a mock capture.
+
+---
+
 ### ✅ RESOLVED S45 — Where does `Start over →` belong on a draft? (raised S44)
 > **CLOSED 2026-07-29 (S45). It stays the foot link under the rail, with the gap tightened.**
 > Griffin took the recommendation. The argument that decided it: mid-week already uses this exact pattern

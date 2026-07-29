@@ -1,8 +1,169 @@
 # What's Next
 
-Last updated: 2026-07-29 (Session 45)
+Last updated: 2026-07-29 (Session 46)
 
-## ▶ NEXT SESSION — Layer B is CLEARED. **Quarantine GR7, then build W8 + W10.**
+## ▶ NEXT SESSION — 1E.5 is CODE-COMPLETE. **Close it: `/visual-qa` on Slice 2, then Layer B on the pick path.**
+
+**S46 fixed BUG-019 rather than quarantining it, and built W8 + W10.** Every workstream W1–W10 is now
+built; what remains are gates, not features. Scope doc: [scope-1E.5.md](scope-1E.5.md).
+
+Work is on **`session-43-1e5-plan-rebuild`, in a git worktree at `../meal-app-1e5`**. Tidy up with
+`git worktree remove ../meal-app-1e5` once this branch merges.
+
+**591 unit + 108 E2E green, lint + typecheck clean, migrations `0007` + `0008` applied.**
+**GR7 passed in the full sequential run** — the first time in four sessions, and the condition it actually
+failed under.
+
+### GR7 was never a timing problem. It was one specific race.
+
+The helper pressed down, crossed `@dnd-kit`'s 8px activation distance, then fired ~24 more `mousemove`s
+**back to back without ever waiting.** dnd-kit runs collision detection against a droppable-rect snapshot
+taken when the drag *starts* — so when React had not yet committed the drag-start render, every move
+resolved against nothing, `onDragEnd` got `over: null`, and the handler's first line returned early.
+**No mutation, no error, no request.** A silent no-op that looks exactly like a broken feature, losing the
+race only under load — which is precisely why it failed in full runs and passed in isolation every time.
+
+Fixed by making the lift observable (`data-dragging` on the section — there is no `DragOverlay` here, so
+"the drag is live" existed only as an opacity class), waiting on it, yielding a frame between moves, and
+asserting the **whole persisted aisle order** against the order before the drag so a no-op can no longer
+pass.
+
+### What W8 and W10 actually are
+
+**The picker is a third subject on the existing `PlanSheet`** — one drawer, content swapped in place, and
+`L12` asserts that rather than trusting it. Content rules live in a pure `picker-helpers.ts` (19 tests):
+`Saved, never cooked` as opening content with the chef *counting* them, four named doors with counts that
+**push**, an unfittable recipe **dimming with its reason** instead of vanishing.
+
+**Provenance travels as a `[N]` reference, never a DB id** — the `grocery.talk` pattern. The model sees
+`[1] Spaghetti alla Carbonara` and returns `pickedRef: 1`; the server maps it against the list it sent, so
+a hallucinated number resolves to nothing rather than to someone else's recipe.
+
+**Both remaining build dependencies landed.** Dep 2: the chef returns the scaled count and the meta reads
+`scaled to N` — **only where a scaling actually happened**, which `L10` pins by asserting a chef-proposed
+night in the same week still says `serves`. Dep 4: a picked slot is written `recipeStatus: "ready"` on the
+person's own recipe, which does two jobs — gives `normalizeSlot` something to warm off the confirm path,
+and stops hydration generating a fresh recipe over one the person deliberately chose.
+
+**W10 is both halves of `3l`.** The detail screen's `Add to this week` never asks for a day, and with no
+week to add to it **carries** the recipe to the intent screen rather than failing at a button that reads
+like it should work. The library's floating toolbar is deleted, search is in the header; `RC11` measures
+`position: fixed` under `main` rather than trusting a class name.
+
+### ⚠️ Two things I got wrong mid-build — both corrected, both worth knowing
+
+1. **I made "the chef answers with a night" unconditional, which turned frame `3e`'s own primary into a
+   lie.** `3e` reads **"Put it on Thursday"**. Tapping Thursday's dinner and having the chef put the
+   recipe somewhere else is not §B being honoured. The rule and the frame describe different invocations:
+   `3b` captions "The chef picks the nights"; `3e` names one, and tapping that meal *is* the person naming
+   it. A named night is honoured now; the chef still owns the rest of the week either way.
+2. **The generation fixture was prompt-blind, so "picks survive a regenerate" could not fail.**
+   `buildGenerationFixture()` took no arguments and returned the same seven dinners for every request — a
+   build that silently dropped every carried pick would have gone green. It reads the picks block now
+   (`L15`). **Third instance of this class in three sessions** (BUG-030's stale capture spec, S40's
+   `toContain` prompt test that passed silently). The rule they share: *the apparatus has to be able to
+   fail.*
+
+**And one spec I wrote wrong, which is worth knowing because the eyebrow is load-bearing.** `L15` asserted
+`DINNER · PICKED` on a regenerated pick, and got `DINNER · TONIGHT · PICKED` — the pick lands on *today*,
+so the relative label sits between the type and the provenance. The product was right; the assertion was.
+Fixed to assert the whole correct string rather than loosened to a substring, because §B's rule is that
+PICKED joins the **type line** and a looser match would pass on a badge rendered anywhere else on the row.
+The same failure output also showed `40 min · scaled to 2` surviving the regenerate, which `L15` now pins.
+
+### ⚠️ BUG-034 is still yours, and Layer A can finally see it
+
+**My read, unchanged: it is not a copy-length problem, it is an unwired field.** Frame `3i` draws two
+strings in the chef block at two sizes — a short claim at 22px cream (`Five dinners, one shop, nothing
+wasted.`) and the argument at 14.5px italic gold. `chef-header.tsx` already has both props, and
+`week-wrapped-state.tsx` passes both. **`plan-review.tsx` passes only `summary`**, and generation only
+emits one `chefSummary`, so both of the model's sentences land in the 22px heading and the gold slot
+beneath it renders nothing.
+
+**Recommendation: split the output** — `chefSummary` becomes the short claim with a ceiling enforced in
+code (BUG-033's lesson: a prompt clause loses to a competing pull), plus a `chefNote` carrying the
+argument into the `rationale` prop that already exists. Costs about what "cap it at one sentence" costs,
+and lands the frame instead of trimming to fit the bug.
+
+**Done regardless:** the seed states now carry a realistically long summary. Every seed used to say
+*"Your seeded test week, ready to review."* — one short line, which is exactly why nine lines of 22px type
+never appeared in a mock capture. That is not a fix; it is what lets Layer A see the whole class.
+
+### Three things deliberately NOT built — stated, not discovered
+
+- **§B's who-clause (`Griffin's pick`)** needs a display name R1 has no surface for. The rule that
+  provenance is never a possessive exists *because* a second person will one day be in the household —
+  so it ships with household sharing (V1.5), not before.
+- **§B's "too many picks → two options" (`3m`)** is a distinct screen with its own primary, and it only
+  fires when the chef judges a week over-constrained — a judgement generation is not currently asked to
+  make.
+- **`LIBRARY_EMPTY` did not become a seed state.** The wipe already empties the library, so `EMPTY` *is*
+  that state; a second name for identical rows is the duplication the rule targets.
+
+### ⭐ Next up: close the phase
+
+1. **`/visual-qa` Layer A on Slice 2's states** — the picker (opened, a tile pushed, multi-select, the
+   empty library), a picked row on the rail, and the Recipes bottom edge on **both** screens. Slice 1
+   cleared 0/0 in S44 and none of it was touched, so this is genuinely new surface.
+2. **Layer B on the pick path.** Two guarantees are prompt-shaped and therefore only paper: the chef
+   obeying a named night, and it stating the boundary in its own words. **Also still owed from S45:** the
+   absorption path has never fired live.
+3. **`ux-design-critic`, then your taste pass.** Then 1E.5 closes → M5.5, and 1F opens.
+
+### Also still open
+- **`DEV_TOOLS_EMAILS` in Vercel Production** — seventh session. Test mode is invisible and inert until
+  you set it.
+- **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path shows
+  a named failure or a spinner that never resolves.
+- **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape.
+
+**⭐ Model recommendation: Opus 4.8.** What is left is judgement against a locked spec — reading ~10 new
+screenshots and grading them against the six laws with the gold line as tie-breaker, then reading real
+model output for whether two prompt-shaped guarantees hold. That is exactly the work 4.8 has been good at
+across S40/S42/S45, and it is the same call that caught every Layer-B defect so far. No new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S46 closed BUG-019 by fixing it (GR7's three-session flake was a real race: the helper
+fired ~24 mousemoves without waiting for the lift, so dnd-kit collided against an unmeasured snapshot,
+onDragEnd got over:null, and the handler returned early — no mutation, no error, no request; now green in
+the FULL sequential run) and built W8 + W10, so 1E.5 is CODE-COMPLETE. The picker is a third subject on
+the existing PlanSheet (one drawer, content swapped in place); provenance travels as a [N] ref never a DB
+id; build dependencies 2 (scaled to N, only where a scaling happened) and 4 (normalize cache warmed at
+pick time) both landed; W10 deleted the Recipes floating toolbar and put `Add to this week` on the DETAIL
+screen. 591 unit + 108 E2E green, worktree at ../meal-app-1e5 on session-43-1e5-plan-rebuild.
+Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1E.5.md first, then give me the <=6-line scope
+check. Then close the phase: (1) /visual-qa Layer A on Slice 2's NEW states — the picker opened, a tile
+pushed, multi-select, the empty library, a picked row on the rail, and the Recipes bottom edge on both
+screens — iterate to 0 blockers/0 high; (2) Layer B on the pick path, because two guarantees are
+prompt-shaped and therefore only paper (the chef obeying a named night, and it stating the boundary in its
+own words), plus the absorption path still owed from S45 which has never fired live; (3) ux-design-critic,
+then hand me the taste pass. I still owe you the BUG-034 call — your read is that it's an unwired field
+(frame 3i draws two strings, chef-header has both props, plan-review passes only one), and I'll answer at
+the top. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs than run the gates):
+```
+Resume meal app — S46 closed BUG-019 and built W8 + W10, so 1E.5 is code-complete (see
+docs/whats-next.md). Skip the closing gates this session and clear the bug list instead, in this order:
+BUG-034 first (the chef summary pushes the first meal below the fold — your read is that it's an unwired
+field: frame 3i draws a short claim at 22px plus the argument at 14.5px italic gold, chef-header.tsx has
+both props, week-wrapped passes both, plan-review passes only summary, and generation only emits one
+string; split chefSummary into claim + note with the ceiling in code), then BUG-035 (a real generation
+timed out at 90s — find out whether that path shows a named failure or a spinner that never resolves),
+then BUG-020 and BUG-021 (a failed save reported as "All saved."; a failed skip that still walks the user
+out), then BUG-011/BUG-012 (householdSize <-> composition desync putting two contradictory numbers in one
+chef prompt). Read docs/whats-next.md + docs/bug-tracker.md first, give me the <=6-line scope check, keep
+591 unit + 108 E2E green. Worktree at ../meal-app-1e5 on session-43-1e5-plan-rebuild. On
+Opus 4.8.
+```
+
+---
+
+## ⚠️ S45 (superseded by S46 above — GR7 is fixed and W8/W10 are built)
+
+### Layer B was CLEARED and it found four real defects. Its "quarantine GR7, then build W8 + W10" brief was executed in S46.
 
 **S45 ran Layer B three times and it found four real defects.** All four are fixed and three are verified
 live. Slice 2's provenance spine landed; its two entry points did not. Scope doc:

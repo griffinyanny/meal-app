@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { AIPlan, AIMeal, AIPlanModification, SlotType } from "@/lib/plan-schema";
 import { absorbRepeatedMethod } from "./absorb-method";
+import { dedupePickedRefs } from "./plan-picks";
 
 // Pure schemas live in @/lib/plan-schema (client-safe). This module adds the
 // server-side bound-checking/sanitization that the strict-mode schema can't
@@ -37,6 +38,10 @@ export interface ValidatedMeal {
   estCostCents: number | null;
   servings: number;
   chips: string[];
+  // W8 · a 1-based reference into the picks this generation was given, or null.
+  // Still a REFERENCE at this layer: the caller resolves it against the picks it
+  // sent, because only the caller knows what it sent.
+  pickedRef: number | null;
 }
 
 export interface ValidatedPlan {
@@ -117,6 +122,17 @@ function validateMeal(
         : null,
     servings,
     chips: isCookable ? cleanStrings(meal.chips, MAX_CHIPS) : [],
+    // A pick is a dish the person is going to cook, so a ref on a night out or a
+    // skipped night is a model error rather than a fact — dropped, not carried.
+    // Range-checking happens where the picks are known (resolvePickedRecipeId);
+    // here we only reject what is not a positive integer at all.
+    pickedRef:
+      isCookable &&
+      meal.pickedRef != null &&
+      Number.isInteger(meal.pickedRef) &&
+      meal.pickedRef > 0
+        ? meal.pickedRef
+        : null,
   };
 }
 
@@ -148,7 +164,10 @@ export function validatePlan(
   // W1: a method covering four or more meals is the WEEK's, not each card's.
   // Enforced here because two Layer-B rounds proved the prompt cannot hold it
   // against an explicit "I want to grill" (absorb-method.ts).
-  return { chefSummary, meals: absorbRepeatedMethod(meals, chefSummary) };
+  return {
+    chefSummary,
+    meals: absorbRepeatedMethod(dedupePickedRefs(meals), chefSummary),
+  };
 }
 
 export interface ValidatedModification {
@@ -183,7 +202,7 @@ export function validateModification(
 
   return {
     chefResponse: mod.chefResponse.trim(),
-    changedMeals,
+    changedMeals: dedupePickedRefs(changedMeals),
     removedDates,
   };
 }

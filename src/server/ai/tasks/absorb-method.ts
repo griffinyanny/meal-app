@@ -88,15 +88,20 @@ function strip(title: string, method: string): string {
  * Pure and week-scoped: a modify diff cannot see the whole week, so this runs
  * on generation only.
  */
-export function absorbRepeatedMethod<T extends { title: string | null }>(
-  meals: T[],
-  chefSummary: string
-): T[] {
+export function absorbRepeatedMethod<
+  T extends { title: string | null; pickedRef?: number | null },
+>(meals: T[], chefSummary: string): T[] {
   const counts = new Map<string, number>();
   for (const meal of meals) {
     // A null title is an eating-out night or a provisional slot (W5). It has no
     // method to absorb and must survive this pass untouched.
     if (!meal.title) continue;
+    // A PICKED RECIPE'S TITLE IS NOT OURS TO EDIT (ledger §B: "it's your recipe,
+    // so I won't rewrite it"). The person's own "Grilled Cheese Three Ways" keeps
+    // its name even in a week that absorbed "Grilled" everywhere else — and it is
+    // excluded from the COUNT too, so their one recipe cannot be the fourth title
+    // that triggers a strip on the chef's other six.
+    if (meal.pickedRef != null) continue;
     const method = leadingMethod(meal.title);
     if (method) counts.set(method, (counts.get(method) ?? 0) + 1);
   }
@@ -119,7 +124,7 @@ export function absorbRepeatedMethod<T extends { title: string | null }>(
 
   const [method] = absorbed;
   return meals.map((meal) =>
-    meal.title && leadingMethod(meal.title) === method
+    meal.title && meal.pickedRef == null && leadingMethod(meal.title) === method
       ? { ...meal, title: strip(meal.title, method) }
       : meal
   );

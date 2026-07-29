@@ -131,7 +131,7 @@ through the real AI mock (deterministic `grocery-talk` fixture). Spec:
 | GR4 | GROCERY_READY | Check an item's checkbox | Item leaves its section → the single bottom GOT IT zone; progress advances; persists across reload | 🟢 |
 | GR5 | GROCERY_READY | Quick-add "Tomatoes"; then quick-add an existing item | New row inserts (optimistic + AI tidy); a duplicate shows the dedupe pill, no second row | 🟢 |
 | GR6 | GROCERY_READY | Toggle Grouped → Ungrouped, reload | Sections collapse to a flat list; the mode persists across reload | 🟢 |
-| GR7 | GROCERY_READY | Drag a section by its grip, reload | Aisle order changes and persists (`aisleOrder`) across reload | 🟢 |
+| GR7 | GROCERY_READY | Drag a section by its grip, reload | Aisle order changes and **the whole order** persists across reload — asserted as the full array, and against the order *before* the drag, so a no-op drag cannot pass. **Rewritten S46 (BUG-019 quarantine threshold)** | 🟢 |
 | GR8 | GROCERY_READY (3 active staples, 1 already on list) | Tap the "Olive oil" staple chip | Off-list staples show as chips (on-list garlic hidden); tap adds the item and the chip drops out of the row | 🟢 |
 | GR9 | GROCERY_READY | Open the chef (brain), pick "Add stuff for taco night", send | NL→ops adds the meal's items; the chef's reply shows; items land on the list | 🟢 |
 | GR10 | GROCERY_READY | Open the chef, pick "What am I out of?", send | Query-only: the reply shows, the list is unchanged (no ops applied) | 🟢 |
@@ -162,9 +162,12 @@ mechanics are deterministic; the cooked harvest runs server-side on list load. S
 | RC8 | RECIPES_LIBRARY | Tap ＋ → Generate | The create menu opens; Generate opens the "Ask your chef" dialog | 🟢 |
 | RC9 | RECIPES_COOKED_HARVEST | Open Recipes | A recipe with a past confirmed slot (no seeded `lastCookedAt`) is harvested into the cooked strip + out of drafts; an unrelated recipe stays out | 🟢 |
 | RC10 | RECIPES_EMPTY | Open Recipes | First-run empty state ("Your recipe library is empty") | 🟢 |
+| RC11 | RECIPES_LIBRARY | Open Recipes | **The library floats nothing** — search + ＋ are in the header, and a computed-style sweep finds **zero** `position: fixed` elements under `main`. Measured rather than asserted from a class name, because "floating" IS `position: fixed` (W10, spec §12 item 04) | 🟢 |
+| RC12 | RECIPES_LIBRARY | Open a recipe | The detail's one floating object is `Add to this week`, and **no dialog opens** — it never asks for a day (`3l`) | 🟢 |
+| RC13 | RECIPES_LIBRARY | Open a recipe → `Add to this week` | With no week to add to, the verb **carries** the recipe to the intent screen rather than failing at a button that reads like it should work | 🟢 |
 
-**Recipes: 10 passing**, 0 findings. **Full suite: 51 passing** (30 Plan + 11 Groceries
-+ 10 Recipes). Taste (does the tier split read calm, the double bottom-bar) → Griffin.
+**Recipes: 13 passing**, 0 findings. Taste (does the tier split read calm now the bottom
+bar is single) → Griffin.
 
 ---
 
@@ -198,13 +201,16 @@ S28 gate: 0 blockers, 0 high across all 11 Groceries+Recipes states.
 | C3 | A night nobody is cooking contributes nothing, and no `$0` appears anywhere | `CHOSEN_DAYS` | 🟢 |
 | C4 | A partially-priced week sums what it has and says so honestly | `PROVISIONAL` | 🟢 |
 
-### `L` — library into plan (Phase 1E.5 Slice 2, S45)
+### `L` — library into plan (Phase 1E.5 Slice 2, S45 + S46)
 
-Slice 2's entry points (W8's picker, W10's `Add to this week`) are **not built**. These four cover the
-**provenance spine** — the `picked_recipe_id` column and the eyebrow it drives — by seeding a pick rather
-than performing one. Deliberate: the ledger's provenance rule is a claim about *rendering*, true or false
-independently of how the pick got there, so writing it now means the picker lands next session against
-coverage that already exists instead of shipping both halves and guessing which one is wrong.
+**L1–L4 (S45) cover the provenance spine and SEED a pick rather than performing one.** Deliberate, and
+still true now that the picker exists: the ledger's provenance rule is a claim about *rendering*, true or
+false independently of how the pick got there, and a rendering rule asserted through a five-step
+interaction fails for five reasons of which only one is the rule.
+
+**L5–L14 (S46) cover the entry points** — W8's picker and W10's `Add to this week` — and those DO perform,
+end to end through the AI mock, because what they claim is a round trip: the person names the dish, the
+chef names the night.
 
 | ID | Case | Seed | Status |
 |----|------|------|--------|
@@ -212,10 +218,26 @@ coverage that already exists instead of shipping both halves and guessing which 
 | L2 | A chef-proposed meal **in the same week** carries no provenance — the half that makes L1 mean something, since an eyebrow that never varies is decoration | `PICKED` | 🟢 |
 | L3 | A picked meal's rationale argues **placement, not the dish** (§B) — catches a future generation change quietly making the chef review a recipe the person already chose | `PICKED` | 🟢 |
 | L4 | The boundary is **stated, not enforced silently**: "it's your recipe, so I won't rewrite it" | `PICKED` | 🟢 |
+| L5 | The picker opens on `Saved, never cooked` **as content**, and the chef's italic line COUNTS them (3 of 5) — a sentence saying "some" would be a sort order wearing a voice | `PICKABLE` | 🟢 |
+| L6 | Browse is four named doors **with counts**, and they **push**: through one, the tiles are gone and the view carries its own heading | `PICKABLE` | 🟢 |
+| L7 | A recipe that cannot fit the night **dims and says why** (3 hr vs a 30-minute night) instead of vanishing; the constraint becomes the one tile that swaps | `PICKABLE` | 🟢 |
+| L8 | **No action bar until something is selected**, `Clear` likewise; the count lives in the verb, and selections hold across a pushed tile | `PICKABLE` | 🟢 |
+| L9 | **The round trip** — picker → `plan.pick` → the chef's diff → `pickedRecipeId` → the eyebrow. The one spec that proves the whole chain | `PICKABLE` | 🟢 |
+| L10 | A picked night says `scaled to 2` (dep 2, recipe serves 4 / household 2) — **and a chef-proposed night in the same week still says `serves`**, which is what stops "scaled to" on everything from passing | `PICKABLE` | 🟢 |
+| L11 | The empty library **does not apologise**: no illustration, no "oops", search **enabled**, and the primary is the action that works today | `EMPTY` | 🟢 |
+| L12 | The picker **swaps content in one drawer**, never stacks a second — one `drawer-content` in the tree, and the page still works after close (the D3 symptom) | `PICKABLE` | 🟢 |
+| L13 | A pick made **before any week exists** is held, shown, and carried into generation — the third invocation, same picker, different verb | `PICKABLE` | 🟢 |
+| L14 | The survival guarantee is **stated before the ask**, on the screen whose button replaces the week | `PICKED` | 🟢 |
+| L15 | Picks survive a regenerate, **performed**: the week is freshly generated and the pick is still pinned with its provenance | `PICKED` | 🟢 |
 
-**Owed with W8/W10:** the picker opening on `Saved, never cooked`; the four tiles pushing; multi-select
-count in the verb; no action bar until selection; the empty library; an unfittable recipe dimming with a
-reason; `Add to this week` from the Recipes **detail** screen; picks surviving a regenerate.
+**L15 needed a change to the mock, and that change is the point.** `buildGenerationFixture()` took no
+prompt, so it answered every generation with the same seven chef-written dinners — meaning a regenerate
+that silently dropped every pick would have passed. It reads the picks block now. A fixture blind to the
+input cannot test a guarantee about the input.
+
+**Deliberately not covered, and why.** `LIBRARY_EMPTY` was planned as its own seed state and is not one:
+the wipe already leaves the library empty, so `EMPTY` (L11) *is* that state, and a second name for the
+same rows is the duplication the anti-duplication rule targets.
 
 ### ADVERSARIAL state (Plan, S37 — **re-pointed S44**)
 

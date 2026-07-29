@@ -4,6 +4,95 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 46 — 2026-07-29 (GR7 quarantined by fixing it; W8 + W10 built — Slice 2 complete)
+
+**The job:** clear BUG-019 at its quarantine threshold, then build Slice 2's two entry points and extend
+the `L` family to cover them. All three done. **1E.5 is now code-complete** — every workstream W1–W10 is
+built, and what remains are gates, not features.
+
+### BUG-019 is closed, and the cause was a race rather than timing noise
+
+Three sessions of "GR7 is flaky" turned out to be one specific bug in the test. The helper pressed down,
+crossed `@dnd-kit`'s 8px activation distance, then fired ~24 more `mousemove`s **back to back without ever
+waiting**. dnd-kit runs collision detection against a droppable-rect snapshot taken when the drag *starts*
+— so when React had not yet committed the drag-start render, every move resolved against nothing,
+`onDragEnd` received `over: null`, and the handler's first line returned early. **No mutation, no error, no
+request**: a silent no-op that looks exactly like a broken feature, losing the race only under load, which
+is precisely why it failed in full runs and passed in isolation every single time.
+
+Three changes, and one of them is in product code on purpose. `GrocerySection` now carries
+`data-dragging` — there is no `DragOverlay` in this build, so "the drag is live" existed only as an opacity
+class, and a test that has to guess when the library has measured itself will keep guessing wrong.
+Asserting on `opacity-40` would couple the suite to styling; exposing the state is smaller and honest. The
+helper then **waits for that state** before moving and yields a frame between moves. And the assertion now
+reads the **whole persisted aisle order** and compares it against the order before the drag, so a no-op
+drag can no longer pass at all.
+
+**Verified where it actually reproduced:** green in the full sequential suite, not only in isolation.
+
+### W8 — the picker, as a third subject on the existing sheet
+
+Built as settled: **one drawer, content swapped in place**. Stacking would have put two vaul drawers in the
+tree for the length of an exit animation, which is the D2/D3 class of bug, and §D allows one floating
+layer. `L12` asserts it rather than trusting it — one `drawer-content` in the tree, and the page still
+usable after close.
+
+The rules that carry weight are all content rules, so they live in a pure `picker-helpers.ts` with 19
+tests: `Saved, never cooked` as the opening **content** (with the chef *counting* them — a line saying
+"some" would be a sort order wearing a voice), four named doors with counts that **push**, and an
+unfittable recipe **dimming with its reason** instead of vanishing.
+
+Server side, a pick is the same operation as a modify — ask the chef for a diff, then write it — so
+`plan.modify` and the new `plan.pick` both run through an extracted `applyPlanChange`. Provenance travels
+as a **`[N]` reference**, never a DB id: the model sees `[1] Spaghetti alla Carbonara`, returns
+`pickedRef: 1`, and the server maps it against the list it sent. Same ID-safety pattern as `grocery.talk`,
+and a hallucinated number resolves to nothing instead of to someone else's recipe.
+
+**Both remaining build dependencies landed.** Dep 2 (servings scaling is a generation task): the chef
+returns the scaled count and the meta says `scaled to 2` — **and only where a scaling actually happened**,
+which `L10` pins by asserting a chef-proposed night in the same week still reads `serves`. Dep 4 (warm the
+normalize cache at pick time): a picked slot is written `recipeStatus: "ready"` pointing at the person's own
+recipe, which does two jobs — it gives `normalizeSlot` something to warm off the confirm path, and it stops
+the hydration walker generating a fresh recipe over the top of a recipe the person chose.
+
+### W10 — both halves of frame `3l`
+
+**Detail:** `Add to this week`, the one floating object, which never asks for a day. With no week to add
+to it **carries** the recipe into the intent screen rather than failing at a button that reads like it
+should work. **Library:** `recipe-toolbar.tsx` deleted, search into a new header, `＋` a 44px icon button.
+`RC11` measures `position: fixed` under `main` rather than trusting a class name — "floating" *is* that
+property, and a class-name assertion would pass on a toolbar that had been restyled rather than removed.
+
+### Two things I got wrong mid-build and corrected
+
+1. **I implemented "the chef answers with a night" unconditionally, which made frame `3e`'s primary a lie.**
+   `3e` reads **"Put it on Thursday"**. Tapping Thursday's dinner and having the chef move the recipe
+   elsewhere is not §B being honoured, it is a button lying. The rule and the frame agree once you read
+   which invocation each describes: `3b` captions "The chef picks the nights"; `3e` names one. A named
+   night is now honoured; the chef still owns the rest of the week either way.
+2. **The generation fixture was prompt-blind, so "picks survive a regenerate" could not fail.**
+   `buildGenerationFixture()` took no arguments and returned the same seven dinners for every request — a
+   regenerate that silently dropped every pick would have passed. It reads the picks block now (`L15`).
+   Same class of gap as BUG-030 and the S40 prompt test that passed silently: **the apparatus has to be
+   able to fail.**
+
+### Layer A is no longer blind to BUG-034
+
+Every seed said *"Your seeded test week, ready to review."* — one short line, which is why nine lines of
+22px type never showed up in a mock capture. The seeds now carry a realistically long summary. **This is
+not a fix for BUG-034** (that is Griffin's call, and my read is below); it is what makes the bug visible to
+the layer whose job is catching it.
+
+### Three things deliberately NOT built, stated rather than discovered
+
+§B's **who-clause** (`Griffin's pick`) needs a display name R1 has no surface for — household sharing is
+V1.5, and the rule exists *because* a second person will one day be there. §B's **"too many picks"**
+conversation (`3m`) is a distinct screen needing a judgement the chef is not currently asked for.
+**`LIBRARY_EMPTY`** did not become a seed state because the wipe already produces it and `EMPTY` *is* that
+state. All three are in scope-1E.5 and the backlog rather than in nobody's head.
+
+---
+
 ## Session 45 — 2026-07-29 (Layer B: four defects; Slice 2's spine)
 
 **The job:** run Layer B against Slice 1, judge W1's title rule and W6's cost output on real content, then

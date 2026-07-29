@@ -273,17 +273,21 @@ and a migration.
 
 ## Acceptance criteria — M5.5
 
-- [ ] **Slice 1:** W1–W7 built in real shadcn/Tailwind on the `--spec-*` tokens. Never a paste of the
-      generated `.dc.html`.
-- [ ] **Slice 2:** W8–W10 built; all five build dependencies honoured.
-- [ ] **Every ledger bullet traces to code or to an explicit deferral in this doc.** The ledger is the
-      contract; drift from it is noise to correct, not a decision.
-- [ ] **BUG-006, BUG-008, BUG-009 closed** (their resolutions were designed in S41 and are specified in
+- [x] **Slice 1:** W1–W7 built in real shadcn/Tailwind on the `--spec-*` tokens. Never a paste of the
+      generated `.dc.html`. **(S44)**
+- [x] **Slice 2:** W8–W10 built; all five build dependencies honoured. **(W9 spine S45; W8/W10 S46.)**
+      Deps 1/3/5 landed with the spine, deps 2 and 4 with the picker. Dep 3 was ratified as a **deviation**
+      (a `picked_recipe_id` column rather than a `slotType` value) — see the change log.
+- [x] **Every ledger bullet traces to code or to an explicit deferral in this doc.** Three §A/§B bullets are
+      deferrals rather than code (the who-clause, the too-many-picks conversation, `Move it`), each with its
+      reason above.
+- [x] **BUG-006, BUG-008, BUG-009 closed** (their resolutions were designed in S41 and are specified in
       W7, W1, and W5 respectively).
-- [ ] **480 unit + 78 E2E stay green** — no regression in the shipped mechanics (D1-D7, RG1-RG5, M1-M7,
-      E1-E4, X1-X2, RC1-RC10).
-- [ ] **The specs are extended for every new Plan state** (see below). A feature isn't done until its
-      mechanics are covered.
+- [x] **No regression in the shipped mechanics** (D1-D7, RG1-RG5, M1-M7, E1-E4, X1-X2, GR1-GR11, RC1-RC10).
+      **591 unit + 108 E2E green (S46)**, up from the 480+78 this criterion was written against. **GR7's
+      three-session flake (BUG-019) is fixed rather than quarantined**, and green in the full sequential
+      run — the condition it actually failed under.
+- [x] **The specs are extended for every new Plan state.** New `P`, `C` and `L` families; `L` runs to 15.
 - [ ] **`/visual-qa` Layer A** at 0 blockers / 0 high across every Plan state, graded against the spec's
       six laws with the gold line as tie-breaker.
 - [ ] **`/visual-qa` Layer B** (real model) — W1's title rule and W6's cost output both change generation,
@@ -343,11 +347,13 @@ defects, so the state must be re-pointed at what is ugly under the *new* rules.
 
 ## Build status
 
-**Slice 1 is CODE-COMPLETE (S44).** Branch `session-43-1e5-plan-rebuild`.
-**538 unit + 91 E2E — 90 green, lint + typecheck clean, migration `0007` applied.**
-The one red is **GR7**, the known `@dnd-kit` drag flake (**BUG-019, recurrence #2**): it passed in isolation
-immediately after (14/14 Groceries), nothing in S43 or S44 touched Groceries, and every other GR spec was
-green in the same run. One more recurrence and the tracker's own rule quarantines it.
+**THE PHASE IS CODE-COMPLETE (S46) — every workstream W1–W10 is built.** Branch
+`session-43-1e5-plan-rebuild`, worktree `../meal-app-1e5`.
+**591 unit + 108 E2E green, lint + typecheck clean, migrations `0007` + `0008` applied.**
+**GR7 is green in the full sequential run** — BUG-019 was fixed rather than quarantined at its third
+recurrence, and it is now verified in the exact condition it failed under rather than only in isolation.
+What remains are gates (visual-QA on Slice 2's states, Layer B on the pick path, the critic, Griffin's
+taste), not features.
 
 | WS | State | Note |
 |---|---|---|
@@ -358,12 +364,28 @@ green in the same run. One more recurrence and the tracker's own rule quarantine
 | **W5** generation | ✅ | `streaming-plan.tsx` is the rail + `CountSlot`. **BUG-009 closed** (gated by `P4`). |
 | **W6** cost | ✅ **CLOSED (S45)** | `est_cost_cents` + migration `0007`, Zod → validator → `toSlotValues` → `DisplayMeal` → the review sum, prompt rule, four assertions, gated by `C1`–`C4`. **The week-wrapped half is descoped, not owed** — Griffin's S45 call was to drop the number from wrapped entirely and keep cost on review (see change log). Wrapped rendering no cost is now the intended state rather than a gap. |
 | **W7** meal sheet | ✅ | **BUG-006 closed.** One `PlanSheet` drawer, two subjects; `sheet-parts.tsx` is the shared shell. Day sheet (`1l`) ships. Gated by `P7`/`P8`. |
-| **W9** picked meal | 🔨 **spine only (S45)** | `picked_recipe_id` + migration `0008` (applied), threaded slot → `DisplayMeal` → the eyebrow, which now derives `DINNER · PICKED` from data rather than the prop S44 left unwired. New `PICKED` seed state (a real library recipe, real FK) + `L1`–`L4`. **Provenance renders; nothing can create a pick yet** — that is W8/W10. §B's servings line ("scaled to 3") and the who-clause wait for a picker that knows whose pick it is. |
-| **W8** picker | ⬜ | Approach settled, not built: a **third subject on the existing `PlanSheet`**, swapping content in place when invoked from a meal sheet rather than stacking a second drawer (D2's vaul pointer-events class of bug, and §D's one-floating-layer rule, both argue against stacking). |
-| **W10** verb + Recipes edge | ⬜ | Frame `3l` resolved an ambiguity in the scope text: it is the Recipes **detail** screen that gets `Add to this week` in the floating primary. "FAB deleted, search moved to the header" is the **library** screen's half. |
+| **W9** picked meal | ✅ **(S46)** | Spine landed S45 (`picked_recipe_id` + migration `0008`, `DINNER · PICKED` derived from data, `L1`–`L4`). **S46 completed it:** picks are now creatable, §B's servings line renders as `scaled to N` (and *only* where the chef actually scaled — `serves N` otherwise), the boundary sentence comes from the chef, and picks survive a regenerate for real (`L15`). ⚠️ **The who-clause (`Griffin's pick`) is deliberately NOT built** — see the deferral note below. |
+| **W8** picker | ✅ **(S46)** | A **third subject on the existing `PlanSheet`** as settled — one drawer, content swapped in place. `picker-helpers.ts` (pure: tiers, tiles, fit, verb) + `picker-content.tsx` + `LibraryDoor` in `sheet-parts.tsx`, dropped verbatim into all three invocations. Server: `plan.pick` on `applyPlanChange`, a `[N]`-ref `pickedRef` in both AI schemas, and picks carried through generation. Gated by `L5`–`L15`. |
+| **W10** verb + Recipes edge | ✅ **(S46)** | Both halves. **Detail:** `Add to this week` as the one floating object; it never asks for a day, and with no week to add to it carries the recipe to the intent screen rather than failing. **Library:** `recipe-toolbar.tsx` **deleted**, search into a new `recipe-header.tsx`, `＋` a 44px icon button beside it. Gated by `RC11`–`RC13`, where RC11 measures `position: fixed` rather than trusting a class name. |
 
-**Gates:** unit ✅ · E2E ✅ · `P`/`C` specs ✅ · seed states ✅ · `ADVERSARIAL` re-pointed ✅ ·
-`/visual-qa` Layer A ⬜ · Layer B ⬜ · critic ⬜ · Griffin's taste ⬜.
+**Gates:** unit ✅ · E2E ✅ · `P`/`C`/`L` specs ✅ · seed states ✅ · `ADVERSARIAL` re-pointed ✅ ·
+`/visual-qa` Layer A ✅ (Slice 1) / ⬜ (Slice 2's states) · Layer B ✅ (Slice 1) / ⬜ (the pick path) ·
+critic ⬜ · Griffin's taste ⬜.
+
+### Three things W8/W10 did NOT build, stated rather than discovered (S46)
+
+1. **§B's who-clause (`Griffin's pick · 40 min · scaled to 3`) is not built.** The meta renders
+   `40 min · scaled to 3`. The clause needs a display name for the person who picked, and R1 has no such
+   surface — household sharing UI is V1.5, and the rule exists *because* a second person will one day be
+   in the household. Inventing a name source to render "Griffin's" for a solo user would be building the
+   V1.5 feature's hardest half for zero present value. **Owed with household sharing.**
+2. **§B's "too many picks → two options" (frame `3m`) is not built.** `MAX_PICKS_PER_ASK` is 4 and the
+   picker will happily hand the chef four; what does not exist is the *conversation* — the pre-selected
+   recommendation and its alternative. It is a distinct screen with its own primary, and it only fires on
+   a week the chef judges over-constrained, which needs a judgement the chef is not currently asked for.
+   **Logged to the backlog, not silently skipped.**
+3. **`LIBRARY_EMPTY` did not become a seed state.** The wipe already empties the library, so `EMPTY` is
+   that state; a second name for identical rows is duplication. See test-plan.
 
 ### What Layer B found (S45) — the gate earned its keep for the third phase running
 
@@ -391,7 +413,24 @@ roughly 30% under a real shop. Under-estimating is the worse direction. Two chea
 them: price the whole meal rather than the headline protein, and name the servings count in the cost
 instruction. Not a blocker — the review row is honest about being an estimate.
 
-### What Slice 1 still owes
+### What the PHASE still owes (S46 — every workstream is built)
+
+1. **`/visual-qa` Layer A on Slice 2's states** — the picker (opened, a tile pushed, multi-select, the
+   empty library), a picked row on the rail, and the Recipes bottom edge on both screens. Slice 1's Layer A
+   cleared at 0/0 in S44 and none of it was touched.
+2. **A Layer B round on the pick path.** Two things are guarantees on paper: the chef obeying a named
+   night, and it stating the boundary in its own words. Both are prompt-shaped, and the S40/S45 precedent
+   is that prompt-shaped guarantees fail on the real model in ways the mock cannot show. **Still owed from
+   S45:** the absorption path (`absorb-method.ts` is unit-tested against round 2's exact output, but round
+   3 produced no method-opening titles, so the code has never fired live).
+3. **BUG-034 wants Griffin's decision** — see the read in whats-next. The seeds now carry a realistic
+   summary, so Layer A can finally see the class even before the call is made.
+4. **The `Move it` group** (`Move to another day` / `Skip tonight`) is drawn in wave 1's meal sheet and is
+   in none of W7's scope bullets; drag-to-move is explicitly V1.5 and `Move to another day` needs a day
+   picker that is neither drawn nor scoped. **Deliberately not built.**
+5. **`ux-design-critic` pass, then Griffin's taste review.**
+
+### What Slice 1 still owed (S45 — all but BUG-034 now closed)
 
 1. ~~`/visual-qa` Layer A, then Layer B~~ — **both done.** Layer A cleared 0 blockers / 0 high (S44);
    Layer B ran three rounds in S45 and is written up above.
@@ -421,6 +460,9 @@ for the "migrate before you build further" ordering, in evidence.
 
 | Date | Change | Why |
 |---|---|---|
+| 2026-07-29 (S46) | **`3e`'s named night is HONOURED, not treated as a hint.** When the picker is opened from a specific meal, `plan.pick` tells the chef to put the recipe on that night; every other invocation sends no day and the chef chooses. | Caught mid-build as a contradiction I had written myself. §B says "the chef answers with a night", and I had implemented that unconditionally — but `3e`'s primary reads **"Put it on Thursday"**, and tapping Thursday's dinner only to have the chef move it elsewhere makes that button a lie. The rule and the frame are not in conflict once you read which invocation each describes: `3b` (intent screen) captions "The chef picks the nights"; `3e` names one. The chef still owns the rest of the week in both. |
+| 2026-07-29 (S46) | **The E2E generation fixture now reads the prompt.** `buildGenerationFixture()` took no arguments and returned the same seven dinners for every request. | Required to test §B's "picks survive a regenerate" at all. A regenerate that silently dropped every pick would have passed against a prompt-blind fixture — the fixture cannot verify a guarantee about an input it never sees. This is the same class of gap as BUG-030 (a stale capture spec) and the S40 prompt test that passed silently: **the apparatus has to be able to fail.** |
+| 2026-07-29 (S46) | **`GrocerySection` gained `data-dragging`** — a test hook in product code, deliberately. | BUG-019's real cause was a race the suite could not see: with no `DragOverlay` in this build, "the drag is live" existed only as an opacity class, so a pointer-driven test had to guess when `@dnd-kit` had measured its droppables. Asserting on `opacity-40` would couple the suite to styling; exposing the state itself is the smaller commitment and the honest one. |
 | 2026-07-29 (S45) | **W6's week-wrapped cost is DESCOPED — the number comes off wrapped entirely.** Cost now lives only on the review consequence line and the confirmed week's grocery row, both of which say "estimate" in their own words. W6 → closed. | Griffin's call, taking the recommendation. The asymmetry decides it: a forecast cannot be falsified, but `$94 spent` is a past-tense claim about money already handed over, and it is the one string in the product the person can check against a receipt in their pocket. Review needs the number (it is an input to a decision); wrapped is a recap, and a cost figure there invites arithmetic instead of reflection. Side effect: the grocery-list query the wrapped half needed is no longer owed. |
 | 2026-07-29 (S45) | **DEVIATION from build dependency 3: provenance is a nullable `picked_recipe_id` column, NOT a new `slotType` enum value.** A picked slot stays `slotType: "recipe"`; the `DINNER · PICKED` eyebrow derives from the column. Migration `0008`. | Griffin ratified. Three reasons, in order of weight. (1) **The enum value is dangerous**: `slotType === "recipe" \|\| slotType === "leftover"` is duplicated in **eight** places across client and server, two of them in the grocery collector — miss either and a meal the person *deliberately chose* silently never reaches the shop. A column changes none of the eight, because they all already include `"recipe"`. (2) **The column is needed anyway**: W9's "picks survive a regenerate" must re-pin *which* library recipe, and dependency 4 must warm *that* recipe's normalize cache — `recipeId` cannot serve, since hydration owns and overwrites it. An enum value carries no identity. (3) **The ledger is unharmed**: "provenance is type, not chrome" is a rendering rule about the eyebrow stating it the way it states DINNER, and it renders identically either way. The eight-way duplication is logged as its own cleanup rather than fixed here, since nothing now depends on it. |
 | 2026-07-29 (S45) | **Slice 2 split: W9's spine landed, W8/W10 did not.** Layer B found four real defects and fixing them took the session. | Deliberate, and stated rather than discovered: the picker is the *entry point* to a provenance model, and landing the model first means W8 arrives next session against `L1`–`L4` that already exist. Shipping both at once would have meant finding out which half was wrong with no coverage on either. |

@@ -4,6 +4,57 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-29 (S46) — Who names the night depends on which invocation of the picker you used
+
+**Decision.** `plan.pick` honours a night the person named, and chooses one otherwise. Opened from a meal
+(frame `3e`), the recipe lands on that meal's night. Opened from the intent screen (`3b`) or from
+`Add to this week` on a recipe (`3l`), the chef picks. The chef rebuilds the rest of the week in every case,
+and there is no free-text `date` input — the only way to name a night is to have opened the picker from one.
+
+**Rationale.** §B's "the chef answers with a night and a reason" was implemented unconditionally first,
+and that made frame `3e`'s own primary — **"Put it on Thursday"** — a lie: tap Thursday's dinner, get the
+recipe somewhere else. The rule and the frame are not actually in conflict; they describe different
+invocations. `3b` captions "The chef picks the nights"; `3e` names one, and the person naming it *is* the
+act of tapping that meal. Honouring it is not a scheduler creeping in, because there is still no control
+anywhere that says "put this on a day of my choosing" — the day comes from where you already were.
+
+**Future impact.** If drag-to-move ever ships (V1.5), it inherits this shape: the day is implied by the
+gesture, never entered into a field. And the "constraint, not scheduler" framing survives, which is what
+keeps the picker on-thesis.
+
+---
+
+## 2026-07-29 (S46) — A test hook belongs in product code when the alternative is guessing
+
+**Decision.** `GrocerySection` renders `data-dragging` when `@dnd-kit` reports the section lifted, purely
+so the E2E suite can wait on it.
+
+**Rationale.** BUG-019 survived three sessions because the drag's real state was unobservable. There is no
+`DragOverlay` in this build, so "the drag is live" existed only as an `opacity-40` class — and a
+pointer-driven test that cannot see the lift has to *guess* when dnd-kit has measured its droppables,
+which is exactly the race that made GR7 flake. Two ways out: assert on the opacity class, which couples the
+suite to styling and breaks on the next design pass; or expose the state itself. The second is a smaller
+commitment and an honest one — the attribute says what is true, not what it looks like.
+
+**Future impact.** The precedent is narrow on purpose: expose *state* the test needs to synchronise on,
+never behaviour that only exists for tests. Drag-to-move (V1.5) will want the same hook on meal rows.
+
+---
+
+## 2026-07-29 (S46) — A fixture that cannot see its input cannot test a guarantee about that input
+
+**Decision.** `buildGenerationFixture()` takes the prompt text and honours a `<picked_recipes>` block.
+
+**Rationale.** §B guarantees picks survive a regenerate. Regenerate deletes the current plan outright, so
+the guarantee lives entirely in reading picks off the old week before the delete — and a fixture that
+returned the same seven dinners regardless of input would have passed a build where that carry-forward had
+been deleted. Nothing on screen would look broken; the person would quietly get a week of the chef's own
+dinners. This is the third instance of the same class in three sessions (BUG-030's stale capture spec,
+S40's `toContain` prompt test that passed silently), and the rule they share is: **the apparatus has to be
+able to fail.** Before trusting a green test, ask what change would turn it red.
+
+---
+
 ## 2026-07-29 (S45) — Cost is a forecast, so it only appears where a decision is pending
 
 **Decision.** The week-wrapped screen renders **no cost figure**. The estimate appears on the draft's

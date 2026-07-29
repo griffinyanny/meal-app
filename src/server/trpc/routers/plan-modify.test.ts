@@ -182,6 +182,7 @@ describe("planRouter.modify", () => {
           tags: [],
           estTimeMinutes: 20,
           estCostCents: 1200,
+          pickedRef: null,
           servings: null,
           chips: [],
         },
@@ -207,7 +208,13 @@ describe("planRouter.modify", () => {
     const result = await caller.modify({ request: "Swap Monday's dinner for burgers" });
 
     expect(result.chefResponse).toBe("Sure, swapping Monday's dinner for burgers.");
-    expect(result.plan).toEqual({ ...existingPlan, slots: updatedSlots });
+    // Same enriched shape `plan.current` returns (W8) — this result is written
+    // straight into that cache, so a thinner one here would blank the scaling
+    // line on exactly the beat a change lands.
+    expect(result.plan).toEqual({
+      ...existingPlan,
+      slots: updatedSlots.map((s) => ({ ...s, pickedSourceServings: null })),
+    });
     // The client highlights (and scrolls to) whatever days changed — dayOffset
     // 0 maps to the plan's week start.
     expect(result.changedDates).toEqual([WEEK_START]);
@@ -264,6 +271,7 @@ describe("planRouter.modify", () => {
           tags: [],
           estTimeMinutes: 20,
           estCostCents: 1200,
+          pickedRef: null,
           servings: null,
           chips: [],
         },
