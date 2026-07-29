@@ -13,6 +13,7 @@ import {
   type ValidatedPlan,
 } from "@/server/ai/tasks/plan-types";
 import { checkAiRateLimit, consumeDailyAiBudget } from "@/server/ratelimit";
+import { isEmailAllowed } from "@/lib/access";
 
 export const maxDuration = 60;
 
@@ -88,6 +89,13 @@ export async function POST(req: Request): Promise<Response> {
 
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  // Gate 2. This route does NOT go through tRPC, so it doesn't inherit the
+  // allowlist check in protectedProcedure — and it is the single most expensive
+  // endpoint in the app. No-op when ALLOWED_EMAILS is unset.
+  if (!isEmailAllowed(user.email)) {
+    return new Response("Not on the invite list", { status: 403 });
   }
 
   const db = getDb();
