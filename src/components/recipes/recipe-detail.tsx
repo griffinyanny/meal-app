@@ -13,6 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { RecipeView } from "./recipe-view";
+import { AddToWeek } from "./add-to-week";
 import { ArrowLeft, Heart, Pencil, Trash2 } from "lucide-react";
 
 export type RecipeDetailProps = {
@@ -87,7 +88,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
   }
 
   return (
-    <div className="p-4 space-y-4">
+    // pb-32 clears the floating primary — `3l` puts `Add to this week` at
+    // bottom 96, and without the padding it covers the end of the steps.
+    <div className="p-4 pb-32 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -146,6 +149,9 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
 
       {/* Title + meta + ingredients + steps + tags (shared presentational body) */}
       <RecipeView recipe={recipe} showHeader />
+
+      {/* W10 · the detail screen's ONE floating object, and it is the verb. */}
+      <AddToWeek recipeId={recipe.id} title={recipe.title} />
 
       {/* Modify dialog */}
       <Dialog open={modifyOpen} onOpenChange={setModifyOpen}>

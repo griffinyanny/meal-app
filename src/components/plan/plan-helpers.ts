@@ -49,6 +49,15 @@ export interface DisplayMeal {
    * Null on everything the chef proposed itself.
    */
   pickedRecipeId: string | null;
+  /**
+   * What the person's own recipe serves — build dependency 2's other half.
+   *
+   * Present so the meta row can say `scaled to 3` INSTEAD of `serves 3`, which
+   * is a different claim: one says the chef adjusted their recipe for this
+   * household, the other says nothing at all. Null when nothing was picked, or
+   * when the recipe never stated a serving count to scale from.
+   */
+  pickedSourceServings: number | null;
 }
 
 export interface PlanSlot {
@@ -65,6 +74,7 @@ export interface PlanSlot {
   chips: string[] | null;
   servings: number | null;
   pickedRecipeId: string | null;
+  pickedSourceServings?: number | null;
   rationale: string | null;
   feedback: "thumbs_up" | "thumbs_down" | null;
   recipeId: string | null;
@@ -137,6 +147,7 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
     recipeId: slot.recipeId,
     recipeStatus: slot.recipeStatus,
     pickedRecipeId: slot.pickedRecipeId,
+    pickedSourceServings: slot.pickedSourceServings ?? null,
   };
 }
 
@@ -190,6 +201,7 @@ export function streamedMealToDisplay(
     // A streaming meal is always the chef's own proposal. A pick predates the
     // generation it constrains, so it is never discovered mid-stream.
     pickedRecipeId: null,
+    pickedSourceServings: null,
   };
 }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ArrowUp } from "lucide-react";
+import { LibraryDoor } from "./sheet/sheet-parts";
 
 export interface NoPlanStateProps {
   onGenerate: (request?: string) => void;
@@ -21,6 +22,17 @@ export interface NoPlanStateProps {
     request?: string;
     chips: string[];
   };
+  // W8 · the library door and what is already behind it. `picks` are the titles
+  // the person has chosen so far; they are shown because a choice you cannot see
+  // is a choice you cannot change.
+  onOpenPicker?: () => void;
+  picks?: { id: string; title: string }[];
+  onRemovePick?: (id: string) => void;
+  // §B: "picks survive a regenerate by default, AND THE GUARANTEE IS STATED
+  // BEFORE THE ASK." Set when re-prompting over a week that already carries
+  // picks — the person is about to press a button that replaces the week, and
+  // this is the sentence that tells them what it does not replace.
+  carriedPickCount?: number;
 }
 
 const SUGGESTIONS = [
@@ -37,6 +49,10 @@ export function NoPlanState({
   onCancel,
   replaceWarning,
   seed,
+  onOpenPicker,
+  picks = [],
+  onRemovePick,
+  carriedPickCount = 0,
 }: NoPlanStateProps) {
   const [text, setText] = useState(seed?.request ?? "");
   const canSubmit = text.trim().length > 0 && !isGenerating;
@@ -135,6 +151,63 @@ export function NoPlanState({
           <ArrowUp className="size-4" />
         </Button>
       </div>
+
+      {/* What is already chosen. Shown ABOVE the door rather than inside it,
+          because a door that changes its own label as you use it stops reading
+          as a door. Each one is removable: choosing is only a real act if
+          un-choosing is too. */}
+      {picks.length > 0 && (
+        <div className="space-y-2" data-testid="plan-picks">
+          <p className="m-0 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+            YOU&apos;RE COOKING
+          </p>
+          {picks.map((pick) => (
+            <div
+              key={pick.id}
+              data-testid="plan-pick"
+              className="spec-inset flex min-h-[52px] items-center gap-3 rounded-[14px] px-[14px] py-3"
+            >
+              <span className="min-w-0 flex-1 text-[14.5px] font-medium text-[var(--spec-text-primary)]">
+                {pick.title}
+              </span>
+              {onRemovePick && (
+                <button
+                  type="button"
+                  onClick={() => onRemovePick(pick.id)}
+                  aria-label={`Remove ${pick.title}`}
+                  className="flex-none text-[12px] text-[var(--spec-text-caption)] underline underline-offset-2"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* THE LIBRARY DOOR — a 62px L2 row, the last object before the fold (§A).
+          Unconditional: it works with an empty library, because the picker's
+          empty state is itself a door rather than a dead end. */}
+      {onOpenPicker && (
+        <LibraryDoor
+          onClick={onOpenPicker}
+          sublabel={
+            picks.length > 0
+              ? "Add another, or let the chef fill the rest"
+              : "I'll build the week around it"
+          }
+        />
+      )}
+
+      {/* §B's guarantee, STATED BEFORE THE ASK — the button below replaces the
+          week, and this is the one sentence that says what it does not replace. */}
+      {carriedPickCount > 0 && (
+        <p className="text-xs text-muted-foreground" data-testid="picks-survive-note">
+          {carriedPickCount === 1
+            ? "Your pick stays — I'll build the new week around it."
+            : `Your ${carriedPickCount} picks stay — I'll build the new week around them.`}
+        </p>
+      )}
 
       {seed ? (
         <button

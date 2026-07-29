@@ -5,11 +5,17 @@ import type { DisplayMeal, HydrationView } from "../plan-helpers";
 import type { PlanDay } from "../rail-helpers";
 import { MealSheetContent } from "./meal-sheet-content";
 import { DaySheetContent } from "./day-sheet-content";
+import { PickerContent, type PickerInvocation } from "../picker/picker-content";
 
 /** What the sheet is currently about. Exactly one thing, or nothing. */
 export type PlanSheetTarget =
   | { kind: "meal"; meal: DisplayMeal }
-  | { kind: "day"; day: PlanDay };
+  | { kind: "day"; day: PlanDay }
+  // W8 · THE PICKER IS A THIRD SUBJECT, NOT A SECOND DRAWER. Invoked from a meal
+  // sheet it swaps the content in place, so there is never a moment with two
+  // vaul drawers mounted — the class of bug D3 exists to guard against, and what
+  // §D's one-floating-layer rule asks for anyway.
+  | { kind: "picker"; invocation: PickerInvocation };
 
 export interface PlanSheetProps {
   target: PlanSheetTarget | null;
@@ -18,6 +24,9 @@ export interface PlanSheetProps {
   onModify: (request: string) => void;
   onTalkToChef: () => void;
   onOpenMeal: (meal: DisplayMeal) => void;
+  onOpenPicker: (invocation: PickerInvocation) => void;
+  onPick: (picks: { id: string; title: string }[]) => void;
+  onGenerate: () => void;
   isModifying: boolean;
   workingLabel?: string;
   modifyError?: string | null;
@@ -43,6 +52,9 @@ export function PlanSheet({
   onModify,
   onTalkToChef,
   onOpenMeal,
+  onOpenPicker,
+  onPick,
+  onGenerate,
   isModifying,
   workingLabel,
   modifyError,
@@ -67,6 +79,7 @@ export function PlanSheet({
             meal={target.meal}
             onModify={onModify}
             onTalkToChef={onTalkToChef}
+            onOpenPicker={onOpenPicker}
             isModifying={isModifying}
             workingLabel={workingLabel}
             modifyError={modifyError}
@@ -79,9 +92,20 @@ export function PlanSheet({
             onModify={onModify}
             onTalkToChef={onTalkToChef}
             onOpenMeal={onOpenMeal}
+            onOpenPicker={onOpenPicker}
             isModifying={isModifying}
             workingLabel={workingLabel}
             modifyError={modifyError}
+          />
+        ) : null}
+        {target?.kind === "picker" ? (
+          <PickerContent
+            invocation={target.invocation}
+            onConfirm={onPick}
+            onGenerate={onGenerate}
+            isWorking={isModifying}
+            workingLabel={workingLabel}
+            error={modifyError}
           />
         ) : null}
       </DrawerContent>

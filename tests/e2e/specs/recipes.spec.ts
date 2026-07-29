@@ -147,3 +147,67 @@ test("RC10 - an empty library shows the first-run empty state", async ({ page })
 
   await expect(page.getByText("Your recipe library is empty")).toBeVisible();
 });
+
+// ── W10 · the corrected bottom edge (Phase 1E.5, frame `3l`) ───────────────
+// Spec §12 item 04's floating-primary half, pulled forward from 1F. Two halves,
+// two screens: the LIBRARY loses its floating toolbar, and the DETAIL gains the
+// one thing that is allowed to float.
+
+test("RC11 - the library floats nothing: the toolbar is gone and search is in the header", async ({
+  page,
+}) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+
+  // Pattern B: search is never a floating object. It is still here — it moved,
+  // it was not removed — and so is the one way to create a recipe.
+  const search = page.getByTestId("recipe-search");
+  await expect(search).toBeVisible();
+  await expect(page.getByTestId("recipe-add")).toBeVisible();
+
+  // The rule, measured rather than asserted from a class name: nothing on this
+  // screen is pinned to the viewport. `position: fixed` is what "floating"
+  // means, and the FAB and search pill were the only two things that had it.
+  const fixedCount = await page.evaluate(
+    () =>
+      [...document.querySelectorAll<HTMLElement>("main *")].filter(
+        (el) => getComputedStyle(el).position === "fixed"
+      ).length
+  );
+  expect(fixedCount).toBe(0);
+
+  // And it still works from its new home.
+  await search.fill("Miso");
+  await expect(page.getByText("Search results")).toBeVisible();
+});
+
+test("RC12 - the detail screen's one floating object is the verb", async ({ page }) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+  await card(page, "Miso-Glazed Salmon").click();
+
+  const verb = page.getByTestId("add-to-week");
+  await expect(verb).toBeVisible();
+  await expect(verb).toHaveText("Add to this week");
+
+  // IT NEVER ASKS FOR A DAY (`3l`). A day picker opening here would make this a
+  // scheduler, which is the one thing the ledger says a chosen recipe is not.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("RC13 - with no week to add to, the verb carries the recipe to the intent screen", async ({
+  page,
+}) => {
+  // RECIPES_LIBRARY seeds a DRAFT plan for the drafts shelf to hang off, but it
+  // seeds no slots — so there is no week to place anything into. The honest
+  // answer is to carry the choice rather than fail at a button that reads like
+  // it should work.
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+  await card(page, "Miso-Glazed Salmon").click();
+
+  await page.getByTestId("add-to-week").click();
+
+  await expect(page).toHaveURL(/\/plan$/);
+  await expect(page.getByTestId("plan-pick")).toContainText("Miso-Glazed Salmon");
+});

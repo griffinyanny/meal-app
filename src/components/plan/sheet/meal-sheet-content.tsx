@@ -9,6 +9,7 @@ import {
 } from "../plan-helpers";
 import { dayOfMonth, metaLine, shortDayName } from "../rail-helpers";
 import {
+  LibraryDoor,
   SheetBody,
   SheetChip,
   SheetGroup,
@@ -16,6 +17,7 @@ import {
   SheetRow,
   SheetStatus,
 } from "./sheet-parts";
+import type { PickerInvocation } from "../picker/picker-content";
 
 /**
  * THE MEAL SHEET IS A SUMMARY (ledger §D · W7). **Closes BUG-006.**
@@ -34,6 +36,7 @@ interface MealSheetContentProps {
   meal: DisplayMeal;
   onModify: (request: string) => void;
   onTalkToChef: () => void;
+  onOpenPicker: (invocation: PickerInvocation) => void;
   isModifying: boolean;
   workingLabel?: string;
   modifyError?: string | null;
@@ -44,6 +47,7 @@ export function MealSheetContent({
   meal,
   onModify,
   onTalkToChef,
+  onOpenPicker,
   isModifying,
   workingLabel,
   modifyError,
@@ -96,6 +100,32 @@ export function MealSheetContent({
       {isCookable(meal.slotType) ? (
         <SheetGroup label="TAKE IT SOMEWHERE">
           <RecipeRow meal={meal} hydration={hydration} />
+          {/* `3e` · the picker, invoked from a meal. The night is decided, so
+              the first line names it and the subline names what is displaced —
+              and nothing else about the picker changes. The door is a ROW, not
+              a chip, because it goes somewhere rather than asking the chef. */}
+          <LibraryDoor
+            sublabel={`I'll rebuild ${dayTitle(meal.dayName)} around it`}
+            onClick={() =>
+              onOpenPicker({
+                headline: `${dayTitle(meal.dayName)} ${meal.mealType}, from your recipes`,
+                subline: meal.title ? `Replacing ${meal.title}` : null,
+                dayName: dayTitle(meal.dayName),
+                replacingDate: meal.date,
+                // The night's ceiling comes from the meal it is replacing —
+                // that is the only honest read of "how long you've got on a
+                // Thursday" we hold. With no time on the slot there is no
+                // constraint, and the picker dims nothing rather than inventing
+                // a limit to dim against.
+                constraint: meal.estTimeMinutes
+                  ? {
+                      maxMinutes: meal.estTimeMinutes,
+                      dayName: dayTitle(meal.dayName),
+                    }
+                  : null,
+              })
+            }
+          />
         </SheetGroup>
       ) : null}
 

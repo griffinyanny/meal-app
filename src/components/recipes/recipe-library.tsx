@@ -7,7 +7,7 @@ import { RecipeCard } from "./recipe-card";
 import { CookedStrip } from "./cooked-strip";
 import { RecipeFilters, type RecipeFilter } from "./recipe-filters";
 import { PlanDraftsShelf } from "./plan-drafts-shelf";
-import { RecipeToolbar } from "./recipe-toolbar";
+import { RecipeHeader } from "./recipe-header";
 import { GenerateRecipeDialog } from "./generate-recipe-dialog";
 import { ImportRecipeDialog } from "./import-recipe-dialog";
 import { isPlanDraft, type RecipeListItem } from "./types";
@@ -111,6 +111,17 @@ export function RecipeLibrary() {
 
   return (
     <>
+      {/* W10 · search lives in the header now (pattern B), not in a floating
+          pill. The toolbar it replaced also carried the FAB; both are gone, and
+          the floating slot they occupied belongs to `Add to this week` on the
+          detail screen. */}
+      <RecipeHeader
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onGenerate={() => setGenerateOpen(true)}
+        onImport={() => setImportOpen(true)}
+      />
+
       {isSearching ? (
         <SearchResults
           results={searchResults.data ?? []}
@@ -151,18 +162,11 @@ export function RecipeLibrary() {
         <div
           role="status"
           data-testid="recipe-toast"
-          className="fixed left-1/2 -translate-x-1/2 z-50 bottom-[calc(9rem+env(safe-area-inset-bottom,0px))] glass-sheet rounded-full px-4 py-2 text-xs font-medium shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
+          className="fixed left-1/2 -translate-x-1/2 z-50 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] glass-sheet rounded-full px-4 py-2 text-xs font-medium shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
         >
           {toast}
         </div>
       )}
-
-      <RecipeToolbar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onGenerate={() => setGenerateOpen(true)}
-        onImport={() => setImportOpen(true)}
-      />
 
       <GenerateRecipeDialog
         open={generateOpen}
@@ -234,7 +238,7 @@ function TieredView({
   const rest = list.length - shown.length;
 
   return (
-    <div className="space-y-5 pb-40">
+    <div className="space-y-5 pb-8">
       <CookedStrip recipes={cooked} onOpen={onOpen} />
 
       <RecipeFilters
@@ -304,7 +308,7 @@ function SearchResults({
   onOpen,
 }: SearchResultsProps) {
   return (
-    <div className="space-y-3 pb-40">
+    <div className="space-y-3 pb-8">
       <p className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
         Search results
       </p>

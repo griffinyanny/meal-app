@@ -141,7 +141,7 @@ async function mockStream(task: AITask, options: LanguageModelV3CallOptions) {
     };
   }
 
-  const json = JSON.stringify(buildGenerationFixture());
+  const json = JSON.stringify(buildGenerationFixture(text));
   // ~24 roughly-even slices so the partial JSON parser fills progressively.
   const sliceLen = Math.max(1, Math.ceil(json.length / 24));
   const deltas: LanguageModelV3StreamPart[] = [];

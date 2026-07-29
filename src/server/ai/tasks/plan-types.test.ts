@@ -22,6 +22,7 @@ function meal(overrides: Partial<AIPlan["meals"][number]> = {}) {
     tags: ["Fish", "Asian"],
     estTimeMinutes: 35,
     estCostCents: 1600,
+    pickedRef: null,
     servings: 2,
     chips: ["Make it spicier", "Swap protein"],
     ...overrides,

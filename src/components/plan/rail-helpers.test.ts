@@ -36,6 +36,7 @@ function meal(overrides: Partial<DisplayMeal> = {}): DisplayMeal {
     recipeId: null,
     recipeStatus: "none",
     pickedRecipeId: null,
+    pickedSourceServings: null,
     ...overrides,
   };
 }

@@ -17,9 +17,14 @@ export type PlanState =
   | "DENSE"
   | "UNCOOKED_PAST"
   // W9 · a week the person put one of their own recipes into. Seeded rather
-  // than performed: the picker (W8) is not built yet, so this proves the
-  // PROVENANCE half of the ledger independently of the entry point.
+  // than performed, so provenance is asserted independently of the entry point
+  // that produces it — `PICKABLE` is the state that performs one for real.
   | "PICKED"
+  // W8 · a draft week PLUS a real library, so the picker has something to pick.
+  // Every other Plan seed wipes recipes, which is correct for them and useless
+  // here: the picker's whole surface is content, so a state with no library
+  // would only ever photograph the empty case.
+  | "PICKABLE"
   | "MIDWEEK"
   | "ELAPSED_CONFIRMED"
   | "ELAPSED_DRAFT"
@@ -64,11 +69,24 @@ export interface SeedSlotInput {
   picked?: boolean;
 }
 
+// W8 · a library recipe that exists alongside the plan, for the picker to read.
+export interface SeedLibraryRecipe {
+  id: string;
+  title: string;
+  sourceType: "ai_generated" | "url_import" | "manual";
+  /** ISO, or null for never cooked — build dependency 1's staleness read. */
+  lastCookedAt: string | null;
+  totalTimeMinutes: number | null;
+  servings: number | null;
+}
+
 export interface SeedPlanSpec {
   status: "draft" | "confirmed";
   weekStart: string;
   chefSummary: string;
   slots: SeedSlotInput[];
+  /** Left empty by every state but PICKABLE — the picker needs real content. */
+  library?: SeedLibraryRecipe[];
 }
 
 export interface SeedOptions {
@@ -130,7 +148,21 @@ function buildWeek(
   return {
     status,
     weekStart,
-    chefSummary: "Your seeded test week, ready to review.",
+    // A REALISTIC LENGTH, DELIBERATELY (BUG-034, S45).
+    //
+    // Every seed used to say "Your seeded test week, ready to review." — one
+    // short line, which meant Layer A had never once photographed a summary at
+    // the length the real model writes. Layer B opened on six to nine lines of
+    // 22px type with no meal visible, and no amount of mock testing could have
+    // shown it, because the mock's own copy was the thing hiding it.
+    //
+    // This is two real sentences, matched to what the prompt actually asks for.
+    // It is not a fix for BUG-034 — that is Griffin's call — it is what makes
+    // the bug VISIBLE to the layer that is supposed to catch it.
+    chefSummary:
+      "This week leans on one shop and a Sunday that does the work for Monday, " +
+      "with a couple of nights short enough to cook after a long day. Nothing " +
+      "gets bought twice and nothing goes off in the drawer.",
     slots,
   };
 }
@@ -296,6 +328,8 @@ export function buildSeedSpec(
       return uncookedPastWeek(today, opts);
     case "PICKED":
       return pickedWeek(today, opts);
+    case "PICKABLE":
+      return pickableWeek(today, opts);
     case "ADVERSARIAL":
       return {
         status: "draft",
@@ -421,6 +455,66 @@ function uncookedPastWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
 //
 // It is a DRAFT because §B says the chef answers a pick with a night and a
 // reason, and that conversation only exists before the week is agreed.
+// W8 · a draft week with a REAL library behind it, so a pick can be performed
+// rather than seeded.
+//
+// The five recipes are chosen so every rule in §A has something to be true or
+// false about: three never cooked (the opening content and its count), two
+// cooked (the `Cooked before` door), one imported (its own door), and one that
+// runs three hours — the recipe that must DIM AND SAY WHY against a 30-minute
+// night rather than quietly vanishing. The carbonara serves 4 against a
+// household of 2, which is what makes `scaled to 2` observable at all.
+const PICKABLE_LIBRARY: SeedLibraryRecipe[] = [
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000001",
+    title: "Sichuan Dry-Fried Green Beans",
+    sourceType: "ai_generated",
+    lastCookedAt: null,
+    totalTimeMinutes: 25,
+    servings: 2,
+  },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000002",
+    title: "Lamb Shoulder with Anchovy",
+    sourceType: "manual",
+    lastCookedAt: null,
+    totalTimeMinutes: 180,
+    servings: 6,
+  },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000003",
+    title: "Congee with Ginger and Scallion",
+    sourceType: "ai_generated",
+    lastCookedAt: null,
+    totalTimeMinutes: 45,
+    servings: 4,
+  },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000004",
+    title: "Spaghetti alla Carbonara",
+    sourceType: "manual",
+    lastCookedAt: "2026-05-02T12:00:00.000Z",
+    totalTimeMinutes: 40,
+    servings: 4,
+  },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-000000000005",
+    title: "Miso-Glazed Salmon",
+    sourceType: "url_import",
+    lastCookedAt: "2026-05-09T12:00:00.000Z",
+    totalTimeMinutes: 25,
+    servings: 2,
+  },
+];
+
+function pickableWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
+  return {
+    ...buildWeek(today, "draft", 5, opts),
+    chefSummary: "Five dinners, one shop, nothing wasted.",
+    library: PICKABLE_LIBRARY,
+  };
+}
+
 function pickedWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
   const week = buildWeek(today, "draft", 7, opts);
   return {

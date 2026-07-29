@@ -41,6 +41,13 @@ export function GrocerySection({
       className={cn("mt-6", isDragging && "opacity-40")}
       data-testid="grocery-section"
       data-category={category}
+      // The lift, made observable. There is no DragOverlay in this build, so
+      // "the drag is live" was only ever expressed as an opacity class — and a
+      // pointer-driven test that cannot see the lift has to guess when dnd-kit
+      // has measured its droppables, which is exactly the race behind BUG-019.
+      // Asserting on `opacity-40` would couple the suite to styling; this is the
+      // state itself.
+      data-dragging={isDragging ? "true" : undefined}
     >
       <div className="mb-2.5 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">

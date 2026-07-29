@@ -63,10 +63,24 @@ export function formatDuration(minutes: number): string {
 // column naming a leftover's source, and the ledger's rule is the narrower one,
 // so the serving count holds the slot until Slice 2 gives the meta a real
 // second fact (provenance) to carry. Don't invent the source from prose.
+//
+// W8 · SERVINGS ARE SAID EXACTLY ONCE (ledger §B). On a picked night the chef
+// scaled the person's own recipe, and `scaled to 3` says that where `serves 3`
+// would say nothing — but ONLY where a scaling actually happened. A pick the
+// chef left at the recipe's own count reads `serves 3` like every other night,
+// because claiming a change that did not occur is the failure mode this rule
+// exists to prevent. The number itself comes from generation, never from
+// arithmetic here.
 export function metaLine(meal: DisplayMeal): string {
   const parts: string[] = [];
   if (meal.estTimeMinutes) parts.push(formatDuration(meal.estTimeMinutes));
-  if (meal.servings) parts.push(`serves ${meal.servings}`);
+  if (meal.servings) {
+    const scaled =
+      meal.pickedRecipeId != null &&
+      meal.pickedSourceServings != null &&
+      meal.pickedSourceServings !== meal.servings;
+    parts.push(scaled ? `scaled to ${meal.servings}` : `serves ${meal.servings}`);
+  }
   return parts.join(" · ");
 }
 

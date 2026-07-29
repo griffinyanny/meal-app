@@ -186,6 +186,46 @@ export function SheetRow({
 }
 
 /**
+ * THE LIBRARY DOOR (ledger §A, W8) — the quiet way into the picker.
+ *
+ * A 62px L2 row, unconditional: it works with an empty library, because the
+ * picker's empty state is a door of its own rather than a dead end. Lives here
+ * because §A says it is "droppable verbatim into the day sheet and the meal
+ * sheet" as well as the intent screen, and three copies of a load-bearing string
+ * is how the three drift apart.
+ */
+export function LibraryDoor({
+  onClick,
+  sublabel = "I'll build the week around it",
+}: {
+  onClick: () => void;
+  sublabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid="library-door"
+      className="spec-inset flex min-h-[62px] w-full items-center gap-3 rounded-[14px] px-[14px] py-3 text-left"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14.5px] font-medium leading-[1.3] text-[var(--spec-text-primary)]">
+          Cook something I&apos;ve saved
+        </span>
+        <span className="mt-0.5 block text-[12px] text-[var(--spec-text-caption)]">
+          {sublabel}
+        </span>
+      </span>
+      <ChevronRight
+        aria-hidden
+        className="size-4 flex-none stroke-[var(--spec-text-muted)]"
+        strokeWidth={2.1}
+      />
+    </button>
+  );
+}
+
+/**
  * The sheet's own working/failed line.
  *
  * PENDING STAYS IN THE OPEN SHEET (the sheet closes on success, not on tap) so

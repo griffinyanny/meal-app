@@ -105,6 +105,17 @@ test("GR6 - the organize mode toggle persists across a reload", async ({ page })
   );
 });
 
+// The order the aisles are actually stored in, read off the rendered sections.
+// The rail renders `aisleOrder` verbatim, so after a reload this IS the persisted
+// column — which is the thing GR7 is about. Reading the whole array rather than
+// `.first()` means a drag that moved the wrong section can't pass by moving SOME
+// section off the top.
+async function aisleOrder(page: Page): Promise<string[]> {
+  return section(page).evaluateAll((nodes) =>
+    nodes.map((n) => n.getAttribute("data-category") ?? "")
+  );
+}
+
 test("GR7 - dragging a section reorders the aisles and persists", async ({ page }) => {
   await seedGroceryState("GROCERY_READY");
   await page.goto("/groceries");
@@ -112,6 +123,7 @@ test("GR7 - dragging a section reorders the aisles and persists", async ({ page 
 
   // Seeded order: produce, meat, dairy.
   await expect(section(page).first()).toHaveAttribute("data-category", "produce");
+  const before = await aisleOrder(page);
 
   const produceHandle = page
     .locator('[data-category="produce"]')
@@ -121,16 +133,21 @@ test("GR7 - dragging a section reorders the aisles and persists", async ({ page 
   const persisted = page.waitForResponse(
     (r) => r.url().includes("reorderSections") && r.request().method() === "POST"
   );
-  await dragElement(page, produceHandle, page.locator('[data-category="dairy"]'));
+  await dragSection(page, produceHandle, page.locator('[data-category="dairy"]'));
 
   // Produce moved down the list; another aisle is now first.
   await expect(section(page).first()).not.toHaveAttribute("data-category", "produce");
-  const firstCat = await section(page).first().getAttribute("data-category");
+  const after = await aisleOrder(page);
 
   await persisted;
   await page.reload();
   await expect(list(page)).toBeVisible();
-  await expect(section(page).first()).toHaveAttribute("data-category", firstCat!);
+
+  // The whole order survived the round trip — not just whichever section landed
+  // on top. `before` is asserted against so a no-op drag that somehow satisfied
+  // the line above still fails here.
+  expect(after).not.toEqual(before);
+  expect(await aisleOrder(page)).toEqual(after);
 });
 
 test("GR8 - a staple chip adds its item, then drops out of the row", async ({ page }) => {
@@ -255,24 +272,58 @@ test("GR-L2 - a plan confirmed with stragglers shows the honest 'Finishing N rec
 // Stepped pointer drag (dnd-kit PointerSensor tracks pointer events; Playwright's
 // touchscreen API is tap-only). Exceeds the 8px activation distance, then walks to
 // the target in small steps so collision detection registers the move.
-async function dragElement(page: Page, source: Locator, target: Locator): Promise<void> {
-  const s = await source.boundingBox();
+/**
+ * Drag one aisle section past another. THE FIX FOR BUG-019 (three recurrences).
+ *
+ * The old helper pressed down, crossed the 8px activation distance, and then
+ * fired ~24 more `mousemove`s back to back without ever waiting. dnd-kit runs
+ * collision detection against a droppable-rect snapshot taken when the drag
+ * STARTS — so if React hadn't committed the drag-start render and measured the
+ * droppables before those moves landed, every move resolved against nothing,
+ * `onDragEnd` got `over: null`, and `onSectionDragEnd`'s first line returned
+ * early. No mutation, no error, no request: a silent no-op that looks exactly
+ * like a broken feature. Whether it lost the race depended on machine load,
+ * which is why it only ever failed in a full sequential run and always passed in
+ * isolation.
+ *
+ * So this waits for the lift instead of assuming it, and then moves in steps
+ * that each yield a frame, so collision detection actually runs on the way.
+ */
+async function dragSection(page: Page, handle: Locator, target: Locator): Promise<void> {
+  // Both boxes have to be on screen: `boundingBox()` happily returns viewport
+  // coordinates that are off the bottom, and the mouse cannot go there.
+  await target.scrollIntoViewIfNeeded();
+  await handle.scrollIntoViewIfNeeded();
+
+  const s = await handle.boundingBox();
   const t = await target.boundingBox();
   if (!s || !t) throw new Error("drag: bounding box not found");
   const sx = s.x + s.width / 2;
   const sy = s.y + s.height / 2;
   const tx = t.x + t.width / 2;
-  const ty = t.y + t.height / 2;
+  // Past the target's midpoint, which is what `closestCenter` compares against.
+  const ty = t.y + t.height * 0.75;
+
+  const dragging = page.locator("[data-dragging='true']");
 
   await page.mouse.move(sx, sy);
   await page.mouse.down();
-  await page.mouse.move(sx, sy + 14, { steps: 3 }); // pass activation threshold
-  const steps = 12;
+  await page.mouse.move(sx, sy + 12); // clears the 8px activation constraint
+
+  // THE WAIT THAT WAS MISSING. Until the section reports itself as dragging,
+  // dnd-kit has not measured anything and every move is thrown away.
+  await expect(dragging).toHaveCount(1);
+
+  const steps = 10;
   for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(sx + ((tx - sx) * i) / steps, sy + ((ty - sy) * i) / steps, {
-      steps: 2,
-    });
+    await page.mouse.move(sx + ((tx - sx) * i) / steps, sy + ((ty - sy) * i) / steps);
+    // One animation frame between moves. dnd-kit recomputes `over` on a rAF, so
+    // a burst of moves inside a single frame collapses into one collision test.
+    await page.evaluate(() => new Promise(requestAnimationFrame));
   }
-  await page.mouse.move(tx, ty + 24, { steps: 3 });
+
   await page.mouse.up();
+  // The drop is committed once nothing is lifted any more. Releasing the mouse
+  // is not the same instant as React unwinding the drag state.
+  await expect(dragging).toHaveCount(0);
 }
