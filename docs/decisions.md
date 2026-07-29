@@ -4,6 +4,60 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-28 (S43) — Closed beta is TWO gates, and both are off when their env var is unset
+
+**Griffin's ask:** the production URL should not be reachable by "just anyone" before launch, and he
+should not have to see random people signing up. He added the constraint that matters most here:
+*"any changes we need to make when I start sharing this out with people, we should make those changes
+at the right time."* That is a reversibility requirement, and it drove the design more than the
+security requirement did.
+
+**What was actually exposed (verified, not assumed).** `meal-app-swart.vercel.app` has no Vercel
+deployment protection, so the domain answers the whole internet. The *data* was never exposed —
+`/you` unauthenticated returns `307 → /login`, and there are four independent layers behind it (proxy
+cookie check, the `(app)` layout's server-side `getClaims()`, all 42 tRPC procedures on
+`protectedProcedure`, RLS on all 12 tables). The real hole was **open signup**: any Google account
+could sign in, get its own household, and spend the OpenAI key at 150 calls/day/user with no global cap.
+
+**Rejected: Vercel Deployment Protection.** It is the obvious answer and it is wrong for this case —
+it gates on *Vercel account access*, so every beta tester would need a Vercel account added to the
+team. It solves today and breaks the moment Griffin shares the link, which is the phase this whole
+change exists to serve.
+
+**The two gates, and why they are separate rather than one control:**
+
+| Gate | Env var | Blocks at | Answers |
+|---|---|---|---|
+| 1 | `SITE_ACCESS_CODE` | the proxy, before auth | *Can you see that this app exists?* Flat 404 on every path without the cookie, login screen included. Cookie is obtained once via `/invite?code=…` |
+| 2 | `ALLOWED_EMAILS` | auth callback, `(app)` layout, tRPC `init.ts`, `/api/plan/stream` | *May you hold an account?* |
+
+**They fail differently, which is the entire reason for two.** Invite links get forwarded and codes
+leak, so the code alone must never be enough to create data or spend the AI budget. Conversely an
+email list cannot hide the app's existence from a crawler that found it in certificate-transparency
+logs, which is what the code is for. One control covering both jobs would do neither well.
+
+**The reversibility rule: unset means off.** Adding a tester is appending to an env var. Going fully
+public is deleting two env vars. Neither is a code diff, and local dev plus the E2E harness are
+untouched without configuring anything. **The deliberate tradeoff:** a *deleted* env var silently
+opens the app rather than bricking it. Fail-closed was considered and rejected — it would lock Griffin
+out of production on a typo, which is both likelier and worse than the case it guards. Revisit if
+these ever protect something more valuable than a beta.
+
+**The one thing that is NOT env-driven, on purpose:** `noindex` + `robots.txt`. `headers()` is
+evaluated at build time while the gates read env at request time, so binding them to the same
+variables would let the two silently disagree. It is one line to delete instead, tracked as
+**BUG-030** so launch day does not forget it.
+
+**Found during the security review and fixed in the same change:** Gate 2 originally lived only in the
+callback and the layout, which left a session *already issued* able to call the API after its owner was
+removed from the list — i.e. revocation would not have worked. The check now also sits in
+`protectedProcedure`, `authedProcedure` (the one that *creates* the household row), and the
+`/api/plan/stream` route, which does not go through tRPC and is the most expensive endpoint in the app.
+**Left open as BUG-031:** email is now an authorization boundary, so Supabase's email/password provider
+must be confirmed disabled before a second person is invited.
+
+---
+
 ## 2026-07-27 (S42) — The gold line: gold marks the chef SPEAKING, not content you read
 
 **Griffin ratified this, and it replaces counting marks with a rule you can apply.** It resolves the

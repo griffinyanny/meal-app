@@ -4,6 +4,51 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 43a — 2026-07-28 (Closed-beta access gate — unplanned, Griffin-initiated)
+
+**The job:** Griffin noticed `meal-app-swart.vercel.app/you` loaded for him and asked whether it was
+publicly reachable. It was — the domain, not the data. Answering it turned into shipping the closed-beta
+gate that `scope-v1.md` had been carrying as an open question for several sessions.
+
+**What the audit actually found.** The data was never exposed: `/you` unauthenticated returns
+`307 → /login` (verified live), behind four independent layers — the proxy's cookie check, the `(app)`
+layout's server-side `getClaims()`, all 42 tRPC procedures on `protectedProcedure` (`publicProcedure`
+is defined and never used), and RLS on all 12 tables. The OAuth callback's `next` param is correctly
+guarded against open redirect. **The real hole was open signup**: any Google account could sign in, get
+its own household, and spend the OpenAI key at 150 calls/day/user with **no global cap**.
+
+**Shipped: two independent gates, both off when their env var is unset.** Full rationale in
+[decisions.md](decisions.md). Gate 1 (`SITE_ACCESS_CODE`) 404s every path at the proxy without an
+invite cookie, login screen included — a flat 404 rather than a branded gate page, because a gate page
+tells a crawler there is something here worth returning to. Gate 2 (`ALLOWED_EMAILS`) decides who may
+hold an account. Vercel Deployment Protection was **rejected**: it gates on Vercel account access, so
+every beta tester would need a Vercel seat.
+
+**The design constraint was Griffin's, and it shaped more than the security did:** *make the sharing
+changes at the right time.* So unset-means-off — adding a tester is an env change, going public is
+deleting two env vars, neither is a code diff.
+
+**The security review earned its place.** Gate 2 as first written lived only in the callback and the
+layout, which meant **revocation did not actually work** — a session already issued could keep calling
+the API after its owner was removed from the list. The check moved into `protectedProcedure`,
+`authedProcedure` (the procedure that *creates* the household row, so the one a non-invited session
+could use to bootstrap itself), and `/api/plan/stream`, which bypasses tRPC entirely and is the most
+expensive endpoint in the app. Also tightened `GATE_EXEMPT` from prefix to exact match — both exempt
+paths are single routes, so a prefix match widened the hole for nothing.
+
+**Two items logged rather than fixed:** **BUG-031** (email is now an authorization boundary, so
+Supabase's email/password provider must be confirmed disabled before a second person is invited —
+a dashboard toggle, not code) and **BUG-030** (`noindex` + `robots.txt` are deliberately not
+env-driven and must be deleted by hand on launch day).
+
+**506 unit tests green across 44 files** (up from 480; +26 in the new `access.test.ts`), lint +
+typecheck clean. Branched off `main` rather than `session-43-1e5-plan-rebuild` so it did not wait on
+that branch's red E2E suite. **Bug IDs deliberately start at 030** — the 1E.5 branch has already
+claimed 023–029 and would otherwise collide on merge. Machine note: the suite took ~20 min under a load average of 53 caused by
+Cursor, and one file hit a vitest worker-start timeout — re-run in isolation, 8/8 pass.
+
+---
+
 ## Session 42 — 2026-07-27 (1E.7 CLOSED — the app-wide spec sweep, and the gold line)
 
 **The job:** ratify the gold line and apply it, then sweep spec §12 items 01/02/06 plus the pre-spec
