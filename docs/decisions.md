@@ -48,13 +48,13 @@ everything we'd ever do; flex it when the reason is stated.
 
 ## 2026-07-30 (S48) — `DEV_TOOLS_EMAILS` set in Vercel Production (with a verification caveat)
 
-**Decision.** The eighth-session nag ends: the variable existed but was **empty** (created 3 days ago,
-value never set — empty means nobody, by design). Replaced via CLI with `griffinyanny@gmail.com`.
-⚠️ `vercel env pull` reads the value back as empty, which may be the CLI masking rather than the write
-failing — **verify in the dashboard** (meal-app → Settings → Environment Variables → eye icon) and
-re-paste the email if it is genuinely blank. Takes effect on the next production deploy (the 1E.5 merge).
-`ALLOWED_EMAILS` is also set and empty — that one is **fail-open by design** (empty = everyone allowed),
-so prod is not locked; it becomes the invite list when the closed beta starts.
+**Decision.** The eighth-session nag ends: the variable existed but appeared **empty** on every read.
+Resolved same-session — it is marked **sensitive** in Vercel, so its value cannot be read back by anyone
+(dashboard eye icon or CLI); the empty pulls were masking, not a failed write. Claude set it via CLI,
+Griffin re-added his email in the dashboard, and the dashboard save triggered a production redeploy that
+applies it. **The only real verification is behavioral**: the test-mode card appearing on the You tab of
+prod for Griffin's account. `ALLOWED_EMAILS` is also set and unreadable — **fail-open by design** (empty
+= everyone allowed), so prod is not locked; it becomes the invite list when the closed beta starts.
 
 ---
 

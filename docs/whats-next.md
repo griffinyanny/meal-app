@@ -33,13 +33,14 @@ worktree `../meal-app-1e5`**. Scope doc: [scope-1E.5.md](scope-1E.5.md).
   behind vanishes; the real defect was the walls moving), and the overrun acknowledgment line is new
   copy the frame never drew.
 
-### `DEV_TOOLS_EMAILS` — the eighth-session nag is over, with one check owed
+### `DEV_TOOLS_EMAILS` — set, redeployed, one 10-second behavioral check owed
 
-The variable existed for 3 days **with an empty value** (empty = nobody, by design). Set to
-`griffinyanny@gmail.com` via CLI in S48. ⚠️ `vercel env pull` reads it back empty — possibly CLI masking —
-so **verify in the dashboard** (meal-app → Settings → Environment Variables → eye icon) and re-paste if
-genuinely blank. Live on the next deploy. `ALLOWED_EMAILS` is empty too — fail-open **by design**; it
-becomes the invite list when the closed beta starts.
+The variable is marked **sensitive** in Vercel, so no read-back is possible (the "empty" pulls were
+masking, by design). Claude set it via CLI, Griffin re-added his email in the dashboard, and the
+dashboard save triggered a production redeploy that applies it. **Check: open prod → You tab → the
+test-mode card should be there for Griffin's account.** If absent after that deploy, debug next session
+(most likely a stray duplicate or the login email differing from the allowlisted one). `ALLOWED_EMAILS`
+is fail-open by design; it becomes the invite list at closed beta.
 
 ### ⭐ Next up, in order
 
