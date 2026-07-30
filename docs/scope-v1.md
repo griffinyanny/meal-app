@@ -123,6 +123,10 @@ signature surface against a palette we have already retired means building it tw
 - [ ] THE design-system pass — **now the surface-specific half of the spec migration** plus type scale, motion, and component-library consolidation. Spec §12 items **03** (retire the indigo draft pill + iOS green → `#9CB86F`), **04** (collapse the double bottom bar: delete the floating search pill and FAB, search into the header, one floating primary action, square the nav's top corners — this also fixes the phone-density complaint from S28), **05** (44px hit targets on every icon-only control), **07** (promote faked subsection headings to the real Group/Row title levels). Each wants its own `/visual-qa` pass, which is why they are here and not in 1E.7. **Plan's all-states design + rebuild lands in 1E.5 first** — 1F polishes the whole system on top of it, it does not re-design Plan.
 - [ ] Consolidate the four freeform-input controls into the single spec §09 control (onboarding done S39; You, Groceries, and the chef sheet remain)
 - [ ] Ship R1 as an installable PWA (manifest, service worker, offline shell, home-screen icon set, install prompt) — validated on Griffin's + wife's phones. Rides with the design pass; native mobile stays held (decision 2026-07-24, see decisions.md)
+- [ ] **"Send to Instacart" on the Groceries tab** (pulled into R1 from V2 on 2026-07-30 — see change log). Server-side `create_shopping_list_page` call → hosted shoppable Instacart page. **No OAuth, no account linking, no cart state.** Must degrade cleanly to the existing clipboard export if the call fails or the production key is not yet approved, per the manual-list-is-always-perfect principle.
+  - ⏱ **Its 30-40 day approval clock starts during 1E.5, not here** — that is the whole reason this was pulled forward. Registration + dev key + the real build + submitting for production review run *parallel* to 1E.5/1F so approval lands by ship. If the clock has not been started by the time 1E.5 closes, flag it; the delay is calendar, not code.
+  - ⚠️ Instacart's review checks **error handling on every endpoint implemented**, so this gets built properly once — not spiked and rebuilt.
+  - 👤 **Griffin-owned:** the developer account, IDP terms acceptance, and stated use case. Claude cannot do these.
 - [ ] Observability: PostHog (event taxonomy from S9) + Sentry
 - [ ] Security review of the full surface; rate limiting audit
 - [ ] Performance/a11y pass; error-state sweep
@@ -138,7 +142,8 @@ signature surface against a palette we have already retired means building it tw
 | Realtime sync (Supabase Realtime) | V1.5 | Ships with sharing |
 | Cook mode (step-by-step overlay) | V1.5 | Data model supports it |
 | Pantry (light mode, "what can I make?") | V1.5 | |
-| Grocery ordering (Kroger/Instacart) | V2 | |
+| ~~Grocery ordering (Kroger/Instacart)~~ → **Instacart handoff pulled INTO R1 (1F)** | **R1 / 1F** | Changed 2026-07-30. Instacart's API turned out to be self-serve, and its 30-40 day approval clock is the reason it moved. See 1F checklist + change log |
+| Grocery ordering — **Kroger Cart API** (true in-app cart) | V2 | Stays out. Needs per-user OAuth + account linking + token refresh to reach two Seattle banners. Build only on evidence users want an in-app cart rather than a handoff |
 | Photo/social recipe import | V2 | URL import IS in R1 (shipped, 1B) |
 | Nutrition/macros, health coaching | V3 | |
 | Native iOS/Android | V4 | |
@@ -171,6 +176,7 @@ line here (a decision, not drift). Same for pushing R1 items out.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-30 | **Instacart handoff pulled from V2 into R1 as a 1F item (S44).** "Send to Instacart" ships in R1; the **Kroger** Cart API stays in V2. Registration + build + production-key submission start **during 1E.5**, in parallel. | The March research that put Kroger first and Instacart at "V3+, pursue partnership" was **wrong** — Instacart now runs a self-serve public Developer Platform. Re-verified 2026-07-30. Two things drove the pull-forward: (1) the integration is a **leaf**, one server-side call returning a URL, with no OAuth/account-linking/cart-state, so it is far smaller than we priced it; (2) production access needs a **30-40 day compliance review**, and that is calendar time that cannot be compressed later. Starting the clock now costs nothing and buys the option. Griffin ratified. See `technical-research.md` + `decisions.md`. |
 | 2026-07-28 | **Closed-beta access gate added to R1 (S43a), unplanned.** Two env-driven gates: `SITE_ACCESS_CODE` (404s the whole app, login screen included, without an invite cookie) and `ALLOWED_EMAILS` (who may hold an account). Both off when unset, so going public is deleting two env vars rather than a code change. | Griffin asked whether the production URL was publicly reachable. It was — signup was open to any Google account, with the OpenAI key exposed at 150 calls/day/user and no global cap. Unblocks the closed-beta question above at near-zero cost. |
 | 2026-07-10 | Doc created (S19). R1 boundary = solo-user MVP; S9 cuts (sharing UI, realtime, cook mode → V1.5) confirmed by Griffin. | Release-level visibility ask; reconciles master-plan text vs actual build scope |
 | 2026-07-10 (S19) | 1C → ✅ complete (2 of 6 → 3 of 6 phases done); 1D → next | All 13 1C items met; chip/variety quality verified on real model |

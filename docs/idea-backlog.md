@@ -1,5 +1,47 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S44) — Griffin, 2026-07-30
+
+*Two ideas that are really one: **add to the grocery list without opening the app.** Filed as a cluster
+because they share a spine, and separated by door because the doors have wildly different costs.*
+
+- **[V1.5 probe → V4 native] Zero-app add-to-list — the cluster.** Griffin (S44): "I want to say it to
+  Alexa or Siri, or tap a button on my home screen, and it lands on my list." The unit of value is
+  **capture at the moment of noticing** (you open the fridge, you're out of olive oil) rather than a
+  planning session. Everything below rides the same prerequisite, so scope the prerequisite once.
+  - **The shared spine (build this first, it is the only genuinely new thing):** a **stable
+    authenticated add-item endpoint** that takes a raw natural-language string and a household token, and
+    an **out-of-band auth token** for it (Supabase session cookies do not work from a Shortcut, a widget,
+    or an Alexa cloud function). **The parse already exists** — the `grocery-talk` NL→ops task and
+    `grocery.talk` router (S26) already turn "we're out of olive oil and grab tortillas" into list
+    operations with `[N]`-ref ID-safety. So the AI half is done; this is an auth + surface-area problem.
+    Build the spine once and Siri, a widget, an Alexa skill, and the V2 share-extension all ride it.
+  - **Door 1 — Siri, via a user-installed Shortcut. The cheap probe, and it needs no native app.**
+    The iOS Shortcuts app can POST to a URL with a token, so "Hey Siri, add to my grocery list" works
+    against the spine above with zero App Store presence. Doubles as the **behavioural probe**: it answers
+    "do I actually use voice-to-list, or do I just think I will" for the price of an endpoint, *before*
+    anyone pays for a native build. **Recommended first move.**
+  - **Door 2 — iOS home-screen / Lock Screen / Control Center widget. Native-only, no way around it.**
+    WidgetKit + App Intents require a real iOS app; a PWA cannot draw a home-screen widget. Griffin's
+    framing is an **action** widget (an `＋ Add to list` button, and a mic) rather than the display widget
+    already sitting in V4 — worth keeping distinct, because a widget you *press* is a different feature
+    from a widget you *read*. **This is a named native trigger** — see decisions.md 2026-07-13, which
+    lists "widgets/offline" among the real capabilities that would pull native forward from V4. Pair it
+    with the memory `[[project_meal_app_platform_pwa]]`: R1 ships as a PWA and native is held until a
+    capability like this justifies it.
+  - **Door 3 — Alexa. Real, but it is a product bet, not a convenience feature.** An Alexa Skill means
+    account linking (OAuth), Amazon's certification review, and its own invocation-name UX ("Alexa, ask
+    *[skill name]* to add olive oil" — the natural phrasing Griffin wants requires more than a basic
+    skill). Justifiable if voice-to-list becomes a **differentiator** we market; hard to justify for one
+    household's convenience. **Do not build before Door 1 has shown the behaviour is real.**
+  - **⚠ Door 4 — Google Assistant is effectively closed.** Google shut down Conversational Actions in
+    June 2023 and there is no equivalent third-party voice-app path on Google/Nest devices today. Flagged
+    so "general smart home integration" does not get planned as if all three assistants are symmetric —
+    **they are not.** Revisit only if Google ships a Gemini-era third-party surface.
+  - **Open question this raises:** what does the list do with a bare "add olive oil" that arrives with no
+    plan context — does it land in a quick-add bucket, get categorised by `tidyItem`, and does it survive
+    the next plan's list regeneration? The regeneration interaction is the part most likely to bite.
+
 ## Incoming (S41) — harvested from the 1E.5 Plan design pass
 
 *Everything below surfaced during the Claude Design waves for Plan (`Plan Directions.dc.html`,
@@ -268,8 +310,9 @@ This is the living backlog of ALL ideas — from initial planning, from sessions
 
 | Idea | Source | Notes |
 |------|--------|-------|
-| Grocery ordering — Kroger API | Technical research (Session 1) | Only open self-serve cart API. Start here. |
-| Grocery ordering — Instacart deep links | Technical research (Session 1) | Pre-filled search URLs, no partnership needed. |
+| ~~Grocery ordering — Instacart deep links~~ → **SHIPPING IN R1 (1F) as the real API** | Technical research (S1), **re-slotted S44 2026-07-30** | Deep links are obsolete: Instacart's Developer Platform is self-serve, so we use `create_shopping_list_page` (hosted shoppable page) instead of pre-filled search URLs. Moved out of V2 into **1F**; its 30-40 day approval clock starts during 1E.5. See decisions.md 2026-07-30. |
+| Grocery ordering — Kroger Cart API | Technical research (S1), **demoted S44 2026-07-30** | **No longer "start here."** Needs per-user OAuth + account linking + token refresh to reach two Seattle banners (Fred Meyer, QFC), where Instacart needs none of that for far wider reach. **Conditional:** build only on evidence users want a true in-app cart rather than a handoff. |
+| Instacart MCP server as the chef's tool | S44 (2026-07-30) | Instacart ships an MCP server. Since the app is AI-native, the chef could construct the shoppable page directly rather than us hand-rolling the call. Not for 1F (ship the plain server-side call first); revisit once the integration is live and approved. |
 | Photo/screenshot recipe import (Claude Vision) | Griffin brain dump | Depends on vision model quality. |
 | Instagram URL recipe extraction | Griffin brain dump | AI-powered extraction from post content. |
 | Share-to target for mobile web | Session 1 planning | Let users share from Instagram/Safari directly. |
@@ -300,7 +343,7 @@ This is the living backlog of ALL ideas — from initial planning, from sessions
 | Push notifications | Session 1 planning | Expiration alerts, "time to plan" reminders. |
 | Share extension (import from any app) | Session 1 planning | Critical for recipe capture on mobile. |
 | Offline support with local cache | Session 1 planning | SQLite + sync-on-reconnect. |
-| Home screen widgets (meal plan, grocery list) | Session 1 planning | iOS/Android. |
+| Home screen widgets (meal plan, grocery list) | Session 1 planning | iOS/Android. **This row is the *display* widget (read your plan / read your list).** The *action* widget Griffin asked for in S44 (`＋ Add to list` + mic, pressed not read) is a distinct feature — see Incoming (S44) "Zero-app add-to-list", Door 2. Both are native triggers per decisions.md 2026-07-13. |
 
 ## Unphased (Good ideas, not yet assigned)
 

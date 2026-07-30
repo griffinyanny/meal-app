@@ -107,9 +107,85 @@ Blended average with 80% routine / 20% complex: ~$0.003-0.004 per interaction
 
 ---
 
-## Grocery Integrations: API Landscape (Researched 2026-03-28)
+## Grocery Integrations: API Landscape
 
-### Summary table
+> **⚠️ CORRECTED 2026-07-30 (S44).** The 2026-03-28 research below concluded that Instacart was
+> partnership-gated and that Kroger should therefore go first. **That conclusion is wrong as of
+> July 2026.** Instacart now runs a public Developer Platform with a self-serve dashboard. The
+> superseded section is preserved at the bottom rather than deleted, because it was load-bearing
+> for the V2 sequencing and the reversal should be legible. Griffin ratified the re-sequencing
+> on 2026-07-30 — see `decisions.md`.
+
+### Current state (verified 2026-07-30)
+
+| Platform | Access | What you actually get | BD required? |
+|----------|--------|----------------------|--------------|
+| **Instacart** | **Public Developer Platform**, self-serve dashboard + dev key | Recipe page + shopping list page, hosted on Instacart Marketplace. Ingredients matched to products at nearby retailers, real inventory/pricing, real checkout | **No.** Dev key self-serve; production key requires a **compliance review, ~30-40 days** |
+| **Kroger** | Public API, self-serve | Product search, locations, and a public **Cart API** (add-to-cart, per-user OAuth). Kroger family: Fred Meyer, QFC, Ralphs, Harris Teeter, King Soopers | No |
+| Walmart | Affiliate only | Deep links | N/A |
+| Amazon Fresh | Closed | Deep links | N/A |
+
+### Instacart Developer Platform (the chosen first integration)
+
+**Docs:** https://docs.instacart.com/developer_platform_api
+
+- **Two endpoints matter to us:** `create_shopping_list_page` (our grocery list → a hosted,
+  shoppable Instacart page) and `create_recipe_page` (a recipe → the same, with instructions).
+  There is also an **MCP server**, relevant given the app is AI-native: the chef could construct
+  the page directly rather than us hand-rolling the call.
+- **Architecturally a leaf, not a foundation.** It is one server-side call that takes the grocery
+  list we already hold and returns a URL. **No user account linking, no OAuth, no stored retailer
+  credentials, no cart state to keep in sync.** That is why it fits the "integrations are
+  accelerators, not dependencies" principle better than Kroger does — the list stays our source of
+  truth and we hand off.
+- **Known limits, accepted going in:**
+  - Directing the user to a **specific merchant is not supported**. We send items; Instacart picks
+    the store set.
+  - **SKU numbers are not a supported way to specify items.** We send ingredient names + quantities,
+    which is exactly the shape our list already has. This is a good fit for us and a bad fit for
+    anyone wanting "add this exact SKU to my Safeway cart."
+- **Approval process (the real cost).** Self-serve dev key → build → request production key →
+  Instacart reviews. They check: 100% compliance with the Developer Platform terms, requests
+  formatted to spec, **error handling on every endpoint implemented**, and an Enterprise Help Desk
+  account. No documented traffic or business minimum. **~30-40 days from access request to
+  production key.** Denial is resubmittable after corrections.
+  - **Consequence for how we build it:** the review inspects error handling on every endpoint we
+    ship, so this cannot be a throwaway spike we rebuild later. It gets built properly once.
+- **Revenue, not cost.** On approval you get an invitation to their **impact.com** affiliate
+  program and earn commission on attributed orders and new-user signups. No access fee documented
+  (not independently verified against a fee schedule).
+- **Griffin action required:** creating the developer account, accepting the IDP terms, and stating
+  the intended use case are all account-holder tasks. Claude cannot do these.
+
+### Kroger (deferred, optional depth play)
+
+- Still public and self-serve at developer.kroger.com; the public Cart API is live.
+- **Why it is no longer first:** it needs per-user OAuth, which drags in the parked
+  account-linking question (`open-questions.md`), plus token storage, refresh, and a real failure
+  surface — and it buys two banners in Seattle (Fred Meyer, QFC). Heavier integration, narrower
+  reach.
+- **When it earns its place:** evidence that users want a true in-app cart rather than a handoff.
+
+### Deep link fallback (no approval needed)
+- `instacart.com/store/search/{item}` opens a pre-filled search. One item at a time, does not add
+  to cart. Strictly a stopgap now that the real API is reachable.
+
+### Recommended path (revised 2026-07-30)
+1. **R1 (now):** register for the Instacart Developer Platform and start the approval clock during
+   1E.5, because the 30-40 day review is calendar time that cannot be compressed later. Build the
+   integration properly against the dev key. Ship "Send to Instacart" on the Groceries tab as a
+   **1F** item.
+2. **V2:** Kroger Cart API only if in-app-cart demand shows up. Photo/social import and the rest of
+   V2 are unaffected.
+3. **Unchanged principle:** the manual list must always be perfect. Integrations are accelerators,
+   not dependencies. A failed or unapproved integration must degrade to the existing clipboard
+   export with no loss of function.
+
+---
+
+### SUPERSEDED — original research (2026-03-28)
+
+*Kept for lineage. Do not act on this; see the corrected section above.*
 
 | Platform | Public API | Cart API | Self-Serve | Realistic for V1? |
 |----------|-----------|----------|------------|-------------------|
@@ -118,27 +194,12 @@ Blended average with 80% routine / 20% complex: ~$0.003-0.004 per interaction
 | Walmart | No (limited affiliate) | No | N/A | Deep links only |
 | Amazon Fresh | No | No | N/A | Deep links only |
 
-### Kroger (best option)
-- Open developer API at developer.kroger.com
-- Product search, pricing, store locations, AND cart management via OAuth
-- Covers Kroger family: Kroger, Ralphs, Fred Meyer, Harris Teeter, King Soopers, etc.
-- Self-serve: sign up, get keys, start building
-
-### Instacart (requires partnership)
-- "Shoppable Recipes" is the relevant capability
-- Used by SideChef, Samsung Food, NYT Cooking, Mealime
-- NOT a public API — requires business development partnership
-- Apps that got access had substantial user bases (tens of thousands MAU+)
-- Good news: meal planning/recipe apps are exactly what Instacart built this for
-- Approach with traction metrics: "X users/month click send-to-grocery"
-
-### Deep link fallback (no partnership needed)
-- Construct URLs like `instacart.com/store/search/{item}` to open pre-filled searches
-- Works for all platforms but is one-item-at-a-time and doesn't add to cart
-- Functional scrappy approach for early versions
-
-### Recommended path
-1. V1: No integration. Perfect manual list with export/share.
-2. V2: Kroger API (real cart) + deep links for Instacart/Walmart.
-3. V3+: Pursue Instacart partnership with traction data.
-4. Principle: Manual list must always be perfect. Integrations are accelerators, not dependencies.
+- **Instacart (believed to require partnership).** "Shoppable Recipes" was the relevant capability,
+  used by SideChef, Samsung Food, NYT Cooking, Mealime. Believed NOT to be a public API; believed
+  to require a business development partnership, with access granted to apps holding tens of
+  thousands of MAU. Recommended approach was to come with traction metrics.
+- **Original recommended path:** V1 no integration → V2 Kroger API + deep links → V3+ pursue an
+  Instacart partnership with traction data.
+- **Why it was wrong:** the Developer Platform either did not exist publicly or was not found in
+  March. The error was treating a four-month-old API-availability finding as durable. **Lesson:
+  re-verify third-party API availability before it drives sequencing, not after.**
