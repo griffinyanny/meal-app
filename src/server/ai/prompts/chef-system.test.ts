@@ -84,6 +84,73 @@ describe("buildPlanSystemPrompt", () => {
     expect(prompt).toContain("never what they already own");
   });
 
+  it("should point the reuse reference at a prior day that has the ingredient", () => {
+    // Layer B, S45. The S40 fix ("use the WEEKDAY NAME, never a day offset")
+    // removed the internal vocabulary but never constrained the REFERENCE, so
+    // the defect moved rather than closing: on a Wed→Tue week, Thursday's card
+    // read "Uses the leftover fresh dill from Monday" — a Monday four days in
+    // its future, whose meal was fried rice and carried no dill. Weekday names
+    // are ambiguous the moment a week does not start on Monday, and the model
+    // reaches for the conventional start. Two halves, because either alone
+    // still permits a wrong card: EARLIER IN THIS WEEK kills the time travel,
+    // "actually carries the ingredient" kills naming a night that never had it.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("EARLIER IN THIS WEEK");
+    expect(prompt).toContain("actually carries the ingredient");
+    expect(prompt).toContain("has not been cooked yet");
+    // The constraint is only satisfiable because the user message now carries a
+    // day map (generate-plan.ts). Asserting the pointer keeps the two halves
+    // from drifting apart — a constraint referring to a map nobody sends is
+    // exactly the state that produced the defect.
+    expect(prompt).toContain("day map in the user message");
+  });
+
+  it("should stop reuse from colonising every rationale", () => {
+    // Layer B, S45. The rule WORKS — that was S40's finding and it still holds.
+    // What nobody checked was whether it DOMINATES. Two live weeks came back
+    // 7-of-7 and 4-of-7 rationales arguing waste, so the chef's one job on this
+    // line ("why this meal, why this day") had collapsed into a single argument
+    // repeated all week. It is also the cause behind Layer A's standing M2
+    // finding that seven gold rationales read as texture rather than voice: the
+    // texture is real, and it is because they all say the same thing.
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("AT MOST TWO rationales");
+    expect(prompt).toContain("why THIS meal belongs on THIS day");
+  });
+
+  it("should keep cooking methods out of the front of a title", () => {
+    // W1 (Phase 1E.5) specified this as "enforced in generation" and the scope
+    // table marked it done, but it was never written into the prompt at all —
+    // found by grepping for it while judging the Layer B run that was supposed
+    // to verify it. The live model duly produced "Grilled Lemon-Herb Chicken"
+    // and "Pan-Seared Salmon". Both halves asserted: the exception is what
+    // keeps "Grilled Cheese" from being renamed, and the four-or-more clause is
+    // the actual S40 finding (a week of seven "Grilled X" titles).
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("NEVER OPEN WITH A COOKING METHOD");
+    expect(prompt).toContain("Grilled Cheese");
+    expect(prompt).toContain("four or more meals");
+  });
+
+  it("should ask for a cost estimate it is allowed to decline", () => {
+    // W6 (Phase 1E.5). The estimate is the ONE figure on the surface a user can
+    // audit against a real receipt, so the prompt's job is not to get a number
+    // out of the model — it is to constrain what the number means and to leave
+    // an honest exit. All four halves are asserted because dropping any one of
+    // them produces a plausible, wrong figure rather than a visible failure:
+    //   • cents, so a returned float or a dollars-not-cents answer is caught
+    //     downstream by the validator instead of rendering as $1,400
+    //   • staples excluded, or every meal silently carries the same $8 of oil
+    //   • reuse counted once, or the week's sum double-charges the dill the
+    //     reuse rule exists to finish
+    //   • null allowed, because a refusal is a better answer than a guess
+    const prompt = buildPlanSystemPrompt();
+    expect(prompt).toContain("estCostCents");
+    expect(prompt).toContain("never count pantry staples");
+    expect(prompt).toContain("already pays for");
+    expect(prompt).toContain("Return null rather than guessing");
+  });
+
   it("should be static (no interpolated user data)", () => {
     expect(buildPlanSystemPrompt.length).toBe(0);
   });

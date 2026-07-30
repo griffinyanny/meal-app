@@ -2,6 +2,13 @@ import type { SlotType } from "@/lib/plan-schema";
 
 export type Timeframe = "past" | "tonight" | "upcoming";
 
+// Which meal of the day a slot holds. Mirrors the DB enum on meal_plan_slots.
+// R1 generates dinners only, but the rail renders every type: the 1E.5 ledger's
+// density rule ("days are containers, meals are inset rows") is what makes
+// fifteen meals fit the same scroll as five dinners, and it cannot be built
+// later without rebuilding the rail.
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
 // Lifecycle of a slot's full (hydrated) recipe. Mirrors the DB enum on
 // meal_plan_slots.recipeStatus. See decisions.md "Phase 1D Groceries" (2026-07-20).
 export type RecipeStatus = "none" | "hydrating" | "ready" | "stale";
@@ -20,31 +27,54 @@ export interface DisplayMeal {
   relative: string | null; // "TONIGHT", "TODAY", or null
   timeframe: Timeframe;
   slotType: SlotType;
+  mealType: MealType;
   title: string | null;
   description: string | null;
   rationale: string | null;
   ingredientPreview: string[];
   tags: string[];
   estTimeMinutes: number | null;
+  /** Rough grocery cost for this meal in cents (W6). Null = no estimate. */
+  estCostCents: number | null;
   servings: number | null;
   chips: string[];
   feedback: "thumbs_up" | "thumbs_down" | null;
   // Background hydration: the linked full recipe (once ready) and its lifecycle.
   recipeId: string | null;
   recipeStatus: RecipeStatus;
+  /**
+   * The library recipe the PERSON chose for this night (W9). Distinct from
+   * `recipeId`, which hydration owns and overwrites — this one records a
+   * decision and survives it, which is what lets a pick outlive a regenerate.
+   * Null on everything the chef proposed itself.
+   */
+  pickedRecipeId: string | null;
+  /**
+   * What the person's own recipe serves — build dependency 2's other half.
+   *
+   * Present so the meta row can say `scaled to 3` INSTEAD of `serves 3`, which
+   * is a different claim: one says the chef adjusted their recipe for this
+   * household, the other says nothing at all. Null when nothing was picked, or
+   * when the recipe never stated a serving count to scale from.
+   */
+  pickedSourceServings: number | null;
 }
 
 export interface PlanSlot {
   id: string;
   date: string;
   slotType: SlotType;
+  mealType: MealType;
   title: string | null;
   description: string | null;
   ingredientPreview: string[] | null;
   slotTags: string[] | null;
   estTimeMinutes: number | null;
+  estCostCents: number | null;
   chips: string[] | null;
   servings: number | null;
+  pickedRecipeId: string | null;
+  pickedSourceServings?: number | null;
   rationale: string | null;
   feedback: "thumbs_up" | "thumbs_down" | null;
   recipeId: string | null;
@@ -103,17 +133,21 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
     relative: relativeLabel(timeframe),
     timeframe,
     slotType: slot.slotType,
+    mealType: slot.mealType,
     title: slot.title,
     description: slot.description,
     rationale: slot.rationale,
     ingredientPreview: slot.ingredientPreview ?? [],
     tags: slot.slotTags ?? [],
     estTimeMinutes: slot.estTimeMinutes,
+    estCostCents: slot.estCostCents,
     servings: slot.servings,
     chips: slot.chips ?? [],
     feedback: slot.feedback,
     recipeId: slot.recipeId,
     recipeStatus: slot.recipeStatus,
+    pickedRecipeId: slot.pickedRecipeId,
+    pickedSourceServings: slot.pickedSourceServings ?? null,
   };
 }
 
@@ -121,12 +155,14 @@ export function slotToDisplayMeal(slot: PlanSlot): DisplayMeal {
 export interface StreamedMealLike {
   dayOffset?: number;
   slotType?: SlotType;
+  mealType?: MealType;
   title?: string | null;
   description?: string | null;
   rationale?: string | null;
   ingredientPreview?: (string | undefined)[];
   tags?: (string | undefined)[];
   estTimeMinutes?: number | null;
+  estCostCents?: number | null;
   servings?: number | null;
   chips?: (string | undefined)[];
 }
@@ -147,6 +183,7 @@ export function streamedMealToDisplay(
     relative: relativeLabel(timeframe),
     timeframe,
     slotType,
+    mealType: meal.mealType ?? "dinner",
     title: meal.title ?? null,
     description: meal.description ?? null,
     rationale: meal.rationale ?? null,
@@ -155,20 +192,17 @@ export function streamedMealToDisplay(
     ),
     tags: (meal.tags ?? []).filter((s): s is string => typeof s === "string"),
     estTimeMinutes: meal.estTimeMinutes ?? null,
+    estCostCents: meal.estCostCents ?? null,
     servings: meal.servings ?? null,
     chips: (meal.chips ?? []).filter((s): s is string => typeof s === "string"),
     feedback: null,
     recipeId: null,
     recipeStatus: "none",
+    // A streaming meal is always the chef's own proposal. A pick predates the
+    // generation it constrains, so it is never discovered mid-stream.
+    pickedRecipeId: null,
+    pickedSourceServings: null,
   };
-}
-
-export function metaLine(meal: DisplayMeal): string {
-  const parts: string[] = [];
-  if (meal.estTimeMinutes) parts.push(`${meal.estTimeMinutes} min`);
-  if (meal.servings) parts.push(`serves ${meal.servings}`);
-  for (const tag of meal.tags) parts.push(tag);
-  return parts.join(" · ");
 }
 
 export function isCookable(slotType: SlotType): boolean {

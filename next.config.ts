@@ -20,7 +20,7 @@ const securityHeaders = [
   // env-driven, unlike the two access gates: headers() is evaluated at BUILD
   // time while the gates read env at request time, so wiring it to the same vars
   // would let the two silently disagree. It is one line to delete instead.
-  // LAUNCH-DAY ITEM: remove this + public/robots.txt. See docs/bug-tracker.md (BUG-030).
+  // LAUNCH-DAY ITEM: remove this + public/robots.txt. See docs/bug-tracker.md (BUG-043).
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 

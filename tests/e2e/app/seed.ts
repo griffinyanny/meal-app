@@ -127,15 +127,86 @@ export async function seedPlanState(
         weekStart: spec.weekStart,
         status: spec.status,
         chefSummary: spec.chefSummary,
+        chefNote: spec.chefNote ?? null,
         confirmedAt: spec.status === "confirmed" ? new Date() : null,
       })
       .returning();
+
+    // W8 · the library the picker reads. Inserted before the slots so a spec that
+    // performs a pick has something to pick, and with fixed ids so an assertion
+    // can name one.
+    if (spec.library && spec.library.length > 0) {
+      await db.insert(schema.recipes).values(
+        spec.library.map((r) => ({
+          id: r.id,
+          householdId: ctx.householdId,
+          title: r.title,
+          sourceType: r.sourceType,
+          // Never a plan draft: `sourcePlanId IS NULL` is half of build
+          // dependency 1's staleness query, and a library seeded as drafts would
+          // make the picker's opening content silently empty.
+          sourcePlanId: null,
+          lastCookedAt: r.lastCookedAt ? new Date(r.lastCookedAt) : null,
+          totalTimeMinutes: r.totalTimeMinutes,
+          servings: r.servings,
+          // Real ingredients, because build dependency 4 warms the normalize
+          // cache from them at pick time — an empty list would make the warm a
+          // silent no-op and the coverage a lie.
+          ingredients: [
+            { qty: "1", unit: "lb", item: "the main thing" },
+            { qty: "2", unit: "tbsp", item: "olive oil" },
+          ],
+          steps: [{ number: 1, text: "Cook it." }],
+        }))
+      );
+    }
+
+    // W9 · a picked slot points at a REAL library recipe, so the FK resolves and
+    // the row is genuinely what the picker will later produce. `sourcePlanId`
+    // stays null deliberately: a picked recipe came out of the deliberate
+    // library, not out of a plan draft, and that is exactly the distinction the
+    // staleness query (build dependency 1) reads.
+    const pickedTitles = spec.slots.filter((s) => s.picked).map((s) => s.title);
+    const pickedIdByTitle = new Map<string, string>();
+    if (pickedTitles.length > 0) {
+      const rows = await db
+        .insert(schema.recipes)
+        .values(
+          pickedTitles.map((title) => ({
+            householdId: ctx.householdId,
+            title: title ?? "Picked recipe",
+            // Not "plan_generated": this recipe existed BEFORE the plan and is
+            // the reason the slot looks the way it does. Getting this wrong
+            // would also put it in the Recipes tab's drafts shelf instead of
+            // the library it was chosen from.
+            sourceType: "ai_generated" as const,
+            servings: 4,
+            totalTimeMinutes: 40,
+            // Required, and real rather than empty on purpose: build dependency
+            // 4 says a picked recipe may have no `normalized_ingredients` cache,
+            // so the state that exercises pick-time cache warming next session
+            // needs actual ingredients to normalize.
+            ingredients: [
+              { qty: "150", unit: "g", item: "guanciale" },
+              { qty: "60", unit: "g", item: "pecorino" },
+              { qty: "3", unit: "", item: "eggs" },
+              { qty: "200", unit: "g", item: "spaghetti" },
+            ],
+            steps: [
+              { number: 1, text: "Render the guanciale." },
+              { number: 2, text: "Toss off the heat." },
+            ],
+          }))
+        )
+        .returning();
+      rows.forEach((r) => pickedIdByTitle.set(r.title, r.id));
+    }
 
     await db.insert(schema.mealPlanSlots).values(
       spec.slots.map((s) => ({
         householdId: ctx.householdId,
         planId: plan.id,
-        mealType: "dinner" as const,
+        mealType: s.mealType ?? ("dinner" as const),
         date: s.date,
         slotType: s.slotType,
         title: s.title,
@@ -143,9 +214,13 @@ export async function seedPlanState(
         ingredientPreview: s.ingredientPreview,
         slotTags: s.slotTags,
         estTimeMinutes: s.estTimeMinutes,
+        estCostCents: s.estCostCents ?? null,
         chips: s.chips,
         servings: s.servings,
         rationale: s.rationale,
+        pickedRecipeId: s.picked
+          ? (pickedIdByTitle.get(s.title ?? "") ?? null)
+          : null,
       }))
     );
 
