@@ -230,7 +230,7 @@ export function PickerContent({
         </div>
 
         {libraryEmpty ? (
-          <EmptyLibrary onGenerate={onGenerate} />
+          <EmptyLibrary />
         ) : (
           <>
             {/* STALENESS IS CONTENT, NOT A SORT ORDER (§A) — the chef says the
@@ -295,8 +295,27 @@ export function PickerContent({
           nag, and the floating slot is reserved for a real action.
 
           At 22px, not 96px: the 96px offset exists only to clear the tab bar,
-          and a sheet already covers it. */}
-      {selected.length > 0 ? (
+          and a sheet already covers it.
+
+          ONE ANCHOR FOR THE LOUDEST OBJECT (S48, Griffin's capture read). The
+          empty library's `Let the chef write it` renders in this same pinned
+          slot rather than inline in the body: the pane is pinned at 80vh, so an
+          inline primary sat ~700px above where the selection primary sits, and
+          the same pane put its one big button in two different places depending
+          on state. The two branches are mutually exclusive by construction —
+          an empty library has nothing to select. */}
+      {libraryEmpty ? (
+        <div className="flex-none px-4 pb-[22px] pt-2">
+          <button
+            type="button"
+            data-testid="picker-empty-primary"
+            onClick={onGenerate}
+            className="h-[52px] w-full rounded-[16px] bg-[var(--spec-action)] text-[15px] font-semibold text-[var(--spec-action-on)]"
+          >
+            Let the chef write it
+          </button>
+        </div>
+      ) : selected.length > 0 ? (
         <div className="flex-none px-4 pb-[22px] pt-2">
           <p className="m-0 mb-2 text-center text-[12.5px] text-[var(--spec-text-caption)]">
             {atLimit

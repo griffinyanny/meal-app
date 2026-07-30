@@ -261,7 +261,7 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       tilesCarryCounts: true,
       // The three-hour lamb against a 30-minute night. It DIMS AND SAYS WHY in
       // its own meta rather than vanishing.
-      unfittableRowDimsWithItsReason: "3 hr — longer than",
+      unfittableRowDimsWithItsReason: "3 hr · longer than",
       // §A: no action bar until something is selected. An inert primary is a nag.
       hasNoActionBarYet: true,
       // §D, and the reason this is a third subject rather than a second drawer.

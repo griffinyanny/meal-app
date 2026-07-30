@@ -206,7 +206,7 @@ describe("fittingCount", () => {
     expect(
       fittingCount([
         { unfittableReason: null },
-        { unfittableReason: "3 hr — longer than Thursday allows" },
+        { unfittableReason: "3 hr · longer than Thursday allows" },
         { unfittableReason: null },
       ])
     ).toBe(2);
@@ -246,13 +246,13 @@ describe("toPickerRecipe", () => {
   it("should say WHY a recipe cannot fit the night rather than hiding it", () => {
     const row = toPickerRecipe(recipe({ totalTimeMinutes: 180 }), THURSDAY);
 
-    expect(row.unfittableReason).toBe("3 hr — longer than Thursday allows");
+    expect(row.unfittableReason).toBe("3 hr · longer than Thursday allows");
   });
 
   it("should report a long cook in hours and minutes, not raw minutes", () => {
     const row = toPickerRecipe(recipe({ totalTimeMinutes: 95 }), THURSDAY);
 
-    expect(row.unfittableReason).toBe("1 hr 35 min — longer than Thursday allows");
+    expect(row.unfittableReason).toBe("1 hr 35 min · longer than Thursday allows");
   });
 
   it("should survive a recipe with no saved date and no time", () => {
