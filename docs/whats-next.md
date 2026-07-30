@@ -31,7 +31,7 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **1E.5 is one glance from closed: confirm the S48 after-captures, merge, open 1F.**
+## ▶ NEXT SESSION — **1E.5 is ✅ CLOSED at M5.5 (Griffin signed off S48). 1F is open: start Workstream A.**
 
 **S48 ran your taste pass as a decision ballot** (you couldn't see the captures, so you delegated to the
 recommendation slate) **and built everything it decided.** Work is on **`session-43-1e5-plan-rebuild`,
@@ -71,17 +71,22 @@ test-mode card should be there for Griffin's account.** If absent after that dep
 (most likely a stray duplicate or the login email differing from the allowlisted one). `ALLOWED_EMAILS`
 is fail-open by design; it becomes the invite list at closed beta.
 
-### ⭐ Next up, in order
+### ⭐ Next up — 1E.5 is CLOSED (Griffin signed off S48); 1F is OPEN and already has its scope doc
 
-1. **Griffin looks at the S48 after-captures** (the before/after sheet from the wrap, or
-   `tests/e2e/captures/` newest `A-…` run). The ballot decided; this is the visual half a delegated
-   ballot cannot do. Anything that reads wrong is a cheap copy/geometry fix.
-2. **On his word: merge `session-43-1e5-plan-rebuild` → `main`, push, `git worktree remove
-   ../meal-app-1e5`.** 1E.5 closes → **M5.5**. Flip scope-v1's 1E.5 row to ✅.
-3. **Open 1F** (scope doc at phase start, per the protocol). Carried in: BUG-035 (the 90s generation
-   timeout — before R1 ship), BUG-037/BUG-038, the slate's four 1F items, spec §12 items 03/04/05/07,
-   the S42 amber/green semantic calls, and **scope-v1's closed-beta question, which now gates 1F's
-   shape** — decide it at 1F open, not mid-phase.
+**Griffin confirmed both halves in-session:** the test-mode card renders on prod (`DEV_TOOLS_EMAILS`
+works), and the before/after sheet read good — the taste gate is closed. The branch merged `origin/main`
+in (the concurrent access-gate + Instacart sessions; their BUG-030/031 renumbered **BUG-042/043**), and
+**a concurrent S49 session had already opened [scope-1F.md](scope-1F.md)** with four workstreams
+(A ship-blockers → B design-system pass → C PWA → D production readiness) and flipped scope-v1.
+
+1. **Start 1F Workstream A** per [scope-1F.md](scope-1F.md): BUG-035 first (the 90s generation timeout —
+   the only *before R1 ship* item), then the ship-blocker list.
+2. **Carried into 1F from S48:** BUG-037/BUG-038, the slate's four 1F items (Recipes `+` weight,
+   picker/Recipes vocabulary unification, cooked-when evidence, caps-label tracking), BUG-042 (email
+   provider config check before the first non-Griffin tester), BUG-043 (launch-day noindex removal).
+3. **The closed-beta question**: the mechanism shipped (S43a — `SITE_ACCESS_CODE` + `ALLOWED_EMAILS`,
+   both inert while empty); whether to actually invite testers beyond Griffin + wife is still his call,
+   now purely a product decision.
 
 ### Also still open
 - **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path

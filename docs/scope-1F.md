@@ -52,14 +52,26 @@ on a real device. D is last only because it grades a finished product.
 Parked *for* 1E, carried through 1E's close, 1E.7 and 1E.5. It gated this phase's shape and is now
 answered, which is why 1F could be scoped at all.
 
-**What this removes from 1F** (and it is not a small amount):
+**⚠️ Correction to the framing this decision was taken under.** The gate is **already built and already on
+`main`** — PR #6, `Gate the closed beta: hide the URL, and control who may hold an account`, from the
+S43 `session-43-access-gate` work. `src/lib/access.ts` ships two independent gates, `SITE_ACCESS_CODE`
+(hides the app including the login screen, blocks at the proxy) and `ALLOWED_EMAILS` (decides who may hold
+an account, blocks at the auth callback and again in the `(app)` layout), **both defaulting to OFF when
+their env var is unset.** So "no closed beta" costs nothing to honour and removes nothing that would
+otherwise have been built: the seam exists, it is off, and turning it on is an env change rather than a
+code diff.
 
-- `ALLOWED_EMAILS` stays **fail-open** and never becomes an invite gate. No invite flow, no waitlist, no
-  account provisioning surface.
-- No in-app feedback capture, no support path, no bug-report affordance.
-- No onboarding-for-strangers pass. The interview is tuned for two people who know what the product is
+**What the decision actually settles, then:**
+
+- **Leave both env vars unset.** Prod stays open; the gate stays dormant. Going public later is deleting
+  two env vars, and running a beta later is setting them — neither is a code change.
+- **No in-app feedback capture, no support path, no bug-report affordance.** This *is* real scope removed.
+- **No onboarding-for-strangers pass.** The interview is tuned for two people who know what the product is
   and can say so out loud; it does not have to survive a cold user this release.
-- No multi-user load, abuse, or cost-per-user modelling beyond what the existing rate limits give.
+- **No multi-user load, abuse, or cost-per-user modelling** beyond what the existing rate limits give.
+- **The access gate still needs one thing from this phase:** it has never been exercised in either
+  direction on prod. Workstream D verifies that unset really does mean open (nobody gets locked out of the
+  validation run by a gate nobody meant to arm) — a five-minute check, not a build.
 
 **What it does NOT remove.** The Definition of Done still requires Griffin **and his wife** to each run
 the full weekly ritual on prod for **2 consecutive real weeks**. Two users is the validation bar, not an

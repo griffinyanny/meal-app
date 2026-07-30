@@ -303,10 +303,10 @@ and a migration.
       (the `3e` invocation replaces one slot and `validateModification` dedupes by dayOffset, so two
       recipes can never both land on Friday). The remaining sixteen are **staged for Griffin's taste
       pass** rather than applied — they are design calls, and several disagree with a locked frame.
-- [ ] **Griffin's taste review** — the last gate. **S48: the decisions half is done** — BUG-041 ruled
-      (product copy), all sixteen critic findings disposed, two frame deviations ratified — and the
-      changes are built. **What remains is his eyes on the S48 after-captures**, which is the half a
-      delegated ballot cannot do.
+- [x] **Griffin's taste review** — the last gate. **CLOSED S48 (2026-07-30), in two halves:** the
+      decisions ran as a ballot (BUG-041 ruled product copy, all sixteen critic findings disposed, two
+      frame deviations ratified), the changes were built, and Griffin confirmed the before/after
+      captures — *"the before and after looks good."* **1E.5 → M5.5.**
 - [ ] **Two-tier QA:** routine gauntlet + blast-radius review per slice; **deep audit at phase close** —
       1E.5 is an arc close and touches the confirm path, so the milestone audit fires automatically.
 

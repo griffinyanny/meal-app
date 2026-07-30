@@ -16,7 +16,7 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN — one glance from closed. S48 (2026-07-30) executed Griffin's taste pass as a decision ballot and built all of it; what remains is his eyes on the S48 after-captures, then merge → M5.5 → 1F.** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+**Phase 1E.5 (Plan Design Buildout) is ✅ CLOSED at M5.5 (S48, 2026-07-30 — Griffin signed off the before/after captures). Phase 1F (Polish / Production Readiness) is 🔨 OPEN** — scope: `docs/scope-1F.md` (opened by the concurrent S49 session; four workstreams, A ship-blockers first). Read `docs/whats-next.md` first. The S48 merge folded in the concurrent access-gate + Instacart sessions; their bug IDs were renumbered **BUG-042/043**.
 
 **614 unit + 111 E2E green (L17 new — the picker pane is measured), lint + typecheck clean, migrations `0007`–`0009` applied. Layer A 0 blockers / 0 high; Layer B run twice; `ux-design-critic` sixteen findings disposed (11 applied / 2 rejected / 4 → 1F, decisions.md S48). BUG-041 closed: the boundary sentence is product copy on the picked row, and the seed/mock/spec that hardcoded it as chef output were made honest.**
 
