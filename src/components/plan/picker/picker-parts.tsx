@@ -175,8 +175,17 @@ export function PickerRow({
  * grants a mark, not a passage), and the two doors became one honest one — both
  * went to `/recipes`, and `Paste a recipe or a link` promised an act this
  * surface cannot perform. One door, saying where it goes and what to do there.
+ *
+ * S48 follow-up, Griffin's capture read: `Let the chef write it` is NOT rendered
+ * here. It lives in the pane's pinned footer beside the selection primary, so
+ * the 80vh pane anchors its loudest object in ONE place across every state —
+ * inline here and pinned there meant the button moved ~700px depending on
+ * whether the library had anything in it. The copy also stopped promising
+ * `five dinners` when no week exists yet and the app confirms seven: the count
+ * is the request's to make, and a number the person can compare against what
+ * they get is the BUG-041 class of copy, one size smaller.
  */
-export function EmptyLibrary({ onGenerate }: { onGenerate: () => void }) {
+export function EmptyLibrary() {
   return (
     <div className="px-4 pb-5">
       <p className="m-0 mb-1.5 text-[16px] font-semibold text-[var(--spec-text-primary)]">
@@ -186,24 +195,16 @@ export function EmptyLibrary({ onGenerate }: { onGenerate: () => void }) {
         className="m-0 mb-4 text-[13.5px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
         style={{ textWrap: "pretty" }}
       >
-        This is where recipes land once you keep them. I&apos;ll write you five
-        dinners without a single saved thing.
+        This is where recipes land once you keep them. I&apos;ll write you a week
+        without a single saved thing.
       </p>
-      <div className="mb-4 flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <SheetRow
           label="Look through the Recipes tab"
           sublabel="Paste a link there, or keep anything — it lands here"
           href="/recipes"
         />
       </div>
-      <button
-        type="button"
-        data-testid="picker-empty-primary"
-        onClick={onGenerate}
-        className="h-[52px] w-full rounded-[16px] bg-[var(--spec-action)] text-[15px] font-semibold text-[var(--spec-action-on)]"
-      >
-        Let the chef write it
-      </button>
     </div>
   );
 }

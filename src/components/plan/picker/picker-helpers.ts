@@ -213,8 +213,13 @@ function savedMonth(value: Date | string | null): string | null {
  *
  * A RECIPE THAT CANNOT FIT THE SLOT DIMS AND SAYS WHY, RATHER THAN VANISHING
  * (§A). Disappearing rows make the library feel smaller than it is, and the
- * reason is the useful part: "3 hr — longer than Thursday allows" teaches the
+ * reason is the useful part: "3 hr · longer than Thursday allows" teaches the
  * constraint, while an absent row teaches nothing.
+ *
+ * The reason takes the SAME ` · ` separator as the meta it replaces (S48,
+ * Griffin's capture read). Both strings are the sublabel of the same row, so an
+ * em dash here means one row type renders two separators depending on whether
+ * the recipe fits — and the app spells every other row `30 min · serves 2`.
  */
 export function toPickerRecipe(
   r: RecipeListItem,
@@ -238,7 +243,7 @@ export function toPickerRecipe(
     title: r.title,
     meta,
     unfittableReason: over
-      ? `${formatHours(r.totalTimeMinutes!)} — longer than ${constraint!.dayName} allows`
+      ? `${formatHours(r.totalTimeMinutes!)} · longer than ${constraint!.dayName} allows`
       : null,
   };
 }

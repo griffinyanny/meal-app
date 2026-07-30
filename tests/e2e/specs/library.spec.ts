@@ -164,7 +164,7 @@ test("L7 - a recipe that cannot fit the night dims and says why, rather than van
 
   await expect(lamb).toBeVisible();
   await expect(lamb).toHaveAttribute("data-unfittable", "true");
-  await expect(lamb).toContainText("3 hr — longer than");
+  await expect(lamb).toContainText("3 hr · longer than");
   // And the constraint became one of the four doors — the ONE tile that swaps.
   await expect(
     page.getByTestId("picker-tile").filter({ hasText: "Under 30 min" })
@@ -287,6 +287,27 @@ test("L11 - the empty library does not apologise, and hands back the action that
   );
   await expect(page.getByText("Look through the Recipes tab")).toBeVisible();
   await expect(page.getByText("Paste a recipe or a link")).toHaveCount(0);
+
+  // S48 follow-up (Griffin's capture read): the primary is PINNED to the pane's
+  // bottom edge — the same slot the selection primary uses — rather than
+  // rendered inline under the content. The pane is fixed at 80vh (L17), so an
+  // inline button sat ~700px above where the selection primary sits, and one
+  // sheet put its loudest object in two different places depending on whether
+  // the library had anything in it. Measured, because the fix is a DOM move:
+  // rendering it back inside the scroll body passes every assertion above.
+  const gapBelowPrimary = await page.evaluate(() => {
+    const pane = document.querySelector('[data-slot="drawer-content"]');
+    const primary = document.querySelector(
+      '[data-testid="picker-empty-primary"]'
+    );
+    if (!pane || !primary) return -1;
+    return Math.round(
+      pane.getBoundingClientRect().bottom -
+        primary.getBoundingClientRect().bottom
+    );
+  });
+  expect(gapBelowPrimary).toBeGreaterThanOrEqual(0);
+  expect(gapBelowPrimary).toBeLessThanOrEqual(40);
 });
 
 test("L12 - the picker swaps a sheet's content in place instead of stacking a second drawer", async ({
