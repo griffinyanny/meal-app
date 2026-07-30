@@ -196,8 +196,8 @@ documented public-read / service-role-write exception)?
 
 ### Retailer Account Linking: Setup vs. Checkout
 **Question**: Should users link their grocery store accounts (Target, Kroger, etc.) during initial onboarding/profile setup or at the point of checkout? Cooklist does it at checkout (web view login with email code), which is very clunky. Pre-linking in profile/settings would make checkout frictionless but adds to onboarding weight. What's the right balance? Could we do progressive linking — first checkout triggers the link, then it's remembered?
-**Status**: Open. V2 concern but worth thinking about architecturally.
-**Raised**: Session 5 (2026-04-05)
+**Status**: **MOOT for the first integration (S44, 2026-07-30), still live for Kroger.** The Instacart shopping-list-page handoff requires **no account linking at all**: we POST the list server-side and hand the user a URL, and any Instacart auth happens on Instacart's side. So R1 ships ordering without ever answering this. The question re-opens only if we build the **Kroger** Cart API, which needs per-user OAuth — and that dependency is now an argument *against* Kroger, not a neutral cost. See `technical-research.md`.
+**Raised**: Session 5 (2026-04-05); **narrowed Session 44 (2026-07-30)**
 
 ### Platform Sequencing: Web-First vs. iOS-First (New — raised Session 5)
 **Question**: Griffin's design direction is deeply iOS-native (liquid glass, glass-morphism, Crouton/Flighty aesthetic). The current plan is web-first (phone form factor) → iOS later. But if the target aesthetic is fundamentally iOS-native, can a web app deliver an acceptable experience, or should we go straight to iOS?
@@ -217,7 +217,7 @@ documented public-read / service-role-write exception)?
 ### Monetization Details
 **Question**: What features are free vs. paid? What's the pricing? Free trial length? **Expanded S35 (2026-07-24) with the specific sub-questions Griffin wants answered before charging:**
 - **What is the bare MVP that justifies a charge?** If it's still just recipe generation + a list, is that valuable enough? If it's generation + storage + note creation + planning, does that clear the bar? Where's the line?
-- **Is grocery-store integration (Instacart / Kroger / other) a hard requirement to justify the price** — or can we charge on the planning/list intelligence alone? (Ordering is V2 today; this asks whether monetization is gated on pulling it forward.)
+- **Is grocery-store integration (Instacart / Kroger / other) a hard requirement to justify the price** — or can we charge on the planning/list intelligence alone? (Ordering was V2; this asked whether monetization is gated on pulling it forward.) **Cheaper to answer as of S44 (2026-07-30): the question is no longer hypothetical.** Instacart's Developer Platform turned out to be self-serve, so ordering was pulled into R1 (clock starts during 1E.5, button ships in 1F). We will have the integration in hand *before* pricing is set, which converts "would ordering justify a price" from a bet into something observable on Griffin + wife's real weeks. It also adds a **second revenue line** (impact.com affiliate commission on attributed orders) that is independent of subscription price and was not in the March model.
 - **Cost-per-user must sit below the price with margin.** Requires the LLM cost-per-user model (idea-backlog, S35) so a heavy user can't run us negative — the abuse ceiling. Pricing can't be set until that number exists.
 - Free vs. paid split, trial length, and the freemium boundary all sit downstream of the two questions above.
 - **How do we test any of this?** Griffin (S37) wants pricing A/B tests once the native build productionalizes —
@@ -243,8 +243,8 @@ documented public-read / service-role-write exception)?
 
 ### Instacart Integration Feasibility
 **Question**: What's the current state of Instacart's developer program / API? Is direct cart integration possible, or do we need deep-link/affiliate approach?
-**Status**: RESEARCHED. Instacart requires business partnership (not self-serve). Kroger has the only real open API. Path: V1 no integration, V2 Kroger API + deep links, pursue Instacart partnership with traction. See `technical-research.md`.
-**Raised**: Session 1 (2026-03-28)
+**Status**: **RESOLVED (S44, 2026-07-30) — and the March answer was wrong.** Instacart now runs a **public Developer Platform** with a self-serve dashboard and dev keys. No business development required. Production access is a **compliance review (~30-40 days)**, not a partnership negotiation, with no documented traffic minimum, and approval carries an impact.com affiliate invitation (we earn, we don't pay). **Instacart goes first, Kroger is deferred** — the shopping-list-page API needs no OAuth, no account linking, and no cart state, where Kroger's Cart API needs all three to reach two Seattle banners. Re-sequenced into R1: start the approval clock during 1E.5, ship the button in 1F. See `technical-research.md` + `decisions.md` (2026-07-30).
+**Raised**: Session 1 (2026-03-28); **corrected + resolved Session 44 (2026-07-30)**
 
 ### LLM Platform Selection
 **Question**: Which LLM provider(s) to use for production? Current recommendation is tiered routing (GPT-4.1-mini for routine, Claude Sonnet for complex). Need to benchmark on actual recipe tasks before deciding.

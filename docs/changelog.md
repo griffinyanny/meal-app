@@ -4,6 +4,66 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 44 — 2026-07-30 (Grocery integration re-verified; Instacart pulled into R1. No code.)
+
+**The job:** Griffin asked where we landed on grocery integration, whether Instacart was the
+broad-first play, and whether any of these are open APIs or need business development. A recall
+question that turned into a reversal.
+
+**What we had recorded.** `technical-research.md` (2026-03-28): Instacart is "NOT a public API —
+requires business development partnership," access reserved for apps with tens of thousands of MAU;
+therefore **Kroger first** (V2), Instacart at **V3+** once we had traction data to pitch with. Griffin
+remembered it the other way round, as Instacart-first-for-breadth.
+
+**What re-verification found (2026-07-30).** The recorded finding is wrong. Instacart runs a **public
+Developer Platform** — self-serve dashboard, published docs, dev keys, and an MCP server. There is no
+partnership to negotiate. Production access is a **compliance review** (spec-correct requests, error
+handling on every endpoint, terms compliance, help-desk account), **~30-40 days**, **no documented
+traffic or business minimum**. Approval carries an **impact.com affiliate invitation** — we earn
+commission on attributed orders rather than paying for access. Kroger's public Cart API is still live
+and still self-serve.
+
+**The decision (Griffin ratified): Instacart first, into R1. Kroger deferred to V2, conditionally.**
+Instacart wins on the merits even setting the availability correction aside — its shopping-list-page
+call needs **no OAuth, no account linking, and no cart state** and reaches a North America retailer
+network, where Kroger's Cart API needs all three to reach **two** Seattle banners (Fred Meyer, QFC).
+Kroger also re-opens the account-linking question parked since April, which is now an argument against
+it rather than a neutral cost.
+
+**One pushback registered and kept.** Griffin called the integration "a pretty foundational component."
+It isn't — architecturally it is a **leaf**: one server-side call that takes the grocery list we already
+hold and returns a URL, touching no schema, auth, or state. **What justified moving early was not
+coupling, it was the clock.** The 30-40 day review is calendar time nothing can compress, so the
+*paperwork* got pulled forward while the *scope* stayed a single 1F checklist item. That distinction is
+the whole shape of the decision.
+
+**Slotted:** approval clock starts during **1E.5** (parallel), "Send to Instacart" ships as a **1F**
+item, must degrade to the existing clipboard export on failure or non-approval. **Griffin-owned and
+blocking:** the developer account, terms acceptance, and use-case statement — the clock does not start
+until he does those.
+
+**Second-order effects logged, not just the decision:**
+- The **account-linking** open question (April) is now **moot for R1** and re-opens only if we build Kroger.
+- The **monetization** question ("is ordering a hard requirement to justify a price?") gets cheaper to
+  answer: we will hold the integration *before* pricing is set, making it observable on real weeks
+  rather than a bet. It also adds a revenue line independent of subscription price.
+- **Instacart's MCP server** filed to the backlog as a later idea (the chef building the page itself),
+  explicitly not for 1F.
+
+**Process lesson, logged deliberately in `decisions.md`:** a four-month-old third-party
+API-availability finding was allowed to drive release sequencing without re-verification.
+**Re-verify external API availability before it drives a plan, not after.** The superseded March
+research is preserved in `technical-research.md` under a SUPERSEDED heading rather than deleted, so the
+reversal stays legible.
+
+**Docs touched:** `technical-research.md` (rewritten + dated correction + superseded section),
+`decisions.md` (new entry), `scope-v1.md` (1F item, out-of-scope table split, change log),
+`open-questions.md` (Instacart feasibility resolved; account-linking narrowed; monetization updated),
+`idea-backlog.md` (V2 rows re-slotted, MCP idea added), `roadmap.md` (V2 core features), `whats-next.md`
+(parallel clock section at the top). **No code changed.**
+
+---
+
 ## Session 43a — 2026-07-28 (Closed-beta access gate — unplanned, Griffin-initiated)
 
 **The job:** Griffin noticed `meal-app-swart.vercel.app/you` loaded for him and asked whether it was

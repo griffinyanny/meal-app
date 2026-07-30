@@ -4,6 +4,63 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S44) — Instacart goes first and moves into R1; Kroger is deferred. The March research was wrong.
+
+**What changed.** `technical-research.md` had said since 2026-03-28 that Instacart was
+partnership-gated ("NOT a public API — requires business development partnership," access reserved
+for apps with tens of thousands of MAU) and that **Kroger** should therefore be the first
+integration, with Instacart pushed to "V3+, pursue with traction data." **Re-verified 2026-07-30:
+that is no longer true, and possibly never was.** Instacart runs a **public Developer Platform**
+with a self-serve developer dashboard, published API docs, and an MCP server.
+
+**The decision: Instacart first, in R1. Kroger deferred to V2, conditionally.**
+
+**Why Instacart beats Kroger on the merits, independent of the availability correction:**
+
+| | Instacart shopping-list-page | Kroger Cart API |
+|---|---|---|
+| Integration shape | One server-side call → a hosted URL | Per-user OAuth + token storage + refresh |
+| Account linking | **None.** Auth happens on Instacart's side | Required — re-opens a parked open question |
+| Cart state to sync | None | Yes |
+| Reach | Retailer network across North America | Two Seattle banners (Fred Meyer, QFC) |
+
+Kroger is the heavier integration for the narrower reach. It also drags in the account-linking
+question we parked in April, which is now an argument *against* it rather than a neutral cost.
+
+**Why it moved into R1 rather than staying in V2 — and this is the actual reason, not enthusiasm.**
+The integration itself is a **leaf**: it takes the grocery list we already hold, sends names +
+quantities, and returns a URL. It touches no schema, no auth, no state, and nothing has to be built
+around it. Calling it "foundational" overstates the coupling. What is *not* compressible is the
+**30-40 day production-key compliance review**. That is calendar time. Starting the clock during
+1E.5 costs approximately nothing and buys the option to ship ordering in R1; not starting it means
+ordering cannot ship in R1 no matter how fast we build. **We pulled the paperwork forward, not the
+scope.** The product surface is a single 1F checklist item.
+
+**Consequences accepted:**
+- **Build it properly once.** The review inspects error handling on every endpoint implemented, so
+  a throwaway spike followed by a rebuild would fail review and restart the clock.
+- **No merchant targeting, no SKUs.** Instacart does not support directing users to a specific
+  merchant, and SKU-based item specification is unsupported. We send ingredient names + quantities,
+  which is exactly our list's existing shape. Good fit for us; would be disqualifying for a
+  "add this exact SKU to my Safeway cart" product.
+- **The fallback is non-negotiable.** If the call fails or the production key is unapproved, the
+  Groceries tab degrades to the existing clipboard export with zero loss of function. The manual
+  list must always be perfect; integrations are accelerators, not dependencies. Unchanged since March.
+- **A second revenue line appears.** Approval carries an impact.com affiliate invitation paying
+  commission on attributed orders and new-user signups. This was not in the pricing model and it
+  partially decouples revenue from subscription price. Feeds the monetization open question.
+
+**Griffin-owned, blocking:** the developer account, IDP terms acceptance, and the stated use case
+are account-holder actions. Claude cannot perform them, and the clock does not start until they
+happen.
+
+**Process lesson, logged deliberately:** a four-month-old third-party API-availability finding was
+allowed to drive release sequencing without re-verification. **Re-verify external API availability
+before it drives a plan, not after.** The superseded March section is preserved in
+`technical-research.md` rather than deleted, so the reversal stays legible.
+
+---
+
 ## 2026-07-28 (S43) — Closed beta is TWO gates, and both are off when their env var is unset
 
 **Griffin's ask:** the production URL should not be reachable by "just anyone" before launch, and he

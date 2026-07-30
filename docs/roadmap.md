@@ -34,7 +34,8 @@ High-level phased roadmap. For detailed features, see `feature-ideas.md`. For de
 ## V2: "From Plan to Doorstep"
 **Status**: Not started
 **Problems solved**: Grocery ordering is manual, can't capture recipes from photos/social, freshness/schedule awareness
-**Core features**: Instacart integration (with fallbacks), photo/social recipe import, freshness-aware planning, store aisle mapping
+**Core features**: photo/social recipe import, freshness-aware planning, store aisle mapping, Kroger Cart API (conditional — true in-app cart, only on evidence of demand)
+**Moved OUT to R1/1F (2026-07-30)**: the **Instacart handoff**. Its API turned out to be self-serve, the integration is a leaf (one server-side call → a hosted shoppable URL, no OAuth/account-linking/cart-state), and its 30-40 day approval clock is calendar time worth starting early. See decisions.md.
 **Key risk**: Cart integration failures destroy trust — manual list must always work perfectly
 
 ## V3: "Your Kitchen Intelligence"

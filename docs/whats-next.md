@@ -1,6 +1,34 @@
 # What's Next
 
-Last updated: 2026-07-27 (Session 42)
+Last updated: 2026-07-30 (Session 44)
+
+## ⏱ RUNNING IN PARALLEL — the Instacart approval clock (started S44, 2026-07-30)
+
+**This is not next-session work. It is a calendar dependency that runs alongside 1E.5 and 1F.**
+
+The March research that put Kroger first and Instacart at "V3+, pursue a partnership" was **wrong**.
+Instacart runs a **self-serve public Developer Platform**. The integration is a **leaf** (one
+server-side call → a hosted shoppable URL, no OAuth, no account linking, no cart state), so it was
+pulled from V2 into **R1 as a 1F item**. See `decisions.md` (2026-07-30) + `technical-research.md`.
+
+**Why it is up here and not buried in 1F:** production access requires a **30-40 day compliance
+review**. That is calendar time nothing can compress. Every session it has not started is a session
+R1 can't ship ordering.
+
+- [ ] **👤 GRIFFIN, BLOCKING:** create the Instacart Developer Platform account, accept the IDP terms,
+      state the use case, generate a **development** API key. Claude cannot do any of these. Docs:
+      https://docs.instacart.com/developer_platform_api
+- [ ] Build the `create_shopping_list_page` integration against the dev key. **Properly, once** — the
+      review inspects error handling on every endpoint implemented, so a spike-then-rebuild fails
+      review and restarts the clock.
+- [ ] Submit for the production key. **Start the ~30-40 day timer and note the date here.**
+- [ ] Ship the "Send to Instacart" button on Groceries (the 1F checklist item), degrading cleanly to
+      the existing clipboard export if the call fails or the key is unapproved.
+
+**Checkpoint:** if the clock has not started by the time 1E.5 closes, flag it to Griffin. The risk is
+schedule, not code.
+
+---
 
 ## ▶ NEXT SESSION — 1E.7 is CLOSED. Open **1E.5's BUILD**: rebuild Plan to the landed design.
 
