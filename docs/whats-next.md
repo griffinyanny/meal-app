@@ -94,22 +94,22 @@ in (the concurrent access-gate + Instacart sessions; their BUG-030/031 renumbere
 - **BUG-020/021, BUG-011/012/010/013, BUG-017, BUG-018, BUG-023, BUG-003** — the standing list, all
   with address-by targets in [bug-tracker.md](bug-tracker.md).
 
-**⭐ Model recommendation: Sonnet 5.** The next session is a confirmation glance, a merge, and opening a
-scope doc from a template that exists — process work, not judgement against a locked spec. If the glance
-turns up real design work instead, switch up to Opus for it.
+**⭐ Model recommendation: Opus 4.8.** Workstream A opens on BUG-035 — an intermittent server-side
+timeout on the app's most important call, where the work is diagnosis (ours or the provider's?) and
+designing the failure the user sees. That is judgement on the AI path, not process work.
 
 **Copy-paste kickoff prompt:**
 ```
-Resume meal app — S48 executed my taste pass as a decision ballot: BUG-041 closed (boundary sentence is
-product copy on the picked row now, prompt clause deleted, fixtures made honest), 11 of the critic's 16
-findings applied (pinned 80vh picker pane + L17, receipt support line, fit-counting opening line, un-dim
-on selection, door suppression, eyebrow glyph fix, opening cap 3 + N more, library door refiled on both
-sheets, honest empty library, r18 rung, search field removed), 2 rejected, 4 to 1F. 614 unit + 111 E2E
-green. Worktree at ../meal-app-1e5 on session-43-1e5-plan-rebuild. Read docs/whats-next.md and
-docs/scope-v1.md, give me the <=6-line scope check, then: (1) I've looked at the S48 after-captures —
-[my verdict / fixes needed]; (2) if clean, merge to main, remove the worktree, flip scope-v1, close 1E.5
--> M5.5; (3) open 1F: draft docs/scope-1F.md from the carried-in list (BUG-035 first — before R1 ship),
-and put the closed-beta question at the top of the phase-open decisions. On Sonnet 5.
+Resume meal app — 1E.5 CLOSED at M5.5 in S48 (I signed off the before/after captures; the branch merged
+to main and shipped, worktree removed). 1F is open: docs/scope-1F.md, four workstreams, A->B->C->D.
+Start Workstream A: A1 is BUG-035 (1 real generation in 9 timed out server-side at 90s — find out
+whether that path shows the user a named failure with a retry or a spinner that never resolves, then fix
+whichever it is; X1/X2 only cover modify failures), then A2 (BUG-020/021, the onboarding save-path
+pair), then A3 (BUG-011/012/010, the household-composition cluster). Read docs/whats-next.md,
+docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check. Note the S48 merge:
+main now carries the closed-beta access gate (BUG-042 config check owed before any non-Griffin tester)
+and the Instacart standing watch; the concurrent sessions' bug IDs were renumbered BUG-042/043.
+641 unit + 111 E2E green on main. On Opus 4.8.
 ```
 
 ---
