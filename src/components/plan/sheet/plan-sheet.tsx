@@ -1,6 +1,7 @@
 "use client";
 
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { cn } from "@/lib/utils";
 import type { DisplayMeal, HydrationView } from "../plan-helpers";
 import type { PlanDay } from "../rail-helpers";
 import { MealSheetContent } from "./meal-sheet-content";
@@ -73,7 +74,19 @@ export function PlanSheet({
       modal={false}
       noBodyStyles
     >
-      <DrawerContent className="glass-sheet">
+      {/* THE PICKER'S WALLS DO NOT MOVE (S48, critic's finding). Left to
+          content-sizing, the picker rendered at four different heights across
+          its states — 176px from the top opened, 515px with a door pushed —
+          so the week behind appeared and vanished as you browsed. A place
+          keeps its walls; browsing happens INSIDE the pane. Pinned here, on
+          the picker subject only: the meal and day sheets are summaries that
+          size to what they have to say, and the frame draws them that way. */}
+      <DrawerContent
+        className={cn(
+          "glass-sheet",
+          target?.kind === "picker" && "h-[80vh]"
+        )}
+      >
         {target?.kind === "meal" ? (
           <MealSheetContent
             meal={target.meal}

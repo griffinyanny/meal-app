@@ -72,15 +72,18 @@ test("L3 - a picked meal's rationale argues placement, not the dish", async ({
 test("L4 - the boundary is stated rather than enforced silently", async ({
   page,
 }) => {
-  // §B: "it's your recipe, so I won't rewrite it." The chef says the limit out
-  // loud in the week summary instead of the person discovering it by finding a
-  // modify that does nothing.
+  // §B's boundary is PRODUCT COPY on the picked row (BUG-041, S48): two live
+  // Layer-B rounds asked the model for the sentence and got it zero times, so
+  // the promise moved out of the chef's voice into the product's — which is
+  // also what makes this assertion honest: it pins copy the product renders
+  // deterministically, not a sentence a mock recites and a model never says.
   await seedPlanState("PICKED");
   await page.goto("/plan");
 
-  await expect(
-    page.getByText("it's your recipe, so I won't rewrite it")
-  ).toBeVisible();
+  const row = mealRow(page, PICKED_DATE());
+  await expect(row.getByTestId("picked-boundary")).toHaveText(
+    "Your recipe — the chef won't rewrite it."
+  );
 });
 
 // ── W8 · the picker, performed ────────────────────────────────────────────
@@ -123,15 +126,19 @@ test("L5 - the picker opens on Saved, never cooked, as content rather than a sor
   await expect(rows.filter({ hasText: "Miso-Glazed Salmon" })).toHaveCount(0);
 });
 
-test("L6 - browse is four named doors with counts, and they push", async ({ page }) => {
+test("L6 - browse is honest named doors with counts, and they push", async ({ page }) => {
   // §A: a chip implies subtraction from a list you can already see; a tile
-  // implies a door. The counts are the whole affordance.
+  // implies a door. The counts are the whole affordance — and only honest
+  // doors survive (S48): `Recently saved` on this five-recipe library IS
+  // `Everything` under a different name, so it is suppressed rather than
+  // shown as a second copy of the same door. Zero-count doors go the same way.
   await openPickerFromMeal(page);
 
   const tiles = page.getByTestId("picker-tile");
-  await expect(tiles).toHaveCount(4);
+  await expect(tiles).toHaveCount(3);
   await expect(tiles.filter({ hasText: "Cooked before" })).toContainText("2 recipes");
   await expect(tiles.filter({ hasText: "Everything" })).toContainText("5 recipes");
+  await expect(tiles.filter({ hasText: "Recently saved" })).toHaveCount(0);
 
   // PUSH, not filter (S43 call): the pushed view carries its own heading, and
   // the doors are gone because you are through one of them.
@@ -191,6 +198,24 @@ test("L8 - there is no action bar until something is selected, and the count liv
     .filter({ hasText: "Spaghetti alla Carbonara" })
     .click();
   await expect(page.getByTestId("picker-confirm")).toContainText("Give the chef these two");
+
+  // THE SUPPORT LINE IS THE RECEIPT (S48): the first pick's checkbox is now
+  // behind a door, and this line is the only thing on screen that can still
+  // name it. A line that restated the verb would leave `these` unverifiable.
+  await expect(
+    page.getByText(
+      "Sichuan Dry-Fried Green Beans and Spaghetti alla Carbonara."
+    )
+  ).toBeVisible();
+
+  // And the selected over-runner un-dims (S48): the carbonara runs 40 minutes
+  // against a 30-minute night, dims unselected, and lifts the dim once picked —
+  // dimmed-and-checked is the grammar of a stuck control.
+  const carbonara = page
+    .getByTestId("picker-row")
+    .filter({ hasText: "Spaghetti alla Carbonara" });
+  await expect(carbonara).toHaveAttribute("data-unfittable", "true");
+  await expect(carbonara).not.toHaveClass(/opacity-55/);
 });
 
 test("L9 - picking hands the chef a dish and gets back a night, with provenance on the row", async ({
@@ -246,21 +271,22 @@ test("L11 - the empty library does not apologise, and hands back the action that
   page,
 }) => {
   // §A, frame `3d`. The person did nothing wrong and the product works fine
-  // without a library — so no illustration, no "oops", and above all no
-  // disabled search.
+  // without a library — so no illustration and no "oops". S48: the search
+  // field is ABSENT rather than enabled (the frame omitted it deliberately;
+  // a field over an empty set is a door onto nothing), and the two doors
+  // became one honest one — both went to /recipes, and `Paste a recipe or a
+  // link` promised an act this surface cannot perform.
   await seedPlanState("EMPTY");
   await page.goto("/plan");
   await page.getByTestId("library-door").click();
 
   await expect(page.getByText("Nothing in here yet.")).toBeVisible();
-  await expect(page.getByTestId("picker-search")).toBeEnabled();
+  await expect(page.getByTestId("picker-search")).toHaveCount(0);
   await expect(page.getByTestId("picker-empty-primary")).toContainText(
     "Let the chef write it"
   );
-  // The two doors above the primary, in priority order: the one that fills the
-  // library in thirty seconds, then the one that fills it over a month.
-  await expect(page.getByText("Paste a recipe or a link")).toBeVisible();
-  await expect(page.getByText("Look through the recipes tab")).toBeVisible();
+  await expect(page.getByText("Look through the Recipes tab")).toBeVisible();
+  await expect(page.getByText("Paste a recipe or a link")).toHaveCount(0);
 });
 
 test("L12 - the picker swaps a sheet's content in place instead of stacking a second drawer", async ({
@@ -405,4 +431,50 @@ test("L16 - the picker covers the tab bar rather than sharing the bottom edge wi
   expect(verdict.navFound).toBe(true);
   expect(verdict.navBottom).toBe(verdict.viewportBottom);
   expect(verdict.navIsTopmost).toBe(false);
+});
+
+test("L17 - the picker's walls do not move: one pane height across opened, pushed, and selected", async ({
+  page,
+}) => {
+  // S48, the critic's headline finding. Left to content-sizing the picker
+  // rendered at four heights across its states — the sheet collapsed ~340px
+  // under your finger when you pushed a door, and grew back when you ticked a
+  // box. A place keeps its walls; browsing happens INSIDE the pane. Measured
+  // rather than trusted, because `h-[80vh]` on the wrong element (or a future
+  // refactor dropping it) would fail silently and read as "the old behavior".
+  await openPickerFromMeal(page);
+
+  const paneHeight = () =>
+    page.evaluate(() => {
+      const sheet = document.querySelector('[data-slot="drawer-content"]');
+      return sheet ? Math.round(sheet.getBoundingClientRect().height) : -1;
+    });
+
+  const opened = await paneHeight();
+  expect(opened).toBeGreaterThan(0);
+
+  // Push a door — two rows of content instead of the opening tier plus tiles.
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked before" }).click();
+  await expect(
+    page.getByTestId("picker-row").filter({ hasText: "Spaghetti alla Carbonara" })
+  ).toBeVisible();
+  expect(await paneHeight()).toBe(opened);
+
+  // Select — the action bar appears inside the pane, not under it.
+  await page
+    .getByTestId("picker-row")
+    .filter({ hasText: "Miso-Glazed Salmon" })
+    .click();
+  await expect(page.getByTestId("picker-confirm")).toBeVisible();
+  expect(await paneHeight()).toBe(opened);
+
+  // And the MEAL sheet is untouched: it is a summary that sizes to what it has
+  // to say, so it must NOT share the picker's fixed pane.
+  await closeButton(page).click();
+  await expect(sheetContent(page)).toBeHidden();
+  await mealRow(page, todayISO()).click();
+  await expect(sheetContent(page)).toBeVisible();
+  const mealSheet = await paneHeight();
+  expect(mealSheet).toBeGreaterThan(0);
+  expect(mealSheet).not.toBe(opened);
 });

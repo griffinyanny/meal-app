@@ -249,11 +249,15 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       // §A. The picker is a PLACE, not a dropdown: it opens on the one read
       // only this product has, said by the chef, and counted rather than hedged.
       opensOnSavedNeverCooked: true,
-      chefLineCountsThem: "3 of these have been waiting",
+      // S48: the chef reads its own list — the line counts what FITS the named
+      // night, not just what is waiting (two of the three run past 30 minutes).
+      chefLineCountsThem: "3 of these have been waiting — 1 of them fits",
       pickerRowCount: 3,
-      // Four named doors with counts. Tiles, never filter chips — a chip implies
-      // subtraction from a list you can already see.
-      browseTileCount: 4,
+      // Named doors with counts. Tiles, never filter chips — and only HONEST
+      // ones (S48): zero-count doors and doors identical to `Everything` are
+      // suppressed, so this five-recipe library shows three (`Recently saved`
+      // was `Everything` under a different name).
+      browseTileCount: 3,
       tilesCarryCounts: true,
       // The three-hour lamb against a 30-minute night. It DIMS AND SAYS WHY in
       // its own meta rather than vanishing.
@@ -306,10 +310,18 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       selectionIsCreamNotGold: true,
       // The count lives in the VERB, not in a badge beside it.
       countLivesInTheVerb: "Give the chef these two",
+      // THE SUPPORT LINE IS THE RECEIPT (S48): with picks made across two
+      // sections the second checkbox is scrolled out of sight, and this is the
+      // only line that can still name it. It stops restating the verb.
+      supportLineIsTheReceipt:
+        "Sichuan Dry-Fried Green Beans and Spaghetti alla Carbonara.",
       hasClearAsTypeNotAControl: true,
       // Selections survive crossing a door, which is what makes multi-select
       // real rather than a checkbox you can only use once.
       selectionSurvivedThePush: true,
+      // A selected unfittable row UN-DIMS (S48): dimmed-and-checked is the
+      // universal grammar for a stuck control. The reason stays in its meta.
+      selectedUnfittableRowIsNotDimmed: true,
       // 22px inside a sheet, NOT 96px — the 96 exists only to clear a tab bar,
       // and there is no tab bar behind a sheet.
       actionBarSitsAt22pxInsideTheSheet: true,
@@ -343,20 +355,21 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       // nothing wrong and the product works fine without a library.
       noIllustration: true,
       noApology: true,
-      searchIsEnabledNotDisabled: true,
+      // S48: the search field is ABSENT, not enabled — frame `3d` omitted it
+      // deliberately, and a field over an empty set is a door onto nothing.
+      searchIsAbsent: true,
       // States what the surface is FOR in the future tense, then hands back the
       // action that works today.
       primaryIsTheActionThatWorksToday: "Let the chef write it",
-      twoDoorsAboveThePrimary: [
-        "Paste a recipe or a link",
-        "Look through the recipes tab",
-      ],
+      // ONE honest door (S48): both old doors went to /recipes, and `Paste a
+      // recipe or a link` promised an act this surface cannot perform.
+      oneDoorAboveThePrimary: "Look through the Recipes tab",
     },
     prepare: () => seedPlanState("EMPTY"),
     navigate: async (page) => {
       await page.goto("/plan");
       await page.getByTestId("library-door").click();
-      await page.getByTestId("picker-search").waitFor({ timeout: 8_000 });
+      await page.getByTestId("picker-empty-primary").waitFor({ timeout: 8_000 });
     },
   },
   {
@@ -377,9 +390,11 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       // A picked meal's rationale argues PLACEMENT, not the dish — the chef did
       // not choose the food and has nothing to say about it.
       pickedRationaleArguesPlacement: "while it's fresh",
-      // The boundary, stated rather than enforced silently — and it now sits in
-      // the chef's gold slot rather than in the 22px claim (BUG-034).
-      boundaryStatedInTheChefsNote: "It's your recipe, so I won't rewrite it.",
+      // The boundary, stated rather than enforced silently — as PRODUCT COPY
+      // on the picked row (BUG-041, S48), because the live model never wrote
+      // the sentence and a guarantee has to be deterministic. Caption colour,
+      // not gold: it is the product speaking, not the chef.
+      boundaryIsProductCopyOnTheRow: "Your recipe — the chef won't rewrite it.",
     },
     prepare: () => seedPlanState("PICKED"),
     navigate: gotoPlan,

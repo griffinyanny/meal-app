@@ -23,7 +23,15 @@ export interface PickerRecipe {
   unfittableReason: string | null;
 }
 
-export type TileKey = "cooked" | "recent" | "imported" | "everything" | "fits";
+// `stale` is not a browse tile — it is the opening tier's own door, pushed by
+// the `N more` row when the waiting list runs past the cap (frame `3b`).
+export type TileKey =
+  | "cooked"
+  | "recent"
+  | "imported"
+  | "everything"
+  | "fits"
+  | "stale";
 
 export interface BrowseTile {
   key: TileKey;
@@ -77,11 +85,18 @@ export function fitsSlot(
 }
 
 /**
- * BROWSE IS FOUR NAMED TILES WITH COUNTS, NEVER FILTER CHIPS (§A).
+ * BROWSE IS NAMED TILES WITH COUNTS, NEVER FILTER CHIPS (§A).
  *
  * A chip implies subtraction from a list you can already see; a tile implies a
  * door. The counts are the whole affordance — a door with no number on it is
  * just a word.
+ *
+ * TWO HONEST DOORS BEAT FOUR WITH TWO FAKE (S48, critic's finding): a tile
+ * whose count is zero is a door onto nothing, and a tile whose count equals
+ * `Everything`'s is the same door twice — for any library under 13 recipes,
+ * `Recently saved` IS `Everything`, which is the majority case for R1. Both
+ * are suppressed. `Everything` itself always stays: it is the floor the others
+ * are judged against, and the one door that is never a lie.
  */
 export function browseTiles(
   items: RecipeListItem[],
@@ -106,25 +121,46 @@ export function browseTiles(
 
   // `3e`: with a night named, ONE tile swaps — the constraint the day imposes
   // replaces the softest of the four. Nothing else about the picker moves.
-  if (constraint) {
-    return [
-      cooked,
-      {
-        key: "fits",
-        label: `Under ${constraint.maxMinutes} min`,
-        count: fitsSlot(items, constraint).length,
-      },
-      { key: "recent", label: "Recently saved", count: recentlySaved(items).length },
-      everything,
-    ];
-  }
+  const candidates = constraint
+    ? [
+        cooked,
+        {
+          key: "fits" as const,
+          label: `Under ${constraint.maxMinutes} min`,
+          count: fitsSlot(items, constraint).length,
+        },
+        { key: "recent" as const, label: "Recently saved", count: recentlySaved(items).length },
+      ]
+    : [
+        cooked,
+        { key: "recent" as const, label: "Recently saved", count: recentlySaved(items).length },
+        imported,
+      ];
 
   return [
-    cooked,
-    { key: "recent", label: "Recently saved", count: recentlySaved(items).length },
-    imported,
+    ...candidates.filter((t) => t.count > 0 && t.count !== everything.count),
     everything,
   ];
+}
+
+/**
+ * The opening list is CAPPED, and the frame gave it the cap (frame `3b`: three
+ * rows, then `Six more`). At the frame's own 48-recipe scenario an uncapped
+ * tier drops the browse doors hundreds of pixels below the fold — the doors
+ * are the way THROUGH the library, so they cannot be the thing the library
+ * buries.
+ */
+export const OPENING_CAP = 3;
+
+export function openingList(items: RecipeListItem[]): {
+  shown: RecipeListItem[];
+  moreCount: number;
+} {
+  const all = savedNeverCooked(items);
+  return {
+    shown: all.slice(0, OPENING_CAP),
+    moreCount: Math.max(0, all.length - OPENING_CAP),
+  };
 }
 
 // `recipe.list` returns newest-first, so "recently saved" is a slice of the
@@ -149,9 +185,18 @@ export function tileContents(
       return importedRecipes(items);
     case "fits":
       return constraint ? fitsSlot(items, constraint) : libraryOf(items);
+    case "stale":
+      return savedNeverCooked(items);
     case "everything":
       return libraryOf(items);
   }
+}
+
+/** The pushed `stale` door's heading — it is not in `browseTiles`, so the
+ * heading lookup needs its name from somewhere. */
+export function tileHeading(key: TileKey, tiles: BrowseTile[]): string | null {
+  if (key === "stale") return "Saved, never cooked";
+  return tiles.find((t) => t.key === key)?.label ?? null;
 }
 
 // "Saved in March", from createdAt. Read in UTC for the same reason
@@ -231,4 +276,26 @@ export function pickVerb(count: number, dayName?: string | null): string {
   if (dayName && count === 1) return `Put it on ${dayName}`;
   if (count === 1) return "Give the chef this one";
   return `Give the chef these ${SPELLED[count] ?? String(count)}`;
+}
+
+/**
+ * THE SUPPORT LINE IS THE RECEIPT, NOT A RESTATEMENT (S48, critic's finding):
+ * with picks made across two sections the second checkbox is scrolled out of
+ * sight, and this is the only line that can still say what `these` means.
+ */
+export function pickReceipt(titles: string[]): string {
+  if (titles.length <= 1) return titles.join("");
+  if (titles.length === 2) return `${titles[0]} and ${titles[1]}.`;
+  return `${titles.slice(0, -1).join(", ")}, and ${titles[titles.length - 1]}.`;
+}
+
+/**
+ * How many of the waiting tier actually fit the named night — so the chef's
+ * opening line can never again quote the ceiling directly above rows saying
+ * `longer than Friday allows` (S48: the chef reads its own list).
+ */
+export function fittingCount(
+  rows: { unfittableReason: string | null }[]
+): number {
+  return rows.filter((r) => r.unfittableReason == null).length;
 }

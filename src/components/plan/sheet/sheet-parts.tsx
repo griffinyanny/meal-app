@@ -115,7 +115,7 @@ export function SheetChip({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="spec-inset rounded-[14px] px-[14px] py-3 text-left text-[14.5px] text-[var(--spec-text-body)] transition-opacity active:opacity-70 disabled:opacity-50"
+      className="spec-inset rounded-[18px] px-[14px] py-3 text-left text-[14.5px] text-[var(--spec-text-body)] transition-opacity active:opacity-70 disabled:opacity-50"
     >
       {label}
     </button>
@@ -159,7 +159,7 @@ export function SheetRow({
   );
 
   const className = cn(
-    "spec-inset flex min-h-[56px] w-full items-center gap-3 rounded-[14px] px-[14px] py-3 text-left",
+    "spec-inset flex min-h-[56px] w-full items-center gap-3 rounded-[18px] px-[14px] py-3 text-left",
     disabled && "opacity-60"
   );
 
@@ -206,7 +206,7 @@ export function LibraryDoor({
       type="button"
       onClick={onClick}
       data-testid="library-door"
-      className="spec-inset flex min-h-[62px] w-full items-center gap-3 rounded-[14px] px-[14px] py-3 text-left"
+      className="spec-inset flex min-h-[62px] w-full items-center gap-3 rounded-[18px] px-[14px] py-3 text-left"
     >
       <span className="min-w-0 flex-1">
         <span className="block text-[14.5px] font-medium leading-[1.3] text-[var(--spec-text-primary)]">

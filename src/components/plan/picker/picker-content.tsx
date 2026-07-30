@@ -10,9 +10,13 @@ import { MAX_PICKS_PER_ASK } from "@/lib/plan/pick-limits";
 import { DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import {
   browseTiles,
+  fittingCount,
+  openingList,
+  pickReceipt,
   pickVerb,
   savedNeverCooked,
   tileContents,
+  tileHeading,
   toPickerRecipe,
   type SlotConstraint,
   type TileKey,
@@ -80,6 +84,11 @@ export function PickerContent({
   );
 
   const term = query.trim().toLowerCase();
+  // The opening tier, capped at the frame's own three-plus-more (`3b`). The
+  // stale COUNT stays the full tier — the chef's line counts what is waiting,
+  // not what fit above the fold — and the hidden remainder gets a door.
+  const opening = useMemo(() => openingList(items), [items]);
+
   const visible: RecipeListItem[] = useMemo(() => {
     if (term) {
       // SEARCH STAYS INSIDE THE ROOM IT IS STANDING IN. This used to search
@@ -93,12 +102,20 @@ export function PickerContent({
         r.title.toLowerCase().includes(term)
       );
     }
-    return tile ? tileContents(items, tile, constraint) : savedNeverCooked(items);
-  }, [items, term, tile, constraint]);
+    return tile ? tileContents(items, tile, constraint) : opening.shown;
+  }, [items, term, tile, constraint, opening]);
 
   const rows = useMemo(
     () => visible.map((r) => toPickerRecipe(r, constraint)),
     [visible, constraint]
+  );
+
+  // The chef's opening line counts the whole waiting tier and how much of it
+  // fits the named night — computed over the tier, not the capped slice, so the
+  // sentence and the rows can never disagree again (S48, critic's finding).
+  const staleTier = useMemo(
+    () => savedNeverCooked(items).map((r) => toPickerRecipe(r, constraint)),
+    [items, constraint]
   );
 
   const libraryEmpty = !listQuery.isLoading && tiles.every((t) => t.count === 0);
@@ -120,8 +137,25 @@ export function PickerContent({
 
   const heading =
     tile != null
-      ? (tiles.find((t) => t.key === tile)?.label ?? invocation.headline)
+      ? (tileHeading(tile, tiles) ?? invocation.headline)
       : invocation.headline;
+
+  // The receipt: which selected picks are which, in the one line that can still
+  // name them when the second checkbox is scrolled out of sight. Titles resolve
+  // against the same list the confirm handler uses.
+  const selectedTitles = selected
+    .map((id) => items.find((r) => r.id === id)?.title)
+    .filter((t): t is string => t != null);
+
+  // Whether the single named-night pick overruns the night. Computed against
+  // the source list, not the rows on screen — the selection can outlive the
+  // view it was made in (select inside a pushed door, then step back out).
+  const soloPickOverruns =
+    selected.length === 1 &&
+    (() => {
+      const r = items.find((x) => x.id === selected[0]);
+      return r != null && toPickerRecipe(r, constraint).unfittableReason != null;
+    })();
 
   return (
     <>
@@ -166,31 +200,33 @@ export function PickerContent({
           ) : null}
 
           {/* SEARCH SITS IN THE SHEET HEADER (pattern B) — never a floating
-              object, and never disabled, not even on an empty library. */}
-          <label className="spec-inset mt-3.5 flex items-center gap-2.5 rounded-[14px] px-3.5 py-2.5">
-            <Search
-              aria-hidden
-              className="size-4 flex-none stroke-[var(--spec-text-muted)]"
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              // The count is the useful part of this placeholder — except at
-              // zero, where "Search 0 recipes" is the apology §A forbids
-              // wearing a number. The rule is that the empty library does not
-              // apologise and above all does not disable search; announcing
-              // that there is nothing to search undoes both.
-              placeholder={
-                (tiles.find((t) => t.key === "everything")?.count ?? 0) > 0
-                  ? `Search ${tiles.find((t) => t.key === "everything")?.count} recipes`
-                  : "Search your recipes"
-              }
-              aria-label="Search your recipes"
-              data-testid="picker-search"
-              className="w-full bg-transparent text-[14px] text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
-            />
-          </label>
+              object, never disabled. On an EMPTY library it is not disabled,
+              it is absent: frame `3d` omitted it deliberately, and a field
+              over a set with nothing in it is a door onto nothing (S48). */}
+          {!libraryEmpty ? (
+            <label className="spec-inset mt-3.5 flex items-center gap-2.5 rounded-[18px] px-3.5 py-2.5">
+              <Search
+                aria-hidden
+                className="size-4 flex-none stroke-[var(--spec-text-muted)]"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                // The count is the useful part of this placeholder — except
+                // while the query is still loading, where a literal `Search 0
+                // recipes` would be §A's forbidden apology wearing a number.
+                placeholder={
+                  (tiles.find((t) => t.key === "everything")?.count ?? 0) > 0
+                    ? `Search ${tiles.find((t) => t.key === "everything")?.count} recipes`
+                    : "Search your recipes"
+                }
+                aria-label="Search your recipes"
+                data-testid="picker-search"
+                className="w-full bg-transparent text-[14px] text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
+              />
+            </label>
+          ) : null}
         </div>
 
         {libraryEmpty ? (
@@ -200,7 +236,11 @@ export function PickerContent({
             {/* STALENESS IS CONTENT, NOT A SORT ORDER (§A) — the chef says the
                 one read only this product has, in italic, once, at the top. */}
             {tile == null && !term ? (
-              <StaleLine count={rows.length} constraint={constraint} />
+              <StaleLine
+                count={staleTier.length}
+                fitting={fittingCount(staleTier)}
+                constraint={constraint}
+              />
             ) : null}
 
             <div className="flex flex-col gap-2 px-4 pb-5" data-testid="picker-list">
@@ -222,6 +262,18 @@ export function PickerContent({
                   />
                 ))
               )}
+              {/* Frame `3b`'s own cap: three rows, then the remainder as a door
+                  into the full tier — so the browse doors below never sink. */}
+              {tile == null && !term && opening.moreCount > 0 ? (
+                <button
+                  type="button"
+                  data-testid="picker-more"
+                  onClick={() => setTile("stale")}
+                  className="py-1.5 text-left text-[13px] text-[var(--spec-text-caption)]"
+                >
+                  {opening.moreCount} more →
+                </button>
+              ) : null}
             </div>
 
             {/* BROWSE IS FOUR NAMED TILES WITH COUNTS — doors, not filter chips,
@@ -249,14 +301,21 @@ export function PickerContent({
           <p className="m-0 mb-2 text-center text-[12.5px] text-[var(--spec-text-caption)]">
             {atLimit
               ? "That's as many as I can build a week around."
-              : // Follows the verb above it, including where the verb hands the
-                // night back. One pick on a named night keeps `3e`'s promise;
-                // above one, the chef is choosing again and the line has to say
-                // so — otherwise the support text would still be talking about
-                // a night the primary no longer mentions.
-                invocation.dayName && selected.length === 1
-                ? "I'll rebuild the shop around it."
-                : "The chef picks the nights."}
+              : invocation.dayName && selected.length === 1
+                ? // One pick on a named night keeps `3e`'s promise. If the pick
+                  // runs longer than the night allows, the overrule is theirs to
+                  // make and the line says so out loud — a silent accept reads
+                  // as the surface not having noticed (S48, critic's finding).
+                  soloPickOverruns
+                  ? "Runs long for the night — your call. I'll rebuild the shop around it."
+                  : "I'll rebuild the shop around it."
+                : selectedTitles.length >= 2
+                  ? // THE RECEIPT (S48): with picks made across two sections the
+                    // second checkbox is scrolled out of sight, and this is the
+                    // only line on screen that can still name it. It stops
+                    // restating the verb and says what `these` means.
+                    pickReceipt(selectedTitles)
+                  : "The chef picks the nights."}
           </p>
           <button
             type="button"

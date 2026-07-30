@@ -28,7 +28,7 @@ export function BrowseTiles({
             type="button"
             data-testid="picker-tile"
             onClick={() => onOpen(t.key)}
-            className="spec-inset rounded-[14px] px-[14px] py-3 text-left"
+            className="spec-inset rounded-[18px] px-[14px] py-3 text-left"
           >
             <span className="block text-[14px] font-medium text-[var(--spec-text-primary)]">
               {t.label}
@@ -52,15 +52,31 @@ export function BrowseTiles({
  */
 export function StaleLine({
   count,
+  fitting,
   constraint,
 }: {
   count: number;
+  /** How many of the tier fit the named night. Meaningless without a constraint. */
+  fitting: number;
   constraint: SlotConstraint | null;
 }) {
   if (count === 0) return null;
-  const fit = constraint
-    ? ` — you've got ${constraint.maxMinutes} minutes.`
-    : ". Let's spend one this week.";
+
+  // THE CHEF READS ITS OWN LIST (S48, critic's finding). Quoting the ceiling
+  // while every row under it says `longer than Friday allows` is the chef
+  // contradicting the rows it is standing on — so with a constraint the line
+  // counts what actually fits, and only claims the ceiling when everything does.
+  let fit: string;
+  if (!constraint) {
+    fit = ". Let's spend one this week.";
+  } else if (fitting === count) {
+    fit = ` — you've got ${constraint.maxMinutes} minutes.`;
+  } else if (fitting === 0) {
+    fit = ` — none of them fit ${constraint.dayName}'s ${constraint.maxMinutes} minutes.`;
+  } else {
+    fit = ` — ${fitting} of them ${fitting === 1 ? "fits" : "fit"} your ${constraint.maxMinutes} minutes.`;
+  }
+
   return (
     <div className="px-4 pb-3">
       <p className="m-0 mb-2 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
@@ -102,10 +118,15 @@ export function PickerRow({
       // the reason, which informs without overruling. The person may know the
       // lamb is worth moving the night for, and this surface does not get to
       // decide that for them.
+      //
+      // AND A SELECTED ONE UN-DIMS (S48, critic's finding): dimmed-and-checked
+      // is the universal grammar for a disabled control that got stuck. The
+      // overrule is allowed, so the row has to acknowledge it happened — the
+      // reason stays on the row, the dim lifts.
       onClick={onToggle}
       className={cn(
-        "spec-inset flex min-h-[56px] w-full items-center gap-3 rounded-[14px] px-[14px] py-3 text-left",
-        unfittable && "opacity-55"
+        "spec-inset flex min-h-[56px] w-full items-center gap-3 rounded-[18px] px-[14px] py-3 text-left",
+        unfittable && !checked && "opacity-55"
       )}
     >
       {/* SELECTION IS CREAM, NEVER GOLD (§A) — a checkbox is the user's act, and
@@ -141,11 +162,19 @@ export function PickerRow({
 /**
  * THE EMPTY LIBRARY DOES NOT APOLOGISE (§A, `3d`).
  *
- * No illustration, no "oops", no disabled search — the person did nothing wrong
- * and the product works fine without a library. It says what the surface is FOR
- * in the future tense, then hands back the action that works today. The two doors
- * are the same 56px rows the full picker uses, so the empty state teaches the
- * shape of the full one.
+ * No illustration, no "oops" — the person did nothing wrong and the product
+ * works fine without a library. It says what the surface is FOR in the future
+ * tense, then hands back the action that works today (`Let the chef write it`
+ * stays the loud object on purpose: with nothing to pick, the honest answer is
+ * that there is nothing to pick, and promoting data entry mid-planning sends
+ * the person away from the week they came to build).
+ *
+ * S48, per the critic: the search field is gone (frame `3d` omitted it
+ * deliberately — searching an empty set is a door onto nothing), the gold line
+ * lost its middle clause (four lines of italic read as a paragraph, and law 06
+ * grants a mark, not a passage), and the two doors became one honest one — both
+ * went to `/recipes`, and `Paste a recipe or a link` promised an act this
+ * surface cannot perform. One door, saying where it goes and what to do there.
  */
 export function EmptyLibrary({ onGenerate }: { onGenerate: () => void }) {
   return (
@@ -157,18 +186,13 @@ export function EmptyLibrary({ onGenerate }: { onGenerate: () => void }) {
         className="m-0 mb-4 text-[13.5px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
         style={{ textWrap: "pretty" }}
       >
-        This is where recipes land once you keep them. The week doesn&apos;t need
-        it — I&apos;ll write you five dinners without a single saved thing.
+        This is where recipes land once you keep them. I&apos;ll write you five
+        dinners without a single saved thing.
       </p>
       <div className="mb-4 flex flex-col gap-2">
         <SheetRow
-          label="Paste a recipe or a link"
-          sublabel="I'll read it and keep it"
-          href="/recipes"
-        />
-        <SheetRow
-          label="Look through the recipes tab"
-          sublabel="Keep anything and it shows up here"
+          label="Look through the Recipes tab"
+          sublabel="Paste a link there, or keep anything — it lands here"
           href="/recipes"
         />
       </div>

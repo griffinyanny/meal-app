@@ -36,6 +36,12 @@ export interface MealRowProps {
 // the meal rather than threaded down as a prop, because a prop would have to
 // cross three components to reach here and could go stale against the row it
 // describes; the fact lives on the slot, so the row reads it there.
+//
+// The glyph sits INSIDE the label, beside the segment it marks (S48, critic's
+// finding): leading the whole eyebrow it indented the picked row's type ~15px
+// off the rail's shared left edge while sitting two segments from PICKED — a
+// bookmark marking DINNER. Every eyebrow now starts flush, and the glyph
+// touches the one word it is about.
 function Eyebrow({
   meal,
   trailing,
@@ -45,26 +51,25 @@ function Eyebrow({
 }) {
   const picked = meal.pickedRecipeId != null;
   const markers = markersOf(meal);
-  const label = [
-    meal.mealType.toUpperCase(),
-    meal.relative,
-    picked ? "PICKED" : null,
-    ...markers.map((m) => m.toUpperCase()),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  const leading = [meal.mealType.toUpperCase(), meal.relative].filter(Boolean);
+  const trailingSegments = markers.map((m) => m.toUpperCase());
 
   return (
     <div className="mb-1 flex items-baseline justify-between gap-2.5">
-      <p className="m-0 flex items-center gap-[5px] text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+      <p className="m-0 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+        {leading.join(" · ")}
         {picked ? (
-          <Bookmark
-            aria-hidden
-            className="size-2.5 stroke-[var(--spec-text-muted)]"
-            strokeWidth={2.4}
-          />
+          <>
+            {" · "}
+            <Bookmark
+              aria-hidden
+              className="mr-[3px] inline size-2.5 align-[-1px] stroke-[var(--spec-text-muted)]"
+              strokeWidth={2.4}
+            />
+            PICKED
+          </>
         ) : null}
-        {label}
+        {trailingSegments.length > 0 ? ` · ${trailingSegments.join(" · ")}` : null}
       </p>
       {trailing ? (
         <span className="text-[11.5px] text-[var(--spec-text-caption)]">
@@ -127,6 +132,21 @@ export function MealRowFeature({
       {showMetaLine ? (
         <p className="m-0 mt-1 text-[12.5px] text-[var(--spec-text-caption)]">
           {meta}
+        </p>
+      ) : null}
+      {/* §B'S BOUNDARY IS PRODUCT COPY, NOT A PROMPT REQUEST (BUG-041, S48).
+          Two live Layer-B rounds asked the model to state it and got zero
+          sentences — a style clause competing with six other instructions
+          loses (BUG-033's precedent). The boundary is a fixed promise, not a
+          creative act, so the product states it on the object it protects.
+          Not gold and not italic: gold marks the chef speaking, and this is
+          the product's own guarantee. */}
+      {meal.pickedRecipeId != null && solo ? (
+        <p
+          data-testid="picked-boundary"
+          className="m-0 mt-1 text-[12px] text-[var(--spec-text-caption)]"
+        >
+          Your recipe — the chef won&apos;t rewrite it.
         </p>
       ) : null}
       {rationale ? (

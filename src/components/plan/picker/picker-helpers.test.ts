@@ -4,10 +4,14 @@ import {
   browseTiles,
   cookedBefore,
   fitsSlot,
+  fittingCount,
   libraryOf,
+  openingList,
+  pickReceipt,
   pickVerb,
   savedNeverCooked,
   tileContents,
+  tileHeading,
   toPickerRecipe,
   type SlotConstraint,
 } from "./picker-helpers";
@@ -86,7 +90,11 @@ describe("fitsSlot", () => {
 });
 
 describe("browseTiles", () => {
-  it("should offer four doors with counts on the intent screen", () => {
+  it("should suppress a door whose count is zero and a door identical to Everything", () => {
+    // Three recipes: one cooked, one imported, none of them recent enough to
+    // differ — `recent` is a 12-slice, so on a 3-recipe library it IS
+    // `everything`, and a five-recipe R1 library shows the same twice. Two
+    // honest doors beat four with two fake (S48, critic's finding).
     const items = [
       recipe({ id: "a" }),
       recipe({ id: "b", lastCookedAt: new Date("2026-05-01T12:00:00Z") }),
@@ -95,43 +103,113 @@ describe("browseTiles", () => {
 
     const tiles = browseTiles(items);
 
-    expect(tiles).toHaveLength(4);
+    expect(tiles.map((t) => t.key)).toEqual(["cooked", "imported", "everything"]);
+    expect(tiles.find((t) => t.key === "cooked")?.count).toBe(1);
+    expect(tiles.find((t) => t.key === "imported")?.count).toBe(1);
+    expect(tiles.find((t) => t.key === "everything")?.count).toBe(3);
+  });
+
+  it("should keep all four doors when every one of them is distinct", () => {
+    // Thirteen recipes is the first library where `recent`'s 12-slice differs
+    // from `everything` — the suppression rule must NOT fire here.
+    const items = [
+      ...Array.from({ length: 12 }, (_, i) => recipe({ id: `r${i}` })),
+      recipe({ id: "cooked", lastCookedAt: new Date("2026-05-01T12:00:00Z") }),
+      recipe({ id: "imported", sourceType: "url_import" }),
+    ];
+
+    const tiles = browseTiles(items);
+
     expect(tiles.map((t) => t.key)).toEqual([
       "cooked",
       "recent",
       "imported",
       "everything",
     ]);
-    expect(tiles.find((t) => t.key === "cooked")?.count).toBe(1);
-    expect(tiles.find((t) => t.key === "imported")?.count).toBe(1);
-    expect(tiles.find((t) => t.key === "everything")?.count).toBe(3);
   });
 
   it("should swap exactly one tile for the night's constraint when a day is named", () => {
     const items = [
       recipe({ id: "quick", totalTimeMinutes: 25 }),
       recipe({ id: "lamb", totalTimeMinutes: 180 }),
+      recipe({ id: "cooked", lastCookedAt: new Date("2026-05-01T12:00:00Z") }),
     ];
 
     const tiles = browseTiles(items, THURSDAY);
 
-    expect(tiles).toHaveLength(4);
-    // `3e`: the constraint tile replaces one door; the other three hold.
-    expect(tiles.map((t) => t.key)).toEqual([
-      "cooked",
-      "fits",
-      "recent",
-      "everything",
-    ]);
+    // `3e`: the constraint tile replaces the softest door. `recent` (3 === 3)
+    // is suppressed as Everything's duplicate; `fits` (2 of 3) survives.
+    expect(tiles.map((t) => t.key)).toEqual(["cooked", "fits", "everything"]);
     expect(tiles.find((t) => t.key === "fits")?.label).toBe("Under 40 min");
-    expect(tiles.find((t) => t.key === "fits")?.count).toBe(1);
+    expect(tiles.find((t) => t.key === "fits")?.count).toBe(2);
   });
 
-  it("should count zero rather than hide a door on an empty library", () => {
+  it("should reduce an empty library to the one honest door", () => {
+    // Every count is zero, so every suppressible door goes — `everything`
+    // stays at zero, which is what `libraryEmpty` reads to show the empty
+    // state instead of the tiles.
     const tiles = browseTiles([]);
 
-    expect(tiles).toHaveLength(4);
-    expect(tiles.every((t) => t.count === 0)).toBe(true);
+    expect(tiles.map((t) => t.key)).toEqual(["everything"]);
+    expect(tiles[0]!.count).toBe(0);
+  });
+});
+
+describe("openingList", () => {
+  it("should cap the opening tier at three and count the remainder", () => {
+    // Frame `3b`'s own drawing: three rows, then `Six more`. The doors below
+    // the tier are the way THROUGH the library, so the tier cannot bury them.
+    const items = Array.from({ length: 9 }, (_, i) => recipe({ id: `r${i}` }));
+
+    const { shown, moreCount } = openingList(items);
+
+    expect(shown.map((r) => r.id)).toEqual(["r0", "r1", "r2"]);
+    expect(moreCount).toBe(6);
+  });
+
+  it("should show everything with no more-door when the tier fits the cap", () => {
+    const items = [recipe({ id: "a" }), recipe({ id: "b" })];
+
+    const { shown, moreCount } = openingList(items);
+
+    expect(shown).toHaveLength(2);
+    expect(moreCount).toBe(0);
+  });
+});
+
+describe("tileHeading", () => {
+  it("should name the pushed stale door, which is not a browse tile", () => {
+    expect(tileHeading("stale", [])).toBe("Saved, never cooked");
+  });
+
+  it("should read a browse tile's heading off the tile itself", () => {
+    expect(
+      tileHeading("cooked", [{ key: "cooked", label: "Cooked before", count: 2 }])
+    ).toBe("Cooked before");
+  });
+});
+
+describe("pickReceipt", () => {
+  it("should name two picks the way a sentence would", () => {
+    expect(pickReceipt(["Carbonara", "Green Beans"])).toBe(
+      "Carbonara and Green Beans."
+    );
+  });
+
+  it("should serial-comma three or more", () => {
+    expect(pickReceipt(["A", "B", "C"])).toBe("A, B, and C.");
+  });
+});
+
+describe("fittingCount", () => {
+  it("should count the rows that carry no unfittable reason", () => {
+    expect(
+      fittingCount([
+        { unfittableReason: null },
+        { unfittableReason: "3 hr — longer than Thursday allows" },
+        { unfittableReason: null },
+      ])
+    ).toBe(2);
   });
 });
 
