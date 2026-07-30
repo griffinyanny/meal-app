@@ -50,8 +50,8 @@ interaction rate · list quality.
 | **1D** Groceries | Plan → merged, shoppable list | M4: plan produces a usable grocery list | ✅ | 2026-07-10 → 07-21 | [scope-1D.md](scope-1D.md) |
 | **1E** You Tab + Memory | Onboarding interview, preferences audit, memory loops | M5: chef knows you; preferences editable | ✅ | 2026-07-22 → 07-26 (S32–S40) | [scope-1E.md](scope-1E.md) |
 | **1E.7** Design-system sweep (mechanical) | Apply **Design Specification v1.0** (theme 11i, `docs/design/system/design-spec.dc.html`) app-wide, mechanical items only: warm every cool-white alpha, give each surface one of the three named wash recipes, regularise radii to the eight-rung scale, retire the pre-spec `:root` family. **Shipped before 1E.5's build** — see the change log for why. | M5.7: one palette across the app | ✅ | 2026-07-27 (S42) | [scope-1E.7.md](scope-1E.7.md) |
-| **1E.5** Plan Design Buildout | Full **all-states** Plan-tab rebuild in Claude Design → code — the one core surface never mocked in the design system-of-record (Plan was designed in Figma + built in code; Recipes/Groceries were built in Claude Design). **Must ship before 1F.** Design pass landed S41; build opened S43 in two slices. | M5.5: Plan matches the Groceries/Recipes design fidelity, every state accounted for | 🔨 | 2026-07-27 → | [scope-1E.5.md](scope-1E.5.md) |
-| **1F** Polish / Production Readiness (**after 1E.5**) | Design-system pass, observability, hardening | M6: MVP ship | ⬜ | — | scope doc at phase start |
+| **1E.5** Plan Design Buildout | Full **all-states** Plan-tab rebuild in Claude Design → code — the one core surface never mocked in the design system-of-record (Plan was designed in Figma + built in code; Recipes/Groceries were built in Claude Design). **Shipped before 1F.** Design pass landed S41; build ran S43–S49 in two slices. | M5.5: Plan matches the Groceries/Recipes design fidelity, every state accounted for | ✅ | 2026-07-27 → 07-30 (S43–S49) | [scope-1E.5.md](scope-1E.5.md) |
+| **1F** Polish / Production Readiness (**after 1E.5**) | Ship-blockers, the design-system pass, PWA, production readiness | M6: MVP ship | 🔨 | 2026-07-30 → | [scope-1F.md](scope-1F.md) |
 
 *Pace note: 1A+1B took 2 days. The 2026-05-28 → 2026-07-06 gap was life, not build. 1C
 spent Sessions 15–17 building the E2E harness + review infrastructure (deliberate,
@@ -123,6 +123,7 @@ signature surface against a palette we have already retired means building it tw
 - [ ] THE design-system pass — **now the surface-specific half of the spec migration** plus type scale, motion, and component-library consolidation. Spec §12 items **03** (retire the indigo draft pill + iOS green → `#9CB86F`), **04** (collapse the double bottom bar: delete the floating search pill and FAB, search into the header, one floating primary action, square the nav's top corners — this also fixes the phone-density complaint from S28), **05** (44px hit targets on every icon-only control), **07** (promote faked subsection headings to the real Group/Row title levels). Each wants its own `/visual-qa` pass, which is why they are here and not in 1E.7. **Plan's all-states design + rebuild lands in 1E.5 first** — 1F polishes the whole system on top of it, it does not re-design Plan.
 - [ ] Consolidate the four freeform-input controls into the single spec §09 control (onboarding done S39; You, Groceries, and the chef sheet remain)
 - [ ] Ship R1 as an installable PWA (manifest, service worker, offline shell, home-screen icon set, install prompt) — validated on Griffin's + wife's phones. Rides with the design pass; native mobile stays held (decision 2026-07-24, see decisions.md)
+- [x] ~~**"Send to Instacart" on the Groceries tab**~~ — **REVERTED to V2 the same day it was added (2026-07-30). Not in R1.** Instacart's developer application turned out to be **closed with no waitlist**, so the 30-40 day clock this item existed to start does not exist. Griffin's call: *"not a critical need, I'd love to get a polished version of v1 first."* R1's answer for ordering remains the **clipboard export already shipped in 1D**. See the change log + `technical-research.md`.
 - [ ] Observability: PostHog (event taxonomy from S9) + Sentry
 - [ ] Security review of the full surface; rate limiting audit
 - [ ] Performance/a11y pass; error-state sweep
@@ -138,7 +139,8 @@ signature surface against a palette we have already retired means building it tw
 | Realtime sync (Supabase Realtime) | V1.5 | Ships with sharing |
 | Cook mode (step-by-step overlay) | V1.5 | Data model supports it |
 | Pantry (light mode, "what can I make?") | V1.5 | |
-| Grocery ordering (Kroger/Instacart) | V2 | |
+| Grocery ordering — **Instacart handoff** (the one we actually want) | V2 | **Blocked on Instacart, not on us.** Applications closed, no waitlist, no date (verified 2026-07-30). ~98% of US households in one integration, so it stays the target. Periodic manual check for reopening |
+| Grocery ordering — **Kroger Cart API** (the hedge) | V2 | The **only** open grocery API in the US (verified 2026-07-30 — Walmart, Costco, Albertsons, Publix, Target all closed). ~10% national share. Costs per-user OAuth + token refresh + re-opens account-linking. Build only if ordering turns urgent before Instacart reopens |
 | Photo/social recipe import | V2 | URL import IS in R1 (shipped, 1B) |
 | Nutrition/macros, health coaching | V3 | |
 | Native iOS/Android | V4 | |
@@ -161,11 +163,19 @@ line here (a decision, not drift). Same for pushing R1 items out.
 ## Open release-scope questions
 
 1. Does 1F include a small closed beta beyond Griffin + wife, or is two-user validation enough to ship R1? (Decide during 1E.)
+   - **Still Griffin's call, but no longer blocked on build work (S43a).** The *mechanism* shipped
+     ahead of the decision: `SITE_ACCESS_CODE` + `ALLOWED_EMAILS` (see [decisions.md](decisions.md)).
+     Inviting a tester is now appending an email to an env var and sending them an `/invite?code=…`
+     link — no code change, no deploy of a diff. So the question is purely "do we want outside eyes
+     on R1," with the cost of saying yes reduced to near zero.
 
 ## Change log
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-30 | **REVERTED, same day: ordering goes back to V2. R1 ships no ordering integration.** The pull-forward below lasted about an hour. Griffin went to sign up and found Instacart's application **closed, with no waitlist and no reopen date** — the self-serve dashboard language in their docs describes the flow *after* approval. **No clock means no reason to pull forward**, and the only buildable alternative (Kroger) is the expensive one this decision had just deprioritised. Griffin's call: *"not a critical need, I'd love to get a polished version of v1 first."* R1's ordering answer stays the **clipboard export shipped in 1D**. Also settled by TAM research he asked for: **Kroger is the only open grocery API in the US** — Walmart no longer issues affiliate API keys, and Costco/Albertsons/Publix/Target have no public cart API. See `technical-research.md` → TAM analysis + `decisions.md`. |
+| 2026-07-30 | ~~**Instacart handoff pulled from V2 into R1 as a 1F item (S44).**~~ **Superseded within the hour — see the row above.** "Send to Instacart" ships in R1; the **Kroger** Cart API stays in V2. Registration + build + production-key submission start **during 1E.5**, in parallel. | The March research that put Kroger first and Instacart at "V3+, pursue partnership" was **wrong** — Instacart now runs a self-serve public Developer Platform. Re-verified 2026-07-30. Two things drove the pull-forward: (1) the integration is a **leaf**, one server-side call returning a URL, with no OAuth/account-linking/cart-state, so it is far smaller than we priced it; (2) production access needs a **30-40 day compliance review**, and that is calendar time that cannot be compressed later. Starting the clock now costs nothing and buys the option. Griffin ratified. See `technical-research.md` + `decisions.md`. |
+| 2026-07-28 | **Closed-beta access gate added to R1 (S43a), unplanned.** Two env-driven gates: `SITE_ACCESS_CODE` (404s the whole app, login screen included, without an invite cookie) and `ALLOWED_EMAILS` (who may hold an account). Both off when unset, so going public is deleting two env vars rather than a code change. | Griffin asked whether the production URL was publicly reachable. It was — signup was open to any Google account, with the OpenAI key exposed at 150 calls/day/user and no global cap. Unblocks the closed-beta question above at near-zero cost. |
 | 2026-07-10 | Doc created (S19). R1 boundary = solo-user MVP; S9 cuts (sharing UI, realtime, cook mode → V1.5) confirmed by Griffin. | Release-level visibility ask; reconciles master-plan text vs actual build scope |
 | 2026-07-10 (S19) | 1C → ✅ complete (2 of 6 → 3 of 6 phases done); 1D → next | All 13 1C items met; chip/variety quality verified on real model |
 | 2026-07-13 (S20) | Claude Design adopted as default design partner (replaces Figma Make); design-pass gate added to the workflow | Design system lives in code → Claude Design reads it directly; 1D Groceries is the first trial. See decisions.md + `docs/design/design-workflow.md` |

@@ -328,6 +328,191 @@ Frames `3i`/`3j` also draw a leftover source (`Sunday's pork`) in the servings s
 not build that**, because no column names a leftover's source and inventing it from rationale prose is
 guessing.
 
+<!-- ⑂ S48 merge: the three entries below are from the concurrent main-checkout sessions
+     (access gate + Instacart round-trip); their session numbers overlap the worktree's. -->
+
+## 2026-07-30 (S44, second entry) — Ordering goes back to V2. Instacart's door is shut, and Kroger is the only open one in US grocery.
+
+**Supersedes the entry immediately below, which it reversed within the hour.** Both are kept. The
+reversal is the useful artefact.
+
+**What happened.** The decision below pulled the Instacart handoff into R1 on the strength of two
+claims: the integration is cheap, and a 30-40 day approval clock is worth starting early. Griffin went
+to create the account and **could not**. Verified: Instacart's developer application says *"We are
+currently not accepting new applications"* and *"There is no waitlist available at this time."* The
+self-serve dashboard language I had quoted describes the flow **after** approval. **There is no clock
+to start**, so the entire pull-forward argument collapsed.
+
+**Is there another way in? No, and we are not looking for one.** The API key is the only auth and keys
+issue on approval. The adjacent surfaces do not substitute: **impact.com affiliate** is open and free
+but gives tracked links, not programmatic list creation; **Tastemakers buttons** and **Chicory** parse
+recipe markup on *public web pages*, the wrong shape for personalised lists behind auth;
+**Northfork/SideChef** are enterprise B2B vendors selling to retailers, a longer path than the
+application. Scraping or undocumented endpoints would breach the terms we need to be clean on when
+applications reopen and would forfeit the 3% affiliate commission. **The workaround costs more than
+the wait.**
+
+**Griffin's call, and the reframe that produced it.** He redirected the question from his own
+convenience to market size: *"we shouldn't purely be building this around me. We should be focused on
+TAM."* Then: *"let's move it to v2 anyway because it's not a critical need. I'd love to get a polished
+version of v1 first."* Correct on both counts, and the TAM research supports the V2 call more strongly
+than the availability problem alone does.
+
+**The TAM finding (full tables in `technical-research.md`).** US grocery 2026: Walmart 23.6%, Kroger
+~10%, Costco 9.2%, Albertsons 6.4%, Publix 4.1% — top five ≈ 53%. **Exactly one is reachable by API.**
+Walmart no longer issues new affiliate API keys; Costco, Albertsons, Publix, Target and Ahold have no
+public cart API. **Kroger is not the best open door in US grocery, it is the only one.**
+
+**The structural insight worth carrying past this decision:** *aggregators are the TAM, retailers are
+not.* One Instacart integration reaches ~98% of US households across 1,800+ banners and ~100,000
+stores. Every retailer-direct integration is a separate build, separate auth, and separate failure
+surface for single-digit share. You would have to integrate the entire top five — four of them closed —
+to approach what one aggregator gives you. **That asymmetry is exactly why the aggregator door is gated
+and the retailer doors are not.** It is the shape of the market, not an obstacle to route around.
+
+**What this settles:**
+- **R1 ships no ordering integration.** The 1D clipboard export is the answer. 1F item removed.
+- **Instacart stays the target** and moves to a standing watch (no waitlist exists, so it is a manual
+  periodic check). Highest-leverage external event for this feature.
+- **Kroger is a hedge, not a strategy** — ~10% share, real national footprint (~2,700+ stores, ~35
+  states, growing via the **Giant Eagle** acquisition, $1.65B, 2026-07-01). Build only if ordering turns
+  urgent before Instacart reopens, and only with its cost stated: per-user OAuth, token refresh, and it
+  re-opens the parked account-linking question.
+- **Do not integrate retailers one at a time.** The math does not work and four of the top five are
+  closed regardless.
+- **Testing store:** Griffin shops **Haggen** (Albertsons banner, no API) and has offered to shop
+  **QFC** (Kroger banner) instead, aligning his household with the only open API if the hedge is ever
+  built.
+
+**Factual correction to a premise raised in discussion:** the Kroger–Albertsons merger was **blocked
+and terminated in December 2024**; the Haggen divestiture to C&S died with it, so **Haggen remained
+with Albertsons** rather than being pending divestiture. Kroger's actual 2026 move was acquiring Giant
+Eagle.
+
+**Process note, and this one is on me twice in one session.** I corrected a four-month-old availability
+finding, then acted on the new one **without verifying the signup path was actually open** — I read
+post-approval docs as evidence of pre-approval access. The March lesson was "re-verify before it drives
+a plan"; the sharper version is **verify the gate you must walk through, not the room behind it.** For
+any future third-party dependency: confirm a human can complete signup *today* before it earns a line
+in a scope doc.
+
+---
+
+## 2026-07-30 (S44) — Instacart goes first and moves into R1; Kroger is deferred. The March research was wrong.
+
+> **⚠️ SUPERSEDED the same day by the entry above.** Kept deliberately: the reasoning here is sound and
+> the conclusion is wrong, because it rested on an availability claim that was never verified at the
+> signup gate. Read it as a worked example of that failure mode.
+
+**What changed.** `technical-research.md` had said since 2026-03-28 that Instacart was
+partnership-gated ("NOT a public API — requires business development partnership," access reserved
+for apps with tens of thousands of MAU) and that **Kroger** should therefore be the first
+integration, with Instacart pushed to "V3+, pursue with traction data." **Re-verified 2026-07-30:
+that is no longer true, and possibly never was.** Instacart runs a **public Developer Platform**
+with a self-serve developer dashboard, published API docs, and an MCP server.
+
+**The decision: Instacart first, in R1. Kroger deferred to V2, conditionally.**
+
+**Why Instacart beats Kroger on the merits, independent of the availability correction:**
+
+| | Instacart shopping-list-page | Kroger Cart API |
+|---|---|---|
+| Integration shape | One server-side call → a hosted URL | Per-user OAuth + token storage + refresh |
+| Account linking | **None.** Auth happens on Instacart's side | Required — re-opens a parked open question |
+| Cart state to sync | None | Yes |
+| Reach | Retailer network across North America | Two Seattle banners (Fred Meyer, QFC) |
+
+Kroger is the heavier integration for the narrower reach. It also drags in the account-linking
+question we parked in April, which is now an argument *against* it rather than a neutral cost.
+
+**Why it moved into R1 rather than staying in V2 — and this is the actual reason, not enthusiasm.**
+The integration itself is a **leaf**: it takes the grocery list we already hold, sends names +
+quantities, and returns a URL. It touches no schema, no auth, no state, and nothing has to be built
+around it. Calling it "foundational" overstates the coupling. What is *not* compressible is the
+**30-40 day production-key compliance review**. That is calendar time. Starting the clock during
+1E.5 costs approximately nothing and buys the option to ship ordering in R1; not starting it means
+ordering cannot ship in R1 no matter how fast we build. **We pulled the paperwork forward, not the
+scope.** The product surface is a single 1F checklist item.
+
+**Consequences accepted:**
+- **Build it properly once.** The review inspects error handling on every endpoint implemented, so
+  a throwaway spike followed by a rebuild would fail review and restart the clock.
+- **No merchant targeting, no SKUs.** Instacart does not support directing users to a specific
+  merchant, and SKU-based item specification is unsupported. We send ingredient names + quantities,
+  which is exactly our list's existing shape. Good fit for us; would be disqualifying for a
+  "add this exact SKU to my Safeway cart" product.
+- **The fallback is non-negotiable.** If the call fails or the production key is unapproved, the
+  Groceries tab degrades to the existing clipboard export with zero loss of function. The manual
+  list must always be perfect; integrations are accelerators, not dependencies. Unchanged since March.
+- **A second revenue line appears.** Approval carries an impact.com affiliate invitation paying
+  commission on attributed orders and new-user signups. This was not in the pricing model and it
+  partially decouples revenue from subscription price. Feeds the monetization open question.
+
+**Griffin-owned, blocking:** the developer account, IDP terms acceptance, and the stated use case
+are account-holder actions. Claude cannot perform them, and the clock does not start until they
+happen.
+
+**Process lesson, logged deliberately:** a four-month-old third-party API-availability finding was
+allowed to drive release sequencing without re-verification. **Re-verify external API availability
+before it drives a plan, not after.** The superseded March section is preserved in
+`technical-research.md` rather than deleted, so the reversal stays legible.
+
+---
+
+## 2026-07-28 (S43) — Closed beta is TWO gates, and both are off when their env var is unset
+
+**Griffin's ask:** the production URL should not be reachable by "just anyone" before launch, and he
+should not have to see random people signing up. He added the constraint that matters most here:
+*"any changes we need to make when I start sharing this out with people, we should make those changes
+at the right time."* That is a reversibility requirement, and it drove the design more than the
+security requirement did.
+
+**What was actually exposed (verified, not assumed).** `meal-app-swart.vercel.app` has no Vercel
+deployment protection, so the domain answers the whole internet. The *data* was never exposed —
+`/you` unauthenticated returns `307 → /login`, and there are four independent layers behind it (proxy
+cookie check, the `(app)` layout's server-side `getClaims()`, all 42 tRPC procedures on
+`protectedProcedure`, RLS on all 12 tables). The real hole was **open signup**: any Google account
+could sign in, get its own household, and spend the OpenAI key at 150 calls/day/user with no global cap.
+
+**Rejected: Vercel Deployment Protection.** It is the obvious answer and it is wrong for this case —
+it gates on *Vercel account access*, so every beta tester would need a Vercel account added to the
+team. It solves today and breaks the moment Griffin shares the link, which is the phase this whole
+change exists to serve.
+
+**The two gates, and why they are separate rather than one control:**
+
+| Gate | Env var | Blocks at | Answers |
+|---|---|---|---|
+| 1 | `SITE_ACCESS_CODE` | the proxy, before auth | *Can you see that this app exists?* Flat 404 on every path without the cookie, login screen included. Cookie is obtained once via `/invite?code=…` |
+| 2 | `ALLOWED_EMAILS` | auth callback, `(app)` layout, tRPC `init.ts`, `/api/plan/stream` | *May you hold an account?* |
+
+**They fail differently, which is the entire reason for two.** Invite links get forwarded and codes
+leak, so the code alone must never be enough to create data or spend the AI budget. Conversely an
+email list cannot hide the app's existence from a crawler that found it in certificate-transparency
+logs, which is what the code is for. One control covering both jobs would do neither well.
+
+**The reversibility rule: unset means off.** Adding a tester is appending to an env var. Going fully
+public is deleting two env vars. Neither is a code diff, and local dev plus the E2E harness are
+untouched without configuring anything. **The deliberate tradeoff:** a *deleted* env var silently
+opens the app rather than bricking it. Fail-closed was considered and rejected — it would lock Griffin
+out of production on a typo, which is both likelier and worse than the case it guards. Revisit if
+these ever protect something more valuable than a beta.
+
+**The one thing that is NOT env-driven, on purpose:** `noindex` + `robots.txt`. `headers()` is
+evaluated at build time while the gates read env at request time, so binding them to the same
+variables would let the two silently disagree. It is one line to delete instead, tracked as
+**BUG-030** so launch day does not forget it.
+
+**Found during the security review and fixed in the same change:** Gate 2 originally lived only in the
+callback and the layout, which left a session *already issued* able to call the API after its owner was
+removed from the list — i.e. revocation would not have worked. The check now also sits in
+`protectedProcedure`, `authedProcedure` (the one that *creates* the household row), and the
+`/api/plan/stream` route, which does not go through tRPC and is the most expensive endpoint in the app.
+**Left open as BUG-031:** email is now an authorization boundary, so Supabase's email/password provider
+must be confirmed disabled before a second person is invited.
+
+---
+
 ## 2026-07-27 (S42) — The gold line: gold marks the chef SPEAKING, not content you read
 
 **Griffin ratified this, and it replaces counting marks with a rule you can apply.** It resolves the

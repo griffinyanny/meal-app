@@ -18,19 +18,15 @@ import { eq, and } from "drizzle-orm";
 import { protectedProcedure } from "../init";
 import { users, userPreferences, aiMemories } from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
+import { parseEmailList } from "@/lib/access";
 
 // Comma-separated emails, e.g. DEV_TOOLS_EMAILS="griffin@example.com,wife@example.com".
-// Unset means nobody, which is the correct default for a real deployment.
-function allowlist(): string[] {
-  return (process.env.DEV_TOOLS_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter((e) => e.length > 0);
-}
-
+// Unset means nobody, which is the correct default for a real deployment — note
+// this is the OPPOSITE default to ALLOWED_EMAILS, which opens up when unset.
+// Only the parsing is shared; the two answer "empty list" differently on purpose.
 function isDevUser(email: string | null | undefined): boolean {
   if (!email) return false;
-  return allowlist().includes(email.toLowerCase());
+  return parseEmailList(process.env.DEV_TOOLS_EMAILS).includes(email.toLowerCase());
 }
 
 export const devToolsProcedures = {

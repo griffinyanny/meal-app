@@ -1,6 +1,35 @@
 # What's Next
 
-Last updated: 2026-07-30 (Session 48)
+Last updated: 2026-07-30 (Session 48; merged the concurrent access-gate + Instacart sessions)
+
+## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
+
+**Ordering is V2 and R1 ships none of it.** Griffin's call: *"not a critical need, I'd love to get a
+polished version of v1 first."* R1's answer stays the **clipboard export shipped in 1D**.
+
+S44 spent a round pulling ordering into R1 and then reverting it, because Instacart's developer
+application turned out to be **closed, no waitlist, no reopen date**. Their docs describe a self-serve
+dashboard, but that is the flow *after* approval.
+
+**Why this stays visible even though nothing is scheduled:** the TAM research says **one Instacart
+integration reaches ~98% of US households**, and every retailer-direct alternative is single-digit share
+with a separate build. **Kroger is the only open grocery API in the US** (Walmart stopped issuing
+affiliate API keys; Costco/Albertsons/Publix/Target have no public cart API) and it is a ~10% hedge, not
+a strategy. So Instacart reopening is the single highest-leverage external event for this feature.
+
+- [ ] **Periodic check, no waitlist to join:** https://company.instacart.com/business/developers — has
+      *"We are currently not accepting new applications"* changed? Worth a look at V2 planning, and any
+      time ordering comes up.
+- [ ] If it reopens: eligibility is 18+, registered business or US/Canada resident, company/contact
+      info, dev experience, terms agreement. Then the ~30-40 day review clock becomes real again and the
+      pull-forward argument comes back with it.
+- 🛒 **Griffin has offered to shop QFC (a Kroger banner) instead of Haggen (Albertsons, no API) for
+      testing**, which aligns his store with the only open API if we ever build the Kroger hedge.
+
+Full analysis incl. US market-share table: `technical-research.md` → TAM analysis. Decision:
+`decisions.md` (2026-07-30, both entries — the reversal is deliberate and legible).
+
+---
 
 ## ▶ NEXT SESSION — **1E.5 is one glance from closed: confirm the S48 after-captures, merge, open 1F.**
 

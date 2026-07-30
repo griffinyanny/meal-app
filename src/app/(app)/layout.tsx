@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isEmailAllowed } from "@/lib/access";
 import { AppShell } from "@/components/shell/app-shell";
 import { OnboardGuard } from "@/components/shell/onboard-guard";
 
@@ -16,6 +17,17 @@ export default async function AppLayout({
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims) {
     redirect("/login");
+  }
+
+  // Gate 2 backstop. The callback rejects at sign-in, but a session already
+  // issued outlives that check — so removing someone from ALLOWED_EMAILS has to
+  // take effect on their next page view, not their next login. Bounced through a
+  // route handler because a Server Component cannot clear the session cookie
+  // itself, and redirecting to /login while still holding one would loop.
+  const claimedEmail =
+    typeof data.claims.email === "string" ? data.claims.email : null;
+  if (!isEmailAllowed(claimedEmail)) {
+    redirect("/auth/rejected");
   }
 
   return (

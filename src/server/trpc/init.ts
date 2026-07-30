@@ -9,6 +9,22 @@ import {
   checkAiBackgroundRateLimit,
   consumeDailyAiBudget,
 } from "@/server/ratelimit";
+import { isEmailAllowed } from "@/lib/access";
+
+// Gate 2 on the API surface. The auth callback rejects a non-invited account at
+// sign-in, but a session ALREADY ISSUED outlives that check — so without this,
+// removing someone from ALLOWED_EMAILS would leave them able to call the API
+// (and spend the OpenAI budget) until their refresh token expired. Page views
+// are covered by the (app) layout; this covers everything the layout doesn't.
+// No-op when ALLOWED_EMAILS is unset, so local dev and E2E are unaffected.
+function assertInvited(email: string | null | undefined): void {
+  if (!isEmailAllowed(email)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This account is not on the invite list.",
+    });
+  }
+}
 
 export async function createTRPCContext() {
   const supabase = await createClient();
@@ -32,6 +48,10 @@ export const authedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+  // Checked here too, not just in protectedProcedure: `ensureOnboarded` is the
+  // procedure that CREATES the household membership, so this is the one call a
+  // non-invited session could use to bootstrap itself into existence.
+  assertInvited(ctx.user.email);
   return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
@@ -39,6 +59,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
+  assertInvited(ctx.user.email);
 
   const membership = await ctx.db.query.householdMembers.findFirst({
     where: eq(householdMembers.userId, ctx.user.id),
