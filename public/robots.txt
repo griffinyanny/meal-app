@@ -1,5 +1,5 @@
 # Closed beta (S43). Nothing here should be indexed yet.
 # LAUNCH-DAY ITEM: delete this file and the X-Robots-Tag header in next.config.ts
-# when the app goes public. See docs/bug-tracker.md (BUG-030).
+# when the app goes public. See docs/bug-tracker.md (BUG-043).
 User-agent: *
 Disallow: /

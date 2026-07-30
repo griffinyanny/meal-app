@@ -6,7 +6,90 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### Is library-into-plan formally in R1 scope? (raised S41)
+### ✅ RESOLVED S47 — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
+
+**Griffin's call: split the output.** `chefSummary` becomes the short claim with a **code-enforced**
+one-sentence ceiling; a new `chefNote` carries the argument into the 14.5px italic gold slot
+`chef-header.tsx` already had props for. Migration `0009`.
+
+The framing was the whole answer. This was raised as a copy-length problem with three fixes on the table,
+and reading frame `3i` first showed it was none of them: the frame draws **two** strings, the component
+had props for both, `week-wrapped-state.tsx` passed both, and **`plan-review.tsx` passed only one**. An
+unwired field. See `decisions.md` (S47) for why the ceiling lives in code and why it splits rather than
+truncates.
+
+**Verified live:** claims at 76–89 characters, first meal ~210px down. **Residual:** the guarantee is one
+*sentence*, not one *line*, and the `chefNote` half is running 203–336 characters — four to six lines of
+gold. That is a voice call rather than a defect, and it is the same trade Griffin already made once.
+
+### ✅ RESOLVED S48 — §B's boundary sentence never appears, after two live rounds (BUG-041, raised S47)
+
+**Griffin's call: stop asking, per the recommendation.** The prompt clause is deleted; *"Your recipe —
+the chef won't rewrite it."* renders as product copy on the picked row — caption colour, not gold,
+because the gold line says gold marks the chef speaking and this is the product's own guarantee. The
+decision about what the chef IS came down to: a fixed promise has to be deterministic, and two live
+rounds proved the chef's voice cannot be relied on to carry it. The seed, mock fixture and L4 — which
+had all hardcoded the sentence as chef output, making the suite green against a lie — were rewritten to
+carry what the model actually produces. See decisions.md (S48) and bug-tracker (BUG-041, Resolved).
+
+### ✅ RESOLVED S45 — Where does `Start over →` belong on a draft? (raised S44)
+> **CLOSED 2026-07-29 (S45). It stays the foot link under the rail, with the gap tightened.**
+> Griffin took the recommendation. The argument that decided it: mid-week already uses this exact pattern
+> for the same job, so it reads as existing vocabulary rather than a new object, and the end of the scroll
+> then offers both doors — accept (the floating Confirm) and reject (the link). The ~100px void was a
+> spacing bug, not a placement argument: `mt-6` → `mt-[13px]` (just off the rail's own 9px gap, so the link
+> belongs to the week rather than to the decision), and the week's closing line drops from a 56px rail row
+> to 38px when it carries no control — most of the void was button-sized space with no button in it.
+
+<details><summary>Original question (S44)</summary>
+The 1E.5 rebuild **dropped the regenerate airlock's draft door entirely** (BUG-026): the chef header
+carries one revise control and frame `3i` spends it on `Something's off` (→ Talk to the Chef), so there
+was no way to re-prompt a draft at all. The brief's state inventory §3 keeps that door and scope-1E.5's
+acceptance criteria require RG1–RG5 not to regress, so it had to come back — but the frames do not draw
+the bottom of the scroll, so **where** is a judgement call, not a locked decision.
+
+Restored as the **foot link under the rail**, reusing the pattern `plan-midweek.tsx` already uses for the
+same job (adds no new object, doesn't breach §D's one-floating-layer rule). Visual-QA's medium M2 notes
+it now sits in a ~100px void between the last rail row and the consequence line. Alternatives: a second
+control in the chef header beside `Something's off`; or fold it into the Talk-to-Chef sheet as an escape
+row. **Griffin's call.**
+
+</details>
+
+### ✅ RESOLVED S45 — The `$94 spent` copy (raised S43)
+> **CLOSED 2026-07-29 (S45). The number comes off week-wrapped entirely.** Griffin took the
+> recommendation. Cost now appears only where a decision is pending: the draft's consequence line and the
+> confirmed week's grocery row, both of which name themselves as estimates. **W6 closes** — the wrapped
+> half is descoped rather than owed, so the grocery-list query it needed is no longer required, and
+> "wrapped renders no cost" is the intended state rather than a gap. Recorded in decisions.md; revisit only
+> when V2 grocery ordering returns real line prices, at which point a *reconciled* figure would no longer be
+> an estimate wearing a past tense.
+
+<details><summary>Original question (S43)</summary>
+Claude's recommendation, unchanged: **`~$94 est.`** — or, preferably, **drop the number from
+week-wrapped entirely** and keep it only on review. The asymmetry decides it: `~$87` on review is a
+forecast and nobody can falsify a forecast, but "spent" is a **past-tense factual claim about money the
+user handed over**, and it is the only string in the product they can check against a receipt in their
+pocket. When the estimate is off by $20 — and it will be, with no price data, no store and no region —
+the conclusion is not "the estimator is rough", it is "the app makes things up", and that suspicion
+transfers to the plan and the list.
+
+Wrapped is a **recap**; its job is "how did the week go", and a cost figure there invites arithmetic
+instead of reflection in the one frame where the receipt is most likely to hand. Review needs the number
+because it is an input to a decision about to be made.
+
+**Consequence today:** wrapped renders no cost at all (the honest null-safe state), and **W6's
+week-wrapped half is not built** — it also needs a grocery-list query `plan.current` does not make.
+</details>
+
+### ✅ RESOLVED S43 — Is library-into-plan formally in R1 scope? (raised S41)
+> **CLOSED 2026-07-27 (S43). YES — it is in R1, as Slice 2 of phase 1E.5**, reaffirming Griffin's S41
+> "That should be something that we include in R1." Written into `scope-1E.5.md` (W8–W10) with all five
+> of the brief's build dependencies attached to it, which is exactly why Slice 1 stands alone. Note the
+> consequence recorded in decisions.md: **spec §12 item 04 pulls forward 1F → 1E.5**, because the verb
+> needs the floating primary the 1D toolbar occupies.
+>
+> *Original entry retained below for provenance.*
 **Question**: the 1E.5 design pass found that recipes flow **into** the library four ways and nothing flows
 back out — there is no way to say "I want to cook this specific thing this week." Griffin's words: *"That
 should be something that we include in R1."* It is now designed in full (picker, the chef's answer +
@@ -21,14 +104,34 @@ but it has **never been added to a scope doc**, and the rule is that nothing get
 - **Decide before 1E.5's scope doc is written**, since it changes the phase's size materially. Full detail
   in `idea-backlog.md` → Incoming (S41).
 
-### Draft versus confirmed — the same week, twice (raised S41)
+### ✅ RESOLVED S43 — Draft versus confirmed: the same week, twice (raised S41)
+> **CLOSED 2026-07-27 (S43), built in `plan-review.tsx`.** Confirmation earns six structural differences,
+> none of them a badge: **the floating action disappears** (the decision was spent, and an empty bottom
+> edge is the strongest signal that nothing is being asked of you); a **grocery row takes the argument's
+> place** directly under the summary, because the list is the thing that came into existence; the meta
+> reads `Set` not `Draft`; the chef speaks in the past tense; the wash drops **ambient → flat**, because a
+> settled week is not a decision surface; and **cards keep their meta but lose their placement arguments**
+> — the argument was for the draft, and once you have agreed the card's job is reference. Scroll padding
+> 108px rather than 168px. Frames `3i`/`3j`.
+>
+> *Original entry retained below for provenance.*
 **Question**: every frame across both Plan design waves says `Draft ·`. Confirming is the single most
 consequential action on the surface — it writes the grocery list — and the week that follows it currently
 looks identical to the one before. The hard constraint says a Sunday view and a Wednesday view must look
 *meaningfully different*; a draft and a confirmed week probably owe the same. How much visual change does
 confirmation earn? Pulled into the consolidation pass, unanswered as of S41.
 
-### Two small calls the finished Plan spec left open (raised S41)
+### ✅ RESOLVED S43 — Two small calls the finished Plan spec left open (raised S41)
+> **BOTH CLOSED 2026-07-27 (S43), neither needed Griffin.**
+> - **The landed ring is GOLD — and was already shipped.** S42 ratified the gold line (*gold marks the
+>   chef speaking*) and moved the shimmer bar and highlight ring indigo → gold under exactly that rule.
+>   The brief's still-open list predates its own answer. Now applied to the rail's row ring.
+> - **The picker's four browse tiles PUSH.** A pushed view carries its own header and count, which is what
+>   makes a tile a door; a filter chip implies subtraction from a list you can already see, contradicting
+>   the ledger's "the picker is a place, not a dropdown". Push also avoids a second owner for the result
+>   list alongside the search field. Recorded in `scope-1E.5.md` → W8.
+>
+> *Original entry retained below for provenance.*
 Both are one-liners; recording them so they don't get lost between the design and the build.
 - **Gold or cream for the landed ring?** Drawn gold in `3k`. It touches the three-mark budget for 400ms
   alongside the header orb. The sheet recommends it stays gold — the change was the chef's work, and a
@@ -43,7 +146,20 @@ Both are one-liners; recording them so they don't get lost between the design an
 day mostly to *look* at it, a sheet is heavy for a glance and expand-in-place is right. Not answerable from a
 static frame; it wants the interactive prototype or real use. Low stakes to reverse before build, high after.
 
-### Does the week-wrapped screen imply cost tracking we don't have? (raised S41)
+### 🟡 ANSWERED S43, one residual — Does the week-wrapped screen imply cost tracking we don't have? (raised S41)
+> **Griffin's call 2026-07-27 (S43): SCOPE THE ESTIMATION.** Claude recommended dropping the numbers
+> (no cost model; an LLM estimate is ungrounded; it is the one figure a user can audit against a real
+> receipt; V2 grocery ordering brings real prices for free). Griffin chose to build it. Display half +
+> guardrails shipped S43 — always tilde-prefixed, never cents, null rather than `$0`; the week-wrapped
+> figure estimates over the **confirmed grocery list** rather than the plan. Server half (`estCostCents`
+> column, migration, generation output, prompt rule) still owed.
+>
+> **⚠️ RESIDUAL, AND IT BLOCKS A FRAME: the word "spent".** `~$87` reads as an estimate because the tilde
+> does that work. **`$94 spent` is a past-tense factual claim about money the user actually handed over** —
+> the single most auditable string on the surface. Recommend `~$94 est.`. **Griffin's call**, wanted before
+> the build reaches week-wrapped.
+>
+> *Original entry retained below for provenance.*
 **Question**: the week-wrapped close-out shows `12 cooked · 3 skipped · $94 spent`, and the review screen's
 status row carries `~$87`. **We have no cost model for a recipe, a plan, or a grocery list** — those numbers
 are currently fictional. Either drop them from the design or scope real estimation. Related: the LLM

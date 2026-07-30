@@ -5,8 +5,17 @@ import { cn } from "@/lib/utils";
 
 export interface ChefPresenceProps {
   // "hero" is the intro's full presence with steam and a floating bob; "inline"
-  // is the small ember that sits beside the question status label on every turn.
-  size?: "hero" | "inline";
+  // is the small ember beside the question status label on every interview turn;
+  // "header" is Plan's 34px orb in the chef block at the top of the week;
+  // "toast" is the 20px ember that rides in the acknowledgement bar.
+  size?: "hero" | "inline" | "header" | "toast";
+  // The live presence dot (Plan only). Gold, because presence is the chef being
+  // here — the same reason the orb is gold.
+  presenceDot?: boolean;
+  // Runs the ember fast while the chef is writing. Motion only: the state is
+  // always also carried in words by the header's status label, so nothing is
+  // communicated by animation alone (and it stops under reduced-motion).
+  thinking?: boolean;
   className?: string;
 }
 
@@ -15,15 +24,26 @@ export interface ChefPresenceProps {
 // rather than a form with a mascot. Purely decorative: every animation here is
 // disabled under prefers-reduced-motion (see globals.css) and no information is
 // carried by motion alone.
-export function ChefPresence({ size = "inline", className }: ChefPresenceProps) {
+export function ChefPresence({
+  size = "inline",
+  presenceDot,
+  thinking,
+  className,
+}: ChefPresenceProps) {
   const hero = size === "hero";
+  // Below ~40px the toque's hairline stroke goes sub-pixel and reads as dirt,
+  // so the two small sizes drop it and are pure ember.
+  const small = size === "header" || size === "toast";
 
   return (
     <div
       aria-hidden="true"
       className={cn(
         "relative flex flex-none items-center justify-center",
-        hero ? "size-28 ember-float" : "size-[50px]",
+        hero && "size-28 ember-float",
+        size === "inline" && "size-[50px]",
+        size === "header" && "size-[34px]",
+        size === "toast" && "size-5",
         className
       )}
     >
@@ -40,7 +60,11 @@ export function ChefPresence({ size = "inline", className }: ChefPresenceProps) 
       <span
         className={cn(
           "ember-core absolute rounded-full",
-          hero ? "size-[88px]" : "size-[42px]"
+          hero && "size-[88px]",
+          size === "inline" && "size-[42px]",
+          size === "header" && "size-[34px]",
+          size === "toast" && "size-5",
+          thinking && "ember-thinking"
         )}
       />
       {/* The toque (spec §02). A hairline stroke, never a fill — a filled toque
@@ -48,14 +72,19 @@ export function ChefPresence({ size = "inline", className }: ChefPresenceProps) 
           to 41% of the sphere and seated just below centre so the highlight
           stays clear above the brim and the light still reads as coming from
           up-left. Below 40px the stroke goes sub-pixel and reads as dirt, which
-          is why the inline orb is still large enough to carry it. */}
-      <ChefHat
-        className={cn(
-          "relative z-10 text-[#2A1C04] opacity-85",
-          hero ? "size-9" : "size-[17px]"
-        )}
-        strokeWidth={1.6}
-      />
+          is why the small sizes drop it entirely rather than shrinking it. */}
+      {!small && (
+        <ChefHat
+          className={cn(
+            "relative z-10 text-[#2A1C04] opacity-85",
+            hero ? "size-9" : "size-[17px]"
+          )}
+          strokeWidth={1.6}
+        />
+      )}
+      {presenceDot && (
+        <span className="absolute -bottom-px -right-px size-[9px] rounded-full border-2 border-[var(--spec-floor)] bg-[var(--spec-gold)]" />
+      )}
     </div>
   );
 }

@@ -1,5 +1,114 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S47) — `ux-design-critic`'s staged findings — ⚖️ DISPOSED S48 (2026-07-30)
+
+**Griffin ruled on all sixteen in S48** (decisions.md, "The critic's slate"): **eleven applied** (the
+fixed picker pane, the receipt line, the fit-counting opening line, un-dim on selection, door
+suppression, the eyebrow glyph fix, the opening cap, the door refile on both sheets, honest
+empty-library doors, the radius rung, the search-field removal), **two rejected** (hierarchy inversion —
+the critic's measurement was wrong, the copy trim was applied instead; loudest-object inversion — the
+chef primary stays), **four retagged [1F]** (the `+` weight, vocabulary unification, cooked-when
+evidence, caps-label tracking — kept below). Original findings retained for the record:
+
+- **[1E.5 taste] Multi-select is illegible across sections.** One checkbox visible, the second pick
+  unnamed and unreachable except by `Clear` (which is drawn at the caption colour, the palette's stated
+  floor of legibility). Proposed: the support line above the verb stops restating the verb and becomes the
+  receipt — *"Carbonara and the green beans."* No new object.
+- **[1E.5 taste] The picker has four different heights** — 176 / 274 / 365 / 400 / 515px across states,
+  because the drawer is `h-auto` with `max-h-[80vh]`. The frame draws a fixed pane. **This reframes the
+  logged "76 vs 176px" item**: it is not a number, it is that the walls move 339px when you push a door,
+  and the week behind appears and disappears as you browse. Fix the sizing first; then the 76-vs-176 call
+  is a ten-second taste decision instead of a judgement about a moving target.
+- **[1E.5 taste] The chef's opening line contradicts the rows under it.** *"3 of these have been waiting —
+  you've got 30 minutes"* sits directly above two rows reading *longer than Friday allows*. Proposed:
+  *"Three have been waiting. One of them fits your thirty minutes."*
+- **[1E.5 taste] Overruling the fit constraint is allowed but unacknowledged.** A selected unfittable row
+  keeps `opacity-55`, so it renders as *dimmed and pre-checked* — the universal grammar for a bug. The
+  permission itself is right and should stay; the silence is the problem. Proposed: un-dim on selection,
+  and let the support line absorb it (*"The lamb needs three hours, so I'll find it a different night."*).
+- **[1E.5 taste] Two of the four browse doors are the same door.** `recentlySaved()` is `.slice(0, 12)`,
+  so for any library under 13 recipes `Recently saved` and `Everything` are the identical set — the
+  majority case for R1. Proposed: suppress a tile whose count equals `Everything`'s, and suppress 0-count
+  tiles. Two honest doors beat four with two fake.
+- **[1E.5 taste] The empty library's hierarchy is inverted against its own frame.** `3d` draws
+  `Nothing in here yet.` at 22px and the invocation line at 19px; the build has 16px and 22px. The critic
+  argues this — not copy length — is why the gold block dominates, and that trimming the copy would treat
+  a symptom and cost the best sentence in the state.
+- **[1E.5 taste] The empty library's loudest object is the exit.** `Let the chef write it` is the one
+  filled cream button; the two doors that would actually fill the library are quiet rows. Proposed:
+  invert the weight.
+- **[1E.5 taste] The gold budget on `picked-row` may have crossed from known to broken.** The boundary
+  sentence is now typographically identical to seven cheap rationales, so the one sentence that had to be
+  singular is item one of eight. Proposed: rationales to `text.body`, keep the `→` in gold. **Explicitly
+  Griffin's**, since §D accepts five gold rationales.
+- **[1E.5 taste] `DINNER · PICKED` breaks the rail's left edge.** The bookmark is `inline`, so the picked
+  row's eyebrow starts ~15px right of every other row while its title stays flush; and `PICKED` joins in
+  third position, two segments from the glyph that marks it. Two one-line changes. **The critic's explicit
+  "leave this alone" is the decision itself** — flat type, no accent, no badge.
+- **[1E.5 taste] The opening list has no cap; frame `3b` gave it one** (three rows + `Six more`). At the
+  frame's own 48-recipe scenario the four doors fall hundreds of pixels below the fold.
+- **[1E.5 taste] The empty library's two doors share one destination** (`/recipes`), and one of the two
+  labels promises something the destination does not do.
+- **[1E.5 taste] The meal sheet files the library door as navigation.** `Cook something I've saved` sits
+  under `TAKE IT SOMEWHERE` beside a read-only link, though it rewrites the night. Proposed: move it under
+  `ASK ME FOR A CHANGE`, beneath `Swap the whole meal` — the two together are the thesis in two lines.
+- **[1F] Recipes' `+` is now the loudest object on the screen.** A filled cream 44px square, so manual
+  recipe entry outranks the screen's actual job. Proposed: `action.soft`.
+- **[1F] Two vocabularies for one library.** Recipes says `All` / `Favorites` / `Cooked`; the picker says
+  `Everything` / `Cooked before` / `Recently saved` / `Imported`. The two surfaces are now adjacent in one
+  flow. Also: `Favorites` probably belongs in the picker.
+- **[polish] Nested radius skips a rung** (sheet r22 → contents r14; §11 says step one, and the frame drew
+  r18), **the pushed door shows no evidence of its premise** (rows inside `Cooked before` never say when
+  they were cooked), **three tracked-out caps labels in one sheet**, and **the empty library kept a search
+  field frame `3d` deliberately omitted**.
+
+## Incoming (S46) — surfaced building 1E.5 Slice 2 (W8 + W10)
+
+- **[V1.5, with household sharing] §B's who-clause on a picked meal.** The ledger draws
+  `Griffin's pick · 40 min · scaled to 3`, and the rule that provenance is **never a possessive in the
+  eyebrow** exists precisely *because* a second person will one day be in the household. The meta renders
+  `40 min · scaled to 2` today and stops there: the clause needs a display name, R1 has no surface that
+  holds one, and inventing a source to render "Griffin's" for a solo user builds the hardest half of a
+  V1.5 feature for zero present value. **Ships with household sharing UI**, where the name becomes real.
+- **[V1.5] §B's "too many picks → two options" conversation (frame `3m`).** `MAX_PICKS_PER_ASK` is 4 and
+  the picker will hand the chef four; what does not exist is the *conversation* — a pre-selected
+  recommendation ("two this week, two stay in your recipes") and its alternative, with the chef's reason
+  being a **cooking** reason rather than a capacity one. It is a distinct screen with its own primary, and
+  it only fires when the chef judges a week over-constrained — a judgement generation is not currently
+  asked to make. **Deliberately not built (S46)** rather than quietly skipped.
+- **[1F] The eight-way duplicated cookability test.** `slotType === "recipe" || slotType === "leftover"`
+  appears in eight places, two of them in the grocery collector. S45 chose a `picked_recipe_id` column
+  over a `slotType` enum value *partly* to avoid touching all eight — which means the duplication is still
+  there, still load-bearing, and still one missed call-site away from silently dropping a deliberately
+  chosen meal from the shop. Nothing depends on fixing it, which is exactly why it will not get fixed by
+  accident. One shared `isCookable()` predicate.
+- **[1F] The picker cannot reach a recipe that is not in `recipe.list`'s first 200.** The picker derives
+  from the same cached list the Recipes tab uses, capped at 200 by that query. Correct for V1 household
+  scale (dozens) and it keeps the picker free to open; it becomes wrong at a few hundred saved recipes,
+  and the failure is silent — the recipe simply is not there. Revisit with pagination or a dedicated
+  picker query if the library ever gets large.
+
+## Incoming (S44) — surfaced building 1E.5 Slice 1
+
+- **[1E.5 Slice 2 / V1.5] The meal sheet's `Move it` group.** Wave 1's settled meal-sheet drawing carries
+  a third group — `Move to another day` and `Skip Tuesday` — grouped separately *because they change the
+  week rather than the meal*. It is in **none of W7's scope bullets**, drag-to-move is explicitly V1.5,
+  and `Move to another day` needs a day picker that is neither drawn nor scoped. **Deliberately not
+  built** (S44) rather than quietly added. `Skip tonight` is the cheaper half — the modify pipeline
+  already clears a night to `eating_out` — and would slot in with Slice 2's sheet work.
+- **[1F] Compact rows truncate the title at ~20 characters.** The nested row spends a fixed 62px on its
+  meal-type label plus a trailing slot on the cook time, leaving the title — the thing being scanned —
+  the remainder. Not reachable today (R1 generates dinners only, so no day is ever nested), which is why
+  visual-QA graded it medium. Revisit when lunch/breakfast generation ships.
+- **[1F] Seven gold rationales reads as texture rather than voice.** The ledger licenses one per dinner
+  ("fifteen meals still produce five gold marks"), and at five it reads as the chef making a case per
+  night. At seven it starts reading as a typographic treatment applied to a list. Cheapest lever if it
+  bothers Griffin: drop the rationale on days already past on the mid-week screen.
+- **[V1.5] `plan.modify` should return `changedSlotIds`.** Already tracked as BUG-023; restated here
+  because W3's toast made the row-level ring visible enough that the day-level fallback is now the one
+  imprecise thing left in the modify loop.
+<!-- ⑂ S48 merge: the section below is from the concurrent main-checkout sessions. -->
+
 ## Incoming (S44) — Griffin, 2026-07-30
 
 *Two ideas that are really one: **add to the grocery list without opening the app.** Filed as a cluster
@@ -78,15 +187,15 @@ they don't reach the build by accident.*
   What's deferred is the moment the chef *volunteers*. Cheap way back to it later without new furniture: the
   intent screen already has a chip row, so a stale-library nudge becomes a chip variant (`Cook that lamb
   ragù`). The staleness read itself moved **into the picker** as content rather than a sort order.
-- **[1E.5] Rate-the-week screen.** "Rate them" needs a destination — at eighteen meals a row of thumbs is a
+- **[1F — re-tagged from 1E.5, S43] Rate-the-week screen.** "Rate them" needs a destination — at eighteen meals a row of thumbs is a
   screen, with a bulk affordance ("They were all fine — marks the twelve and closes this"), two states per
   row rather than five stars (the chef needs a direction, not a score), and only cooked meals listed because
   a skip is already an answer. The primary is **"Save and plan next week"**, not "Done" — rating is a step in
-  the ritual, not a chore with an exit. Also what gives week-wrapped somewhere to live.
+  the ritual, not a chore with an exit. Also what gives week-wrapped somewhere to live. **Re-tagged 1E.5 → 1F (S43):** this is a *new screen* with its own primary and a bulk affordance, not a Plan state — a fidelity rebuild should not grow a screen. 1E.5 renders week-wrapped on the rail; where "Rate them" *goes* is 1F's.
 - **[V1.5] Repeat a week in one tap.** From the week-wrapped close-out: *"Save the carbonara week — cook the
   whole thing again in one tap."* Nothing in the system saves or replays a week today. Pairs with the
   library-into-plan work above (a saved week is a set of pinned recipes).
-- **[V2] Spend readout on the week.** Week-wrapped shows `12 cooked · 3 skipped · $94 spent`. We have no cost
+- **[V2 — partially pulled into 1E.5, S43] Spend readout on the week.** Week-wrapped shows `12 cooked · 3 skipped · $94 spent`. We have no cost
   model for a plan or a grocery list at all, so the number is currently fictional. Either drop it from the
   design or scope real cost estimation — it pairs with the existing grocery-ordering (V2) and pricing work.
 - **[post-MVP] The chef learns from skips.** *"You skipped Thursday, which you always do, so I'll stop

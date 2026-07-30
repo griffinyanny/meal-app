@@ -4,6 +4,517 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 48 — 2026-07-30 (Griffin's taste pass as a decision ballot; BUG-041 closed; the critic's slate applied)
+
+**The taste pass ran as a ballot, because Griffin could not see the captures.** He was given the two open
+calls plus an apply/defer/reject slate over the critic's sixteen staged findings, took the
+recommendations on all of it, and ratified flexing the locked frames where the reasons were stated
+("the design spec didn't know everything we would ever do"). A contact sheet of the S47 captures was
+opened in his browser mid-session; his visual confirmation lands on the S48 after-captures.
+
+**BUG-041 closed the recommended way — the boundary sentence is product copy now.** The prompt clause is
+gone from `buildPicksBlock`; *"Your recipe — the chef won't rewrite it."* renders on the picked row
+(`picked-boundary`, caption colour — not gold, because gold marks the chef speaking and this is the
+product's promise). The sharper argument surfaced writing it up: the sentence was hardcoded in the seed,
+the mock fixture AND an E2E assertion, so the suite was proving a guarantee the live model never once
+kept — the exact fixture-drift the E2E rules warn about. Seed `chefNote`, `PICK_CHEF_RESPONSE` and L4
+all rewritten to carry what the model actually produces.
+
+**The slate: eleven applied, two rejected, four to 1F** (full dispositions in decisions.md S48):
+- **The picker pane pins at 80vh on the picker subject only** (`plan-sheet.tsx`) — it had four heights
+  across states, collapsing ~340px under your finger when a door was pushed. New **`L17`** measures the
+  pane across opened/pushed/selected AND asserts the meal sheet still content-sizes.
+- **The support line is the receipt** (`pickReceipt`) — two picks across two sections left the second
+  invisible; the line stops restating the verb and names them.
+- **The chef reads its own list** — the opening line counts what fits the named night
+  (`3 of these have been waiting — 1 of them fits your 30 minutes.`) instead of quoting a ceiling above
+  rows that contradict it.
+- **A selected unfittable row un-dims** (dimmed-and-checked is the grammar of a stuck control), and the
+  `3e` single-pick support line acknowledges the overrule: *"Runs long for the night — your call."*
+- **Door suppression** — zero-count doors and doors identical to `Everything` are gone; a five-recipe
+  R1 library now shows honest doors instead of `Recently saved`/`Everything` twins.
+- **The opening tier is capped at 3 + `N more`** (frame `3b`'s own drawing), pushing a new `stale` door.
+- **The eyebrow glyph moved beside `PICKED`** — every rail row now starts flush left.
+- **The library door refiled under `ASK ME FOR A CHANGE`** on BOTH sheets (one shell, one grammar).
+- **The empty library**: search field removed (frame `3d` omitted it), gold copy trimmed a clause, two
+  same-destination doors merged into one honest one.
+- **Sheet contents step one radius rung** (r22 → r18: rows, chips, tiles, search, doors).
+- **Rejected**: the hierarchy-inversion finding (the critic's measurement was wrong — 16/13.5px, not
+  16/22px; the copy trim treats the real cause) and the loudest-object inversion (`Let the chef write
+  it` stays primary — with nothing to pick, the honest answer is that there is nothing to pick).
+
+**`DEV_TOOLS_EMAILS` finally has a value, verified live** — the variable had existed for 3 days with an
+EMPTY string (empty = nobody, by design). It is marked *sensitive* in Vercel, so no read-back is possible
+(the "empty" pulls were masking); Griffin re-added his email, the dashboard save triggered a prod
+redeploy, and **he confirmed the test-mode card renders on prod**. `ALLOWED_EMAILS` empty = fail-open by
+design; it becomes the beta invite list later.
+
+**And the phase CLOSED in-session.** Griffin's sign-off on the before/after sheet (*"the before and
+after looks good"*) closed the last gate → **M5.5**. The close pulled `origin/main` into the branch
+first — the concurrent access-gate (S43a) and Instacart round-trip (S44/44b) sessions had landed there,
+plus an S49 session that had already opened `scope-1F.md` and flipped scope-v1. Five doc files
+conflicted (both tracks kept, with divider notes); the concurrent sessions' BUG-030/031 collided with
+this track's and were renumbered **BUG-042** (email-signup authorization assumption) / **BUG-043**
+(noindex outlives launch), code comments repointed. Merged tree: 641 unit + full E2E green.
+
+---
+
+## Session 47 — 2026-07-30 (1E.5's gates cleared: BUG-034 fixed, Layer A + Layer B closed, four bugs found by looking)
+
+**The job:** answer BUG-034, run `/visual-qa` Layer A on Slice 2's new states, run Layer B on the pick
+path, then the critic. All done. **Every gate except Griffin's taste pass is now closed.**
+
+**606 unit + 110 E2E green, lint + typecheck clean, migrations `0007`–`0009` applied.**
+
+### BUG-034 was an unwired field, and Griffin chose to wire it
+
+Frame `3i` draws **two** strings at two sizes — a claim at 22px cream, the argument at 14.5px italic gold.
+`chef-header.tsx` had props for both and `week-wrapped-state.tsx` passed both; **`plan-review.tsx` passed
+only `summary`**, and generation emitted the single `chefSummary` the prompt asked for as "one or two
+sentences". So both of the model's sentences landed in the 22px heading, the gold slot rendered nothing,
+and the first meal went below the fold. Not a copy-length problem — a field nobody connected.
+
+Griffin's call: **split the output.** New `chefNote` (schema + prompt + `chef_note` column, migration
+`0009`) carries the argument into the `rationale` prop that already existed. **The one-sentence ceiling
+lives in code, not the prompt** — BUG-033 established that a style clause loses to the request competing
+with it — and it **splits rather than truncates**, so an over-long claim loses nothing: the overflow
+becomes the argument, which is the slot it belonged in.
+
+One thing that would have broken silently: `absorbRepeatedMethod` only strips a repeated method **if the
+week already said it**, and the split moves most of the saying into `chefNote`. Matching the claim alone
+would have quietly disabled absorption for exactly the weeks it exists for. It reads both halves now, and
+a test pins it.
+
+**Measured on real output:** claims came back at 76–89 characters, and the first meal now sits ~210px down
+a 390×844 screen — three meals visible where the original defect showed none.
+
+### The headline find: every glass surface in the app has had no backdrop blur since 1E.7
+
+Chased down from phantom meal rows reading *through* the picker's own list. `.glass-card`,
+`.glass-surface` and `.glass-sheet` each hand-wrote `-webkit-backdrop-filter` beside the standard
+property; `.spec-chrome` and `.spec-floating` did not. **lightningcss collapses that duplicate onto the
+prefixed form and drops the standard one** — and Chrome removed `-webkit-backdrop-filter` years ago. The
+built CSS carried a blur no current browser honoured:
+
+```css
+.glass-sheet{-webkit-backdrop-filter:blur(40px)saturate(180%);background:#16100bf0;…}   /* before */
+```
+
+The fill stayed correct at `.94`, so it read as deliberate flatness rather than breakage. That is why nine
+sessions of visual QA walked past it, and it is why **BUG-022 was misdiagnosed in S42** as the spec's
+intended translucency and parked for 1F on that basis — *"do not raise the L5 alpha, `.94` is the spec's
+value"*. The alpha was never the problem. **Attributing a symptom to a deliberate design value is what
+kept it alive for five sessions.** Guarded now by `src/app/globals.test.ts`.
+
+The second reason it survived: **Layer A had never captured a single sheet state.** W7's meal sheet
+shipped in S44 and Slice 1 cleared 0/0 without one frame of the surface that sits on top of everything
+else. `meal-sheet` is a capture state now.
+
+### Layer B found two real defects, and one guarantee finally fired
+
+**The absorption path executed on a real generation for the first time** — the debt outstanding since S45.
+It needed a server log to see at all, because absorption erases its own evidence: after the strip, "the
+code ran" and "the model never repeated a method" are indistinguishable. Round 1 absorbed 4 titles, round
+2 absorbed 7, and both weeks read *"grilled"* once, in the week's own voice.
+
+**BUG-040 🔴 — the chef wrote `Day 0` and `Day 1` straight to the user.** BUG-031's exact defect through a
+second door: S45 gave *generation* a real day map and nobody asked whether *modify* had the same hole. It
+did — `modify-plan.ts` addressed the week as `Day 0:` and supplied no weekday names at all, so the model
+wrote back the only day vocabulary it had. It was never disobeying; it was echoing us.
+
+**BUG-041 🟠 — §B's boundary sentence was aimed at a field that does not exist.** `buildPicksBlock` said
+*"say the boundary out loud once, in your summary"*, and the pick path returns `chefResponse`. The chef had
+nowhere to put it and dropped it on both invocations. **BUG-033's class inverted, and harder to catch:**
+there the rule was missing from the prompt; here it is present, auditable, and pointed at nothing.
+
+### Two races, diagnosed rather than retried
+
+**D4 (drag-to-dismiss) failed in the full run and passed in isolation — BUG-019's exact signature.** Not a
+flake. `toBeVisible()` passes the instant vaul mounts the drawer, while it is still flying up from below;
+measured mid-drag, the drawer's translateY ran **416 → 196 → 57 → 21** across a drag meant to move it
+*down*. The open animation was still winning and the pointer deltas were fighting it. Fixed the way S46
+fixed GR7: wait for the transform to settle, then yield a frame between moves.
+
+**And one apparent bug that measurement killed.** The picker screenshots showed the tab bar apparently
+sitting on top of the sheet. It was the capture: the runtime grows the viewport to content height before
+shooting, vaul does not reflow to that, so the sheet kept its 844-based geometry while the fixed tab bar
+dropped to the new bottom. Measured at a real viewport, the sheet spans 418→844, the nav spans 779→844,
+and the topmost element at the nav's centre is the sheet's own tile grid. **Judging that screenshot by eye
+would have produced a fix for a bug that did not exist.** The capture layer gained `viewportOnly`; the
+real version of the risk — both are `z-50`, so it rests on DOM order — is now spec **L16**.
+
+### Three copy defects Layer A caught by looking
+
+`Put these on Friday` had **dropped §A's count from the verb** — the undrawn intersection of "the count
+lives in the verb" and "`3e` names the night" was resolved by dropping the count, which suspended the rule
+for exactly the case it exists for: two selections across two sections with the second scrolled out of
+sight. Now `Put these two on Friday`. `I'll rebuild the shop around **it**` disagreed with two picks (the
+server's own request builder already got this right). And the empty library's search read **`Search 0
+recipes`** — the one screen whose rule is that it does not apologise, apologising with a number.
+
+### The critic found two things that were correctness rather than taste
+
+`ux-design-critic` returned eighteen ranked findings; sixteen are staged for Griffin. Two were not taste
+calls at all and were fixed:
+
+**Search escaped the door it was standing in.** Typing inside a pushed tile queried the *entire* library
+while the heading kept naming the tile — so searching in `Cooked before` returned recipes that had never
+been cooked, under a heading saying they had. §A's whole claim is "a place, not a dropdown", and a field
+that reaches through the walls makes the tile decoration.
+
+**`Put these two on Friday` promised something the product cannot do.** The `3e` invocation replaces
+**one** slot and `validateModification` dedupes changed meals by dayOffset, so two recipes can never both
+land on Friday. Worth recording that this took three passes: the original dropped §A's count ("Put these
+on Friday"), Layer A restored it ("Put these two on Friday") and thereby made the sentence *precisely*
+wrong, and the critic caught that **both passes had assumed the night was the fixed part**. §B says the
+opposite — the dish is the constraint, the night is the chef's — so above one pick the verb hands the
+night back and §A's own copy applies.
+
+### Also this session
+
+- `recipes-facts.ts` still asserted `floatingToolbar: "search + circular ＋"` as ground truth. W10 deleted
+  that toolbar in S46. **A stale capture fact does not fail — it argues the screenshot is wrong.**
+- The Plan capture's 120s budget ran out at 17 states, and it fails dishonestly: the states after the cut
+  come back as errors and the browser closes under the ones still queued, which reads as five broken
+  states rather than one exhausted clock. Raised to 300s.
+- `Add to this week` was being photographed mid-flight at `disabled:opacity-60`, i.e. as a dead grey
+  primary. The capture waits for the settled state now; the loading treatment itself is **BUG-037**.
+
+---
+
+## Session 46 — 2026-07-29 (GR7 quarantined by fixing it; W8 + W10 built — Slice 2 complete)
+
+**The job:** clear BUG-019 at its quarantine threshold, then build Slice 2's two entry points and extend
+the `L` family to cover them. All three done. **1E.5 is now code-complete** — every workstream W1–W10 is
+built, and what remains are gates, not features.
+
+### BUG-019 is closed, and the cause was a race rather than timing noise
+
+Three sessions of "GR7 is flaky" turned out to be one specific bug in the test. The helper pressed down,
+crossed `@dnd-kit`'s 8px activation distance, then fired ~24 more `mousemove`s **back to back without ever
+waiting**. dnd-kit runs collision detection against a droppable-rect snapshot taken when the drag *starts*
+— so when React had not yet committed the drag-start render, every move resolved against nothing,
+`onDragEnd` received `over: null`, and the handler's first line returned early. **No mutation, no error, no
+request**: a silent no-op that looks exactly like a broken feature, losing the race only under load, which
+is precisely why it failed in full runs and passed in isolation every single time.
+
+Three changes, and one of them is in product code on purpose. `GrocerySection` now carries
+`data-dragging` — there is no `DragOverlay` in this build, so "the drag is live" existed only as an opacity
+class, and a test that has to guess when the library has measured itself will keep guessing wrong.
+Asserting on `opacity-40` would couple the suite to styling; exposing the state is smaller and honest. The
+helper then **waits for that state** before moving and yields a frame between moves. And the assertion now
+reads the **whole persisted aisle order** and compares it against the order before the drag, so a no-op
+drag can no longer pass at all.
+
+**Verified where it actually reproduced:** green in the full sequential suite, not only in isolation.
+
+### W8 — the picker, as a third subject on the existing sheet
+
+Built as settled: **one drawer, content swapped in place**. Stacking would have put two vaul drawers in the
+tree for the length of an exit animation, which is the D2/D3 class of bug, and §D allows one floating
+layer. `L12` asserts it rather than trusting it — one `drawer-content` in the tree, and the page still
+usable after close.
+
+The rules that carry weight are all content rules, so they live in a pure `picker-helpers.ts` with 19
+tests: `Saved, never cooked` as the opening **content** (with the chef *counting* them — a line saying
+"some" would be a sort order wearing a voice), four named doors with counts that **push**, and an
+unfittable recipe **dimming with its reason** instead of vanishing.
+
+Server side, a pick is the same operation as a modify — ask the chef for a diff, then write it — so
+`plan.modify` and the new `plan.pick` both run through an extracted `applyPlanChange`. Provenance travels
+as a **`[N]` reference**, never a DB id: the model sees `[1] Spaghetti alla Carbonara`, returns
+`pickedRef: 1`, and the server maps it against the list it sent. Same ID-safety pattern as `grocery.talk`,
+and a hallucinated number resolves to nothing instead of to someone else's recipe.
+
+**Both remaining build dependencies landed.** Dep 2 (servings scaling is a generation task): the chef
+returns the scaled count and the meta says `scaled to 2` — **and only where a scaling actually happened**,
+which `L10` pins by asserting a chef-proposed night in the same week still reads `serves`. Dep 4 (warm the
+normalize cache at pick time): a picked slot is written `recipeStatus: "ready"` pointing at the person's own
+recipe, which does two jobs — it gives `normalizeSlot` something to warm off the confirm path, and it stops
+the hydration walker generating a fresh recipe over the top of a recipe the person chose.
+
+### W10 — both halves of frame `3l`
+
+**Detail:** `Add to this week`, the one floating object, which never asks for a day. With no week to add
+to it **carries** the recipe into the intent screen rather than failing at a button that reads like it
+should work. **Library:** `recipe-toolbar.tsx` deleted, search into a new header, `＋` a 44px icon button.
+`RC11` measures `position: fixed` under `main` rather than trusting a class name — "floating" *is* that
+property, and a class-name assertion would pass on a toolbar that had been restyled rather than removed.
+
+### Two things I got wrong mid-build and corrected
+
+1. **I implemented "the chef answers with a night" unconditionally, which made frame `3e`'s primary a lie.**
+   `3e` reads **"Put it on Thursday"**. Tapping Thursday's dinner and having the chef move the recipe
+   elsewhere is not §B being honoured, it is a button lying. The rule and the frame agree once you read
+   which invocation each describes: `3b` captions "The chef picks the nights"; `3e` names one. A named
+   night is now honoured; the chef still owns the rest of the week either way.
+2. **The generation fixture was prompt-blind, so "picks survive a regenerate" could not fail.**
+   `buildGenerationFixture()` took no arguments and returned the same seven dinners for every request — a
+   regenerate that silently dropped every pick would have passed. It reads the picks block now (`L15`).
+   Same class of gap as BUG-030 and the S40 prompt test that passed silently: **the apparatus has to be
+   able to fail.**
+
+### Layer A is no longer blind to BUG-034
+
+Every seed said *"Your seeded test week, ready to review."* — one short line, which is why nine lines of
+22px type never showed up in a mock capture. The seeds now carry a realistically long summary. **This is
+not a fix for BUG-034** (that is Griffin's call, and my read is below); it is what makes the bug visible to
+the layer whose job is catching it.
+
+### Three things deliberately NOT built, stated rather than discovered
+
+§B's **who-clause** (`Griffin's pick`) needs a display name R1 has no surface for — household sharing is
+V1.5, and the rule exists *because* a second person will one day be there. §B's **"too many picks"**
+conversation (`3m`) is a distinct screen needing a judgement the chef is not currently asked for.
+**`LIBRARY_EMPTY`** did not become a seed state because the wipe already produces it and `EMPTY` *is* that
+state. All three are in scope-1E.5 and the backlog rather than in nobody's head.
+
+---
+
+## Session 45 — 2026-07-29 (Layer B: four defects; Slice 2's spine)
+
+**The job:** run Layer B against Slice 1, judge W1's title rule and W6's cost output on real content, then
+open Slice 2. **Layer B found four real defects and fixing them took the session**, so Slice 2 landed its
+provenance spine (W9) and its two entry points (W8/W10) did not. That trade is recorded in scope-1E.5's
+change log rather than discovered later.
+
+### Griffin's two calls, both taken as recommended
+1. **`$94 spent` → the number comes off week-wrapped entirely.** Cost lives on review and on the confirmed
+   grocery row. **W6 closes** — the wrapped half is descoped, not owed, and the grocery-list query it
+   needed is no longer required.
+2. **`Start over →` stays a foot link under the rail, gap tightened.** `mt-6` → `mt-[13px]` (just off the
+   rail's own 9px gap, so the link belongs to the week rather than to the decision), and the week's closing
+   line drops from a 56px rail row to 38px when it carries no control — most of the void Layer A flagged
+   was button-sized space with no button in it.
+
+### What Layer B found — the gate earned its keep for the third phase running
+
+Three rounds, nine real generations, and **one of the defects was caused by the previous Layer B's fix.**
+
+- **BUG-030** — `plan-live.capture.ts` was the one Plan file S44's BUG-024 migration missed. It still
+  waited on the deleted "Your week, ready to review" hero, so round 1 ran three real generations, paid for
+  them, and threw them away. **A stale selector fails loudly and free everywhere else in the suite; here it
+  fails silently and bills you.** Re-anchored on `confirmBar` — deliberately not `planRail`, since W5 makes
+  the rail arrive in the first second and resolve in place, so the rail proves nothing about whether
+  generation finished.
+- **BUG-031 🔴** — *"Uses the leftover fresh dill from **Monday**"* printed on a Thursday, on a Wed→Tue
+  week whose Monday was four days later and carried fried rice. **S40's own fix caused this**: it told the
+  model to use weekday names instead of `day 0`, but nothing ever told it *which* weekdays, so it mapped
+  `dayOffset` onto a Monday start. That made the S40 fix a downgrade rather than a repair — "day 0" looks
+  like a bug and gets reported, "Tuesday" looks correct and quietly misinforms. Fixed **structurally**: the
+  user message now carries a real day map. Verified live in round 3.
+- **BUG-032** — the reuse rule had colonised the chef's voice: **7 of 7** rationales arguing waste. S40
+  verified reuse *works*; nobody checked whether it *dominates*. Capped at two; **2 of 7 live in round 3**.
+  This was also the cause behind Layer A's standing "seven gold rationales read as texture" finding.
+- **BUG-033** — **W1's title rule was marked ✅ in the scope table and was never in the prompt at all.**
+  Found by grepping for it while judging the run that existed to verify it. The four-or-more half is now
+  enforced **in code**, because round 2 asked for "I want to grill" *with the prompt rule in place* and
+  returned **seven of seven "Grilled X"** — S40's original finding, verbatim. A style clause cannot outrank
+  the request it competes with, and "does one word open four or more titles" is a string test.
+
+**W6 judged, not counted:** 63/63 slots priced, zero nulls, no clamping. Ranking is stable and right —
+salmon the most expensive night in every week, at exactly **$12.00 in three independent runs**. Level is
+soft: **$44–$74** for seven dinners for two across runs of the *same* prompt, with the low end ~30% under a
+real shop. Under-estimating is the worse direction; flagged with two cheap levers, not fixed.
+
+Two more logged and not fixed: **BUG-034** (the chef summary runs six to seven lines and pushes the first
+meal below the fold — invisible to Layer A because every seeded summary is one short line) and **BUG-035**
+(1 real generation in 9 timed out server-side at 90s).
+
+### Slice 2 — the spine, and a ratified deviation
+**Build dependency 3 says `slotType` needs a new enum value. It does not, and shouldn't.** The cookability
+test `slotType === "recipe" || slotType === "leftover"` is duplicated in **eight** places, two of them in
+the grocery collector — a new enum value means a meal the person deliberately chose can silently never
+reach the shop. A nullable `picked_recipe_id` (migration `0008`) changes none of the eight, and carries
+what the enum could not: *which* recipe, which is what "picks survive a regenerate" and dependency 4's
+cache-warming both need. Griffin ratified. `DINNER · PICKED` now derives from data rather than from the
+prop S44 left unwired; new `PICKED` seed state (real recipe, real FK) and specs `L1`–`L4`.
+
+### Housekeeping
+A concurrent process checked out `main` and created `session-43-access-gate` mid-session, taking the
+working tree. Nothing was lost. Work moved to a **git worktree** at `../meal-app-1e5` so both branches can
+be checked out at once.
+
+---
+
+## Session 44 — 2026-07-28 (BUG-024 closed; 1E.5 Slice 1 CODE-COMPLETE)
+
+**The job:** migrate the Plan E2E specs to the rail's DOM (BUG-024), then finish Slice 1 — W3's toast
+wiring, W7's meal + day sheets, W6's server half, week-wrapped, the new seed states, the `P`/`C` specs,
+and `/visual-qa`.
+
+**Result: all of it, plus five defects the migration surfaced.**
+**538 unit + 91 E2E, 90 green** (was 531 unit + 21 of 78 E2E red), lint + typecheck clean, migration
+`0007` applied, `/visual-qa` Layer A at **0 blockers / 0 high**. The one red is **GR7**, the known drag
+flake (BUG-019, recurrence #2) — green in isolation, and nothing this session touched Groceries.
+
+### BUG-024: the tracked cause list was incomplete
+
+21 of 78 specs were red, not the ~26 estimated. Three causes were logged; **five** were real. The two
+untracked ones were the interesting ones:
+
+- **The standalone `Talk to the Chef` button is gone.** The whole-week chef door is now the chef header's
+  `Something's off`. Took M4/M5/M7.
+- **`Start over →` vanished from the draft screen entirely** (**BUG-026**). The header carries ONE revise
+  control and frame `3i` spends it on the modify door, so **the regenerate airlock became unreachable
+  from a draft** — a dropped feature, not a stale selector. The brief's state inventory §3 keeps that
+  door and scope-1E.5's acceptance criteria require RG1–RG5 not to regress. Restored as the foot link
+  under the rail, reusing the pattern `plan-midweek.tsx` already had. **Placement is Griffin's call** —
+  frame `3i` does not draw the bottom of the scroll.
+
+**Assertions came out stronger, not weaker.** M1 now proves the ring lands on the changed row *and
+nowhere else*, reading the **computed `box-shadow`** rather than a class name — §C's rule is that the
+ring is *gold*, and a class match would pass just as happily on a grey one. M5 measures the toast against
+the confirm bar's real bounding box on all four dimensions. M6 proves every chef action goes inert rather
+than that one tap was silently dropped.
+
+### The four other defects the migration surfaced
+
+| ID | What | Why it mattered |
+|---|---|---|
+| **BUG-025** | The floating slot was `absolute`, so it anchored to the bottom of the **content** and scrolled away | On a seven-day draft, `Confirm 7 dinners` was only reachable at the very end of the scroll. The frame's "bottom 96" is a distance from the screen edge; on a phone canvas those are the same thing, in the app they are not. Now `fixed`. |
+| **BUG-027** | §D's 168px/108px scroll padding was never built | Nothing below the rail could clear the floating primary. Compounded BUG-025. |
+| **BUG-028** | The Plan tab had **no heading at all** | Deleting the hero took the surface's only `<h2>`; the chef's claim replaced it as a `<p>`. `ChefHeader`'s summary is now an `<h2>` on every Plan state. |
+| **BUG-029** | A failed modify became unreachable once you dismissed the sheet | Every modify now starts in a sheet, a failing sheet stays open, the pill was gated on `!sheetOpen`, and closing the sheet cleared the error. X1 was fixme'd rather than weakened, then **fixed by W3** — and is now stronger than the test it replaced. |
+
+### Slice 1's remaining workstreams
+
+- **W3** — `use-plan-modify` derives ONE `toast` (priority error → working → ack, so a failure can never
+  be buried under an ack of something that then failed). The slot renders the toast **or** the primary,
+  never both — enforced structurally rather than by z-index. `modify-status-pills.tsx` and its
+  now-orphaned `bottom-bar.tsx` deleted.
+- **W7** — **BUG-006 closed.** One `PlanSheet` drawer, two subjects. "The same shell" is meant literally:
+  building the day sheet as a second `<Drawer>` put two on screen at once for the length of an exit
+  animation (P7 caught it), which is the same class as the pointer-events lockup D3 guards. Collapsing
+  them also takes a drawer *out* of the tree.
+- **W6 server half** — `est_cost_cents` + migration `0007` (applied), schema → validator → slot values →
+  display → the review sum, plus the prompt rule. **An implausible estimate is dropped to null, never
+  clamped**: clamping invents a number, and this is the one figure a user can audit against a receipt.
+- **Week-wrapped** onto the rail's vocabulary, keeping its in-place thumbs because the `Rate them`
+  destination is 1F.
+
+### `/visual-qa` Layer A — 0 blockers / 0 high
+
+**Two HIGH findings, both fixed in-loop, both the same shape:** `Decide now` (§C) and `Add days` / `Add a
+night` (§D) were built into `PlanRail` and **never supplied by any caller** — ledger bullets with neither
+code nor an explicit deferral. Both are now one-tap chef requests rather than pickers, gated by P4 and
+the new P9. Three mediums carried for Griffin: compact rows truncate titles at ~20 chars, the
+`Start over` foot link sits in a void, and seven gold rationales reads as texture rather than voice.
+Full write-up in `tests/e2e/captures/A-2026-07-28T14-17-42-005Z/critique.md`.
+
+### Deliberately NOT built
+
+- **W6's week-wrapped half.** The scope wants wrapped to estimate over the confirmed grocery list's real
+  items, not the plan. That needs a query `plan.current` does not make, was outside the session's stated
+  W6 ask, and is **blocked behind Griffin's `$94 spent` copy call** regardless. Wrapped renders no cost
+  today — the honest null-safe state rather than a plan-sum wearing the list's label.
+- **The `Move it` group** (`Move to another day` / `Skip tonight`), drawn in wave 1's meal sheet but in
+  none of W7's scope bullets. Drag-to-move is explicitly V1.5, and `Move to another day` needs a day
+  picker that is neither drawn nor scoped.
+
+---
+
+## Session 43 — 2026-07-27/28 (1E.5 OPENED — the Plan rebuild's structural spine)
+
+**The job:** write `scope-1E.5.md`, give Griffin a read on the still-opens, then open the build —
+rebuild Plan in real components to `surfaces/plan/brief.md`'s decisions ledger.
+
+**Result: 1E.5 → 🔨 building. Slice 1 is roughly half done.** The fast gauntlet is green
+(**lint + typecheck clean, 531 unit passing**, up from 480). **The E2E suite is NOT green** — see
+"What's owed" below. Work is on branch `session-43-1e5-plan-rebuild`, deliberately **not** merged to
+`main`, because the auto-merge rule is gated on green.
+
+### Griffin's three calls at phase open
+
+| Call | Decision | Note |
+|---|---|---|
+| The `$94 spent` / `~$87` cost numbers | **Scope LLM estimation now** | Claude recommended dropping them (no cost model; an LLM estimate is ungrounded; it is the one figure on the screen a user can audit against a real receipt; real prices arrive free with V2 grocery ordering). Griffin chose to build it. |
+| Library-into-plan | **In R1, as Slice 2** | Confirms his S41 "that should be something that we include in R1" and gives it the scope-doc entry it never had. |
+| Divergence (a confirmed week where Tuesday wasn't cooked) | **State expressible only** | The rendering lands here; the cascade (list repair, leftover chain, re-plan) is 1D's deferred mid-week resync wearing a different hat. |
+
+**Two of the brief's four still-opens closed without needing him.** The **landed ring** was already
+settled *and shipped* — S42 ratified the gold line and moved the shimmer and ring indigo → gold under
+exactly that rule, so the brief's list simply predates its own answer. The **picker's four tiles push**,
+because a pushed view carries its own header and count, which is what makes a tile a door; a filter chip
+implies subtraction from a list you can already see, contradicting "the picker is a place, not a
+dropdown." **Day-sheet-vs-expand stays open on purpose** — `1l` ships because it is a second invocation
+of a sheet shell we build anyway, and `1m` needs usage rather than a frame.
+
+### A scope crossing, recorded rather than drifted
+
+**Spec §12 item 04's floating-primary half pulls forward 1F → 1E.5.** `Add to this week` needs the
+Recipes screen's single floating primary, and the 1D search/＋ toolbar occupies that exact pixel. They
+cannot be sequenced apart without building the Recipes bottom edge twice. Logged as a change-log line in
+both `scope-1E.5.md` and `scope-v1.md` per the pull-forward rule. Squaring the nav's top corners stays 1F.
+
+### What the build actually found
+
+1. **`mealType` was never plumbed to the client.** The DB column exists and `plan.current` already
+   returned it, but `PlanSlot` and `DisplayMeal` dropped it — the shipped Plan tab had **no concept of
+   which meal of the day a slot holds**. Harmless while R1 generates dinners only, except that the
+   ledger's entire density rule is built on it. Added now; it is one field through three types and the
+   difference between a rail that can express the ledger and one that cannot.
+2. **BUG-008 was broader than the tracker described.** Filed as "prints the cook time twice"; the real
+   defect is that **the meta row had no contract at all** — it appended `estTimeMinutes`, then servings,
+   then *every tag verbatim*. The row is now one cook time and one serving count, and a time-shaped tag
+   is **dropped rather than deduped**, because a card can state one cook time honestly and
+   `estTimeMinutes` is the structured one. Locked by regressions for both the disagreeing case
+   (`95 min` vs tag `"90 min"`) and the everyday agreeing one (`30 min … 30 min`).
+3. **A ledger rule the server cannot yet honour.** §C says *the meal row is the unit of change feedback,
+   never the day container* — but `plan.modify` returns changed **days**, not slot ids. At R1's
+   one-dinner-per-day those coincide, so dates resolve to cookable rows and it is exactly right today; at
+   the three-meal density the same ledger specifies, a whole-day change would ring all three rows.
+   **The server owes `changedSlotIds`** — logged as **BUG-023**, not reachable in production today.
+4. **Reuse beat rebuild on the orb.** `ChefPresence` already existed in onboarding, so it moved to
+   `components/shared/` and gained the 34px header and 20px toast sizes. The app has one chef, not two.
+   Same precedent as the relocated `TalkToChefSheet`.
+
+### One deliberate deviation from the frames
+
+Frames `3i`/`3j` draw a leftover night's meta as `20 min · Sunday's pork`. **We have no column naming a
+leftover's source**, and the ledger's rule ("one cook time and one serving count") is the narrower one —
+so servings holds that slot rather than parsing the source out of rationale prose. Slice 2's provenance
+gives the meta its real second fact. Flagged because it is a visible difference from the drawing.
+
+### W6 — cost estimation, built to the guardrails rather than to the frame
+
+Display half only. Three rules make the dishonest rendering inexpressible: **always tilde-prefixed**
+(never a bare figure), **never cents** (`$86.40` claims a resolution the model does not have; rounded not
+truncated, since a low guess reads worse at the till), and **null rather than `$0`** (zero is a claim;
+absence is the truth). The `estCostCents` column and the generation output that fills it are still owed,
+so `estimateCents` arrives null and every estimate surface renders nothing.
+
+**Still owed from Griffin:** the `$94 spent` copy call. `~$87` reads as an estimate because the tilde does
+that work; **"spent" is a past-tense factual claim about money he actually handed over**, and it is the
+single most auditable string on the surface. `~$94 est.` costs nothing and is true.
+
+### What's owed — and why E2E is red
+
+The rail changed the DOM the Plan specs select against. This is **spec migration, not a regression in
+behaviour**, and the specs must be *extended to the new model*, never weakened:
+
+- **`reviewHero`** anchors on the heading `"Your week, ready to review"` — deleted by design; the chef
+  header replaced it. A `data-testid="plan-rail"` anchor now exists to replace it.
+- **`cardChip`** — the AI action chips left the card. Per the ledger the meal row carries title and meta
+  only; the chips live in the meal sheet, so the M-series must route through the sheet.
+- **The in-card `Reworking …` label** is gone — §C replaced it with a ring on the row plus the toast in
+  the action bar's slot.
+
+**Estimated blast radius: ~26 of 78 specs** (drawer 7, modify 7, regenerate 5, plus elapsed/error).
+Groceries, Recipes, You and onboarding are untouched.
+
+**Also still to build in Slice 1:** W3 (the toast in the bar's slot), W7 (the summary meal sheet + day
+sheet — closes BUG-006), W6's server half, week-wrapped on the rail, the new seed states, the `P`/`C`
+specs, and `/visual-qa`. **Slice 2 is untouched.**
+## ⑂ Concurrent main-checkout sessions (merged in at S48)
+
+The three entries below ran on the MAIN checkout while 1E.5 lived in the worktree — the closed-beta
+access gate and the Instacart scope round-trip. Their self-assigned numbers (43a/44/44b) overlap the
+worktree's; kept as written, dates disambiguate. Their BUG-030/031 were renumbered BUG-043/042 at
+merge (see bug-tracker).
+
+---
+
 ## Session 44b — 2026-07-30 (The reversal: Instacart's door is shut. Ordering back to V2. TAM research. No code.)
 
 **What happened:** Griffin went to create the Instacart developer account that S44's decision depended

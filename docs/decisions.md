@@ -4,6 +4,333 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S48) — BUG-041: the boundary sentence is product copy, not a prompt request
+
+**Decision (Griffin, accepting the recommendation).** Stop asking the model to say *"it's your recipe, so
+I won't rewrite it."* The prompt clause is deleted from `buildPicksBlock`; the sentence renders as fixed
+product copy on the picked row — *"Your recipe — the chef won't rewrite it."* — in caption colour.
+
+**Rationale.** Two live rounds produced the sentence zero times, the second with both real output fields
+named — BUG-033's precedent, third instance: a style clause competing with six operational instructions
+loses. The boundary is a fixed product promise, not a creative act, and a promise has to be
+deterministic. The sharper argument: the test layer hardcoded the sentence in three places (seed, mock
+fixture, E2E assertion), so the suite was proving a guarantee the product did not keep — the exact
+fixture-drift `docs/test-plan.md` warns about. Making it product copy makes the fixtures honest as a side
+effect. **Not gold and not italic** — the gold line (S42) says gold marks the chef speaking, and this is
+the product speaking. That same logic dissolves most of the critic's gold-budget finding on `picked-row`:
+the one sentence that had to be singular has left the gold register entirely, and the seven rationales
+keep §D's licence. The behavioural half of the rule (do not rewrite/rename/substitute) stays in the
+prompt; the model obeys that half.
+
+---
+
+## 2026-07-30 (S48) — The critic's slate: eleven applied, two rejected, four to 1F, and the frame flexed twice
+
+**Decision (Griffin, delegating to the recommendation ballot).** Of the sixteen staged `ux-design-critic`
+findings: **applied** — the fixed picker pane, the receipt support line, the opening line counting fits,
+un-dim on a selected unfittable row, duplicate/zero-count door suppression, the eyebrow glyph beside
+`PICKED` (flush left edge), the opening list capped at 3 + `N more`, the meal sheet's library door refiled
+under `ASK ME FOR A CHANGE` (and the day sheet's with it — one shell, one grammar), honest empty-library
+door labels (two doors → one), the nested radius stepping one rung (r22 → r18 on sheet contents), and the
+empty library's search field removed. **Rejected** — the hierarchy-inversion finding (the critic's
+measurement was wrong: the build is 16/13.5px, not 16/22px; the copy trim is the right fix and was
+applied instead) and the loudest-object inversion (`Let the chef write it` stays primary: with nothing to
+pick, the honest answer is that there is nothing to pick). **To 1F** — the Recipes `+` weight, the
+picker/Recipes vocabulary unification, cooked-when evidence inside pushed doors, the caps-label tracking.
+
+**Two deviations from locked frames, ratified.** (1) **The picker sits at ~176px from the top, not §A's
+76px** — at 76 the week behind vanishes entirely, and the real defect was the walls moving, not the
+number. (2) `3e`'s support line acknowledges an overrun pick (*"Runs long for the night — your call."*)
+— undrawn in the frame, required by the un-dim change. Griffin's framing for both: the spec didn't know
+everything we'd ever do; flex it when the reason is stated.
+
+---
+
+## 2026-07-30 (S48) — `DEV_TOOLS_EMAILS` set in Vercel Production (with a verification caveat)
+
+**Decision.** The eighth-session nag ends: the variable existed but appeared **empty** on every read.
+Resolved same-session — it is marked **sensitive** in Vercel, so its value cannot be read back by anyone
+(dashboard eye icon or CLI); the empty pulls were masking, not a failed write. Claude set it via CLI,
+Griffin re-added his email in the dashboard, and the dashboard save triggered a production redeploy that
+applies it. **The only real verification is behavioral**: the test-mode card appearing on the You tab of
+prod for Griffin's account. `ALLOWED_EMAILS` is also set and unreadable — **fail-open by design** (empty
+= everyone allowed), so prod is not locked; it becomes the invite list when the closed beta starts.
+
+---
+
+## 2026-07-30 (S47) — BUG-034: split the chef's voice into a claim and an argument, with the ceiling in code
+
+**Decision (Griffin).** `chefSummary` becomes the **short claim** — one sentence, enforced in code — and a
+new `chefNote` carries the **argument** into the `rationale` prop `chef-header.tsx` already had. New
+`chef_note` column, migration `0009`. The two render at 22px cream and 14.5px italic gold, which is what
+frame `3i` draws.
+
+**Rationale.** The alternatives on the table were "cap the prompt at one sentence" and "clamp the render
+to three lines with the rest on tap". Both treat this as a copy-length problem, and it was not one: the
+frame draws two strings, the component has props for both, `week-wrapped-state.tsx` passes both, and
+**`plan-review.tsx` passed only one**. An unwired field. Capping the prompt would have left the gold slot
+permanently empty on Plan's main screen and lost the chef's range for nothing.
+
+**Two things about the implementation are load-bearing.** (1) **The ceiling is in code, not the prompt** —
+BUG-033 established that a style clause loses to the request competing with it, so "one sentence" as an
+instruction is a preference and `splitChefVoice` is a fact. (2) **It splits rather than truncates.** An
+over-long claim loses nothing: the overflow past the first sentence boundary becomes the argument, which
+is the slot it belonged in. Truncating would cut the chef mid-thought to protect a layout, which is the
+failure this whole fix exists to avoid.
+
+**Verified live.** Real claims came back at 76–89 characters and the first meal now sits ~210px down a
+390×844 screen. **Residual, deliberately not papered over:** the guarantee is one *sentence*, not one
+*line*; a single long sentence is still unbounded, and `adversarial` photographs that on purpose.
+
+---
+
+## 2026-07-30 (S47) — Never hand-write a vendor prefix in `globals.css`
+
+**Decision.** The `-webkit-backdrop-filter` declarations come out of `.glass-surface`, `.glass-sheet` and
+`.glass-card`, and no hand-written vendor prefix goes back into that file. The build prefixes from
+browserslist. Enforced by `src/app/globals.test.ts`.
+
+**Rationale.** Not a style preference — those three classes had **no working blur at all in Chrome or
+Android since 1E.7**. lightningcss collapses a hand-written prefix and its standard property onto the
+**prefixed** form and drops the standard one; Chrome removed `-webkit-backdrop-filter` years ago. The two
+classes that never wrote the prefix by hand (`.spec-chrome`, `.spec-floating`) were correct the whole
+time, which is what made the pattern legible once the built CSS was read.
+
+**Future impact.** Anything added to the elevation ladder inherits this. Also a standing lesson for the
+QA apparatus: this was invisible to every layer we had — the fill alpha stayed correct, so a blur-less
+card reads as deliberate flatness. It took reading the compiled stylesheet, and **BUG-022 had already
+misattributed the symptom to the spec's intended `.94` translucency and parked it for 1F on that basis.**
+Attributing a symptom to a deliberate design value is how a real defect survives five sessions.
+
+---
+
+## 2026-07-29 (S46) — Who names the night depends on which invocation of the picker you used
+
+**Decision.** `plan.pick` honours a night the person named, and chooses one otherwise. Opened from a meal
+(frame `3e`), the recipe lands on that meal's night. Opened from the intent screen (`3b`) or from
+`Add to this week` on a recipe (`3l`), the chef picks. The chef rebuilds the rest of the week in every case,
+and there is no free-text `date` input — the only way to name a night is to have opened the picker from one.
+
+**Rationale.** §B's "the chef answers with a night and a reason" was implemented unconditionally first,
+and that made frame `3e`'s own primary — **"Put it on Thursday"** — a lie: tap Thursday's dinner, get the
+recipe somewhere else. The rule and the frame are not actually in conflict; they describe different
+invocations. `3b` captions "The chef picks the nights"; `3e` names one, and the person naming it *is* the
+act of tapping that meal. Honouring it is not a scheduler creeping in, because there is still no control
+anywhere that says "put this on a day of my choosing" — the day comes from where you already were.
+
+**Future impact.** If drag-to-move ever ships (V1.5), it inherits this shape: the day is implied by the
+gesture, never entered into a field. And the "constraint, not scheduler" framing survives, which is what
+keeps the picker on-thesis.
+
+---
+
+## 2026-07-29 (S46) — A test hook belongs in product code when the alternative is guessing
+
+**Decision.** `GrocerySection` renders `data-dragging` when `@dnd-kit` reports the section lifted, purely
+so the E2E suite can wait on it.
+
+**Rationale.** BUG-019 survived three sessions because the drag's real state was unobservable. There is no
+`DragOverlay` in this build, so "the drag is live" existed only as an `opacity-40` class — and a
+pointer-driven test that cannot see the lift has to *guess* when dnd-kit has measured its droppables,
+which is exactly the race that made GR7 flake. Two ways out: assert on the opacity class, which couples the
+suite to styling and breaks on the next design pass; or expose the state itself. The second is a smaller
+commitment and an honest one — the attribute says what is true, not what it looks like.
+
+**Future impact.** The precedent is narrow on purpose: expose *state* the test needs to synchronise on,
+never behaviour that only exists for tests. Drag-to-move (V1.5) will want the same hook on meal rows.
+
+---
+
+## 2026-07-29 (S46) — A fixture that cannot see its input cannot test a guarantee about that input
+
+**Decision.** `buildGenerationFixture()` takes the prompt text and honours a `<picked_recipes>` block.
+
+**Rationale.** §B guarantees picks survive a regenerate. Regenerate deletes the current plan outright, so
+the guarantee lives entirely in reading picks off the old week before the delete — and a fixture that
+returned the same seven dinners regardless of input would have passed a build where that carry-forward had
+been deleted. Nothing on screen would look broken; the person would quietly get a week of the chef's own
+dinners. This is the third instance of the same class in three sessions (BUG-030's stale capture spec,
+S40's `toContain` prompt test that passed silently), and the rule they share is: **the apparatus has to be
+able to fail.** Before trusting a green test, ask what change would turn it red.
+
+---
+
+## 2026-07-29 (S45) — Cost is a forecast, so it only appears where a decision is pending
+
+**Decision.** The week-wrapped screen renders **no cost figure**. The estimate appears on the draft's
+consequence line (`Saying yes writes your grocery list · ~$87`) and on the confirmed week's grocery row
+(`~$87 estimated`), and nowhere else. W6's "wrapped estimates over the confirmed grocery list" scope line
+is retired.
+
+**Rationale (Griffin, taking the recommendation).** The asymmetry is the whole argument. A forecast cannot
+be falsified — `~$87` is a claim about a shop you have not done. `$94 spent` is a past-tense claim about
+money you already handed over, and it is **the only string in the product a person can check against a
+receipt in their pocket.** Get it wrong once and every other number the chef states is worth less. Beyond
+accuracy: review *needs* the number because it is an input to a decision; wrapped is a recap, and a cost
+figure there invites arithmetic instead of reflection.
+
+**Future impact.** Real prices arrive free with V2 grocery ordering, when the API returns actual line
+prices. At that point a *reconciled* figure on wrapped becomes defensible, because it would no longer be
+an estimate wearing a past tense. Revisit then, not before.
+
+---
+
+## 2026-07-29 (S45) — Provenance is a column, not a slot type
+
+**Decision.** "The user picked this recipe" is recorded as a nullable `meal_plan_slots.picked_recipe_id`
+FK. A picked slot keeps `slotType: "recipe"`. The ledger's `DINNER · PICKED` eyebrow derives from the
+column. This **overrides build dependency 3** in `brief.md` and `scope-1E.5.md`, which called for a new
+`slotType` enum value.
+
+**Rationale.** Three, in order of weight.
+
+1. **The enum value is actively dangerous.** The cookability predicate
+   `slotType === "recipe" || slotType === "leftover"` is duplicated in **eight** places across client and
+   server — including `grocery.ts` and `grocery-collect.ts`. Adding a fifth enum value means editing all
+   eight, and missing either grocery site means **a meal the person deliberately chose never reaches the
+   grocery list**: silent, and the worst possible failure for this feature. A picked slot that stays
+   `"recipe"` is already included by all eight.
+2. **The column is required regardless.** W9's "picks survive a regenerate by default" has to re-pin
+   *which* library recipe, and build dependency 4 has to warm *that* recipe's normalize cache at pick time.
+   `recipeId` cannot serve — hydration owns and overwrites it. An enum value carries no identity, so
+   choosing it would have meant adding this column in Slice 2 anyway, after paying the eight-call-site tax.
+3. **The ledger is satisfied.** "Provenance is `DINNER · PICKED` — type, not chrome" is a statement about
+   *rendering*: the eyebrow states it the way it states `DINNER`, rather than wearing a badge or an accent.
+   Derived from a column, it renders identically.
+
+**Future impact.** The eight-way duplication of the cookability predicate is now a known latent hazard,
+logged rather than fixed — nothing in this build depends on it, and extracting it would be an unrelated
+eight-file refactor. **Any future change to `slotType` must extract it first.**
+
+---
+
+## 2026-07-29 (S45) — A rule the model cannot obey belongs in code, not in the prompt
+
+**Decision.** W1's "a method covering four or more meals is absorbed into the week" is enforced by
+`src/server/ai/tasks/absorb-method.ts` inside `validatePlan`, not by the chef prompt. The narrower "titles
+never open with a cooking method" stays a prompt rule.
+
+**Rationale.** Layer B round 2 asked for *"I want to grill"* **with the absorption rule in the system
+prompt** and returned seven of seven "Grilled X" — S40's original finding reproduced verbatim. The model
+was not disobeying: the person explicitly asked to grill, and a style clause cannot outrank the request it
+competes with. That is the tell that this was never a generation problem. *"Does one word open four or
+more titles"* is a string test, and string tests belong in code where they are deterministic and free.
+
+**The design constraint that came with it:** absorption is a **precondition** for dropping. The method is
+stripped from the cards only when `chefSummary` already says it, so the information always survives exactly
+once rather than being silently deleted.
+
+**Future impact.** A useful split to reuse: prompt rules are for things the model can be *persuaded* of;
+code is for things that can be *checked*. Any style rule stated as a count ("at most N", "four or more") is
+a candidate for the second category.
+
+---
+
+## 2026-07-28 (S44) — The day sheet and the meal sheet are ONE drawer
+
+**Decision.** `1l`'s day sheet is not a second `<Drawer>` that resembles the meal sheet; both render
+inside a single `PlanSheet` whose `target` is either a meal or a day. Opening a meal from inside a day
+**replaces** the target rather than stacking a sheet on top of one.
+
+**Rationale.** The ledger says "the same shell, first line and primary swapped", and building it as two
+drawers made that phrase decorative. It also reintroduced a known hazard: coexisting vaul drawers are
+exactly what produced the `pointer-events: none` lockup that D3 exists to guard, and the two-drawer
+version put both sheets on screen for the length of an exit animation (P7 caught it as a strict-mode
+violation on `drawer-title`). Collapsing them takes a drawer *out* of the tree rather than adding one.
+
+**Future impact.** Slice 2's picker is a third invocation of the same shell. It should be a third
+`target` kind, not a fourth drawer.
+
+## 2026-07-28 (S44) — An out-of-range cost estimate is dropped, never clamped
+
+**Decision.** `validateMeal` accepts a per-slot estimate in `(0, $200]` and returns `null` for anything
+else. It does not clamp to the nearest bound.
+
+**Rationale.** Clamping invents a number. The whole guardrail set for W6 exists because this is the one
+figure on the surface a user can check against a real receipt, and the design rule already says absence
+beats a figure we made up ("a zero is a claim; absence is the truth"). A clamped $200 is a claim too.
+The prompt is written to match: *"Return null rather than guessing when you genuinely cannot — a missing
+number is fine, a wrong one is not."*
+
+## 2026-07-28 (S44) — The Plan tab's controls are chef requests, not pickers
+
+**Decision.** `Decide now`, `Add days` and `Add a night` each fire a single natural-language
+`plan.modify` request. None of them opens a day picker, a stepper, or a form.
+
+**Rationale.** The chef already knows the week; a picker's only contribution would be handing back the
+decision the user opened the app to avoid making. It is also the product's own thesis — "the AI generates
+the UI; the user is here to react" — applied to the three controls the ledger names. The toast now
+narrates the work, so a one-tap ask is legible rather than silent.
+
+## 2026-07-27 (S43) — 1E.5 splits into two slices; library-into-plan enters R1
+
+**Decision.** Phase 1E.5 builds in two slices. **Slice 1** is Plan's own states (ledger §C/§D): the rail,
+the chosen-days week, modify/toast/failure, the four time states, generation, the summary meal sheet, and
+cost estimation. **Slice 2** is library-into-plan: the picker, the picked meal, and the `Add to this week`
+verb.
+
+**Rationale.** Slice 1 depends on nothing in Slice 2 and is shippable alone, so the split buys two
+reviewable `/visual-qa` passes instead of one unreviewable diff — the same argument that justified
+splitting 1E.7 out of 1F. It also means the signature surface's rebuild can land even if library-into-plan
+slips.
+
+**Library-into-plan is formally in R1**, resolving the open question raised S41. Griffin's S41 words —
+*"That should be something that we include in R1"* — reaffirmed at S43. It had been designed in full but
+never written into a scope doc, and the rule is that nothing gets built that isn't in one. Cheap on the
+data spine (`meal_plan_slots.recipeId` already FKs to `recipes`); not free on the edges (Recipes tab,
+generation prompt, `slotType`, the confirm path).
+
+**Future impact.** All five of the brief's named build dependencies belong to Slice 2, which is exactly
+why Slice 1 stands alone.
+
+## 2026-07-27 (S43) — Spec §12 item 04's floating-primary half pulls forward 1F → 1E.5
+
+**Decision.** The `Add to this week` verb takes the Recipes screen's single floating primary, which
+requires deleting the 1D floating search/＋ toolbar and moving search into the header. That is spec §12
+item **04**, previously assigned to 1F. It moves into 1E.5. **Squaring the nav's top corners stays in 1F.**
+
+**Rationale.** The verb and the old toolbar want the same pixel. Sequencing them apart would mean building
+the Recipes bottom edge twice. Recorded as a change-log line in `scope-v1.md` per the pull-forward rule
+rather than allowed to drift.
+
+## 2026-07-27 (S43) — Cost estimation is built, over the recommendation to drop it
+
+**Decision (Griffin).** Scope LLM cost estimation now, rather than removing the design's `~$87` and
+`$94 spent` figures.
+
+**Claude's recommendation was to drop them**, on three grounds: we have no cost model, so the only cheap
+implementation is an ungrounded LLM guess; a dollar figure is the one number on the screen a user can
+audit against a real receipt, which makes being wrong uniquely expensive to trust in everything else the
+chef claims; and real per-line prices arrive free with V2 grocery ordering, so building estimation now
+means building it twice. `idea-backlog.md` already routed the spend readout to V2.
+
+**Griffin chose to build it.** Implemented with guardrails that make the dishonest rendering
+inexpressible: always tilde-prefixed, never cents (rounded rather than truncated — a low guess reads worse
+at the till), and null rather than `$0`. The week-wrapped figure estimates over the **confirmed grocery
+list** (a real, item-level artifact) rather than the plan, which is the better-grounded of the two inputs.
+
+**Still open:** the word "spent". `~$87` reads as an estimate; `$94 spent` is a past-tense factual claim.
+Recommendation is `~$94 est.` — Griffin's call.
+
+## 2026-07-27 (S43) — The meta row has a contract: one cook time, one serving count
+
+**Decision.** Plan's meal-card meta row prints a cook time and a serving count, nothing else. Tags never
+enter it. A tag that looks like a duration is **dropped, not deduped**.
+
+**Rationale.** BUG-008 was filed as "prints the cook time twice", but the real defect was that the meta
+row had no contract at all — it appended `estTimeMinutes`, then servings, then every tag verbatim. Dropping
+rather than deduping is the load-bearing part: a card can state one cook time honestly, and
+`estTimeMinutes` is the structured one. Anything else a tag might say becomes a **marker above the title**,
+where it can never be mistaken for a second duration.
+
+**Future impact.** Slice 2 gives the meta its one legitimate third part — provenance (`Griffin's pick`).
+Frames `3i`/`3j` also draw a leftover source (`Sunday's pork`) in the servings slot; **we deliberately did
+not build that**, because no column names a leftover's source and inventing it from rationale prose is
+guessing.
+
+<!-- ⑂ S48 merge: the three entries below are from the concurrent main-checkout sessions
+     (access gate + Instacart round-trip); their session numbers overlap the worktree's. -->
+
 ## 2026-07-30 (S44, second entry) — Ordering goes back to V2. Instacart's door is shut, and Kroger is the only open one in US grocery.
 
 **Supersedes the entry immediately below, which it reversed within the hour.** Both are kept. The

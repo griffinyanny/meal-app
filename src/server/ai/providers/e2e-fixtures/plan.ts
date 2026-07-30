@@ -33,6 +33,14 @@ function freshMeal(dayOffset: number): AIMeal {
     ingredientPreview: ["olive oil", "garlic", "seasonal veg"],
     tags: ["30 min"],
     estTimeMinutes: 30,
+    // The real model now returns a per-meal grocery estimate (W6), so the mock
+    // does too — a fixture that omits it would make the cost row green against
+    // a shape the live pipeline no longer produces.
+    estCostCents: 1400,
+    // The picker (W8) writes provenance server-side from a resolved ref, so the
+    // mock's own meals are never picks — an unasked-for PICKED eyebrow in the
+    // seeded suite would make L2 (provenance that varies) pass on a lie.
+    pickedRef: null,
     servings: 2,
     chips: ["Make it vegetarian", "Swap the protein"],
   };
@@ -43,10 +51,37 @@ function freshMeal(dayOffset: number): AIMeal {
 export const GENERATION_CHEF_SUMMARY =
   "A fresh, balanced week from your test chef.";
 
-export function buildGenerationFixture(): AIPlan {
+// The argument half (BUG-034). The fixture emits BOTH strings because the real
+// model now does — a fixture that returned only the claim would leave the gold
+// slot empty in every mock capture and hide any regression in the field the fix
+// exists to fill.
+export const GENERATION_CHEF_NOTE =
+  "Built around one shop, with the shorter nights kept for midweek.";
+
+/**
+ * A generated week — and, when the request carried picks, a week built around
+ * them (W8).
+ *
+ * This takes the prompt now, where it used to take nothing. That is what makes
+ * §B's "picks survive a regenerate" testable at all: the guarantee is that a
+ * re-roll re-pins the person's own recipes, and a fixture blind to the picks
+ * block would answer every regenerate with seven chef-written dinners and make
+ * the spec green on the exact behaviour the guarantee forbids.
+ */
+export function buildGenerationFixture(promptText = ""): AIPlan {
+  const pickTitles = extractPickTitles(promptText);
+  const meals = Array.from({ length: 7 }, (_, i) => freshMeal(i));
+
+  // Picks take the first nights, so a spec can name where to look without the
+  // fixture having to make a judgement it has no basis for.
+  pickTitles.forEach((title, i) => {
+    if (i < meals.length) meals[i] = pickedMeal(title, i + 1, i);
+  });
+
   return {
     chefSummary: GENERATION_CHEF_SUMMARY,
-    meals: Array.from({ length: 7 }, (_, i) => freshMeal(i)),
+    chefNote: GENERATION_CHEF_NOTE,
+    meals,
   };
 }
 
@@ -66,8 +101,69 @@ function reworkedMeal(dayOffset: number, originalTitle: string | null): AIMeal {
     ingredientPreview: ["fresh herbs", "lemon", "greens"],
     tags: ["light", "25 min"],
     estTimeMinutes: 25,
+    estCostCents: 1100,
+    pickedRef: null,
     servings: 2,
     chips: ["Make it heartier", "Swap the protein"],
+  };
+}
+
+// ── W8 · the picker ────────────────────────────────────────────────────────
+// The night the mock chef gives a pick WHEN NOBODY NAMED ONE. Offset 4 exists in
+// every seeded week (DRAFT is seven days, CONFIRMED five), and it is not offset
+// 1 or 3 — which the whole-week modify path reworks — so a pick and a modify can
+// be asserted in the same week without either standing on the other.
+//
+// When the request DOES name a night (`3e`, opened from a meal), the mock obeys
+// it. A fixture that always chose its own night would make the specs green while
+// the primary that promised "Put it on Thursday" quietly put it somewhere else —
+// which is the exact class of defect a mock is supposed to catch.
+export const PICK_DAY_OFFSET = 4;
+// No boundary sentence here ON PURPOSE (BUG-041, S48): the real model never
+// produced it in two live rounds, and a mock that recites what the model
+// doesn't say makes the suite green against a lie. The boundary is product
+// copy on the picked row now, so the mock answers the way the model actually
+// does — placement, and nothing else.
+export const PICK_CHEF_RESPONSE =
+  "Put it midweek and rebuilt the shop around it.";
+export const PICK_RATIONALE = "The one night with room to do it properly.";
+
+// Titles arrive as `[1] Spaghetti alla Carbonara (40 min, the recipe serves 4)`.
+function extractPickTitles(promptText: string): string[] {
+  const block = extractBlock(promptText, "picked_recipes");
+  if (!block) return [];
+  return block
+    .split("\n")
+    .map((line) => line.match(/^\[\d+\]\s*(.+?)(?:\s*\([^)]*\))?\s*$/))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map((m) => m[1].trim());
+}
+
+/**
+ * The chef's answer to a pick: the person's recipe, on a night the chef chose.
+ *
+ * KEEPS THE TITLE EXACTLY (ledger §B, "I won't rewrite it"). The mock echoing
+ * the title back verbatim is the whole point — a fixture that invented its own
+ * name would make the specs green against precisely the behaviour §B forbids.
+ */
+function pickedMeal(title: string, ref: number, dayOffset: number): AIMeal {
+  return {
+    dayOffset,
+    slotType: "recipe",
+    title,
+    description: "Your own recipe, worked into the week.",
+    // §B: a picked meal's rationale argues PLACEMENT, not the dish.
+    rationale: PICK_RATIONALE,
+    ingredientPreview: ["from your recipe"],
+    tags: ["40 min"],
+    estTimeMinutes: 40,
+    estCostCents: 1800,
+    pickedRef: ref,
+    // Build dependency 2: the SCALED count, chosen by generation. The seeded
+    // library recipe serves 4 and the test household cooks for 2, so a slot that
+    // still said 4 would prove nothing about scaling.
+    servings: 2,
+    chips: ["Make it heartier", "Swap the sides"],
   };
 }
 
@@ -108,12 +204,30 @@ function findDayNameInText(text: string): string | null {
 }
 
 // Routes a modify request to a deterministic modification fixture. Order:
+//  0. a <picked_recipes> block is present → place the picks (W8)
 //  1. "eating out" → remove the named day (or first upcoming if unnamed)
 //  2. a plan title appears in the request (scoped chip / meal chat) → rework it
 //  3. otherwise (whole-week request) → rework two mid-week days
 export function buildModificationFixture(promptText: string): AIPlanModification {
   const request = extractBlock(promptText, "user_request") ?? promptText;
   const planLines = extractPlanLines(promptText);
+
+  // Picks first: the block's presence is unambiguous, and a pick request also
+  // contains recipe titles that could otherwise fall through to the scoped
+  // rework branch and quietly rewrite the recipe instead of placing it.
+  const pickTitles = extractPickTitles(promptText);
+  if (pickTitles.length > 0) {
+    // "Put X on Day 3, replacing what's planned there" — the person named it.
+    const named = request.match(/on Day (\d+)/);
+    const first = named ? Number(named[1]) : PICK_DAY_OFFSET;
+    return {
+      chefResponse: PICK_CHEF_RESPONSE,
+      changedMeals: pickTitles.map((title, i) =>
+        pickedMeal(title, i + 1, first + i)
+      ),
+      removedDayOffsets: [],
+    };
+  }
 
   if (/eating out/i.test(request)) {
     const dayName = findDayNameInText(request);

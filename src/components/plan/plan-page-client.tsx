@@ -12,17 +12,20 @@ import { StreamingPlan } from "./streaming-plan";
 import { PlanReview } from "./plan-review";
 import { PlanMidweek } from "./plan-midweek";
 import { WeekWrappedState } from "./week-wrapped-state";
-import { ModifyStatusPills } from "./modify-status-pills";
 import { TalkToChefSheet } from "@/components/shared/talk-to-chef-sheet";
-import { ExpandedMealSheet } from "./expanded-meal-sheet";
+import { PlanSheet } from "./sheet/plan-sheet";
+import { usePlanSheet } from "./use-plan-sheet";
 import { usePlanModify } from "./use-plan-modify";
 import { usePlanHydration } from "./use-plan-hydration";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
+import type { PlanDay } from "./rail-helpers";
 import { takeHandoff } from "@/lib/onboarding/handoff";
+import { takePickHandoff } from "@/lib/plan/pick-handoff";
 import { seedChips } from "@/lib/onboarding/synthesize";
 import {
   type DisplayMeal,
   dayTitle,
+  isCookable,
   isPlanElapsed,
   scopedRequest,
   slotToDisplayMeal,
@@ -37,6 +40,12 @@ const GENERAL_SUGGESTIONS = [
   "I want to grill this weekend",
   "Something quick — I'm exhausted",
 ];
+
+// The weekday label for a date already on the plan. Reads it off the rendered
+// meals rather than recomputing UTC arithmetic that plan-helpers already owns.
+function dayNameOf(meals: DisplayMeal[], date: string): string {
+  return meals.find((m) => m.date === date)?.dayName ?? "";
+}
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -53,14 +62,27 @@ export function PlanPageClient() {
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatScope, setChatScope] = useState<DisplayMeal | null>(null);
-  // Track the expanded meal by id (not a frozen snapshot) so the sheet reflects
-  // live changes — a recipe finishing hydration flips writing→full in place.
-  const [expandedMealId, setExpandedMealId] = useState<string | null>(null);
-  const [expandedOpen, setExpandedOpen] = useState(false);
 
   // Regenerate flow: routes back through the intent-capture screen so a new
   // plan carries fresh weekly intent instead of a blind reroll.
   const [intentMode, setIntentMode] = useState(false);
+
+  // W8 · recipes chosen on the intent screen, before any week exists. They are
+  // held here rather than written anywhere: there is no plan to attach them to
+  // yet, and the generation POST is where they become a constraint.
+  const [intentPicks, setIntentPicks] = useState<{ id: string; title: string }[]>(
+    []
+  );
+
+  // W10 · a recipe chosen on the Recipes tab when there was no week to put it
+  // in. Read once on mount, same as the onboarding hand-off and for the same
+  // reason it cannot be read during render: the server has no sessionStorage.
+  useEffect(() => {
+    const carried = takePickHandoff();
+    if (!carried) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIntentPicks([carried]);
+  }, []);
 
   // Hand-off from the onboarding interview (Phase 1E #4). The interview ends in
   // THIS screen, pre-filled — door #3, one way to start a week. Read once on
@@ -102,6 +124,17 @@ export function PlanPageClient() {
     };
   }, [seedPrefsQuery.data, seedRequest]);
 
+  const plan = planQuery.data;
+  const persistedMeals = useMemo<DisplayMeal[]>(
+    () => (plan ? plan.slots.map(slotToDisplayMeal) : []),
+    [plan]
+  );
+
+  // Declared before usePlanModify because that hook's onDone callback closes
+  // this sheet on success. Hook ORDER is what React cares about, and it is
+  // stable either way.
+  const sheet = usePlanSheet(persistedMeals);
+
   // In-place AI-working affordance (see docs/idea-backlog "Something is
   // happening"): pending state where the user is looking, a highlight on the
   // changed day, and a scroll-independent pill for whole-week changes.
@@ -110,14 +143,15 @@ export function PlanPageClient() {
     changedDates,
     ack,
     modifyError,
+    toast,
     runModify,
-    retry,
+    runPick,
     cancelInFlight,
     dismissAck,
     clearError,
   } = usePlanModify((source) => {
     if (source === "chat") setChatOpen(false);
-    else if (source === "expanded") setExpandedOpen(false);
+    else sheet.close();
   });
 
   const {
@@ -154,11 +188,6 @@ export function PlanPageClient() {
     onSettled: () => utils.plan.current.invalidate(),
   });
 
-  const plan = planQuery.data;
-  const persistedMeals = useMemo<DisplayMeal[]>(
-    () => (plan ? plan.slots.map(slotToDisplayMeal) : []),
-    [plan]
-  );
   const streamedMeals = useMemo<DisplayMeal[]>(() => {
     const list = streamed?.meals ?? [];
     return list
@@ -171,7 +200,52 @@ export function PlanPageClient() {
     // Abandon any in-flight modify so its late result can't clobber the new plan.
     cancelInFlight();
     setIntentMode(false);
-    submitGeneration(request ? { request } : {});
+    sheet.close();
+    const pickedRecipeIds = intentPicks.map((p) => p.id);
+    submitGeneration({
+      ...(request ? { request } : {}),
+      ...(pickedRecipeIds.length > 0 ? { pickedRecipeIds } : {}),
+    });
+    // Cleared once handed over: they are now the week's, and leaving them here
+    // would re-apply them to the NEXT generation as well as this one. Picks the
+    // person wants carried across a regenerate are carried by the server, off
+    // the plan itself, which is the only place that stays true.
+    setIntentPicks([]);
+  }
+
+  // The picker, invoked from the intent screen — no week exists yet, so the
+  // choice is held locally and rides along with the generation POST.
+  function openIntentPicker() {
+    clearError();
+    sheet.openPicker({
+      headline: "Cook something you've saved",
+      subline: null,
+    });
+  }
+
+  // THE CHEF ANSWERS WITH A NIGHT (§B) — this never sends a day for the pick,
+  // only the night being displaced, which is a fact about the week rather than
+  // an instruction about where the recipe goes.
+  function handlePick(picks: { id: string; title: string }[]) {
+    const invocation = sheet.picker;
+    if (!invocation) return;
+
+    // On the intent screen there is no week to change: the pick becomes an input
+    // to generation instead. Two different verbs, one picker — which is the
+    // point of holding the invocation as data rather than as two components.
+    if (!plan || persistedMeals.length === 0 || intentMode) {
+      setIntentPicks((current) => {
+        const known = new Set(current.map((p) => p.id));
+        return [...current, ...picks.filter((p) => !known.has(p.id))];
+      });
+      sheet.close();
+      return;
+    }
+
+    runPick(
+      picks.map((p) => p.id),
+      invocation.replacingDate ?? null
+    );
   }
 
   // Free-form chef submit. When the sheet was opened scoped to a meal, anchor
@@ -184,21 +258,21 @@ export function PlanPageClient() {
     );
   }
 
-  function handleChipClick(meal: DisplayMeal, chip: string) {
-    runModify(scopedRequest(chip, meal), meal, "inline");
-  }
-
   function openChat(scope: DisplayMeal | null) {
     clearError();
     setChatScope(scope);
-    setExpandedOpen(false);
+    sheet.close();
     setChatOpen(true);
+  }
+
+  function openDay(day: PlanDay) {
+    clearError();
+    sheet.openDay(day.date);
   }
 
   function openExpanded(meal: DisplayMeal) {
     clearError();
-    setExpandedMealId(meal.id ?? null);
-    setExpandedOpen(true);
+    sheet.openMeal(meal);
     // Jump this meal's recipe to the front of the hydration walk so it's ready
     // fastest for the sheet the user just opened.
     prioritize(meal.id);
@@ -209,6 +283,12 @@ export function PlanPageClient() {
     dismissAck();
     setIntentMode(true);
   }
+
+  // How many of the current week's nights are the person's own recipes — the
+  // number §B's survival guarantee is about.
+  const carriedPickCount = persistedMeals.filter(
+    (m) => m.pickedRecipeId != null
+  ).length;
 
   const isConfirmed = plan?.status === "confirmed";
   const hasPast = persistedMeals.some((m) => m.timeframe === "past");
@@ -232,26 +312,47 @@ export function PlanPageClient() {
     hydrationEnabled
   );
 
-  // The live expanded meal, resolved from the current plan each render.
-  const expandedMeal = useMemo(
-    () =>
-      expandedMealId
-        ? persistedMeals.find((m) => m.id === expandedMealId) ?? null
-        : null,
-    [expandedMealId, persistedMeals]
+
+  // THE MEAL ROW IS THE UNIT OF CHANGE FEEDBACK, NEVER THE DAY CONTAINER
+  // (1E.5 ledger §C) — the ring sits on the changed row's own 14px radius
+  // inside the day's 18px.
+  //
+  // `plan.modify` reports changed DAYS, so we resolve each one to the cookable
+  // rows on it. At R1's one-dinner-per-day that is exactly row-level. At the
+  // multi-meal density the ledger also specifies, a whole-day change would ring
+  // all three rows — the server owes `changedSlotIds` before that density ships
+  // (tracked; not reachable today because generation produces dinners only).
+  const idsOnDates = useMemo(
+    () => (dates: string[]) =>
+      new Set(
+        persistedMeals
+          .filter((m) => !!m.id && !!m.date && dates.includes(m.date) && isCookable(m.slotType))
+          .map((m) => m.id!)
+      ),
+    [persistedMeals]
   );
 
-  const cardAffordance = {
-    pendingDate: pending?.date ?? null,
-    pendingLabel: pending?.label ?? "",
-    changedDates,
-    hydrationByDate,
-  };
+  // Read through to a local first: the React Compiler infers `pending` as the
+  // dependency and refuses to preserve a memo keyed on `pending?.date`.
+  const pendingDate = pending?.date ?? null;
+  const workingMealIds = useMemo(
+    () => (pendingDate ? idsOnDates([pendingDate]) : new Set<string>()),
+    [pendingDate, idsOnDates]
+  );
+  const landedMealIds = useMemo(
+    () => idsOnDates(changedDates),
+    [changedDates, idsOnDates]
+  );
 
   function renderBody() {
     if (isStreaming) {
       return (
-        <StreamingPlan chefSummary={streamed?.chefSummary} meals={streamedMeals} />
+        <StreamingPlan
+          chefSummary={streamed?.chefSummary}
+          chefNote={streamed?.chefNote}
+          meals={streamedMeals}
+          weekStart={weekStart}
+        />
       );
     }
 
@@ -262,6 +363,15 @@ export function PlanPageClient() {
           isGenerating={isStreaming}
           onCancel={() => setIntentMode(false)}
           replaceWarning={isConfirmed}
+          onOpenPicker={openIntentPicker}
+          picks={intentPicks}
+          onRemovePick={(id) =>
+            setIntentPicks((current) => current.filter((p) => p.id !== id))
+          }
+          // Read off the week being replaced, not off `intentPicks` — these are
+          // the picks the SERVER will carry forward, so the sentence and the
+          // behaviour come from the same fact.
+          carriedPickCount={carriedPickCount}
         />
       );
     }
@@ -292,6 +402,7 @@ export function PlanPageClient() {
             isConfirmed={isConfirmed}
             onStartOver={startOver}
             onFeedback={onFeedback}
+            toast={slotToast}
           />
         );
       }
@@ -299,26 +410,56 @@ export function PlanPageClient() {
       // PlanReview and PlanMidweek share every prop but chefSummary/onFeedback.
       const weekProps = {
         meals: persistedMeals,
+        weekStart: plan.weekStart,
         isConfirmed,
         isConfirming: confirmMutation.isPending,
         onConfirm: () => confirmMutation.mutate({ planId: plan.id }),
         onTalkToChef: () => openChat(null),
         onTapMeal: openExpanded,
-        onChipClick: handleChipClick,
+        onTapDay: openDay,
+        // §C/§D's named controls. Each is a ONE-TAP ASK, not a form: the chef
+        // already knows the week, so the only thing a picker would add is a
+        // decision the user came here to avoid making.
+        onDecide: (meal: DisplayMeal) =>
+          runModify(
+            `Decide ${dayTitle(meal.dayName)}'s dinner for me.`,
+            meal,
+            "expanded"
+          ),
+        onAddDays: () =>
+          runModify("Add dinners for the nights I haven't planned.", null, "chat"),
+        onAddNight: (date: string) =>
+          runModify(
+            `Cook something on ${dayTitle(dayNameOf(persistedMeals, date))} after all.`,
+            null,
+            "chat"
+          ),
         onStartOver: startOver,
-        ...cardAffordance,
+        workingMealIds,
+        landedMealIds,
+        hydrationByDate,
+        toast: slotToast,
       };
 
       return showMidweek ? (
         <PlanMidweek {...weekProps} onFeedback={onFeedback} />
       ) : (
-        <PlanReview {...weekProps} chefSummary={plan.chefSummary} />
+        <PlanReview
+          {...weekProps}
+          chefSummary={plan.chefSummary}
+          chefNote={plan.chefNote}
+        />
       );
     }
 
     if (streamedMeals.length > 0 || streamed?.chefSummary) {
       return (
-        <StreamingPlan chefSummary={streamed?.chefSummary} meals={streamedMeals} />
+        <StreamingPlan
+          chefSummary={streamed?.chefSummary}
+          chefNote={streamed?.chefNote}
+          meals={streamedMeals}
+          weekStart={weekStart}
+        />
       );
     }
 
@@ -339,6 +480,11 @@ export function PlanPageClient() {
         onGenerate={handleGenerate}
         isGenerating={isStreaming}
         seed={seed}
+        onOpenPicker={openIntentPicker}
+        picks={intentPicks}
+        onRemovePick={(id) =>
+          setIntentPicks((current) => current.filter((p) => p.id !== id))
+        }
       />
     );
   }
@@ -347,10 +493,13 @@ export function PlanPageClient() {
     ? `Change ${dayTitle(chatScope.dayName)}'s dinner`
     : "What are you thinking?";
 
-  const sheetOpen = chatOpen || expandedOpen;
-  // Pills only make sense over a rendered plan — never over the intent screen
-  // or a streaming generation (where a stale modify result could land).
-  const showPills = !sheetOpen && !intentMode && !isStreaming;
+  const sheetOpen = chatOpen || sheet.open;
+  // The toast only makes sense over a rendered plan — never over the intent
+  // screen or a streaming generation (where a stale modify result could land,
+  // and where the count already owns the slot). It is also suppressed behind an
+  // open sheet: the sheet shows its own pending line and its own retry, and a
+  // message at bottom-96 under a sheet is a message nobody can read.
+  const slotToast = !sheetOpen && !intentMode && !isStreaming ? toast : null;
 
   const derivedState = isStreaming
     ? "streaming"
@@ -386,6 +535,12 @@ export function PlanPageClient() {
     modifyError: modifyError?.message ?? null,
     hydrationEnabled,
     hydrationByDate,
+    // BUG-034's two halves, published separately because the SPLIT is the thing
+    // under test and the screen cannot show it: two strings rendered at two
+    // sizes look much the same as one string that wrapped. Layer B reads the
+    // real model's claim and argument here and judges each against its own job.
+    chefSummary: plan?.chefSummary ?? null,
+    chefNote: plan?.chefNote ?? null,
     slots: persistedMeals.map((m) => ({
       date: m.date,
       timeframe: m.timeframe,
@@ -393,6 +548,18 @@ export function PlanPageClient() {
       title: m.title,
       recipeStatus: m.recipeStatus,
       recipeId: m.recipeId,
+      // WHICH night the pick landed on is the whole of §B's named-night
+      // guarantee, and the eyebrow only says THAT one is a pick, not which one
+      // the person asked for. Layer B compares this against the night it opened
+      // the picker from.
+      pickedRecipeId: m.pickedRecipeId,
+      rationale: m.rationale,
+      // W6's output is otherwise unobservable from outside: the review sums it
+      // into one string and a null slot renders nothing at all, so a week the
+      // model priced badly and a week it declined to price look identical on
+      // screen. Layer B judges these per-slot, which is where implausibility
+      // actually shows up — a plausible sum can hide a $2 salmon night.
+      estCostCents: m.estCostCents,
     })),
   }));
 
@@ -411,24 +578,9 @@ export function PlanPageClient() {
 
       {renderBody()}
 
-      {/* Modify feedback (whole-week ack + inline-error retry) lives at the
-          bottom anchor, not a top toast. Gated to a rendered plan so a stale
-          result can't float over the intent screen or a streaming generation. */}
-      {showPills && (
-        <ModifyStatusPills
-          ack={ack}
-          errorMessage={modifyError?.message ?? null}
-          onDismissAck={dismissAck}
-          onRetry={retry}
-        />
-      )}
-
       <TalkToChefSheet
         open={chatOpen}
-        onOpenChange={(o) => {
-          setChatOpen(o);
-          if (!o) clearError();
-        }}
+        onOpenChange={setChatOpen}
         onSubmit={handleChatSubmit}
         isSubmitting={pending?.source === "chat"}
         suggestions={GENERAL_SUGGESTIONS}
@@ -437,23 +589,39 @@ export function PlanPageClient() {
         modifyError={modifyError?.source === "chat" ? modifyError.message : null}
       />
 
-      <ExpandedMealSheet
-        meal={expandedMeal}
-        open={expandedOpen}
-        onOpenChange={(o) => {
-          setExpandedOpen(o);
-          if (!o) clearError();
+      {/* Dismissing a sheet no longer clears a failed modify. The sheet used to
+          be the error's only home, so closing it was the dismissal; now the
+          toast owns the slot and the retry survives the sheet going away. A
+          fresh action still clears it — see openChat / openExpanded. */}
+      <PlanSheet
+        target={sheet.target}
+        open={sheet.open}
+        onOpenChange={sheet.setOpen}
+        onModify={(req) =>
+          runModify(req, sheet.meal, sheet.meal ? "expanded" : "day")
+        }
+        onTalkToChef={() => openChat(sheet.meal)}
+        onOpenMeal={openExpanded}
+        onOpenPicker={(invocation) => {
+          clearError();
+          sheet.openPicker(invocation);
         }}
-        onModify={(req) => runModify(req, expandedMeal, "expanded")}
-        onTalkToChef={openChat}
-        isModifying={pending?.source === "expanded"}
+        onPick={handlePick}
+        // The picker's empty state hands back the action that works today (`3d`).
+        onGenerate={() => {
+          sheet.close();
+          handleGenerate(undefined);
+        }}
+        isModifying={
+          pending?.source === "expanded" ||
+          pending?.source === "day" ||
+          pending?.source === "picker"
+        }
         workingLabel={pending?.label}
         modifyError={
-          modifyError?.source === "expanded" ? modifyError.message : null
+          modifyError && modifyError.source !== "chat" ? modifyError.message : null
         }
-        hydration={
-          expandedMeal?.date ? hydrationByDate[expandedMeal.date] : undefined
-        }
+        hydration={sheet.meal?.date ? hydrationByDate[sheet.meal.date] : undefined}
       />
     </div>
   );

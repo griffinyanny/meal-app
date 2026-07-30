@@ -134,7 +134,14 @@ describe("planRouter.current", () => {
     const caller = planRouter.createCaller(buildCtx(db, mockUser));
     const result = await caller.current();
 
-    expect(result).toEqual({ ...plan, slots });
+    // Every slot carries `pickedSourceServings` — null on a slot with no pick.
+    // Stated rather than stripped: the modify path writes its result straight
+    // into this query's cache, so the two shapes have to be the same one, and a
+    // test that ignored the field would let them drift apart silently (W8).
+    expect(result).toEqual({
+      ...plan,
+      slots: slots.map((s) => ({ ...s, pickedSourceServings: null })),
+    });
     expect(db.query.mealPlans.findFirst).toHaveBeenCalledWith({
       where: eq(mealPlans.householdId, "household-1"),
       orderBy: desc(mealPlans.weekStart),

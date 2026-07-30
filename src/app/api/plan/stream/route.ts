@@ -1,8 +1,13 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
 import { getDb } from "@/server/db";
-import { householdMembers, mealPlans, mealPlanSlots } from "@/server/db/schema";
+import {
+  householdMembers,
+  mealPlans,
+  mealPlanSlots,
+  recipes,
+} from "@/server/db/schema";
 import { getChefContext } from "@/server/ai/memory";
 import { generateStream } from "@/server/ai";
 import { buildPlanStreamParams } from "@/server/ai/tasks/generate-plan";
@@ -12,6 +17,11 @@ import {
   type AIPlan,
   type ValidatedPlan,
 } from "@/server/ai/tasks/plan-types";
+import {
+  resolvePickedRecipeId,
+  type PickInput,
+} from "@/server/ai/tasks/plan-picks";
+import { MAX_PICKS_PER_WEEK } from "@/lib/plan/pick-limits";
 import { checkAiRateLimit, consumeDailyAiBudget } from "@/server/ratelimit";
 import { isEmailAllowed } from "@/lib/access";
 
@@ -19,6 +29,10 @@ export const maxDuration = 60;
 
 const bodySchema = z.object({
   request: z.string().max(1000).optional(),
+  // W8 · library recipes chosen on the intent screen, as ids. Every one is
+  // re-read household-scoped below — an id from the client is a request, not a
+  // fact.
+  pickedRecipeIds: z.array(z.string().uuid()).max(MAX_PICKS_PER_WEEK).optional(),
 });
 
 type Db = ReturnType<typeof getDb>;
@@ -43,7 +57,8 @@ async function persistPlan(
   db: Db,
   householdId: string,
   weekStart: string,
-  plan: ValidatedPlan
+  plan: ValidatedPlan,
+  picks: PickInput[]
 ): Promise<void> {
   await db.transaction(async (tx) => {
     await tx
@@ -57,20 +72,83 @@ async function persistPlan(
         weekStart,
         status: "draft",
         chefSummary: plan.chefSummary,
+        chefNote: plan.chefNote,
       })
       .returning();
 
     if (plan.meals.length > 0) {
       await tx.insert(mealPlanSlots).values(
-        plan.meals.map((meal) => ({
-          householdId,
-          planId: created.id,
-          mealType: "dinner" as const,
-          ...toSlotValues(meal),
-        }))
+        plan.meals.map((meal) => {
+          const pickedRecipeId = resolvePickedRecipeId(meal.pickedRef, picks);
+          return {
+            householdId,
+            planId: created.id,
+            mealType: "dinner" as const,
+            ...toSlotValues(meal),
+            pickedRecipeId,
+            // A picked slot is ALREADY hydrated — it points at a recipe the
+            // person wrote or kept, with real ingredients and steps. Linking it
+            // here does two jobs: the meal sheet's `View full recipe` works on
+            // the night it lands, and (build dependency 4) `normalizeSlot` has a
+            // recipeId to warm the grocery cache from at pick time instead of at
+            // confirm, which is the exact latency BUG-004 exists to prevent.
+            //
+            // Marking it "ready" is also what stops the hydration walker from
+            // generating a fresh recipe over the top of the person's own — the
+            // silent substitution §B's "I won't rewrite it" promises against.
+            ...(pickedRecipeId
+              ? { recipeId: pickedRecipeId, recipeStatus: "ready" as const }
+              : {}),
+          };
+        })
       );
     }
   });
+}
+
+/**
+ * The picks this generation is bound by: what the person just chose, plus what
+ * the week they are replacing already carried.
+ *
+ * PICKS SURVIVE A REGENERATE BY DEFAULT (ledger §B). Regenerate routes back
+ * through the intent screen, which posts here, which deletes the current plan —
+ * so without this a re-roll would silently discard every recipe the person had
+ * deliberately chosen, and the guarantee the UI states before the ask would be
+ * a lie. Reading them back off the old plan is what makes it true.
+ */
+async function collectPicks(
+  db: Db,
+  householdId: string,
+  requestedIds: string[]
+): Promise<PickInput[]> {
+  const carried = await db
+    .select({ id: mealPlanSlots.pickedRecipeId })
+    .from(mealPlanSlots)
+    .where(eq(mealPlanSlots.householdId, householdId));
+
+  const ids = [
+    ...new Set([
+      ...requestedIds,
+      ...carried.map((c) => c.id).filter((id): id is string => id != null),
+    ]),
+  ].slice(0, MAX_PICKS_PER_WEEK);
+
+  if (ids.length === 0) return [];
+
+  // Re-read household-scoped. An id that is not this household's simply does not
+  // come back, so a forged body cannot pull another household's recipe into a
+  // prompt or onto a plan.
+  const rows = await db
+    .select({
+      id: recipes.id,
+      title: recipes.title,
+      servings: recipes.servings,
+      totalTimeMinutes: recipes.totalTimeMinutes,
+    })
+    .from(recipes)
+    .where(and(eq(recipes.householdId, householdId), inArray(recipes.id, ids)));
+
+  return rows;
 }
 
 export async function POST(req: Request): Promise<Response> {
@@ -135,7 +213,15 @@ export async function POST(req: Request): Promise<Response> {
 
   const weekStart = planStartDate(new Date());
   const chef = await getChefContext(db, householdId, user.id);
-  const params = buildPlanStreamParams({ request: parsed.data.request, ...chef });
+  // Collected BEFORE persistPlan deletes the current plan — that delete is what
+  // would otherwise take the carried picks with it.
+  const picks = await collectPicks(db, householdId, parsed.data.pickedRecipeIds ?? []);
+  const params = buildPlanStreamParams({
+    weekStart,
+    request: parsed.data.request,
+    picks,
+    ...chef,
+  });
 
   const result = generateStream<AIPlan>({
     ...params,
@@ -148,7 +234,7 @@ export async function POST(req: Request): Promise<Response> {
           weekStart,
           defaultServings: chef.householdSize,
         });
-        await persistPlan(db, householdId, weekStart, validated);
+        await persistPlan(db, householdId, weekStart, validated, picks);
       } catch (err) {
         console.error("[plan/stream] failed to persist plan:", err);
       }

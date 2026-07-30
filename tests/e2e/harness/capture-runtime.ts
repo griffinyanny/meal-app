@@ -21,6 +21,30 @@ export interface CaptureStateDef {
   // Visible text that proves the SETTLED state has rendered (not a loading
   // skeleton). Waited for before the HUD poll + shot. Strongly recommended.
   readyText?: string;
+  // Per-state opt-out of the HUD poll, overriding the run-level `useHud`.
+  //
+  // Needed by any state that ends with an OPEN DRAWER: reading the HUD means
+  // clicking its toggle, and a drawer's scrim intercepts that click, so the poll
+  // hangs until it times out. Such a state gates on `readyText` alone — which
+  // for a sheet is the stronger guard anyway, since derivedState describes the
+  // plan underneath and knows nothing about what is on top of it.
+  useHud?: boolean;
+  // Shoot at the real device viewport instead of growing it to content height.
+  //
+  // The grow trick exists so `position: fixed` chrome lands at the true page
+  // bottom on a SCROLLING page. For a state whose subject is itself pinned to
+  // the viewport — a sheet, a drawer — it does the opposite: vaul does not
+  // reflow to a programmatic resize, so the sheet keeps its 844-based geometry
+  // while the fixed tab bar drops to the new bottom, opening a gap that does
+  // not exist on a phone. Measured rather than guessed: with the picker open at
+  // 390×844 the sheet spans 418→844, the nav spans 779→844, and the topmost
+  // element at the nav's centre is the sheet's own tile grid.
+  //
+  // Everything worth judging about a sheet is viewport-relative — the top
+  // inset, the max height, whether the action bar is reachable — so a grown
+  // shot cannot answer any of it. Cost: content below the fold is out of frame,
+  // which is correct, because on a phone it is off the screen too.
+  viewportOnly?: boolean;
 }
 
 export interface ObservedFacts {
@@ -120,8 +144,16 @@ async function hideHudChrome(page: Page): Promise<void> {
 // Shoot the whole screen WITHOUT fullPage: instead grow the viewport to the
 // content height, so position:fixed chrome (the bottom tab bar) lands at the true
 // page bottom rather than being stitched mid-page (the fullPage+fixed artifact).
-async function settleAndShoot(page: Page, filePath: string): Promise<void> {
+async function settleAndShoot(
+  page: Page,
+  filePath: string,
+  viewportOnly = false
+): Promise<void> {
   await page.evaluate(() => document.fonts.ready);
+  if (viewportOnly) {
+    await page.screenshot({ path: filePath, animations: "disabled" });
+    return;
+  }
   const width = page.viewportSize()?.width ?? 390;
   const contentHeight = await page.evaluate(() =>
     Math.max(
@@ -180,7 +212,8 @@ async function captureOne(
         .waitFor({ state: "visible", timeout: 15_000 });
     }
 
-    const section = useHud
+    const hud = def.useHud ?? useHud;
+    const section = hud
       ? await waitForHudSection(page, sectionKey, def.expectedState)
       : null;
     const assertedState =
@@ -190,12 +223,14 @@ async function captureOne(
     const observed = extractObserved(section);
 
     let captureStatus: ManifestEntry["captureStatus"] = "ok";
-    if (def.expectedState && assertedState !== def.expectedState) {
+    // Only a state that actually read the HUD can be mismatched against it.
+    // Without this the opt-out would report every drawer state as broken.
+    if (hud && def.expectedState && assertedState !== def.expectedState) {
       captureStatus = "state-mismatch";
     }
 
     await hideHudChrome(page);
-    await settleAndShoot(page, path.join(runDir, screenshot));
+    await settleAndShoot(page, path.join(runDir, screenshot), def.viewportOnly);
 
     return {
       id: def.id,

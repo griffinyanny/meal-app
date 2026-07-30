@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, ArrowRight, Clock, Quote, Shield, UtensilsCrossed } from "lucide-react";
-import { ChefPresence } from "./chef-presence";
+import { ChefPresence } from "@/components/shared/chef-presence";
 import { reflectHook, reflectSubline } from "@/lib/onboarding/synthesize";
 import {
   chefGuesses,

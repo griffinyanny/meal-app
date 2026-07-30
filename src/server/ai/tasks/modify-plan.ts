@@ -4,6 +4,8 @@ import {
   buildUserContext,
 } from "@/server/ai/prompts/chef-system";
 import { aiPlanModificationSchema, type AIPlanModification } from "./plan-types";
+import { buildPicksBlock, type PickInput } from "./plan-picks";
+import { buildDayMap } from "./generate-plan";
 
 export interface CurrentMealSummary {
   dayOffset: number;
@@ -13,7 +15,19 @@ export interface CurrentMealSummary {
 
 export interface ModifyPlanInput {
   request: string;
+  /**
+   * ISO date of dayOffset 0 — required so the chef can NAME the days it talks
+   * about (BUG-031, second door). Generation has carried a day map since S45;
+   * modify never did, so the only day vocabulary this prompt supplied was
+   * `Day 0`, and the model wrote back exactly that: "Placed Congee … on Day 0",
+   * "This dish fits perfectly on Day 1" — both onto strings the person reads.
+   */
+  weekStart: string;
   currentMeals: CurrentMealSummary[];
+  /** W8 · library recipes the person is adding to a week that already exists. */
+  picks?: PickInput[];
+  /** True when the request already names the night (`3e`). See buildPicksBlock. */
+  pickNightNamed?: boolean;
   dietaryFramework?: string;
   restrictions?: string[];
   dislikedFoods?: string[];
@@ -45,10 +59,23 @@ export async function modifyPlan(
     .map((m) => `Day ${m.dayOffset}: ${describeMeal(m)}`)
     .join("\n");
 
-  const body =
-    `<current_plan>\n${planLines}\n</current_plan>\n\n` +
-    `<user_request>\n${input.request.trim()}\n</user_request>\n\n` +
-    `Return only the changes.`;
+  const picks = buildPicksBlock(
+    input.picks ?? [],
+    input.householdSize,
+    input.pickNightNamed
+  );
+
+  const body = [
+    // Before the plan, for the same reason generation puts it first: the model
+    // has to know what the days ARE before it reads a list addressed by number.
+    buildDayMap(input.weekStart),
+    `<current_plan>\n${planLines}\n</current_plan>`,
+    `<user_request>\n${input.request.trim()}\n</user_request>`,
+    picks,
+    `Return only the changes.`,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return generateStructured({
     task: "plan-modify",
