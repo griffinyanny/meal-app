@@ -109,25 +109,88 @@ Blended average with 80% routine / 20% complex: ~$0.003-0.004 per interaction
 
 ## Grocery Integrations: API Landscape
 
-> **⚠️ CORRECTED 2026-07-30 (S44).** The 2026-03-28 research below concluded that Instacart was
-> partnership-gated and that Kroger should therefore go first. **That conclusion is wrong as of
-> July 2026.** Instacart now runs a public Developer Platform with a self-serve dashboard. The
-> superseded section is preserved at the bottom rather than deleted, because it was load-bearing
-> for the V2 sequencing and the reversal should be legible. Griffin ratified the re-sequencing
-> on 2026-07-30 — see `decisions.md`.
+> **⚠️ TWICE CORRECTED, 2026-07-30 (S44). Read the whole section before acting.**
+> The 2026-03-28 research (preserved at the bottom) said Instacart was partnership-gated, so Kroger
+> should go first. Mid-session that was corrected to "Instacart is self-serve, go there first." **Then
+> Griffin tried to sign up and could not.** Instacart's application is **closed with no waitlist**.
+> The self-serve dashboard language in their docs describes the flow *after* approval; the gate in
+> front of it is shut. **Net: ordering stays in V2. Nothing is buildable today except Kroger.**
+> See `decisions.md` (2026-07-30, second entry).
 
-### Current state (verified 2026-07-30)
+### Access reality (verified 2026-07-30) — the availability column is the only one that matters
 
-| Platform | Access | What you actually get | BD required? |
-|----------|--------|----------------------|--------------|
-| **Instacart** | **Public Developer Platform**, self-serve dashboard + dev key | Recipe page + shopping list page, hosted on Instacart Marketplace. Ingredients matched to products at nearby retailers, real inventory/pricing, real checkout | **No.** Dev key self-serve; production key requires a **compliance review, ~30-40 days** |
-| **Kroger** | Public API, self-serve | Product search, locations, and a public **Cart API** (add-to-cart, per-user OAuth). Kroger family: Fred Meyer, QFC, Ralphs, Harris Teeter, King Soopers | No |
-| Walmart | Affiliate only | Deep links | N/A |
-| Amazon Fresh | Closed | Deep links | N/A |
+| Platform | Access **today** | What you'd get |
+|----------|-----------------|----------------|
+| **Instacart** | **🔴 CLOSED.** *"We are currently not accepting new applications."* + *"There is no waitlist available at this time."* No reopen date | Recipe page + shopping list page, hosted, ingredients matched to nearby retailers, real checkout. **~98% of US households.** The one we want |
+| **Kroger** | **🟢 OPEN, self-serve.** Create account → verify email → register app → `client_id`/`client_secret` | Product search, locations, **Cart API** (add-to-cart, per-user OAuth). ~20 banners incl. QFC, Fred Meyer, Ralphs, King Soopers, Harris Teeter, Fry's, Smith's, Dillons, Mariano's — plus **Giant Eagle** (acquired 2026-07-01) |
+| Walmart | **🔴 Effectively closed.** *Walmart no longer releases new API keys for its affiliate program.* The Add-To-Cart / OPD grocery endpoints exist but require an Impact Radius partner setup, and Delegated Access key creation retires **2026-07-30** | Largest single grocery retailer. Unreachable for a new solo developer |
+| Costco / Albertsons / Publix / Target / Ahold | 🔴 No public cart API | — |
+| Amazon Fresh / Whole Foods | 🔴 Closed | — |
 
-### Instacart Developer Platform (the chosen first integration)
+**The finding that matters: Kroger is not the *best* open door in US grocery. It is the *only* one.**
 
-**Docs:** https://docs.instacart.com/developer_platform_api
+### TAM analysis (2026-07-30) — asked for by Griffin: "what national integration has the largest addressable market?"
+
+**US grocery market share, 2026:**
+
+| Chain | Share | Reachable by API? |
+|---|---|---|
+| Walmart | 23.6% | ❌ no new keys |
+| **Kroger** | **~10%** (contracting on share, expanding on footprint via Giant Eagle) | ✅ **yes** |
+| Costco | 9.2% | ❌ |
+| Albertsons (incl. Safeway, Vons, Haggen) | 6.4% | ❌ |
+| Publix | 4.1% | ❌ |
+
+Top five ≈ **53%** of US grocery. **Exactly one of them is reachable.**
+
+**The structural insight: aggregators are the TAM, retailers are not.** One Instacart integration reaches
+~98% of US households across 1,800+ banners and ~100,000 stores. Every retailer-direct integration is a
+separate build, separate auth, separate failure surface, for **single-digit share each**. You would need
+to integrate the entire top five — four of which are closed — to approach what one aggregator
+integration gives you.
+
+**That asymmetry is precisely why the aggregator door is gated and the retailer doors are not.** It is
+not an accident to route around; it is the shape of the market. The strategy that follows:
+
+1. **Aggregator-first is the only strategy with real TAM.** Instacart is the target. It is closed, so
+   the correct move is to **watch for reopening**, not to substitute a worse integration for it.
+2. **Kroger is a hedge, not a strategy.** ~10% national share, real national footprint (~2,700+ stores,
+   ~35 states), and it is the only thing we can build against without permission. Worth building **if
+   and only if** ordering becomes urgent before Instacart reopens.
+3. **Do not chase retailers one at a time.** Four of the top five are closed anyway, so the "integrate
+   the majors" path is not available even if we wanted it.
+4. **Unverified thread for V2:** DoorDash and Uber Eats both run grocery now and both have developer
+   platforms. Those platforms are aimed at *merchants and delivery*, not consumer cart-building, so they
+   are probably the wrong shape — **not checked**. Worth 20 minutes when V2 opens.
+
+**Griffin's own store, for testing (2026-07-30):** the household shops **Haggen** (an Albertsons banner,
+no API). Griffin has offered to shop **QFC** instead, which is a **Kroger** banner and therefore covered
+by the one open API. His personal preference and the only available integration happen to coincide.
+
+> **Factual correction to a premise Griffin raised:** the Kroger–Albertsons merger was **blocked and
+> terminated in December 2024** (injunctions in D. Or. and King County Superior Court; Albertsons
+> terminated and sued Kroger). The Haggen divestiture to C&S died with it, so **Haggen stayed with
+> Albertsons** and is not pending divestiture. Kroger instead acquired **Giant Eagle** for $1.65B on
+> 2026-07-01 (~197 supermarkets, ~$9B annual sales, OH/PA/WV/MD/IN).
+
+### Instacart Developer Platform (the right target, currently unreachable)
+
+**Docs:** https://docs.instacart.com/developer_platform_api · **Application:** https://company.instacart.com/business/developers
+
+**🔴 Gate status (2026-07-30): CLOSED.** *"We are currently not accepting new applications."* and
+*"There is no waitlist available at this time."* The only stated guidance is to check back later. When
+it reopens, eligibility is: 18+, a registered business or US/Canada resident, company + contact info,
+development experience, and agreement to the terms/API/data-protection policies.
+
+**There is no side door, and we deliberately are not looking for one.** The API key is the only
+auth mechanism and keys are issued on approval. The adjacent Instacart surfaces do **not** substitute:
+the **impact.com affiliate program** is open and free but gives tracked links and 3% commission rather
+than programmatic list creation; **Tastemakers-style shoppable buttons** and **Chicory** (free,
+self-serve) both work by parsing recipe markup on a *public web page*, which is the wrong shape for
+personalised lists behind auth. **Northfork / SideChef** are enterprise B2B vendors selling to
+retailers, a longer path than the application itself. Scraping or undocumented endpoints would violate
+the terms we need to be in good standing with when applications reopen, and would forfeit the affiliate
+commission. **The workaround costs more than the wait.**
 
 - **Two endpoints matter to us:** `create_shopping_list_page` (our grocery list → a hosted,
   shoppable Instacart page) and `create_recipe_page` (a recipe → the same, with instructions).
@@ -170,16 +233,22 @@ Blended average with 80% routine / 20% complex: ~$0.003-0.004 per interaction
 - `instacart.com/store/search/{item}` opens a pre-filled search. One item at a time, does not add
   to cart. Strictly a stopgap now that the real API is reachable.
 
-### Recommended path (revised 2026-07-30)
-1. **R1 (now):** register for the Instacart Developer Platform and start the approval clock during
-   1E.5, because the 30-40 day review is calendar time that cannot be compressed later. Build the
-   integration properly against the dev key. Ship "Send to Instacart" on the Groceries tab as a
-   **1F** item.
-2. **V2:** Kroger Cart API only if in-app-cart demand shows up. Photo/social import and the rest of
-   V2 are unaffected.
-3. **Unchanged principle:** the manual list must always be perfect. Integrations are accelerators,
-   not dependencies. A failed or unapproved integration must degrade to the existing clipboard
-   export with no loss of function.
+### Recommended path (settled 2026-07-30, Griffin's call)
+
+1. **R1: no ordering integration. Clipboard export stays the answer.** Griffin: *"let's move it to v2
+   anyway because it's not a critical need. I'd love to get a polished version of v1 first."* The
+   pull-forward earlier in S44 was justified by (a) a cheap integration and (b) an approval clock worth
+   starting early. **The application is closed, so there is no clock**, and the only buildable
+   alternative is the expensive one. Both justifications are gone.
+2. **Watch for Instacart reopening.** No waitlist exists, so this is a periodic manual check, not a
+   notification we can subscribe to. It is the only integration with real TAM.
+3. **V2: Kroger Cart API as the hedge**, built only if ordering becomes urgent before Instacart
+   reopens. Accept its cost honestly — per-user OAuth, token storage/refresh, and it re-opens the
+   parked account-linking question — in exchange for ~10% of US grocery.
+4. **Do not integrate retailers one at a time.** Four of the top five are closed, and the math does not
+   work even if they were open. See the TAM analysis above.
+5. **Unchanged principle:** the manual list must always be perfect. Integrations are accelerators, not
+   dependencies. Any integration must degrade to clipboard export with no loss of function.
 
 ---
 
