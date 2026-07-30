@@ -43,10 +43,19 @@ all rewritten to carry what the model actually produces.
   16/22px; the copy trim treats the real cause) and the loudest-object inversion (`Let the chef write
   it` stays primary — with nothing to pick, the honest answer is that there is nothing to pick).
 
-**`DEV_TOOLS_EMAILS` finally has a value** — the variable had existed for 3 days with an EMPTY string
-(empty = nobody, by design). Set to Griffin's email via CLI; `vercel env pull` reads it back empty
-(possibly CLI masking), so the dashboard eye-icon check is owed before trusting it. `ALLOWED_EMAILS`
-empty = fail-open by design; it becomes the beta invite list later.
+**`DEV_TOOLS_EMAILS` finally has a value, verified live** — the variable had existed for 3 days with an
+EMPTY string (empty = nobody, by design). It is marked *sensitive* in Vercel, so no read-back is possible
+(the "empty" pulls were masking); Griffin re-added his email, the dashboard save triggered a prod
+redeploy, and **he confirmed the test-mode card renders on prod**. `ALLOWED_EMAILS` empty = fail-open by
+design; it becomes the beta invite list later.
+
+**And the phase CLOSED in-session.** Griffin's sign-off on the before/after sheet (*"the before and
+after looks good"*) closed the last gate → **M5.5**. The close pulled `origin/main` into the branch
+first — the concurrent access-gate (S43a) and Instacart round-trip (S44/44b) sessions had landed there,
+plus an S49 session that had already opened `scope-1F.md` and flipped scope-v1. Five doc files
+conflicted (both tracks kept, with divider notes); the concurrent sessions' BUG-030/031 collided with
+this track's and were renumbered **BUG-042** (email-signup authorization assumption) / **BUG-043**
+(noindex outlives launch), code comments repointed. Merged tree: 641 unit + full E2E green.
 
 ---
 
