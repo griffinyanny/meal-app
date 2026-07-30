@@ -152,7 +152,28 @@ prompt injection. Marked **before R1 ship** in the tracker.
 - [ ] Recompute `memory` server-side from `(questionId, dimension, values)` against the server's own
       question table; ignore the client's field entirely.
 
-### A5 — BUG-018 🟠 the harness deletes rows in the real Supabase project
+### A5 — the two access-gate rows that arrived with the S48 merge (BUG-042 🟠, BUG-043 🟠)
+
+*Added after this doc was first drafted: the access-gate work merged into `main` alongside 1E.5's close
+and brought two findings of its own. Neither is a code defect.*
+
+- [ ] **BUG-042 — email became an authorization boundary, and the config it now depends on was never
+      checked.** `ALLOWED_EMAILS` trusts the `email` claim to decide who may hold an account. The login UI
+      offers Google only, but the Supabase Auth REST API is directly callable with the publishable key and
+      GoTrue's **email provider is enabled by default**. If email signup is on *and* confirmations are off,
+      someone can `POST /auth/v1/signup` claiming an allowlisted address and walk through Gate 2 without
+      ever controlling that inbox. Supabase's default has confirmations ON, which is why this is 🟠.
+      **Dormant while the gates stay unset** (Griffin's no-beta call), so it is not a ship-blocker for R1
+      — but the fix is a **dashboard toggle**, not code, and the app only ever uses Google. Do it anyway.
+- [ ] **BUG-043 — `noindex` and `robots.txt` are unconditional and will outlive the beta.**
+      `public/robots.txt` (`Disallow: /`) and the `X-Robots-Tag: noindex, nofollow` header in
+      `next.config.ts` are deliberately **not** env-driven: `headers()` evaluates at build time while the
+      gates read env at request time, so wiring them together would let the two silently disagree. The
+      accepted cost is that going public is a **code** change. **Correct to leave in place through all of
+      R1** (two users, no public launch) — it graduates to the launch-day checklist below rather than
+      being fixed in this phase.
+
+### A6 — BUG-018 🟠 the harness deletes rows in the real Supabase project
 
 `seed.ts` runs deletes over a service-role-equivalent connection against **production**, guarded only by a
 household *name*. No environment check on `DATABASE_URL`, no DB-level privilege limit. S37 already saw the
@@ -294,6 +315,15 @@ pending a real capability (push/camera), validation, or a distribution trigger. 
 When those land: **M6 met, R1 shipped**, and the phase-boundary protocol runs — a master-plan refresh and
 a new `scope-v1.5.md`.
 
+### Carried past 1F to launch day, deliberately
+
+**BUG-043** — deleting `public/robots.txt` and the one `X-Robots-Tag` line in `next.config.ts`. Both call
+sites carry a `LAUNCH-DAY ITEM` comment pointing back at the tracker row. It stays in place through the
+whole of R1 (two users, no public launch), so it is **not** a 1F item — but it is the classic way a
+launched product sits out of Google for weeks while everyone assumes SEO is just slow. It belongs on
+whatever checklist governs the first genuinely public deploy, which is a V1.5-or-later artifact this
+phase does not create.
+
 ---
 
 ## Change log
@@ -301,4 +331,5 @@ a new `scope-v1.5.md`.
 | Date | Change | Why |
 |------|--------|-----|
 | 2026-07-30 (S49) | **1F opened → 🔨.** Scope drafted from the carried-in list: BUG-035 first (the only *before R1 ship* item on the app's most important call), the standing bug list, spec §12 items 03/04/05/07, the S42 amber/green semantic calls, the S48 critic slate's four deferrals, PWA, and production readiness. Split into four independent workstreams (ship-blockers / design system / PWA / production readiness) with A→B→C→D recommended. | 1E.5 closed at M5.5 and 1F is the last phase of R1. Splitting by workstream rather than by surface keeps the per-surface `/visual-qa` discipline intact — the same argument that split 1E.7 out of 1F in the first place |
+| 2026-07-30 (S49) | **A5 added after first draft: BUG-042 + BUG-043**, which arrived on `main` with the access-gate work that merged alongside 1E.5's close. Neither is a code defect — BUG-042 is a Supabase dashboard toggle (dormant while the gates stay unset, but do it anyway), BUG-043 is correct to leave in place through all of R1 and graduates to a launch-day checklist instead of being fixed here. The closed-beta section was corrected in the same pass: the gate it assumed would need building **already exists on `main`** (PR #6). | The doc was drafted against a tree that did not yet carry the access gate. Scoping a phase against a stale picture of `main` is how an item gets built twice or missed entirely |
 | 2026-07-30 (S49) | **scope-v1 open question #1 RESOLVED: no closed beta.** Two-user validation (Griffin + wife, 2 consecutive real weeks) is enough to ship R1. Removes the invite gate, feedback capture, support path, and onboarding-for-strangers pass from this phase. `ALLOWED_EMAILS` stays fail-open as the V1.5 seam. | Parked *for* 1E and carried through three phase closes; it gated 1F's shape and could not be deferred again without opening the phase blind. The wife's first run is the nearest thing R1 has to a cold user, and it is already in the DoD |

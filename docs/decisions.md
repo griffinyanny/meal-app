@@ -4,6 +4,61 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S49) — No closed beta: two-user validation ships R1
+
+**Decision (Griffin).** `scope-v1.md`'s open release question #1 — parked *for* 1E and carried through
+1E's, 1E.7's and 1E.5's closes — is answered at 1F's open: **no closed beta.** Griffin + wife, each
+running the full weekly ritual on prod for 2 consecutive real weeks, is the validation bar for R1.
+
+**The decision costs nothing, and that is worth stating because it looked expensive.** The *mechanism*
+shipped ahead of the decision in S43a: `SITE_ACCESS_CODE` (hides the app including the login screen,
+blocks at the proxy) and `ALLOWED_EMAILS` (decides who may hold an account, blocks at the auth callback
+and again in the `(app)` layout) are on `main`, **both default-off when their env var is unset**. So "no
+beta" is operationally *leave two env vars alone*, and reversing it later is setting them — an env
+change, not a code diff, not a deploy of a diff.
+
+**What it genuinely removes from 1F:** in-app feedback capture, a support path, a bug-report affordance,
+an onboarding-for-strangers pass, and multi-user load/abuse/cost-per-user modelling beyond the existing
+rate limits. It removes **no** build work on the gate, which was the part that looked like scope.
+
+**What it does not lower.** The DoD still requires *both* people for two consecutive real weeks. Griffin's
+wife has been in none of these sessions, which makes her the nearest thing R1 has to a cold user — her
+first run is the real test of the interview, and the interview fires exactly once per account.
+
+**Future impact.** A beta is **deferred to V1.5 planning**, not cancelled: household sharing arrives there
+and an invite flow has to exist anyway. `ALLOWED_EMAILS` stays in place as the seam. Two open bug rows
+attach to the dormant gate — **BUG-042** (GoTrue's email provider is enabled by default, and `ALLOWED_EMAILS`
+now makes the `email` claim an authorization boundary; a dashboard toggle, dormant while the gates are
+unset) and **BUG-043** (`noindex` + `robots.txt` are build-time and deliberately not env-driven, so going
+public is a code change — correct to leave in place through all of R1, graduating to a launch-day item).
+
+---
+
+## 2026-07-30 (S49) — The taste gate closed on three fixes, not on a clean look
+
+**What happened.** S48 executed Griffin's taste pass as a **decision ballot** because he could not see the
+captures. S49 then put eyes on the after-captures before merging. Presented with a read of them, Griffin
+chose **"fix the three, then merge"** — so 1E.5's human gate closed on three corrections:
+
+1. **The 80vh pane anchored its loudest object in two places ~700px apart** — pinned to the pane bottom
+   with a selection, inline under the content on an empty library. The empty-library primary moved into
+   the same pinned footer; `L11` **measures** the gap to the pane's bottom edge rather than trusting a
+   class, because the fix is a DOM move that passes every text assertion either way.
+2. **`I'll write you five dinners`** was hardcoded while the app confirms seven. Now "a week" — the count
+   is the request's to make. **BUG-041's class, one size smaller**, and found the same way: by reading
+   what the copy promises against what the system guarantees.
+3. **The unfittable-reason line broke the app's own separator grammar** (`3 hr — longer than Friday
+   allows` beside `Saved in July · 25 min · never cooked`). Now ` · `, which also brings every picker
+   screen to ≤1 em dash.
+
+**Why this is recorded as a decision and not a changelog line.** A ballot answered without eyes on the
+pixels is a **delegation, not a sign-off**, and closing a phase on one would have made the last human gate
+in 1E.5 fictional. Two of the three findings were visible only in a screenshot — which is the whole
+argument for keeping a human gate after the machine ones clear. The rule going forward: **when a taste
+pass is delegated to a recommendation slate, the visual half still runs as its own pass before merge.**
+
+---
+
 ## 2026-07-30 (S48) — BUG-041: the boundary sentence is product copy, not a prompt request
 
 **Decision (Griffin, accepting the recommendation).** Stop asking the model to say *"it's your recipe, so

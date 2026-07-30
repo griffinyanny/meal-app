@@ -31,7 +31,7 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **1E.5 is ✅ CLOSED at M5.5 (Griffin signed off S48). 1F is open: start Workstream A.**
+## ▶ NEXT SESSION — **1E.5 is ✅ CLOSED at M5.5 (taste gate closed on three S49 fixes). 1F is open: start Workstream A.**
 
 **S48 ran your taste pass as a decision ballot** (you couldn't see the captures, so you delegated to the
 recommendation slate) **and built everything it decided.** Work is on **`session-43-1e5-plan-rebuild`,
@@ -71,22 +71,39 @@ test-mode card should be there for Griffin's account.** If absent after that dep
 (most likely a stray duplicate or the login email differing from the allowlisted one). `ALLOWED_EMAILS`
 is fail-open by design; it becomes the invite list at closed beta.
 
-### ⭐ Next up — 1E.5 is CLOSED (Griffin signed off S48); 1F is OPEN and already has its scope doc
+### ⭐ Next up — 1E.5 is CLOSED at M5.5; 1F is OPEN with its scope doc written
 
-**Griffin confirmed both halves in-session:** the test-mode card renders on prod (`DEV_TOOLS_EMAILS`
-works), and the before/after sheet read good — the taste gate is closed. The branch merged `origin/main`
-in (the concurrent access-gate + Instacart sessions; their BUG-030/031 renumbered **BUG-042/043**), and
-**a concurrent S49 session had already opened [scope-1F.md](scope-1F.md)** with four workstreams
-(A ship-blockers → B design-system pass → C PWA → D production readiness) and flipped scope-v1.
+**⚠️ Correction to how the taste gate actually closed** (this section was first written from the other
+half of a two-session split and overstated it). Griffin did **not** wave the captures through. Presented
+with the after-captures and a read of them, he chose **"fix the three, then merge"** — so the gate closed
+on **three S49 fixes**, not on a clean look:
+
+1. **The 80vh pane was anchoring its primary in two places ~700px apart** — pinned to the pane bottom with
+   a selection, floating inline under the content on an empty library. One sheet, one loudest object, two
+   positions depending on whether the library had anything in it. The empty-library primary moved into the
+   same pinned footer slot; `L11` now **measures** the gap to the pane's bottom edge, because the fix is a
+   DOM move that would pass every text assertion either way.
+2. **The empty library promised `five dinners`** while the app confirms seven — a hardcoded number the
+   person can compare against what they get. Now "a week"; the count is the request's to make. Same class
+   as BUG-041, one size smaller.
+3. **The unfittable-reason line broke the app's own separator grammar** — `3 hr — longer than Friday
+   allows` beside `Saved in July · 25 min · never cooked`, same row, two separators, and the em dash is the
+   tell Griffin flags. Now ` · `, which also brings every picker screen to ≤1 em dash.
+
+The branch merged `origin/main` in (the concurrent access-gate + Instacart sessions; their BUG-030/031
+renumbered **BUG-042/043**), and [scope-1F.md](scope-1F.md) was opened with four workstreams
+(A ship-blockers → B design-system pass → C PWA → D production readiness); scope-v1 is flipped.
 
 1. **Start 1F Workstream A** per [scope-1F.md](scope-1F.md): BUG-035 first (the 90s generation timeout —
    the only *before R1 ship* item), then the ship-blocker list.
 2. **Carried into 1F from S48:** BUG-037/BUG-038, the slate's four 1F items (Recipes `+` weight,
    picker/Recipes vocabulary unification, cooked-when evidence, caps-label tracking), BUG-042 (email
-   provider config check before the first non-Griffin tester), BUG-043 (launch-day noindex removal).
-3. **The closed-beta question**: the mechanism shipped (S43a — `SITE_ACCESS_CODE` + `ALLOWED_EMAILS`,
-   both inert while empty); whether to actually invite testers beyond Griffin + wife is still his call,
-   now purely a product decision.
+   provider config check), BUG-043 (launch-day noindex removal — correct to leave in place through R1).
+3. **✅ The closed-beta question is ANSWERED (Griffin, S49): no beta.** Two-user validation is enough to
+   ship R1. It costs nothing to honour — `SITE_ACCESS_CODE` + `ALLOWED_EMAILS` shipped S43a and **default
+   off when unset**, so the decision is "leave two env vars alone." What it removes from 1F: feedback
+   capture, a support path, an onboarding-for-strangers pass, multi-user load/abuse modelling. A beta is
+   **deferred to V1.5**, not cancelled. scope-v1's last open release question is now closed.
 
 ### Also still open
 - **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path
@@ -100,16 +117,19 @@ designing the failure the user sees. That is judgement on the AI path, not proce
 
 **Copy-paste kickoff prompt:**
 ```
-Resume meal app — 1E.5 CLOSED at M5.5 in S48 (I signed off the before/after captures; the branch merged
-to main and shipped, worktree removed). 1F is open: docs/scope-1F.md, four workstreams, A->B->C->D.
-Start Workstream A: A1 is BUG-035 (1 real generation in 9 timed out server-side at 90s — find out
-whether that path shows the user a named failure with a retry or a spinner that never resolves, then fix
-whichever it is; X1/X2 only cover modify failures), then A2 (BUG-020/021, the onboarding save-path
-pair), then A3 (BUG-011/012/010, the household-composition cluster). Read docs/whats-next.md,
-docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check. Note the S48 merge:
-main now carries the closed-beta access gate (BUG-042 config check owed before any non-Griffin tester)
-and the Instacart standing watch; the concurrent sessions' bug IDs were renumbered BUG-042/043.
-641 unit + 111 E2E green on main. On Opus 4.8.
+Resume meal app — 1E.5 CLOSED at M5.5 (S48 built the taste-pass ballot; S49 reviewed the after-captures
+and fixed three before merge: the 80vh picker pane now anchors its primary in one place across every
+state with L11 measuring it, the empty library stopped promising "five dinners" when the app confirms
+seven, and the unfittable-reason line took the app's own " · " separator). Merged to main, worktree
+removed. I also decided the closed-beta question: NO beta — two-user validation ships R1, the gate stays
+unset. 1F is open: docs/scope-1F.md, four workstreams, A->B->C->D. Start Workstream A: A1 is BUG-035
+(1 real generation in 9 timed out server-side at 90s — find out whether that path shows the user a named
+failure with a retry or a spinner that never resolves, then fix whichever it is; X1/X2 only cover modify
+failures), then A2 (BUG-020/021, the onboarding save-path pair), then A3 (BUG-011/012/010, the
+household-composition cluster). Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first,
+give me the <=6-line scope check. Note main now carries the closed-beta access gate (BUG-042 is a
+Supabase dashboard toggle; BUG-043 is a launch-day item, correct to leave alone through R1) and the
+Instacart standing watch. 641 unit + 111 E2E green on main. On Opus 4.8.
 ```
 
 ---

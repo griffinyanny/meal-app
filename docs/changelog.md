@@ -4,6 +4,50 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 49 — 2026-07-30 (the after-capture pass: three fixes, 1E.5 closes at M5.5, 1F opens, closed beta answered)
+
+**The session ran alongside a concurrent one on the same worktree**, which is worth recording because it
+shaped the work. This session's job was the last gate on 1E.5: put eyes on the S48 after-captures.
+
+**Griffin pasted the S48 kickoff prompt with its `[my verdict / fixes needed]` placeholder unfilled**, so
+the gate was not actually answered. Rather than infer a verdict from a placeholder — which would have made
+the human gate fictional on top of an already-delegated ballot — the captures were read and a verdict
+requested. Griffin chose **"fix the three, then merge."**
+
+**The three, all found by looking at pixels rather than code:**
+
+1. **The pinned 80vh pane anchored its primary in two places ~700px apart** — bottom-pinned with a
+   selection, inline under the content on an empty library. S48's pin was the right call (the critic's
+   diagnosis, that moving walls were the defect, holds) but it made the emptiness visible and left the
+   loudest object in a state-dependent position. Fixed by moving the empty-library primary into the same
+   pinned footer; **`L11` measures the gap to the pane's bottom edge**, because a DOM move passes every
+   text assertion either way.
+2. **`I'll write you five dinners`** was hardcoded while the app confirms seven. **BUG-041's class one size
+   smaller** — copy promising a specific thing the system does not guarantee.
+3. **The unfittable reason broke the app's own ` · ` separator grammar**, putting an em dash in the same
+   row type that elsewhere reads `Saved in July · 25 min · never cooked`.
+
+**One thing checked rather than reported:** the `3e` overrule line (*"Runs long for the night — your
+call."*) looked absent from the multi-select capture. It is not — it fires only on a **single** pick on a
+**named** night, so the two-pick capture correctly shows the receipt instead. Reporting it as a gap would
+have produced a fix for a bug that did not exist, which is S47's lesson repeating.
+
+**Two corrections landed on docs written by the concurrent session**, both material: `whats-next.md` said
+Griffin had confirmed the before/after sheet "read good" (he had asked for three fixes), and `scope-1F.md`
+— drafted here — had claimed the no-beta decision removed an invite flow from scope when **the gate was
+already built and on `main`** (PR #6, S43a, both env vars default-off). Scoping a phase against a stale
+picture of `main` is how an item gets built twice or missed entirely.
+
+**Also this session:** `scope-1F.md` written (four workstreams, A→B→C→D, BUG-035 first), `scope-v1.md`
+flipped (1E.5 → ✅ M5.5, 1F → 🔨, open question #1 closed), and **BUG-042/BUG-043 added to Workstream A**
+after they arrived on `main` with the access-gate merge.
+
+**Verified on `main`: 641 unit green, lint + typecheck clean.** The E2E suite was re-run from scratch
+rather than trusting the doc line, because this session watched 22 specs fail on a tree that was
+mid-merge and a "111 green" claim written by another session is not evidence.
+
+---
+
 ## Session 48 — 2026-07-30 (Griffin's taste pass as a decision ballot; BUG-041 closed; the critic's slate applied)
 
 **The taste pass ran as a ballot, because Griffin could not see the captures.** He was given the two open
