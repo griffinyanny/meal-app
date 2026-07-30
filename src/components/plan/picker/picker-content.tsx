@@ -82,7 +82,14 @@ export function PickerContent({
   const term = query.trim().toLowerCase();
   const visible: RecipeListItem[] = useMemo(() => {
     if (term) {
-      return tileContents(items, "everything").filter((r) =>
+      // SEARCH STAYS INSIDE THE ROOM IT IS STANDING IN. This used to search
+      // `everything` while the heading kept naming the pushed tile, so typing
+      // inside `Cooked before` returned recipes that had never been cooked
+      // under a heading that said they had. A door is a door because the room
+      // behind it has walls; a field that reaches through them makes the tile
+      // decoration, which is exactly the "place, not a dropdown" claim §A rests
+      // on. `Everything` is one tap away for the person who wants the library.
+      return tileContents(items, tile ?? "everything", constraint).filter((r) =>
         r.title.toLowerCase().includes(term)
       );
     }
@@ -169,7 +176,16 @@ export function PickerContent({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={`Search ${tiles.find((t) => t.key === "everything")?.count ?? 0} recipes`}
+              // The count is the useful part of this placeholder — except at
+              // zero, where "Search 0 recipes" is the apology §A forbids
+              // wearing a number. The rule is that the empty library does not
+              // apologise and above all does not disable search; announcing
+              // that there is nothing to search undoes both.
+              placeholder={
+                (tiles.find((t) => t.key === "everything")?.count ?? 0) > 0
+                  ? `Search ${tiles.find((t) => t.key === "everything")?.count} recipes`
+                  : "Search your recipes"
+              }
               aria-label="Search your recipes"
               data-testid="picker-search"
               className="w-full bg-transparent text-[14px] text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
@@ -233,7 +249,12 @@ export function PickerContent({
           <p className="m-0 mb-2 text-center text-[12.5px] text-[var(--spec-text-caption)]">
             {atLimit
               ? "That's as many as I can build a week around."
-              : invocation.dayName
+              : // Follows the verb above it, including where the verb hands the
+                // night back. One pick on a named night keeps `3e`'s promise;
+                // above one, the chef is choosing again and the line has to say
+                // so — otherwise the support text would still be talking about
+                // a night the primary no longer mentions.
+                invocation.dayName && selected.length === 1
                 ? "I'll rebuild the shop around it."
                 : "The chef picks the nights."}
           </p>

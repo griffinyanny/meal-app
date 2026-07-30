@@ -46,7 +46,51 @@ export interface ValidatedMeal {
 
 export interface ValidatedPlan {
   chefSummary: string;
+  chefNote: string | null;
   meals: ValidatedMeal[];
+}
+
+/**
+ * The chef's claim is ONE sentence, enforced here rather than in the prompt.
+ *
+ * BUG-034: frame `3i` draws two strings at two sizes, but generation emitted one
+ * field, so both of the model's sentences landed in the 22px heading and pushed
+ * the first meal below the fold. Splitting the field fixes the data; this fixes
+ * the guarantee, because BUG-033 established that a style clause loses to the
+ * request competing with it — "one sentence" in a prompt is a preference, and
+ * "one sentence" here is a fact.
+ *
+ * IT SPLITS, IT DOES NOT TRUNCATE. An over-long summary loses nothing: the
+ * overflow becomes the argument, which is the slot it belonged in anyway. A
+ * truncating ceiling would cut the chef mid-thought to protect a layout, which
+ * is the failure mode this whole fix exists to avoid.
+ */
+export function splitChefVoice(
+  rawSummary: string,
+  rawNote: string | null
+): { chefSummary: string; chefNote: string | null } {
+  const summary = rawSummary.trim();
+  const note = rawNote?.trim() || null;
+
+  // A sentence boundary is a terminator, then whitespace, then a CAPITAL. All
+  // three are load-bearing: a bare trailing "." ends the only sentence rather
+  // than starting a second, "3.5 hours" fails on the whitespace, and "e.g. the
+  // Sunday braise" fails on the capital — which the test found, because a
+  // terminator plus a space alone cut that one in half.
+  const boundary = summary.search(/[.!?]\s+(?=["'“‘]?[A-Z])/);
+  if (boundary === -1) return { chefSummary: summary, chefNote: note };
+
+  const claim = summary.slice(0, boundary + 1);
+  const overflow = summary.slice(boundary + 1).trim();
+  if (!overflow) return { chefSummary: summary, chefNote: note };
+
+  return {
+    chefSummary: claim,
+    // The overflow leads: it is the sentence the chef wrote SECOND, so it is
+    // the argument to its own claim, and it reads ahead of anything the model
+    // put in chefNote independently.
+    chefNote: note ? `${overflow} ${note}` : overflow,
+  };
 }
 
 interface ValidatePlanContext {
@@ -140,7 +184,10 @@ export function validatePlan(
   plan: AIPlan,
   ctx: ValidatePlanContext
 ): ValidatedPlan {
-  const chefSummary = plan.chefSummary.trim();
+  const { chefSummary, chefNote } = splitChefVoice(
+    plan.chefSummary,
+    plan.chefNote
+  );
   const seenDays = new Set<number>();
   const meals: ValidatedMeal[] = [];
 
@@ -164,10 +211,30 @@ export function validatePlan(
   // W1: a method covering four or more meals is the WEEK's, not each card's.
   // Enforced here because two Layer-B rounds proved the prompt cannot hold it
   // against an explicit "I want to grill" (absorb-method.ts).
-  return {
-    chefSummary,
-    meals: absorbRepeatedMethod(dedupePickedRefs(meals), chefSummary),
-  };
+  //
+  // Matched against BOTH halves of the chef's voice. Absorption only strips a
+  // method the week has already stated, and the split moved most of the week's
+  // stating into chefNote — reading the claim alone would have quietly turned
+  // the strip off for exactly the weeks it exists for.
+  const voice = chefNote ? `${chefSummary} ${chefNote}` : chefSummary;
+  const deduped = dedupePickedRefs(meals);
+  const absorbed = absorbRepeatedMethod(deduped, voice);
+
+  // ABSORPTION ERASES ITS OWN EVIDENCE, which is why it has been a guarantee on
+  // paper since S45. After the strip the titles simply do not open with a
+  // method, and that is indistinguishable from a model that never repeated one
+  // — so no amount of reading the finished week tells you whether the code ran.
+  // One line, only when it actually fires, so Layer B can see the path execute
+  // on a real "I want to grill" instead of inferring it from an absence.
+  const stripped = absorbed.filter((m, i) => m.title !== deduped[i]?.title);
+  if (stripped.length > 0) {
+    console.log(
+      `[plan] absorbed a repeated method from ${stripped.length} titles:`,
+      stripped.map((m) => m.title).join(" | ")
+    );
+  }
+
+  return { chefSummary, chefNote, meals: absorbed };
 }
 
 export interface ValidatedModification {

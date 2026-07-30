@@ -167,9 +167,40 @@ export function intentHeading(page: Page): Locator {
   return page.getByRole("heading", { name: "What are you thinking this week?" });
 }
 
+/**
+ * The sheet is DONE OPENING — its transform has settled at the top of its
+ * travel — rather than merely present in the DOM.
+ *
+ * `toBeVisible()` passes the instant vaul mounts the drawer, which is while it
+ * is still flying up from below. Measured mid-drag, the translateY ran
+ * 416 → 196 → 57 → 21 across a drag that was supposed to be moving it DOWN:
+ * the open animation was still winning, so the pointer deltas were fighting it
+ * and the position vaul saw at pointerup was nothing like the distance dragged.
+ *
+ * That is D4's failure, and it is the same shape as BUG-019 — green in
+ * isolation, red under load, because load is what makes the animation slower
+ * than the helper. Waiting on the settled transform is this drag's equivalent
+ * of GR7's wait-for-the-lift.
+ */
+async function waitForSheetSettled(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const el = document.querySelector("[data-vaul-drawer]");
+      if (!el) return false;
+      const t = getComputedStyle(el).transform;
+      if (t === "none") return true;
+      return Math.abs(new DOMMatrixReadOnly(t).m42) < 1;
+    },
+    undefined,
+    { timeout: 10_000 }
+  );
+}
+
 // Drag the bottom sheet down by its handle using a stepped pointer drag (vaul
 // tracks pointer events; Playwright's touchscreen API is tap-only).
 export async function dragSheetDown(page: Page, distance = 400): Promise<void> {
+  await waitForSheetSettled(page);
+
   const handle = page.getByTestId("drawer-handle");
   const box = await handle.boundingBox();
   if (!box) throw new Error("drawer handle not found for drag");
@@ -179,6 +210,11 @@ export async function dragSheetDown(page: Page, distance = 400): Promise<void> {
   await page.mouse.down();
   for (let dy = 0; dy <= distance; dy += 40) {
     await page.mouse.move(cx, cy + dy, { steps: 2 });
+    // A frame between moves, for GR7's reason: a back-to-back burst asks the
+    // library to resolve every move against a layout it has not committed yet.
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
+    );
   }
   await page.mouse.up();
 }

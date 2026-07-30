@@ -45,7 +45,14 @@ export const aiMealSchema = z.object({
 });
 
 export const aiPlanSchema = z.object({
+  // The chef's block is TWO strings at two sizes (frame 3i): the claim at 22px
+  // cream, the argument at 14.5px italic gold. They were one field until S47,
+  // which is why both of the model's sentences landed in the heading and pushed
+  // the first meal below the fold (BUG-034).
   chefSummary: z.string(),
+  // Nullable, because strict mode has no optionals and a chef with nothing to
+  // add beyond the claim must be able to say so rather than pad.
+  chefNote: z.string().nullable(),
   meals: z.array(aiMealSchema),
 });
 

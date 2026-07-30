@@ -32,7 +32,11 @@ const WEEKDAYS = [
  * we withheld. Stating the map is the actual fix; the constraint in the system
  * prompt only became satisfiable once this existed.
  */
-function buildDayMap(weekStart: string): string {
+// Exported for the MODIFY path too. S45 fixed this for generation and never
+// asked whether modify had the same hole — it did, and S47's Layer B caught the
+// chef writing "Placed Congee … on Day 0" and "This dish fits perfectly on Day
+// 1" straight to the user. Same defect, second door.
+export function buildDayMap(weekStart: string): string {
   const [y, m, d] = weekStart.split("-").map(Number);
   const lines = Array.from({ length: 7 }, (_, offset) => {
     // Noon UTC: the date is a calendar day, and midnight would let a negative

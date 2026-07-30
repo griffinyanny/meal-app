@@ -5,6 +5,8 @@
 // vision judgment. Copy strings verified against the components.
 import { type Page } from "@playwright/test";
 import { seedPlanState } from "../app/seed";
+import { mealRow } from "../app/selectors";
+import { todayISO, addDaysISO } from "../../../src/components/plan/plan-helpers";
 import { type CaptureStateDef } from "../harness/capture-runtime";
 
 // The debug-HUD section the Plan tab publishes (useDebugPanel("plan", ...)).
@@ -22,6 +24,24 @@ function gotoPlan(page: Page): Promise<void> {
 // fail loudly — it times out and the capture comes back empty, which is why
 // these are updated in the same pass as the specs.
 const RAIL_READY = "YOUR CHEF";
+
+// SLICE 2's states need interaction, not just a seed — the picker is a sheet you
+// open, and three of the five only exist after a tap. `navigate` already allows
+// it (Recipes uses it for the drafts shelf); Slice 1 simply never needed it.
+//
+// The picker is opened from a MEAL rather than from the intent screen on
+// purpose: that is frame `3e`, the invocation where the person has already named
+// the night, and it is the one whose primary has to read "Put it on <day>".
+const PICKER_OPEN_FROM_MEAL = async (page: Page): Promise<void> => {
+  await page.goto("/plan");
+  await page.getByText(RAIL_READY).first().waitFor({ timeout: 15_000 });
+  // Tomorrow's row — a 30-minute night, which is what makes the three-hour lamb
+  // unfittable and therefore visibly dimmed in the opening content.
+  await mealRow(page, addDaysISO(todayISO(), 1)).click();
+  await page.getByTestId("library-door").click();
+  await page.getByTestId("picker-search").waitFor({ timeout: 8_000 });
+};
+
 export const LAYER_A_STATES: CaptureStateDef[] = [
   {
     id: "empty-intent",
@@ -189,6 +209,179 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       floatingPrimary: "Plan next week",
     },
     prepare: () => seedPlanState("ELAPSED_DRAFT"),
+    navigate: gotoPlan,
+  },
+  {
+    // W7's sheet, and the gap this session found: the meal sheet shipped in S44
+    // and Layer A has NEVER photographed it. Slice 1 cleared 0/0 without one
+    // frame of the surface that sits on top of everything else — which is how
+    // the drawer's missing backdrop blur survived a clean gate.
+    id: "meal-sheet",
+    briefRef: "surfaces/plan/final-direction-2.dc.html#3k (the meal sheet)",
+    readyText: "View full recipe",
+    useHud: false,
+    viewportOnly: true,
+    facts: {
+      // §W7: a SUMMARY, not the recipe. Ingredients and steps never enter Plan.
+      rationaleAtFeatureSize: true,
+      hasViewFullRecipeLinkOut: true,
+      hasNoIngredientsOrSteps: true,
+      // The finding this state exists for: the sheet is opaque enough that
+      // nothing behind it is legible through the fill.
+      nothingBehindReadsThroughTheFill: true,
+    },
+    prepare: () => seedPlanState("DRAFT"),
+    navigate: async (page) => {
+      await page.goto("/plan");
+      await page.getByText(RAIL_READY).first().waitFor({ timeout: 15_000 });
+      await mealRow(page, todayISO()).click();
+      await page.getByText("View full recipe").waitFor({ timeout: 8_000 });
+    },
+  },
+  // ── Slice 2 · library into plan (W8/W9) ─────────────────────────────────
+  {
+    id: "picker-opened",
+    briefRef: "surfaces/plan/final-direction-1.dc.html#3b,#3e (the picker)",
+    useHud: false,
+    viewportOnly: true,
+    readyText: "SAVED, NEVER COOKED",
+    facts: {
+      // §A. The picker is a PLACE, not a dropdown: it opens on the one read
+      // only this product has, said by the chef, and counted rather than hedged.
+      opensOnSavedNeverCooked: true,
+      chefLineCountsThem: "3 of these have been waiting",
+      pickerRowCount: 3,
+      // Four named doors with counts. Tiles, never filter chips — a chip implies
+      // subtraction from a list you can already see.
+      browseTileCount: 4,
+      tilesCarryCounts: true,
+      // The three-hour lamb against a 30-minute night. It DIMS AND SAYS WHY in
+      // its own meta rather than vanishing.
+      unfittableRowDimsWithItsReason: "3 hr — longer than",
+      // §A: no action bar until something is selected. An inert primary is a nag.
+      hasNoActionBarYet: true,
+      // §D, and the reason this is a third subject rather than a second drawer.
+      exactlyOneSheetInTheTree: true,
+      searchIsInTheSheetHeader: true,
+    },
+    prepare: () => seedPlanState("PICKABLE"),
+    navigate: PICKER_OPEN_FROM_MEAL,
+  },
+  {
+    id: "picker-tile-pushed",
+    briefRef: "surfaces/plan/final-direction-1.dc.html#3c (a tile pushed)",
+    useHud: false,
+    viewportOnly: true,
+    readyText: "Spaghetti alla Carbonara",
+    facts: {
+      // S43's call, and the whole reason tiles beat chips: a pushed view carries
+      // its OWN heading and count, which is what makes a tile a door.
+      pushedViewCarriesItsOwnHeading: true,
+      tilesAreGoneBecauseYouAreThroughOne: true,
+      pickerRowCount: 2,
+      showsCookedRecipesOnly: true,
+    },
+    prepare: () => seedPlanState("PICKABLE"),
+    navigate: async (page) => {
+      await PICKER_OPEN_FROM_MEAL(page);
+      await page
+        .getByTestId("picker-tile")
+        .filter({ hasText: "Cooked before" })
+        .click();
+      await page
+        .getByTestId("picker-row")
+        .filter({ hasText: "Spaghetti alla Carbonara" })
+        .waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    id: "picker-multi-select",
+    briefRef: "surfaces/plan/final-direction-1.dc.html#3d (multi-select)",
+    useHud: false,
+    viewportOnly: true,
+    readyText: "Spaghetti alla Carbonara",
+    facts: {
+      // §A. Selection is CREAM, never gold — a checkbox is the user's act, and
+      // gold marks the chef speaking (the gold line, S42).
+      selectionIsCreamNotGold: true,
+      // The count lives in the VERB, not in a badge beside it.
+      countLivesInTheVerb: "Give the chef these two",
+      hasClearAsTypeNotAControl: true,
+      // Selections survive crossing a door, which is what makes multi-select
+      // real rather than a checkbox you can only use once.
+      selectionSurvivedThePush: true,
+      // 22px inside a sheet, NOT 96px — the 96 exists only to clear a tab bar,
+      // and there is no tab bar behind a sheet.
+      actionBarSitsAt22pxInsideTheSheet: true,
+    },
+    prepare: () => seedPlanState("PICKABLE"),
+    navigate: async (page) => {
+      await PICKER_OPEN_FROM_MEAL(page);
+      await page
+        .getByTestId("picker-row")
+        .filter({ hasText: "Sichuan Dry-Fried Green Beans" })
+        .click();
+      await page
+        .getByTestId("picker-tile")
+        .filter({ hasText: "Cooked before" })
+        .click();
+      await page
+        .getByTestId("picker-row")
+        .filter({ hasText: "Spaghetti alla Carbonara" })
+        .click();
+      await page.getByTestId("picker-confirm").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    id: "picker-empty-library",
+    briefRef: "surfaces/plan/final-direction-1.dc.html#3d (empty library)",
+    useHud: false,
+    viewportOnly: true,
+    readyText: "Nothing in here yet.",
+    facts: {
+      // §A, and it is a rule about TONE as much as layout: the person did
+      // nothing wrong and the product works fine without a library.
+      noIllustration: true,
+      noApology: true,
+      searchIsEnabledNotDisabled: true,
+      // States what the surface is FOR in the future tense, then hands back the
+      // action that works today.
+      primaryIsTheActionThatWorksToday: "Let the chef write it",
+      twoDoorsAboveThePrimary: [
+        "Paste a recipe or a link",
+        "Look through the recipes tab",
+      ],
+    },
+    prepare: () => seedPlanState("EMPTY"),
+    navigate: async (page) => {
+      await page.goto("/plan");
+      await page.getByTestId("library-door").click();
+      await page.getByTestId("picker-search").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    id: "picked-row",
+    briefRef: "surfaces/plan/final-direction-2.dc.html#3f (the picked meal)",
+    expectedState: "review",
+    readyText: RAIL_READY,
+    facts: {
+      // §B. PROVENANCE IS TYPE, NOT CHROME — the eyebrow states it the way it
+      // states DINNER. No badge, no accent, no second card design.
+      provenanceEyebrow: "DINNER · PICKED",
+      hasBookmarkGlyph: true,
+      noBadgeNoAccentNoSecondCardDesign: true,
+      // One picked night among six chef-proposed ones, so the two row types sit
+      // together and the ONLY difference is the eyebrow.
+      slotCount: 7,
+      pickedRowCount: 1,
+      // A picked meal's rationale argues PLACEMENT, not the dish — the chef did
+      // not choose the food and has nothing to say about it.
+      pickedRationaleArguesPlacement: "while it's fresh",
+      // The boundary, stated rather than enforced silently — and it now sits in
+      // the chef's gold slot rather than in the 22px claim (BUG-034).
+      boundaryStatedInTheChefsNote: "It's your recipe, so I won't rewrite it.",
+    },
+    prepare: () => seedPlanState("PICKED"),
     navigate: gotoPlan,
   },
   {

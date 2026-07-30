@@ -84,6 +84,8 @@ export interface SeedPlanSpec {
   status: "draft" | "confirmed";
   weekStart: string;
   chefSummary: string;
+  /** The argument beneath the claim (BUG-034). Italic gold, 14.5px. */
+  chefNote?: string | null;
   slots: SeedSlotInput[];
   /** Left empty by every state but PICKABLE — the picker needs real content. */
   library?: SeedLibraryRecipe[];
@@ -148,21 +150,23 @@ function buildWeek(
   return {
     status,
     weekStart,
-    // A REALISTIC LENGTH, DELIBERATELY (BUG-034, S45).
+    // TWO STRINGS AT TWO SIZES, AT REALISTIC LENGTH (BUG-034, closed S47).
     //
-    // Every seed used to say "Your seeded test week, ready to review." — one
-    // short line, which meant Layer A had never once photographed a summary at
-    // the length the real model writes. Layer B opened on six to nine lines of
-    // 22px type with no meal visible, and no amount of mock testing could have
-    // shown it, because the mock's own copy was the thing hiding it.
+    // The history matters, because it is why this is spelled out rather than
+    // terse. Every seed once said "Your seeded test week, ready to review." —
+    // one short line, so Layer A had never once photographed a chef block at
+    // the length the real model writes, and Layer B opened on six to nine lines
+    // of 22px type with no meal visible. S46 lengthened the seed to make the
+    // class visible; S47 split the field so it is no longer a defect.
     //
-    // This is two real sentences, matched to what the prompt actually asks for.
-    // It is not a fix for BUG-034 — that is Griffin's call — it is what makes
-    // the bug VISIBLE to the layer that is supposed to catch it.
-    chefSummary:
-      "This week leans on one shop and a Sunday that does the work for Monday, " +
-      "with a couple of nights short enough to cook after a long day. Nothing " +
-      "gets bought twice and nothing goes off in the drawer.",
+    // So the claim is ONE sentence at the ceiling generation now enforces, and
+    // the note carries the argument at the length the prompt asks for. A seed
+    // that packed both into chefSummary would now be photographing a state
+    // generation can no longer produce.
+    chefSummary: "One shop, and nothing goes off in the drawer.",
+    chefNote:
+      "This week leans on a Sunday that does the work for Monday, with a couple " +
+      "of nights short enough to cook after a long day. Nothing gets bought twice.",
     slots,
   };
 }
@@ -316,7 +320,8 @@ export function buildSeedSpec(
       // MIDWEEK cannot do this job: it always carries cooked days.
       return {
         ...buildWeek(today, "confirmed", 5, opts),
-        chefSummary: "That's the week. Your list is ready.",
+        chefSummary: "That's the week.",
+        chefNote: "Your list is ready whenever you are.",
       };
     case "PROVISIONAL":
       return provisionalWeek(today, opts);
@@ -335,8 +340,18 @@ export function buildSeedSpec(
         status: "draft",
         weekStart: today,
         chefSummary:
-          "A deliberately awkward week — long titles, missing fields, and " +
-          "near-identical dinners — so the layout has to hold up on its own.",
+          "A deliberately awkward week where even the claim runs long enough " +
+          "to wrap onto a third line of 22px type.",
+        // The gold half's own stress case, new with the split. Law 06 caps gold
+        // at three marks and the gold line grants the chef's italic voice one of
+        // them — but a four-line italic paragraph stops reading as a highlight
+        // and starts reading as body copy, which is the failure the cap exists
+        // to prevent. If that is going to happen, it should happen here.
+        chefNote:
+          "It leans on a long Sunday, finishes a bunch of dill across two " +
+          "different dishes, keeps Thursday under twenty minutes because you " +
+          "said Thursdays are hard, and still leaves Saturday open in case you " +
+          "would rather go out.",
         slots: adversarialSlots(today),
       };
   }
@@ -511,6 +526,7 @@ function pickableWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
   return {
     ...buildWeek(today, "draft", 5, opts),
     chefSummary: "Five dinners, one shop, nothing wasted.",
+    chefNote: "Built around the salmon, with Thursday kept short.",
     library: PICKABLE_LIBRARY,
   };
 }
@@ -519,9 +535,11 @@ function pickedWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
   const week = buildWeek(today, "draft", 7, opts);
   return {
     ...week,
-    chefSummary:
-      "I built the week around the carbonara you picked — it's your recipe, " +
-      "so I won't rewrite it.",
+    chefSummary: "I built the week around the carbonara you picked.",
+    // §B's boundary sentence, in the chef's own voice and in the chef's own
+    // slot. It is an argument about what the chef did and did not do, so the
+    // split puts it where it always belonged.
+    chefNote: "It's your recipe, so I won't rewrite it.",
     slots: week.slots.map((slot, i) =>
       i === 1
         ? {
