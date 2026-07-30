@@ -4,7 +4,72 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 44b — 2026-07-30 (The reversal: Instacart's door is shut. Ordering back to V2. TAM research. No code.)
+
+**What happened:** Griffin went to create the Instacart developer account that S44's decision depended
+on, and couldn't. Verified: *"We are currently not accepting new applications"* + *"There is no
+waitlist available at this time."* No reopen date. **The self-serve dashboard language I had quoted
+describes the flow after approval, not the gate in front of it.** The 30-40 day clock that justified
+pulling ordering into R1 does not exist, so the decision collapsed within the hour.
+
+**"Is there another way in?" — no, and we're not looking.** The API key is the only auth and keys issue
+on approval. Checked and rejected every adjacent door: **impact.com affiliate** (open + free, but
+tracked links and 3% commission, not programmatic list creation), **Tastemakers buttons** and
+**Chicory** (open, free, self-serve — but both parse recipe markup on *public web pages*, wrong shape
+for personalised lists behind auth), **Northfork / SideChef** (enterprise B2B selling to retailers, a
+longer path than the application itself). Scraping or undocumented endpoints would breach the terms we
+need to be clean on when applications reopen and forfeit the commission. The workaround costs more
+than the wait.
+
+**Griffin's reframe, which was the more valuable half of this exchange.** He redirected off his own
+convenience: *"we shouldn't purely be building this around me. We should be focused on TAM: what is the
+national integration that's going to get the most bang for my buck and have the largest addressable
+market?"* Then made the call: *"let's move it to v2 anyway because it's not a critical need. I'd love
+to get a polished version of v1 first."*
+
+**TAM research (full tables in `technical-research.md`).** US grocery share 2026: Walmart 23.6%,
+Kroger ~10%, Costco 9.2%, Albertsons 6.4%, Publix 4.1% — top five ≈ 53%. **Exactly one is reachable.**
+Walmart no longer issues new affiliate API keys (its ATC/OPD endpoints need an Impact Radius partner
+setup, and Delegated Access key creation retires 2026-07-30); Costco, Albertsons, Publix, Target and
+Ahold have no public cart API. **Kroger is not the best open grocery API in the US — it is the only
+one.**
+
+**The structural insight, worth more than the decision:** *aggregators are the TAM, retailers are not.*
+One Instacart integration reaches ~98% of US households across 1,800+ banners and ~100,000 stores.
+Every retailer-direct integration is a separate build, separate auth, separate failure surface, for
+single-digit share. **That asymmetry is exactly why the aggregator door is gated and the retailer doors
+are not** — it is the shape of the market, not an obstacle to route around. Logged an explicit
+**anti-idea** in the backlog ("integrate retailers one at a time") so it doesn't get re-proposed.
+
+**Settled:** R1 ships **no** ordering integration (1D clipboard export is the answer, 1F item removed).
+Instacart stays the target on a **standing watch** — no waitlist exists, so it's a manual periodic
+check. Kroger is a **hedge, not a strategy**, built only if ordering turns urgent first. Pricing should
+**not** be gated on ordering, since that would make the product hostage to a third party's application
+queue.
+
+**Two side findings:** Griffin shops **Haggen** (Albertsons banner, no API) and offered to switch to
+**QFC** (Kroger banner) for testing, which aligns his household with the only open API. And a factual
+correction to a premise he raised — the **Kroger–Albertsons merger was blocked and terminated in
+December 2024**, the Haggen divestiture to C&S died with it, so Haggen stayed with Albertsons. Kroger's
+actual 2026 move was acquiring **Giant Eagle** ($1.65B, 2026-07-01, ~197 supermarkets).
+
+**Process note, logged in `decisions.md`:** this was the second miss on the same dependency in one
+session. The March lesson was "re-verify before it drives a plan." The sharper version: **verify the
+gate you have to walk through, not the room behind it.** Confirm a human can complete signup *today*
+before a third-party dependency earns a line in a scope doc.
+
+**Docs touched:** `technical-research.md` (access-reality table + TAM analysis + revised path),
+`decisions.md` (superseding entry; the reversed one kept as a worked example), `scope-v1.md` (1F item
+struck, out-of-scope rows rewritten, change log), `open-questions.md` (feasibility, account-linking,
+monetization all re-cut), `idea-backlog.md` (rows re-slotted + anti-idea + DoorDash/UberEats thread),
+`roadmap.md`, `whats-next.md` (clock section → standing watch). **No code changed.**
+
+---
+
 ## Session 44 — 2026-07-30 (Grocery integration re-verified; Instacart pulled into R1. No code.)
+
+> **⚠️ Superseded within the hour by Session 44b above.** Kept: the reasoning was sound, the
+> conclusion wrong, and the failure mode is the useful part.
 
 **The job:** Griffin asked where we landed on grocery integration, whether Instacart was the
 broad-first play, and whether any of these are open APIs or need business development. A recall

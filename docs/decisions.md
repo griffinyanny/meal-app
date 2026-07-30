@@ -4,7 +4,78 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S44, second entry) — Ordering goes back to V2. Instacart's door is shut, and Kroger is the only open one in US grocery.
+
+**Supersedes the entry immediately below, which it reversed within the hour.** Both are kept. The
+reversal is the useful artefact.
+
+**What happened.** The decision below pulled the Instacart handoff into R1 on the strength of two
+claims: the integration is cheap, and a 30-40 day approval clock is worth starting early. Griffin went
+to create the account and **could not**. Verified: Instacart's developer application says *"We are
+currently not accepting new applications"* and *"There is no waitlist available at this time."* The
+self-serve dashboard language I had quoted describes the flow **after** approval. **There is no clock
+to start**, so the entire pull-forward argument collapsed.
+
+**Is there another way in? No, and we are not looking for one.** The API key is the only auth and keys
+issue on approval. The adjacent surfaces do not substitute: **impact.com affiliate** is open and free
+but gives tracked links, not programmatic list creation; **Tastemakers buttons** and **Chicory** parse
+recipe markup on *public web pages*, the wrong shape for personalised lists behind auth;
+**Northfork/SideChef** are enterprise B2B vendors selling to retailers, a longer path than the
+application. Scraping or undocumented endpoints would breach the terms we need to be clean on when
+applications reopen and would forfeit the 3% affiliate commission. **The workaround costs more than
+the wait.**
+
+**Griffin's call, and the reframe that produced it.** He redirected the question from his own
+convenience to market size: *"we shouldn't purely be building this around me. We should be focused on
+TAM."* Then: *"let's move it to v2 anyway because it's not a critical need. I'd love to get a polished
+version of v1 first."* Correct on both counts, and the TAM research supports the V2 call more strongly
+than the availability problem alone does.
+
+**The TAM finding (full tables in `technical-research.md`).** US grocery 2026: Walmart 23.6%, Kroger
+~10%, Costco 9.2%, Albertsons 6.4%, Publix 4.1% — top five ≈ 53%. **Exactly one is reachable by API.**
+Walmart no longer issues new affiliate API keys; Costco, Albertsons, Publix, Target and Ahold have no
+public cart API. **Kroger is not the best open door in US grocery, it is the only one.**
+
+**The structural insight worth carrying past this decision:** *aggregators are the TAM, retailers are
+not.* One Instacart integration reaches ~98% of US households across 1,800+ banners and ~100,000
+stores. Every retailer-direct integration is a separate build, separate auth, and separate failure
+surface for single-digit share. You would have to integrate the entire top five — four of them closed —
+to approach what one aggregator gives you. **That asymmetry is exactly why the aggregator door is gated
+and the retailer doors are not.** It is the shape of the market, not an obstacle to route around.
+
+**What this settles:**
+- **R1 ships no ordering integration.** The 1D clipboard export is the answer. 1F item removed.
+- **Instacart stays the target** and moves to a standing watch (no waitlist exists, so it is a manual
+  periodic check). Highest-leverage external event for this feature.
+- **Kroger is a hedge, not a strategy** — ~10% share, real national footprint (~2,700+ stores, ~35
+  states, growing via the **Giant Eagle** acquisition, $1.65B, 2026-07-01). Build only if ordering turns
+  urgent before Instacart reopens, and only with its cost stated: per-user OAuth, token refresh, and it
+  re-opens the parked account-linking question.
+- **Do not integrate retailers one at a time.** The math does not work and four of the top five are
+  closed regardless.
+- **Testing store:** Griffin shops **Haggen** (Albertsons banner, no API) and has offered to shop
+  **QFC** (Kroger banner) instead, aligning his household with the only open API if the hedge is ever
+  built.
+
+**Factual correction to a premise raised in discussion:** the Kroger–Albertsons merger was **blocked
+and terminated in December 2024**; the Haggen divestiture to C&S died with it, so **Haggen remained
+with Albertsons** rather than being pending divestiture. Kroger's actual 2026 move was acquiring Giant
+Eagle.
+
+**Process note, and this one is on me twice in one session.** I corrected a four-month-old availability
+finding, then acted on the new one **without verifying the signup path was actually open** — I read
+post-approval docs as evidence of pre-approval access. The March lesson was "re-verify before it drives
+a plan"; the sharper version is **verify the gate you must walk through, not the room behind it.** For
+any future third-party dependency: confirm a human can complete signup *today* before it earns a line
+in a scope doc.
+
+---
+
 ## 2026-07-30 (S44) — Instacart goes first and moves into R1; Kroger is deferred. The March research was wrong.
+
+> **⚠️ SUPERSEDED the same day by the entry above.** Kept deliberately: the reasoning here is sound and
+> the conclusion is wrong, because it rested on an availability claim that was never verified at the
+> signup gate. Read it as a worked example of that failure mode.
 
 **What changed.** `technical-research.md` had said since 2026-03-28 that Instacart was
 partnership-gated ("NOT a public API — requires business development partnership," access reserved

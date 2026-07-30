@@ -2,31 +2,32 @@
 
 Last updated: 2026-07-30 (Session 44)
 
-## ⏱ RUNNING IN PARALLEL — the Instacart approval clock (started S44, 2026-07-30)
+## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
-**This is not next-session work. It is a calendar dependency that runs alongside 1E.5 and 1F.**
+**Ordering is V2 and R1 ships none of it.** Griffin's call: *"not a critical need, I'd love to get a
+polished version of v1 first."* R1's answer stays the **clipboard export shipped in 1D**.
 
-The March research that put Kroger first and Instacart at "V3+, pursue a partnership" was **wrong**.
-Instacart runs a **self-serve public Developer Platform**. The integration is a **leaf** (one
-server-side call → a hosted shoppable URL, no OAuth, no account linking, no cart state), so it was
-pulled from V2 into **R1 as a 1F item**. See `decisions.md` (2026-07-30) + `technical-research.md`.
+S44 spent a round pulling ordering into R1 and then reverting it, because Instacart's developer
+application turned out to be **closed, no waitlist, no reopen date**. Their docs describe a self-serve
+dashboard, but that is the flow *after* approval.
 
-**Why it is up here and not buried in 1F:** production access requires a **30-40 day compliance
-review**. That is calendar time nothing can compress. Every session it has not started is a session
-R1 can't ship ordering.
+**Why this stays visible even though nothing is scheduled:** the TAM research says **one Instacart
+integration reaches ~98% of US households**, and every retailer-direct alternative is single-digit share
+with a separate build. **Kroger is the only open grocery API in the US** (Walmart stopped issuing
+affiliate API keys; Costco/Albertsons/Publix/Target have no public cart API) and it is a ~10% hedge, not
+a strategy. So Instacart reopening is the single highest-leverage external event for this feature.
 
-- [ ] **👤 GRIFFIN, BLOCKING:** create the Instacart Developer Platform account, accept the IDP terms,
-      state the use case, generate a **development** API key. Claude cannot do any of these. Docs:
-      https://docs.instacart.com/developer_platform_api
-- [ ] Build the `create_shopping_list_page` integration against the dev key. **Properly, once** — the
-      review inspects error handling on every endpoint implemented, so a spike-then-rebuild fails
-      review and restarts the clock.
-- [ ] Submit for the production key. **Start the ~30-40 day timer and note the date here.**
-- [ ] Ship the "Send to Instacart" button on Groceries (the 1F checklist item), degrading cleanly to
-      the existing clipboard export if the call fails or the key is unapproved.
+- [ ] **Periodic check, no waitlist to join:** https://company.instacart.com/business/developers — has
+      *"We are currently not accepting new applications"* changed? Worth a look at V2 planning, and any
+      time ordering comes up.
+- [ ] If it reopens: eligibility is 18+, registered business or US/Canada resident, company/contact
+      info, dev experience, terms agreement. Then the ~30-40 day review clock becomes real again and the
+      pull-forward argument comes back with it.
+- 🛒 **Griffin has offered to shop QFC (a Kroger banner) instead of Haggen (Albertsons, no API) for
+      testing**, which aligns his store with the only open API if we ever build the Kroger hedge.
 
-**Checkpoint:** if the clock has not started by the time 1E.5 closes, flag it to Griffin. The risk is
-schedule, not code.
+Full analysis incl. US market-share table: `technical-research.md` → TAM analysis. Decision:
+`decisions.md` (2026-07-30, both entries — the reversal is deliberate and legible).
 
 ---
 
