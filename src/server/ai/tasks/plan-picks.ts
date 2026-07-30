@@ -83,16 +83,13 @@ export function buildPicksBlock(
     `- Build the rest of the week around ${one ? "it" : "them"}: shop once, and spend ${one ? "its" : "their"} leftovers.`,
     `- On the meal that IS a picked recipe, set \`pickedRef\` to its bracketed number. On every other meal set \`pickedRef\` to null.`,
     scaling,
-    // §B: "the boundary is STATED, not enforced silently."
-    //
-    // This line used to read "…once, in your summary" — and on the pick path
-    // there IS no field called summary. `plan.pick` returns `chefResponse`, so
-    // the chef had nowhere obvious to put the sentence and simply dropped it:
-    // S47's Layer B got "Placed Congee … and rebuilt the rest of the week
-    // around it" with no boundary anywhere, on both invocations. BUG-033's
-    // class inverted — the rule was in the prompt, aimed at a field that does
-    // not exist on the path that needed it. Name both real fields instead.
-    `- Say the boundary out loud once, in your own words: it is their recipe, so you will not rewrite it. Put it in \`chefResponse\` when you are changing a week that already exists, or in \`chefNote\` when you are writing a new one. Once, not on every meal.`,
+    // §B's "the boundary is STATED, not enforced silently" is NO LONGER the
+    // model's job (BUG-041, S48). Two live rounds asked for the sentence — the
+    // second with both real fields named — and got it zero times: a style
+    // clause competing with six operational instructions loses (BUG-033's
+    // precedent, third instance). The boundary is a fixed product promise, so
+    // the picked row renders it as product copy (`meal-row.tsx`), which also
+    // makes it deterministic — the one thing a guarantee has to be.
   ]
     .filter((line) => line !== null)
     .join("\n");

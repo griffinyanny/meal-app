@@ -4,6 +4,60 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S48) — BUG-041: the boundary sentence is product copy, not a prompt request
+
+**Decision (Griffin, accepting the recommendation).** Stop asking the model to say *"it's your recipe, so
+I won't rewrite it."* The prompt clause is deleted from `buildPicksBlock`; the sentence renders as fixed
+product copy on the picked row — *"Your recipe — the chef won't rewrite it."* — in caption colour.
+
+**Rationale.** Two live rounds produced the sentence zero times, the second with both real output fields
+named — BUG-033's precedent, third instance: a style clause competing with six operational instructions
+loses. The boundary is a fixed product promise, not a creative act, and a promise has to be
+deterministic. The sharper argument: the test layer hardcoded the sentence in three places (seed, mock
+fixture, E2E assertion), so the suite was proving a guarantee the product did not keep — the exact
+fixture-drift `docs/test-plan.md` warns about. Making it product copy makes the fixtures honest as a side
+effect. **Not gold and not italic** — the gold line (S42) says gold marks the chef speaking, and this is
+the product speaking. That same logic dissolves most of the critic's gold-budget finding on `picked-row`:
+the one sentence that had to be singular has left the gold register entirely, and the seven rationales
+keep §D's licence. The behavioural half of the rule (do not rewrite/rename/substitute) stays in the
+prompt; the model obeys that half.
+
+---
+
+## 2026-07-30 (S48) — The critic's slate: eleven applied, two rejected, four to 1F, and the frame flexed twice
+
+**Decision (Griffin, delegating to the recommendation ballot).** Of the sixteen staged `ux-design-critic`
+findings: **applied** — the fixed picker pane, the receipt support line, the opening line counting fits,
+un-dim on a selected unfittable row, duplicate/zero-count door suppression, the eyebrow glyph beside
+`PICKED` (flush left edge), the opening list capped at 3 + `N more`, the meal sheet's library door refiled
+under `ASK ME FOR A CHANGE` (and the day sheet's with it — one shell, one grammar), honest empty-library
+door labels (two doors → one), the nested radius stepping one rung (r22 → r18 on sheet contents), and the
+empty library's search field removed. **Rejected** — the hierarchy-inversion finding (the critic's
+measurement was wrong: the build is 16/13.5px, not 16/22px; the copy trim is the right fix and was
+applied instead) and the loudest-object inversion (`Let the chef write it` stays primary: with nothing to
+pick, the honest answer is that there is nothing to pick). **To 1F** — the Recipes `+` weight, the
+picker/Recipes vocabulary unification, cooked-when evidence inside pushed doors, the caps-label tracking.
+
+**Two deviations from locked frames, ratified.** (1) **The picker sits at ~176px from the top, not §A's
+76px** — at 76 the week behind vanishes entirely, and the real defect was the walls moving, not the
+number. (2) `3e`'s support line acknowledges an overrun pick (*"Runs long for the night — your call."*)
+— undrawn in the frame, required by the un-dim change. Griffin's framing for both: the spec didn't know
+everything we'd ever do; flex it when the reason is stated.
+
+---
+
+## 2026-07-30 (S48) — `DEV_TOOLS_EMAILS` set in Vercel Production (with a verification caveat)
+
+**Decision.** The eighth-session nag ends: the variable existed but was **empty** (created 3 days ago,
+value never set — empty means nobody, by design). Replaced via CLI with `griffinyanny@gmail.com`.
+⚠️ `vercel env pull` reads the value back as empty, which may be the CLI masking rather than the write
+failing — **verify in the dashboard** (meal-app → Settings → Environment Variables → eye icon) and
+re-paste the email if it is genuinely blank. Takes effect on the next production deploy (the 1E.5 merge).
+`ALLOWED_EMAILS` is also set and empty — that one is **fail-open by design** (empty = everyone allowed),
+so prod is not locked; it becomes the invite list when the closed beta starts.
+
+---
+
 ## 2026-07-30 (S47) — BUG-034: split the chef's voice into a claim and an argument, with the ceiling in code
 
 **Decision (Griffin).** `chefSummary` becomes the **short claim** — one sentence, enforced in code — and a

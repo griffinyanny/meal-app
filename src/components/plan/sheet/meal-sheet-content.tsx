@@ -88,22 +88,14 @@ export function MealSheetContent({
             onClick={() => onModify(scopedRequest(chip, meal))}
           />
         ))}
-        {/* Free text as ONE row, in the chip group because it asks the chef —
-            the rule is what the control does, not how it is drawn. */}
-        <SheetChip
-          label="Something else? Tell your chef"
-          disabled={isModifying}
-          onClick={onTalkToChef}
-        />
-      </SheetGroup>
-
-      {isCookable(meal.slotType) ? (
-        <SheetGroup label="TAKE IT SOMEWHERE">
-          <RecipeRow meal={meal} hydration={hydration} />
-          {/* `3e` · the picker, invoked from a meal. The night is decided, so
-              the first line names it and the subline names what is displaced —
-              and nothing else about the picker changes. The door is a ROW, not
-              a chip, because it goes somewhere rather than asking the chef. */}
+        {/* `3e` · the picker, invoked from a meal — FILED WITH THE CHANGES, not
+            under navigation (S48, critic's finding): it rewrites the night, so
+            it belongs beneath `Swap the whole meal`, where the two lines
+            together are the thesis — the chef can swap it, or you can hand it
+            one of yours. Still drawn as a ROW because it opens a surface
+            rather than firing a request; the group's rule is what a control
+            DOES to the week, and this one changes it. */}
+        {isCookable(meal.slotType) ? (
           <LibraryDoor
             sublabel={`I'll rebuild ${dayTitle(meal.dayName)} around it`}
             onClick={() =>
@@ -126,6 +118,19 @@ export function MealSheetContent({
               })
             }
           />
+        ) : null}
+        {/* Free text as ONE row, in the chip group because it asks the chef —
+            the rule is what the control does, not how it is drawn. */}
+        <SheetChip
+          label="Something else? Tell your chef"
+          disabled={isModifying}
+          onClick={onTalkToChef}
+        />
+      </SheetGroup>
+
+      {isCookable(meal.slotType) ? (
+        <SheetGroup label="TAKE IT SOMEWHERE">
+          <RecipeRow meal={meal} hydration={hydration} />
         </SheetGroup>
       ) : null}
 

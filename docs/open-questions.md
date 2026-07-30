@@ -22,17 +22,15 @@ truncates.
 *sentence*, not one *line*, and the `chefNote` half is running 203–336 characters — four to six lines of
 gold. That is a voice call rather than a defect, and it is the same trade Griffin already made once.
 
-### 🟠 OPEN — §B's boundary sentence never appears, after two live rounds (BUG-041, raised S47)
+### ✅ RESOLVED S48 — §B's boundary sentence never appears, after two live rounds (BUG-041, raised S47)
 
-*"It's your recipe, so I won't rewrite it."* The instruction asked for it **"in your summary"**, and the
-pick path returns `chefResponse` — there is no summary field there, so the chef dropped it. The prompt now
-names the real fields (`chefResponse` / `chefNote`) and a test pins it, **and round 2 still produced the
-sentence zero times.**
-
-**Recommendation: stop asking, per BUG-033's precedent.** A style clause competing with six other
-instructions loses, and the boundary is a **fixed product promise** rather than a creative act — so render
-it as copy on the picked row or the picker's confirm line. Not done unilaterally because it moves a
-sentence out of the chef's voice and into the product's, which is a decision about what the chef IS.
+**Griffin's call: stop asking, per the recommendation.** The prompt clause is deleted; *"Your recipe —
+the chef won't rewrite it."* renders as product copy on the picked row — caption colour, not gold,
+because the gold line says gold marks the chef speaking and this is the product's own guarantee. The
+decision about what the chef IS came down to: a fixed promise has to be deterministic, and two live
+rounds proved the chef's voice cannot be relied on to carry it. The seed, mock fixture and L4 — which
+had all hardcoded the sentence as chef output, making the suite green against a lie — were rewritten to
+carry what the model actually produces. See decisions.md (S48) and bug-tracker (BUG-041, Resolved).
 
 ### ✅ RESOLVED S45 — Where does `Start over →` belong on a draft? (raised S44)
 > **CLOSED 2026-07-29 (S45). It stays the foot link under the rail, with the gap tightened.**

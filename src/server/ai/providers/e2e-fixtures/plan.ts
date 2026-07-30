@@ -119,8 +119,13 @@ function reworkedMeal(dayOffset: number, originalTitle: string | null): AIMeal {
 // the primary that promised "Put it on Thursday" quietly put it somewhere else —
 // which is the exact class of defect a mock is supposed to catch.
 export const PICK_DAY_OFFSET = 4;
+// No boundary sentence here ON PURPOSE (BUG-041, S48): the real model never
+// produced it in two live rounds, and a mock that recites what the model
+// doesn't say makes the suite green against a lie. The boundary is product
+// copy on the picked row now, so the mock answers the way the model actually
+// does — placement, and nothing else.
 export const PICK_CHEF_RESPONSE =
-  "Put it midweek — it's your recipe, so I won't rewrite it.";
+  "Put it midweek and rebuilt the shop around it.";
 export const PICK_RATIONALE = "The one night with room to do it properly.";
 
 // Titles arrive as `[1] Spaghetti alla Carbonara (40 min, the recipe serves 4)`.

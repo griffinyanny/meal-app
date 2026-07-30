@@ -1,11 +1,14 @@
 # Idea Backlog - Meal Management App
 
-## Incoming (S47) — `ux-design-critic`'s staged findings, awaiting Griffin's taste pass
+## Incoming (S47) — `ux-design-critic`'s staged findings — ⚖️ DISPOSED S48 (2026-07-30)
 
-**These are NOT applied.** The critic returned 18 ranked findings on Slice 2; two were correctness and
-were fixed in-session (search escaping a pushed tile, and a verb promising a placement the product cannot
-make). The other 16 are design calls — several disagree with a locked frame — so they are staged rather
-than taken. Ordered by the critic's own ranking. **Griffin decides which are right.**
+**Griffin ruled on all sixteen in S48** (decisions.md, "The critic's slate"): **eleven applied** (the
+fixed picker pane, the receipt line, the fit-counting opening line, un-dim on selection, door
+suppression, the eyebrow glyph fix, the opening cap, the door refile on both sheets, honest
+empty-library doors, the radius rung, the search-field removal), **two rejected** (hierarchy inversion —
+the critic's measurement was wrong, the copy trim was applied instead; loudest-object inversion — the
+chef primary stays), **four retagged [1F]** (the `+` weight, vocabulary unification, cooked-when
+evidence, caps-label tracking — kept below). Original findings retained for the record:
 
 - **[1E.5 taste] Multi-select is illegible across sections.** One checkbox visible, the second pick
   unnamed and unreachable except by `Clear` (which is drawn at the caption colour, the palette's stated

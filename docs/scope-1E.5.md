@@ -303,7 +303,10 @@ and a migration.
       (the `3e` invocation replaces one slot and `validateModification` dedupes by dayOffset, so two
       recipes can never both land on Friday). The remaining sixteen are **staged for Griffin's taste
       pass** rather than applied — they are design calls, and several disagree with a locked frame.
-- [ ] **Griffin's taste review** — the last gate.
+- [ ] **Griffin's taste review** — the last gate. **S48: the decisions half is done** — BUG-041 ruled
+      (product copy), all sixteen critic findings disposed, two frame deviations ratified — and the
+      changes are built. **What remains is his eyes on the S48 after-captures**, which is the half a
+      delegated ballot cannot do.
 - [ ] **Two-tier QA:** routine gauntlet + blast-radius review per slice; **deep audit at phase close** —
       1E.5 is an arc close and touches the confirm path, so the milestone audit fires automatically.
 
@@ -506,6 +509,7 @@ for the "migrate before you build further" ordering, in evidence.
 
 | Date | Change | Why |
 |---|---|---|
+| 2026-07-30 (S48) | **Griffin's taste pass, executed as a decision ballot: BUG-041 accepted (boundary → product copy on the picked row), eleven of the critic's sixteen findings applied, two rejected, four retagged 1F.** Two locked-frame deviations ratified: the picker pane pins at ~80vh (not §A's 76px), and `3e`'s support line acknowledges an overrun pick. The day sheet's library door moved with the meal sheet's — one shell, one grammar. New `L17` pins the pane; L4/L6/L8/L11 rewritten; picker unit tests extended. | Griffin could not see the captures and delegated to the recommendation ballot ("if we need to flex the frames, that's fine — the spec didn't know everything we would ever do"). Full dispositions in decisions.md S48; his visual confirmation lands on the S48 after-captures. |
 | 2026-07-29 (S46) | **`3e`'s named night is HONOURED, not treated as a hint.** When the picker is opened from a specific meal, `plan.pick` tells the chef to put the recipe on that night; every other invocation sends no day and the chef chooses. | Caught mid-build as a contradiction I had written myself. §B says "the chef answers with a night", and I had implemented that unconditionally — but `3e`'s primary reads **"Put it on Thursday"**, and tapping Thursday's dinner only to have the chef move it elsewhere makes that button a lie. The rule and the frame are not in conflict once you read which invocation each describes: `3b` (intent screen) captions "The chef picks the nights"; `3e` names one. The chef still owns the rest of the week in both. |
 | 2026-07-29 (S46) | **The E2E generation fixture now reads the prompt.** `buildGenerationFixture()` took no arguments and returned the same seven dinners for every request. | Required to test §B's "picks survive a regenerate" at all. A regenerate that silently dropped every pick would have passed against a prompt-blind fixture — the fixture cannot verify a guarantee about an input it never sees. This is the same class of gap as BUG-030 (a stale capture spec) and the S40 prompt test that passed silently: **the apparatus has to be able to fail.** |
 | 2026-07-29 (S46) | **`GrocerySection` gained `data-dragging`** — a test hook in product code, deliberately. | BUG-019's real cause was a race the suite could not see: with no `DragOverlay` in this build, "the drag is live" existed only as an opacity class, so a pointer-driven test had to guess when `@dnd-kit` had measured its droppables. Asserting on `opacity-40` would couple the suite to styling; exposing the state itself is the smaller commitment and the honest one. |

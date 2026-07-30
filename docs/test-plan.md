@@ -217,19 +217,20 @@ chef names the night.
 | L1 | A picked meal states `DINNER · PICKED` **as its whole eyebrow** — asserted on the full string, not a substring, so a badge rendered elsewhere on the card cannot pass | `PICKED` | 🟢 |
 | L2 | A chef-proposed meal **in the same week** carries no provenance — the half that makes L1 mean something, since an eyebrow that never varies is decoration | `PICKED` | 🟢 |
 | L3 | A picked meal's rationale argues **placement, not the dish** (§B) — catches a future generation change quietly making the chef review a recipe the person already chose | `PICKED` | 🟢 |
-| L4 | The boundary is **stated, not enforced silently**: "it's your recipe, so I won't rewrite it" | `PICKED` | 🟢 |
+| L4 | The boundary is **stated, not enforced silently** — as PRODUCT COPY on the picked row (`picked-boundary`, S48/BUG-041): "Your recipe — the chef won't rewrite it." Deterministic, which is what lets an E2E spec honestly pin a guarantee the model would not reliably speak | `PICKED` | 🟢 |
 | L5 | The picker opens on `Saved, never cooked` **as content**, and the chef's italic line COUNTS them (3 of 5) — a sentence saying "some" would be a sort order wearing a voice | `PICKABLE` | 🟢 |
-| L6 | Browse is four named doors **with counts**, and they **push**: through one, the tiles are gone and the view carries its own heading | `PICKABLE` | 🟢 |
+| L6 | Browse is **honest** named doors **with counts**, and they **push**: through one, the tiles are gone and the view carries its own heading. S48: zero-count doors and doors identical to `Everything` are suppressed — the five-recipe seed shows three, and `Recently saved` is asserted absent | `PICKABLE` | 🟢 |
 | L7 | A recipe that cannot fit the night **dims and says why** (3 hr vs a 30-minute night) instead of vanishing; the constraint becomes the one tile that swaps | `PICKABLE` | 🟢 |
-| L8 | **No action bar until something is selected**, `Clear` likewise; the count lives in the verb, and selections hold across a pushed tile | `PICKABLE` | 🟢 |
+| L8 | **No action bar until something is selected**, `Clear` likewise; the count lives in the verb, selections hold across a pushed tile — and the support line is the **receipt** naming both picks (S48), with the selected over-runner **un-dimmed** | `PICKABLE` | 🟢 |
 | L9 | **The round trip** — picker → `plan.pick` → the chef's diff → `pickedRecipeId` → the eyebrow. The one spec that proves the whole chain | `PICKABLE` | 🟢 |
 | L10 | A picked night says `scaled to 2` (dep 2, recipe serves 4 / household 2) — **and a chef-proposed night in the same week still says `serves`**, which is what stops "scaled to" on everything from passing | `PICKABLE` | 🟢 |
-| L11 | The empty library **does not apologise**: no illustration, no "oops", search **enabled**, and the primary is the action that works today | `EMPTY` | 🟢 |
+| L11 | The empty library **does not apologise**: no illustration, no "oops", search **absent** (S48 — frame `3d` omitted it), ONE honest door, and the primary is the action that works today | `EMPTY` | 🟢 |
 | L12 | The picker **swaps content in one drawer**, never stacks a second — one `drawer-content` in the tree, and the page still works after close (the D3 symptom) | `PICKABLE` | 🟢 |
 | L13 | A pick made **before any week exists** is held, shown, and carried into generation — the third invocation, same picker, different verb | `PICKABLE` | 🟢 |
 | L14 | The survival guarantee is **stated before the ask**, on the screen whose button replaces the week | `PICKED` | 🟢 |
 | L15 | Picks survive a regenerate, **performed**: the week is freshly generated and the pick is still pinned with its provenance | `PICKED` | 🟢 |
 | L16 | The picker **covers the tab bar** rather than sharing the bottom edge with it — the nav occupies the bottom edge and is not what you would touch there | `PICKABLE` | 🟢 |
+| L17 | **The picker's walls do not move** (S48): one measured pane height across opened → pushed → selected, and the meal sheet still content-sizes (it must NOT inherit the pin) | `PICKABLE` | 🟢 |
 
 **L16 exists because a screenshot lied and a measurement did not (S47).** The Layer A captures appeared to
 show the tab bar sitting on top of the open picker. It was the capture: the runtime grows the viewport to

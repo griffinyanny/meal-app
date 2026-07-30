@@ -1,8 +1,87 @@
 # What's Next
 
-Last updated: 2026-07-30 (Session 47)
+Last updated: 2026-07-30 (Session 48)
 
-## ▶ NEXT SESSION — **every 1E.5 gate is closed except yours. The taste pass is the last one.**
+## ▶ NEXT SESSION — **1E.5 is one glance from closed: confirm the S48 after-captures, merge, open 1F.**
+
+**S48 ran your taste pass as a decision ballot** (you couldn't see the captures, so you delegated to the
+recommendation slate) **and built everything it decided.** Work is on **`session-43-1e5-plan-rebuild`,
+worktree `../meal-app-1e5`**. Scope doc: [scope-1E.5.md](scope-1E.5.md).
+
+**614 unit + 111 E2E green (L17 is new), lint + typecheck clean.**
+
+### What was decided and built (full dispositions in decisions.md S48)
+
+- **BUG-041 closed your way.** The prompt no longer asks the model to state the boundary; *"Your recipe —
+  the chef won't rewrite it."* renders as product copy on the picked row — caption colour, not gold,
+  because gold marks the chef speaking and this is the product's promise. The sharper argument found
+  while writing it up: the sentence was hardcoded in the seed, the mock AND an E2E assertion, so the
+  suite was proving a guarantee the live model never kept. All three now carry what the model actually
+  says. This also mostly dissolved the critic's gold-budget finding — the one sentence that had to be
+  singular left the gold register entirely; the seven rationales keep §D's licence.
+- **The critic's slate: eleven applied** — the picker pane pinned at 80vh (picker subject only; `L17`
+  measures it across opened/pushed/selected and asserts the meal sheet still content-sizes), the support
+  line as the receipt, the opening line counting what fits, un-dim on a selected unfittable row (+ the
+  `3e` overrule acknowledged: *"Runs long for the night — your call."*), duplicate/zero-count door
+  suppression, the eyebrow glyph beside `PICKED` with every row flush left, the opening tier capped at
+  3 + `N more`, the library door refiled under `ASK ME FOR A CHANGE` on BOTH sheets, one honest
+  empty-library door, the r22→r18 radius rung, the empty library's search field removed.
+  **Two rejected** — hierarchy inversion (the critic mis-measured: 16/13.5px, not 16/22px; the copy trim
+  was applied instead) and the loudest-object inversion (`Let the chef write it` stays primary).
+  **Four to 1F** — Recipes `+` weight, vocabulary unification, cooked-when evidence, caps-label tracking.
+- **Two locked-frame deviations ratified:** the pane sits at ~176px, not §A's 76px (at 76 the week
+  behind vanishes; the real defect was the walls moving), and the overrun acknowledgment line is new
+  copy the frame never drew.
+
+### `DEV_TOOLS_EMAILS` — the eighth-session nag is over, with one check owed
+
+The variable existed for 3 days **with an empty value** (empty = nobody, by design). Set to
+`griffinyanny@gmail.com` via CLI in S48. ⚠️ `vercel env pull` reads it back empty — possibly CLI masking —
+so **verify in the dashboard** (meal-app → Settings → Environment Variables → eye icon) and re-paste if
+genuinely blank. Live on the next deploy. `ALLOWED_EMAILS` is empty too — fail-open **by design**; it
+becomes the invite list when the closed beta starts.
+
+### ⭐ Next up, in order
+
+1. **Griffin looks at the S48 after-captures** (the before/after sheet from the wrap, or
+   `tests/e2e/captures/` newest `A-…` run). The ballot decided; this is the visual half a delegated
+   ballot cannot do. Anything that reads wrong is a cheap copy/geometry fix.
+2. **On his word: merge `session-43-1e5-plan-rebuild` → `main`, push, `git worktree remove
+   ../meal-app-1e5`.** 1E.5 closes → **M5.5**. Flip scope-v1's 1E.5 row to ✅.
+3. **Open 1F** (scope doc at phase start, per the protocol). Carried in: BUG-035 (the 90s generation
+   timeout — before R1 ship), BUG-037/BUG-038, the slate's four 1F items, spec §12 items 03/04/05/07,
+   the S42 amber/green semantic calls, and **scope-v1's closed-beta question, which now gates 1F's
+   shape** — decide it at 1F open, not mid-phase.
+
+### Also still open
+- **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path
+  shows a named failure or a spinner that never resolves. **Before R1 ship.**
+- **BUG-020/021, BUG-011/012/010/013, BUG-017, BUG-018, BUG-023, BUG-003** — the standing list, all
+  with address-by targets in [bug-tracker.md](bug-tracker.md).
+
+**⭐ Model recommendation: Sonnet 5.** The next session is a confirmation glance, a merge, and opening a
+scope doc from a template that exists — process work, not judgement against a locked spec. If the glance
+turns up real design work instead, switch up to Opus for it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S48 executed my taste pass as a decision ballot: BUG-041 closed (boundary sentence is
+product copy on the picked row now, prompt clause deleted, fixtures made honest), 11 of the critic's 16
+findings applied (pinned 80vh picker pane + L17, receipt support line, fit-counting opening line, un-dim
+on selection, door suppression, eyebrow glyph fix, opening cap 3 + N more, library door refiled on both
+sheets, honest empty library, r18 rung, search field removed), 2 rejected, 4 to 1F. 614 unit + 111 E2E
+green. Worktree at ../meal-app-1e5 on session-43-1e5-plan-rebuild. Read docs/whats-next.md and
+docs/scope-v1.md, give me the <=6-line scope check, then: (1) I've looked at the S48 after-captures —
+[my verdict / fixes needed]; (2) if clean, merge to main, remove the worktree, flip scope-v1, close 1E.5
+-> M5.5; (3) open 1F: draft docs/scope-1F.md from the carried-in list (BUG-035 first — before R1 ship),
+and put the closed-beta question at the top of the phase-open decisions. On Sonnet 5.
+```
+
+---
+
+## ⚠️ S47 (superseded by S48 above — the taste pass decisions are made and built)
+
+## **every 1E.5 gate is closed except yours. The taste pass is the last one.**
 
 **S47 answered BUG-034, cleared Layer A on Slice 2, cleared Layer B on the pick path, and ran the critic.**
 Scope doc: [scope-1E.5.md](scope-1E.5.md). Work is on **`session-43-1e5-plan-rebuild`, worktree

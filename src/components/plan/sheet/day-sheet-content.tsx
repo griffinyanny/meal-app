@@ -95,17 +95,12 @@ export function DaySheetContent({
             onClick={() => onModify(chip)}
           />
         ))}
-        <SheetChip
-          label="Something else? Tell your chef"
-          disabled={isModifying}
-          onClick={onTalkToChef}
-        />
-      </SheetGroup>
-
-      {/* The picker, invoked from a DAY. Same door, same picker; only the first
-          line and the primary differ from the intent screen's (§A, `3e`). The
-          day carries no cook-time ceiling of its own, so nothing dims here. */}
-      <SheetGroup label="TAKE IT SOMEWHERE">
+        {/* The picker, invoked from a DAY. Same door, same picker; only the
+            first line and the primary differ from the intent screen's (§A,
+            `3e`). The day carries no cook-time ceiling of its own, so nothing
+            dims here. FILED WITH THE CHANGES (S48), same as the meal sheet:
+            it rewrites the day, and the two sheets are one shell — the door
+            cannot be a change in one and navigation in the other. */}
         <LibraryDoor
           sublabel={`I'll put it on ${dayTitle(day.dayName)}`}
           onClick={() =>
@@ -116,6 +111,11 @@ export function DaySheetContent({
               replacingDate: day.date,
             })
           }
+        />
+        <SheetChip
+          label="Something else? Tell your chef"
+          disabled={isModifying}
+          onClick={onTalkToChef}
         />
       </SheetGroup>
 

@@ -536,10 +536,12 @@ function pickedWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
   return {
     ...week,
     chefSummary: "I built the week around the carbonara you picked.",
-    // §B's boundary sentence, in the chef's own voice and in the chef's own
-    // slot. It is an argument about what the chef did and did not do, so the
-    // split puts it where it always belonged.
-    chefNote: "It's your recipe, so I won't rewrite it.",
+    // A realistic chefNote: an ARGUMENT, the way the real model writes one.
+    // The boundary sentence used to be seeded here — which meant Layer A
+    // photographed a guarantee the live model never wrote (BUG-041). It is
+    // product copy on the picked row now, so the seed carries what the gold
+    // slot actually holds.
+    chefNote: "One shop covers it, and the rest of the week eats around it.",
     slots: week.slots.map((slot, i) =>
       i === 1
         ? {

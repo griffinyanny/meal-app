@@ -4,6 +4,52 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 48 — 2026-07-30 (Griffin's taste pass as a decision ballot; BUG-041 closed; the critic's slate applied)
+
+**The taste pass ran as a ballot, because Griffin could not see the captures.** He was given the two open
+calls plus an apply/defer/reject slate over the critic's sixteen staged findings, took the
+recommendations on all of it, and ratified flexing the locked frames where the reasons were stated
+("the design spec didn't know everything we would ever do"). A contact sheet of the S47 captures was
+opened in his browser mid-session; his visual confirmation lands on the S48 after-captures.
+
+**BUG-041 closed the recommended way — the boundary sentence is product copy now.** The prompt clause is
+gone from `buildPicksBlock`; *"Your recipe — the chef won't rewrite it."* renders on the picked row
+(`picked-boundary`, caption colour — not gold, because gold marks the chef speaking and this is the
+product's promise). The sharper argument surfaced writing it up: the sentence was hardcoded in the seed,
+the mock fixture AND an E2E assertion, so the suite was proving a guarantee the live model never once
+kept — the exact fixture-drift the E2E rules warn about. Seed `chefNote`, `PICK_CHEF_RESPONSE` and L4
+all rewritten to carry what the model actually produces.
+
+**The slate: eleven applied, two rejected, four to 1F** (full dispositions in decisions.md S48):
+- **The picker pane pins at 80vh on the picker subject only** (`plan-sheet.tsx`) — it had four heights
+  across states, collapsing ~340px under your finger when a door was pushed. New **`L17`** measures the
+  pane across opened/pushed/selected AND asserts the meal sheet still content-sizes.
+- **The support line is the receipt** (`pickReceipt`) — two picks across two sections left the second
+  invisible; the line stops restating the verb and names them.
+- **The chef reads its own list** — the opening line counts what fits the named night
+  (`3 of these have been waiting — 1 of them fits your 30 minutes.`) instead of quoting a ceiling above
+  rows that contradict it.
+- **A selected unfittable row un-dims** (dimmed-and-checked is the grammar of a stuck control), and the
+  `3e` single-pick support line acknowledges the overrule: *"Runs long for the night — your call."*
+- **Door suppression** — zero-count doors and doors identical to `Everything` are gone; a five-recipe
+  R1 library now shows honest doors instead of `Recently saved`/`Everything` twins.
+- **The opening tier is capped at 3 + `N more`** (frame `3b`'s own drawing), pushing a new `stale` door.
+- **The eyebrow glyph moved beside `PICKED`** — every rail row now starts flush left.
+- **The library door refiled under `ASK ME FOR A CHANGE`** on BOTH sheets (one shell, one grammar).
+- **The empty library**: search field removed (frame `3d` omitted it), gold copy trimmed a clause, two
+  same-destination doors merged into one honest one.
+- **Sheet contents step one radius rung** (r22 → r18: rows, chips, tiles, search, doors).
+- **Rejected**: the hierarchy-inversion finding (the critic's measurement was wrong — 16/13.5px, not
+  16/22px; the copy trim treats the real cause) and the loudest-object inversion (`Let the chef write
+  it` stays primary — with nothing to pick, the honest answer is that there is nothing to pick).
+
+**`DEV_TOOLS_EMAILS` finally has a value** — the variable had existed for 3 days with an EMPTY string
+(empty = nobody, by design). Set to Griffin's email via CLI; `vercel env pull` reads it back empty
+(possibly CLI masking), so the dashboard eye-icon check is owed before trusting it. `ALLOWED_EMAILS`
+empty = fail-open by design; it becomes the beta invite list later.
+
+---
+
 ## Session 47 — 2026-07-30 (1E.5's gates cleared: BUG-034 fixed, Layer A + Layer B closed, four bugs found by looking)
 
 **The job:** answer BUG-034, run `/visual-qa` Layer A on Slice 2's new states, run Layer B on the pick
