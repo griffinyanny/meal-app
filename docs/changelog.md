@@ -4,6 +4,129 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 47 — 2026-07-30 (1E.5's gates cleared: BUG-034 fixed, Layer A + Layer B closed, four bugs found by looking)
+
+**The job:** answer BUG-034, run `/visual-qa` Layer A on Slice 2's new states, run Layer B on the pick
+path, then the critic. All done. **Every gate except Griffin's taste pass is now closed.**
+
+**606 unit + 110 E2E green, lint + typecheck clean, migrations `0007`–`0009` applied.**
+
+### BUG-034 was an unwired field, and Griffin chose to wire it
+
+Frame `3i` draws **two** strings at two sizes — a claim at 22px cream, the argument at 14.5px italic gold.
+`chef-header.tsx` had props for both and `week-wrapped-state.tsx` passed both; **`plan-review.tsx` passed
+only `summary`**, and generation emitted the single `chefSummary` the prompt asked for as "one or two
+sentences". So both of the model's sentences landed in the 22px heading, the gold slot rendered nothing,
+and the first meal went below the fold. Not a copy-length problem — a field nobody connected.
+
+Griffin's call: **split the output.** New `chefNote` (schema + prompt + `chef_note` column, migration
+`0009`) carries the argument into the `rationale` prop that already existed. **The one-sentence ceiling
+lives in code, not the prompt** — BUG-033 established that a style clause loses to the request competing
+with it — and it **splits rather than truncates**, so an over-long claim loses nothing: the overflow
+becomes the argument, which is the slot it belonged in.
+
+One thing that would have broken silently: `absorbRepeatedMethod` only strips a repeated method **if the
+week already said it**, and the split moves most of the saying into `chefNote`. Matching the claim alone
+would have quietly disabled absorption for exactly the weeks it exists for. It reads both halves now, and
+a test pins it.
+
+**Measured on real output:** claims came back at 76–89 characters, and the first meal now sits ~210px down
+a 390×844 screen — three meals visible where the original defect showed none.
+
+### The headline find: every glass surface in the app has had no backdrop blur since 1E.7
+
+Chased down from phantom meal rows reading *through* the picker's own list. `.glass-card`,
+`.glass-surface` and `.glass-sheet` each hand-wrote `-webkit-backdrop-filter` beside the standard
+property; `.spec-chrome` and `.spec-floating` did not. **lightningcss collapses that duplicate onto the
+prefixed form and drops the standard one** — and Chrome removed `-webkit-backdrop-filter` years ago. The
+built CSS carried a blur no current browser honoured:
+
+```css
+.glass-sheet{-webkit-backdrop-filter:blur(40px)saturate(180%);background:#16100bf0;…}   /* before */
+```
+
+The fill stayed correct at `.94`, so it read as deliberate flatness rather than breakage. That is why nine
+sessions of visual QA walked past it, and it is why **BUG-022 was misdiagnosed in S42** as the spec's
+intended translucency and parked for 1F on that basis — *"do not raise the L5 alpha, `.94` is the spec's
+value"*. The alpha was never the problem. **Attributing a symptom to a deliberate design value is what
+kept it alive for five sessions.** Guarded now by `src/app/globals.test.ts`.
+
+The second reason it survived: **Layer A had never captured a single sheet state.** W7's meal sheet
+shipped in S44 and Slice 1 cleared 0/0 without one frame of the surface that sits on top of everything
+else. `meal-sheet` is a capture state now.
+
+### Layer B found two real defects, and one guarantee finally fired
+
+**The absorption path executed on a real generation for the first time** — the debt outstanding since S45.
+It needed a server log to see at all, because absorption erases its own evidence: after the strip, "the
+code ran" and "the model never repeated a method" are indistinguishable. Round 1 absorbed 4 titles, round
+2 absorbed 7, and both weeks read *"grilled"* once, in the week's own voice.
+
+**BUG-040 🔴 — the chef wrote `Day 0` and `Day 1` straight to the user.** BUG-031's exact defect through a
+second door: S45 gave *generation* a real day map and nobody asked whether *modify* had the same hole. It
+did — `modify-plan.ts` addressed the week as `Day 0:` and supplied no weekday names at all, so the model
+wrote back the only day vocabulary it had. It was never disobeying; it was echoing us.
+
+**BUG-041 🟠 — §B's boundary sentence was aimed at a field that does not exist.** `buildPicksBlock` said
+*"say the boundary out loud once, in your summary"*, and the pick path returns `chefResponse`. The chef had
+nowhere to put it and dropped it on both invocations. **BUG-033's class inverted, and harder to catch:**
+there the rule was missing from the prompt; here it is present, auditable, and pointed at nothing.
+
+### Two races, diagnosed rather than retried
+
+**D4 (drag-to-dismiss) failed in the full run and passed in isolation — BUG-019's exact signature.** Not a
+flake. `toBeVisible()` passes the instant vaul mounts the drawer, while it is still flying up from below;
+measured mid-drag, the drawer's translateY ran **416 → 196 → 57 → 21** across a drag meant to move it
+*down*. The open animation was still winning and the pointer deltas were fighting it. Fixed the way S46
+fixed GR7: wait for the transform to settle, then yield a frame between moves.
+
+**And one apparent bug that measurement killed.** The picker screenshots showed the tab bar apparently
+sitting on top of the sheet. It was the capture: the runtime grows the viewport to content height before
+shooting, vaul does not reflow to that, so the sheet kept its 844-based geometry while the fixed tab bar
+dropped to the new bottom. Measured at a real viewport, the sheet spans 418→844, the nav spans 779→844,
+and the topmost element at the nav's centre is the sheet's own tile grid. **Judging that screenshot by eye
+would have produced a fix for a bug that did not exist.** The capture layer gained `viewportOnly`; the
+real version of the risk — both are `z-50`, so it rests on DOM order — is now spec **L16**.
+
+### Three copy defects Layer A caught by looking
+
+`Put these on Friday` had **dropped §A's count from the verb** — the undrawn intersection of "the count
+lives in the verb" and "`3e` names the night" was resolved by dropping the count, which suspended the rule
+for exactly the case it exists for: two selections across two sections with the second scrolled out of
+sight. Now `Put these two on Friday`. `I'll rebuild the shop around **it**` disagreed with two picks (the
+server's own request builder already got this right). And the empty library's search read **`Search 0
+recipes`** — the one screen whose rule is that it does not apologise, apologising with a number.
+
+### The critic found two things that were correctness rather than taste
+
+`ux-design-critic` returned eighteen ranked findings; sixteen are staged for Griffin. Two were not taste
+calls at all and were fixed:
+
+**Search escaped the door it was standing in.** Typing inside a pushed tile queried the *entire* library
+while the heading kept naming the tile — so searching in `Cooked before` returned recipes that had never
+been cooked, under a heading saying they had. §A's whole claim is "a place, not a dropdown", and a field
+that reaches through the walls makes the tile decoration.
+
+**`Put these two on Friday` promised something the product cannot do.** The `3e` invocation replaces
+**one** slot and `validateModification` dedupes changed meals by dayOffset, so two recipes can never both
+land on Friday. Worth recording that this took three passes: the original dropped §A's count ("Put these
+on Friday"), Layer A restored it ("Put these two on Friday") and thereby made the sentence *precisely*
+wrong, and the critic caught that **both passes had assumed the night was the fixed part**. §B says the
+opposite — the dish is the constraint, the night is the chef's — so above one pick the verb hands the
+night back and §A's own copy applies.
+
+### Also this session
+
+- `recipes-facts.ts` still asserted `floatingToolbar: "search + circular ＋"` as ground truth. W10 deleted
+  that toolbar in S46. **A stale capture fact does not fail — it argues the screenshot is wrong.**
+- The Plan capture's 120s budget ran out at 17 states, and it fails dishonestly: the states after the cut
+  come back as errors and the browser closes under the ones still queued, which reads as five broken
+  states rather than one exhausted clock. Raised to 300s.
+- `Add to this week` was being photographed mid-flight at `disabled:opacity-60`, i.e. as a dead grey
+  primary. The capture waits for the settled state now; the loading treatment itself is **BUG-037**.
+
+---
+
 ## Session 46 — 2026-07-29 (GR7 quarantined by fixing it; W8 + W10 built — Slice 2 complete)
 
 **The job:** clear BUG-019 at its quarantine threshold, then build Slice 2's two entry points and extend

@@ -1,8 +1,140 @@
 # What's Next
 
-Last updated: 2026-07-29 (Session 46)
+Last updated: 2026-07-30 (Session 47)
 
-## ▶ NEXT SESSION — 1E.5 is CODE-COMPLETE. **Close it: `/visual-qa` on Slice 2, then Layer B on the pick path.**
+## ▶ NEXT SESSION — **every 1E.5 gate is closed except yours. The taste pass is the last one.**
+
+**S47 answered BUG-034, cleared Layer A on Slice 2, cleared Layer B on the pick path, and ran the critic.**
+Scope doc: [scope-1E.5.md](scope-1E.5.md). Work is on **`session-43-1e5-plan-rebuild`, worktree
+`../meal-app-1e5`**.
+
+**606 unit + 110 E2E green, lint + typecheck clean, migrations `0007`–`0009` applied.**
+
+### The headline is a bug that had been shipping since 1E.7 and was invisible on purpose
+
+**Every `.glass-card`, `.glass-surface` and `.glass-sheet` in the app had NO backdrop blur in Chrome and
+Android.** Those three classes hand-wrote `-webkit-backdrop-filter` beside the standard property;
+`.spec-chrome` and `.spec-floating` did not. **lightningcss collapses that duplicate onto the prefixed
+form and drops the standard one** — and Chrome removed `-webkit-backdrop-filter` years ago. The fill
+stayed correct at `.94`, so a flat card looked deliberate rather than broken.
+
+Two things kept it alive. **BUG-022 misdiagnosed it in S42** — it blamed the spec's intended `.94`
+translucency and parked it for 1F on that basis (*"do not raise the L5 alpha"*). The alpha was never the
+problem. And **Layer A had never captured a single sheet state**: W7's meal sheet shipped in S44 and
+Slice 1 cleared 0/0 without one frame of the surface that sits on top of everything else. Both are fixed;
+`globals.test.ts` now fails on any hand-written prefix.
+
+### BUG-034 — you chose "split the output", and it works on the real model
+
+`chefNote` carries the argument into the gold slot that already existed; the one-sentence ceiling lives in
+**code** (BUG-033's lesson), and it **splits rather than truncates**, so nothing the chef wrote is lost.
+Live claims came back at **76–89 characters**, and **the first meal now sits ~210px down** a 390×844
+screen — three meals visible where the original defect showed none.
+
+⚠️ **Residual, stated rather than buried:** the guarantee is one *sentence*, not one *line*. And the
+**note** half is running long — 203 to 336 characters against a prompt asking for one or two sentences,
+rendering as four to six lines of gold. The week is scannable now, so this is a **voice call, not a
+defect** — tightening it costs the chef range, which is the same trade you already made once.
+
+### Layer B: one guarantee finally fired, and two defects that only the real model could show
+
+- **The absorption path executed live for the first time** — owed since S45. Round 1 absorbed 4 titles,
+  round 2 absorbed 7, and both weeks said "grilled" exactly once, in the week's own voice. It needed a
+  server log to see at all: absorption erases its own evidence.
+- **A named night is honoured** (`asked=2026-07-31 landed=2026-07-31`).
+- **BUG-040 🔴 fixed** — the chef was writing **`Day 0` / `Day 1` straight to the user**. BUG-031's exact
+  defect through a second door: S45 gave *generation* a real day map and nobody asked whether *modify*
+  had the same hole. It did. Verified live: it now says "Sunday" and lands on `2026-08-02`, which **is**
+  a Sunday — the right name, not just a name.
+
+### ⚠️ Two things are yours
+
+**1. BUG-041 — §B's boundary sentence still does not appear, after two live rounds.** *"It's your recipe,
+so I won't rewrite it."* was being requested **"in your summary"**, and the pick path returns
+`chefResponse` — no such field. The prompt now names the real fields and a test pins it, **and round 2
+still produced the sentence zero times.** So it stays a guarantee on paper.
+
+**My recommendation: stop asking, per BUG-033's precedent.** A style clause competing with six other
+instructions loses. The boundary is a **fixed product promise**, not a creative act — render it as copy
+on the picked row or the picker's confirm line. That moves a sentence out of the chef's voice into the
+product's, which is why I have not done it unilaterally.
+
+**2. The critic returned 18 findings and 16 are staged for you.** Two were correctness and are fixed
+(search escaping a pushed tile; a verb promising a placement the product cannot make). The rest are
+design calls, and several **disagree with a locked frame** — the ones worth your attention first:
+
+- **The picker has four different heights** (176 / 274 / 365 / 400 / 515px across states) because the
+  drawer is `h-auto` with `max-h-[80vh]`. The frame draws a fixed pane. This reframes the "76 vs 176px"
+  item: it is not a number, it is that the walls move 339px when you push a door.
+- **`3 of these have been waiting — you've got 30 minutes`** sits directly above two rows that say
+  *longer than Friday allows*. The chef failing to read its own list, in the first sentence of the
+  newest surface.
+- **Multi-select is illegible across sections** — one checkbox visible, the second pick unnamed and
+  unreachable except by `Clear`.
+- **`Recently saved` and `Everything` are the same set** for any library under 13 recipes, which is
+  most of R1. Two of four doors are duplicates on a real first visit.
+- **The gold budget on `picked-row`** — the critic argues the boundary sentence is now typographically
+  identical to seven cheap rationales, so the one sentence that had to be singular is item one of eight.
+
+Full text in the session log; I did not apply them because they are taste, and taste is yours.
+
+### Also still open
+- **`DEV_TOOLS_EMAILS` in Vercel Production** — eighth session. Test mode is invisible and inert until
+  you set it.
+- **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path
+  shows a named failure or a spinner that never resolves.
+- **BUG-037 / BUG-038** — new, both 1F: `Add to this week` reads as dead while the plan query loads; the
+  recipe detail screen renders empty labelled `INGREDIENTS`/`STEPS` cards.
+- **scope-v1's closed-beta question** — parked for 1E, closed without it, now gating 1F's shape.
+
+### ⭐ Next up: your taste pass, then 1E.5 closes → M5.5, and 1F opens
+
+**⭐ Model recommendation: Opus 4.8.** What is left is judgement and copy against a locked spec — reading
+the critic's 16 staged findings, deciding which are right, and applying small copy/geometry changes. That
+is the same work 4.8 has done well across S40/S42/S45/S47. No new architecture.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S47 closed every 1E.5 gate except my taste pass. BUG-034 is fixed the way I chose
+(chefSummary split into a one-sentence claim + a new chefNote carrying the argument into the gold slot,
+ceiling enforced in code and splitting rather than truncating; live claims came back 76-89 chars and the
+first meal now sits ~210px down). Layer A caught the headline: every .glass-card/.glass-surface/
+.glass-sheet in the app has had NO backdrop blur in Chrome since 1E.7, because hand-writing
+-webkit-backdrop-filter beside the standard property makes lightningcss drop the standard one — which
+also means BUG-022 was misdiagnosed in S42 as the spec's intended .94 translucency. Layer B fired the
+absorption path live for the first time (owed since S45), verified the named night is honoured, and
+found BUG-040 (the chef writing "Day 0" straight to the user — BUG-031's second door, in modify rather
+than generation; fixed and verified live). 606 unit + 110 E2E green, worktree at ../meal-app-1e5 on
+session-43-1e5-plan-rebuild. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1E.5.md first,
+then give me the <=6-line scope check. Then walk me through the taste pass: pull up the final captures
+in tests/e2e/captures/A-2026-07-30T18-21-07-378Z/ and give me your own read on the picker before I give
+mine. Two calls are mine and I'll answer at the top: BUG-041 (the boundary sentence "it's your recipe,
+so I won't rewrite it" has now failed to appear in two live rounds — your rec is to stop asking and
+render it as product copy, per BUG-033), and which of the critic's 16 staged findings to apply. When my
+taste pass lands, 1E.5 closes -> M5.5 and 1F opens. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather burn down bugs than do the taste pass):
+```
+Resume meal app — S47 closed every 1E.5 gate except my taste pass (see docs/whats-next.md). Skip the
+taste pass this session and clear the bug list instead, in this order: BUG-041 first (§B's boundary
+sentence has failed to appear in two live Layer B rounds — apply your recommendation and move it out of
+the prompt into product copy, per BUG-033's precedent), then BUG-035 (a real generation timed out at 90s
+— find out whether that path shows a named failure or a spinner that never resolves), then BUG-037 (Add
+to this week reads as a dead grey control while plan.current loads) and BUG-038 (the recipe detail screen
+renders empty labelled INGREDIENTS/STEPS cards — §D already settled this rule for Plan: a container needs
+contents), then BUG-020/BUG-021 (a failed save reported as "All saved."; a failed skip that still walks
+the user out), then BUG-011/BUG-012 (householdSize <-> composition desync putting two contradictory
+numbers in one chef prompt). Read docs/whats-next.md + docs/bug-tracker.md first, give me the <=6-line
+scope check, keep 606 unit + 110 E2E green. Worktree at ../meal-app-1e5 on session-43-1e5-plan-rebuild.
+On Opus 4.8.
+```
+
+---
+
+## ⚠️ S46 (superseded by S47 above — the gates are closed and BUG-034 is fixed)
+
+## 1E.5 is CODE-COMPLETE. **Close it: `/visual-qa` on Slice 2, then Layer B on the pick path.**
 
 **S46 fixed BUG-019 rather than quarantining it, and built W8 + W10.** Every workstream W1–W10 is now
 built; what remains are gates, not features. Scope doc: [scope-1E.5.md](scope-1E.5.md).

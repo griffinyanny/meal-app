@@ -349,6 +349,7 @@ export function PlanPageClient() {
       return (
         <StreamingPlan
           chefSummary={streamed?.chefSummary}
+          chefNote={streamed?.chefNote}
           meals={streamedMeals}
           weekStart={weekStart}
         />
@@ -443,7 +444,11 @@ export function PlanPageClient() {
       return showMidweek ? (
         <PlanMidweek {...weekProps} onFeedback={onFeedback} />
       ) : (
-        <PlanReview {...weekProps} chefSummary={plan.chefSummary} />
+        <PlanReview
+          {...weekProps}
+          chefSummary={plan.chefSummary}
+          chefNote={plan.chefNote}
+        />
       );
     }
 
@@ -451,6 +456,7 @@ export function PlanPageClient() {
       return (
         <StreamingPlan
           chefSummary={streamed?.chefSummary}
+          chefNote={streamed?.chefNote}
           meals={streamedMeals}
           weekStart={weekStart}
         />
@@ -529,6 +535,12 @@ export function PlanPageClient() {
     modifyError: modifyError?.message ?? null,
     hydrationEnabled,
     hydrationByDate,
+    // BUG-034's two halves, published separately because the SPLIT is the thing
+    // under test and the screen cannot show it: two strings rendered at two
+    // sizes look much the same as one string that wrapped. Layer B reads the
+    // real model's claim and argument here and judges each against its own job.
+    chefSummary: plan?.chefSummary ?? null,
+    chefNote: plan?.chefNote ?? null,
     slots: persistedMeals.map((m) => ({
       date: m.date,
       timeframe: m.timeframe,
@@ -536,6 +548,12 @@ export function PlanPageClient() {
       title: m.title,
       recipeStatus: m.recipeStatus,
       recipeId: m.recipeId,
+      // WHICH night the pick landed on is the whole of §B's named-night
+      // guarantee, and the eyebrow only says THAT one is a pick, not which one
+      // the person asked for. Layer B compares this against the night it opened
+      // the picker from.
+      pickedRecipeId: m.pickedRecipeId,
+      rationale: m.rationale,
       // W6's output is otherwise unobservable from outside: the review sums it
       // into one string and a null slot renders nothing at all, so a week the
       // model priced badly and a week it declined to price look identical on

@@ -6,27 +6,33 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### 🔴 OPEN — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
+### ✅ RESOLVED S47 — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
 
-**The framing changed in S46, and it changes what the options are.** This was written up as a copy-length
-problem with three fixes (cap the prompt at one sentence, clamp the render, drop the type size). Reading
-the frame first says it is none of them: **`3i` draws TWO strings** in the chef block — a short claim at
-22px cream (`Five dinners, one shop, nothing wasted.`) and the argument at 14.5px italic gold underneath.
-`chef-header.tsx` already has both props, and `week-wrapped-state.tsx` already passes both.
-**`plan-review.tsx` passes only `summary`**, and generation only ever emits one `chefSummary` — so both of
-the model's sentences land in the 22px heading and the gold slot renders nothing. The model is not
-overwriting; it was asked for one field and filled one field.
+**Griffin's call: split the output.** `chefSummary` becomes the short claim with a **code-enforced**
+one-sentence ceiling; a new `chefNote` carries the argument into the 14.5px italic gold slot
+`chef-header.tsx` already had props for. Migration `0009`.
 
-**Recommendation: split the output.** `chefSummary` becomes the short claim with a ceiling enforced **in
-code** (BUG-033's lesson: a style clause loses to the request it competes with, and "is this string over N
-characters" is a string test), plus a `chefNote` carrying the argument into the `rationale` prop that
-exists. Costs about what the one-sentence cap costs and lands the frame rather than trimming to fit the bug.
+The framing was the whole answer. This was raised as a copy-length problem with three fixes on the table,
+and reading frame `3i` first showed it was none of them: the frame draws **two** strings, the component
+had props for both, `week-wrapped-state.tsx` passed both, and **`plan-review.tsx` passed only one**. An
+unwired field. See `decisions.md` (S47) for why the ceiling lives in code and why it splits rather than
+truncates.
 
-**Already done regardless (S46):** the seed states carry a realistically long summary now, so Layer A can
-see this whole class. It could not before — every seed was one short line, which is exactly why nine lines
-of 22px type had never appeared in a mock capture.
+**Verified live:** claims at 76–89 characters, first meal ~210px down. **Residual:** the guarantee is one
+*sentence*, not one *line*, and the `chefNote` half is running 203–336 characters — four to six lines of
+gold. That is a voice call rather than a defect, and it is the same trade Griffin already made once.
 
----
+### 🟠 OPEN — §B's boundary sentence never appears, after two live rounds (BUG-041, raised S47)
+
+*"It's your recipe, so I won't rewrite it."* The instruction asked for it **"in your summary"**, and the
+pick path returns `chefResponse` — there is no summary field there, so the chef dropped it. The prompt now
+names the real fields (`chefResponse` / `chefNote`) and a test pins it, **and round 2 still produced the
+sentence zero times.**
+
+**Recommendation: stop asking, per BUG-033's precedent.** A style clause competing with six other
+instructions loses, and the boundary is a **fixed product promise** rather than a creative act — so render
+it as copy on the picked row or the picker's confirm line. Not done unilaterally because it moves a
+sentence out of the chef's voice and into the product's, which is a decision about what the chef IS.
 
 ### ✅ RESOLVED S45 — Where does `Start over →` belong on a draft? (raised S44)
 > **CLOSED 2026-07-29 (S45). It stays the foot link under the rail, with the gap tightened.**

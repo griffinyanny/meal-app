@@ -194,10 +194,19 @@ describe("pickVerb", () => {
     expect(pickVerb(3)).toBe("Give the chef these three");
   });
 
-  it("should name the destination instead when a night is already decided", () => {
-    // `3e`: with a slot chosen the primary names it, and a second selection
-    // pluralises rather than introducing a different control.
+  it("should name the destination when a night is already decided", () => {
+    // `3e`: with a slot chosen the primary names it.
     expect(pickVerb(1, "Thursday")).toBe("Put it on Thursday");
-    expect(pickVerb(2, "Thursday")).toBe("Put these on Thursday");
+  });
+
+  it("should hand the night back to the chef above one pick, even when one was named", () => {
+    // The `3e` invocation replaces ONE slot and `validateModification` dedupes
+    // changed meals by dayOffset, so two recipes CANNOT both land on Thursday.
+    // A primary that says they will is precisely wrong rather than merely
+    // vague, and §B settles which half gives: the dish is the constraint, the
+    // night is the chef's. So above one pick this falls back to §A's own
+    // multi-select copy, which carries the count.
+    expect(pickVerb(2, "Thursday")).toBe("Give the chef these two");
+    expect(pickVerb(3, "Thursday")).toBe("Give the chef these three");
   });
 });

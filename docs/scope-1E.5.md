@@ -288,11 +288,22 @@ and a migration.
       three-session flake (BUG-019) is fixed rather than quarantined**, and green in the full sequential
       run — the condition it actually failed under.
 - [x] **The specs are extended for every new Plan state.** New `P`, `C` and `L` families; `L` runs to 15.
-- [ ] **`/visual-qa` Layer A** at 0 blockers / 0 high across every Plan state, graded against the spec's
-      six laws with the gold line as tie-breaker.
-- [ ] **`/visual-qa` Layer B** (real model) — W1's title rule and W6's cost output both change generation,
-      and the mock cannot tell us whether the real model obeys them.
-- [ ] **`ux-design-critic` taste pass**, then Griffin's taste review.
+- [x] **`/visual-qa` Layer A** at 0 blockers / 0 high across every Plan state, graded against the spec's
+      six laws with the gold line as tie-breaker. **(S47 — 17 Plan states + 6 Recipes states, all `ok`.)**
+      Six states were captured for the first time this session, including the **meal sheet**, which had
+      shipped in S44 and never been photographed at all.
+- [x] **`/visual-qa` Layer B** (real model). **(S47, two rounds.)** Round 1 cleared the three guarantees
+      that were on paper — **the absorption path fired live for the first time**, the named night was
+      honoured, and BUG-034's split held — and found two real defects on the pick path. Round 2 verified
+      **BUG-040** fixed live (the chef now names the correct weekday: it said "Sunday" and landed on
+      `2026-08-02`, which is one). **BUG-041 did not verify and stays open** — see below.
+- [x] **`ux-design-critic` taste pass. (S47.)** Eighteen ranked findings. **Two were correctness, not
+      taste, and were fixed:** search inside a pushed tile queried the whole library while the heading
+      kept naming the tile, and `Put these two on Friday` promised a placement the product cannot make
+      (the `3e` invocation replaces one slot and `validateModification` dedupes by dayOffset, so two
+      recipes can never both land on Friday). The remaining sixteen are **staged for Griffin's taste
+      pass** rather than applied — they are design calls, and several disagree with a locked frame.
+- [ ] **Griffin's taste review** — the last gate.
 - [ ] **Two-tier QA:** routine gauntlet + blast-radius review per slice; **deep audit at phase close** —
       1E.5 is an arc close and touches the confirm path, so the milestone audit fires automatically.
 
@@ -369,8 +380,8 @@ taste), not features.
 | **W10** verb + Recipes edge | ✅ **(S46)** | Both halves. **Detail:** `Add to this week` as the one floating object; it never asks for a day, and with no week to add to it carries the recipe to the intent screen rather than failing. **Library:** `recipe-toolbar.tsx` **deleted**, search into a new `recipe-header.tsx`, `＋` a 44px icon button beside it. Gated by `RC11`–`RC13`, where RC11 measures `position: fixed` rather than trusting a class name. |
 
 **Gates:** unit ✅ · E2E ✅ · `P`/`C`/`L` specs ✅ · seed states ✅ · `ADVERSARIAL` re-pointed ✅ ·
-`/visual-qa` Layer A ✅ (Slice 1) / ⬜ (Slice 2's states) · Layer B ✅ (Slice 1) / ⬜ (the pick path) ·
-critic ⬜ · Griffin's taste ⬜.
+`/visual-qa` Layer A ✅ (Slice 1 **and** Slice 2, S47) · Layer B ✅ (Slice 1 **and** the pick path, S47) ·
+critic ✅ (S47) · **Griffin's taste ⬜ — the only gate left.**
 
 ### Three things W8/W10 did NOT build, stated rather than discovered (S46)
 
@@ -412,6 +423,41 @@ week sums ranged **$44–$74** for seven dinners for two across runs of the same
 roughly 30% under a real shop. Under-estimating is the worse direction. Two cheap levers if Griffin wants
 them: price the whole meal rather than the headline protein, and name the servings count in the cost
 instruction. Not a blocker — the review row is honest about being an estimate.
+
+### What Layer B found (S47) — the gate earned its keep for the FOURTH phase running
+
+**Two rounds. Three guarantees cleared, two real defects found and fixed, both verified live.**
+
+**Cleared — and one of these had been owed since S45:**
+
+- **The absorption path fired live for the first time.** `[plan] absorbed a repeated method from 4 titles`,
+  and `live-grill` came back with **zero** method-opening titles while the claim read *"Five grilled
+  dinners this week"* — the week owning the method once, exactly as W1 specifies. `absorb-method.ts` had
+  been unit-tested against round 2's output since S45 but **had never executed on a real generation**.
+  A one-line server log was needed to see it at all, because absorption erases its own evidence: after
+  the strip, "the code ran" and "the model never repeated a method" look identical.
+- **A named night is honoured.** `asked=2026-07-31 landed=2026-07-31`. Frame `3e`'s primary is not a lie.
+- **BUG-034's split holds on the real model.** Claims came back at **76–89 characters, one sentence**;
+  the first meal now sits ~210px down a 390×844 screen, so three meals are visible where the original
+  defect showed none.
+
+**Found — both on the pick path, both prompt-shaped, neither visible to the mock:**
+
+- **BUG-040 🔴** — the chef wrote **`Day 0` / `Day 1` straight to the user**. This is BUG-031's exact
+  defect through a second door: S45 gave GENERATION a real day map and nobody asked whether MODIFY had
+  the same hole. It did. The model was echoing the only day vocabulary the prompt gave it.
+- **BUG-041 🟠 — still open, and the honest result of this gate.** §B's boundary sentence was requested
+  **"in your summary"**, and the pick path returns `chefResponse`; no such field exists there. The rule
+  was in the prompt, aimed at nothing. The prompt now names the real fields and a test pins it — but
+  **round 2 produced the sentence zero times as well**, so it stays a guarantee on paper. Recommendation
+  is BUG-033's precedent: stop asking. A style clause competing with six other instructions loses, and
+  the boundary is a fixed product promise rather than a creative act. **Griffin's call**, because it
+  moves a sentence out of the chef's voice and into the product's.
+
+**Also worth knowing, not a defect:** the `chefNote` half runs long — 203 to 336 characters, where the
+prompt asks for one or two sentences and the model wrote two or three. It renders as four to six lines
+of italic gold. The week is scannable now, so this is a **voice/taste call rather than a fix**: tightening
+it costs the chef some range, which is the same trade Griffin already decided once on BUG-034.
 
 ### What the PHASE still owes (S46 — every workstream is built)
 

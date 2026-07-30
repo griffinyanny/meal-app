@@ -190,7 +190,7 @@ test("L8 - there is no action bar until something is selected, and the count liv
     .getByTestId("picker-row")
     .filter({ hasText: "Spaghetti alla Carbonara" })
     .click();
-  await expect(page.getByTestId("picker-confirm")).toContainText("Put these on");
+  await expect(page.getByTestId("picker-confirm")).toContainText("Give the chef these two");
 });
 
 test("L9 - picking hands the chef a dish and gets back a night, with provenance on the row", async ({
@@ -367,4 +367,42 @@ test("L15 - picks survive a regenerate: the chef rebuilds the week, the pick sta
   // whose row is not today and so has no relative label to accommodate).
   await expect(pinned).toContainText("DINNER · TONIGHT · PICKED");
   await expect(pinned).toContainText("scaled to 2");
+});
+
+test("L16 - the picker covers the tab bar rather than sharing the bottom edge with it", async ({
+  page,
+}) => {
+  // §D allows EXACTLY ONE floating layer, and while the picker is open it is the
+  // picker. Worth a spec rather than an eye, for two reasons.
+  //
+  // First, the failure is silent: the tab bar and the drawer content are both
+  // `z-50` and the drawer's scrim is `z-40`, so the whole thing rests on DOM
+  // order. A refactor that portals the drawer earlier would leave `Groceries`
+  // tappable THROUGH the sheet, which is D2's vaul pointer-events class of bug
+  // wearing different clothes — the person taps a recipe and changes tab.
+  //
+  // Second, this is what a Layer-A capture cannot tell you: the capture grows
+  // the viewport before shooting, vaul does not reflow to that, and the tab bar
+  // appears to sit below the sheet in a gap that does not exist on a phone. The
+  // pixels said "bug"; the measurement said the app was right.
+  await openPickerFromMeal(page);
+
+  const verdict = await page.evaluate(() => {
+    const nav = document.querySelector("nav");
+    if (!nav) return { navFound: false } as const;
+    const r = nav.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return {
+      navFound: true,
+      // The nav occupies the bottom edge...
+      navBottom: Math.round(r.bottom),
+      viewportBottom: window.innerHeight,
+      // ...and nothing of it is what you would actually touch there.
+      navIsTopmost: hit ? nav.contains(hit) : false,
+    } as const;
+  });
+
+  expect(verdict.navFound).toBe(true);
+  expect(verdict.navBottom).toBe(verdict.viewportBottom);
+  expect(verdict.navIsTopmost).toBe(false);
 });

@@ -1,5 +1,64 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S47) — `ux-design-critic`'s staged findings, awaiting Griffin's taste pass
+
+**These are NOT applied.** The critic returned 18 ranked findings on Slice 2; two were correctness and
+were fixed in-session (search escaping a pushed tile, and a verb promising a placement the product cannot
+make). The other 16 are design calls — several disagree with a locked frame — so they are staged rather
+than taken. Ordered by the critic's own ranking. **Griffin decides which are right.**
+
+- **[1E.5 taste] Multi-select is illegible across sections.** One checkbox visible, the second pick
+  unnamed and unreachable except by `Clear` (which is drawn at the caption colour, the palette's stated
+  floor of legibility). Proposed: the support line above the verb stops restating the verb and becomes the
+  receipt — *"Carbonara and the green beans."* No new object.
+- **[1E.5 taste] The picker has four different heights** — 176 / 274 / 365 / 400 / 515px across states,
+  because the drawer is `h-auto` with `max-h-[80vh]`. The frame draws a fixed pane. **This reframes the
+  logged "76 vs 176px" item**: it is not a number, it is that the walls move 339px when you push a door,
+  and the week behind appears and disappears as you browse. Fix the sizing first; then the 76-vs-176 call
+  is a ten-second taste decision instead of a judgement about a moving target.
+- **[1E.5 taste] The chef's opening line contradicts the rows under it.** *"3 of these have been waiting —
+  you've got 30 minutes"* sits directly above two rows reading *longer than Friday allows*. Proposed:
+  *"Three have been waiting. One of them fits your thirty minutes."*
+- **[1E.5 taste] Overruling the fit constraint is allowed but unacknowledged.** A selected unfittable row
+  keeps `opacity-55`, so it renders as *dimmed and pre-checked* — the universal grammar for a bug. The
+  permission itself is right and should stay; the silence is the problem. Proposed: un-dim on selection,
+  and let the support line absorb it (*"The lamb needs three hours, so I'll find it a different night."*).
+- **[1E.5 taste] Two of the four browse doors are the same door.** `recentlySaved()` is `.slice(0, 12)`,
+  so for any library under 13 recipes `Recently saved` and `Everything` are the identical set — the
+  majority case for R1. Proposed: suppress a tile whose count equals `Everything`'s, and suppress 0-count
+  tiles. Two honest doors beat four with two fake.
+- **[1E.5 taste] The empty library's hierarchy is inverted against its own frame.** `3d` draws
+  `Nothing in here yet.` at 22px and the invocation line at 19px; the build has 16px and 22px. The critic
+  argues this — not copy length — is why the gold block dominates, and that trimming the copy would treat
+  a symptom and cost the best sentence in the state.
+- **[1E.5 taste] The empty library's loudest object is the exit.** `Let the chef write it` is the one
+  filled cream button; the two doors that would actually fill the library are quiet rows. Proposed:
+  invert the weight.
+- **[1E.5 taste] The gold budget on `picked-row` may have crossed from known to broken.** The boundary
+  sentence is now typographically identical to seven cheap rationales, so the one sentence that had to be
+  singular is item one of eight. Proposed: rationales to `text.body`, keep the `→` in gold. **Explicitly
+  Griffin's**, since §D accepts five gold rationales.
+- **[1E.5 taste] `DINNER · PICKED` breaks the rail's left edge.** The bookmark is `inline`, so the picked
+  row's eyebrow starts ~15px right of every other row while its title stays flush; and `PICKED` joins in
+  third position, two segments from the glyph that marks it. Two one-line changes. **The critic's explicit
+  "leave this alone" is the decision itself** — flat type, no accent, no badge.
+- **[1E.5 taste] The opening list has no cap; frame `3b` gave it one** (three rows + `Six more`). At the
+  frame's own 48-recipe scenario the four doors fall hundreds of pixels below the fold.
+- **[1E.5 taste] The empty library's two doors share one destination** (`/recipes`), and one of the two
+  labels promises something the destination does not do.
+- **[1E.5 taste] The meal sheet files the library door as navigation.** `Cook something I've saved` sits
+  under `TAKE IT SOMEWHERE` beside a read-only link, though it rewrites the night. Proposed: move it under
+  `ASK ME FOR A CHANGE`, beneath `Swap the whole meal` — the two together are the thesis in two lines.
+- **[1F] Recipes' `+` is now the loudest object on the screen.** A filled cream 44px square, so manual
+  recipe entry outranks the screen's actual job. Proposed: `action.soft`.
+- **[1F] Two vocabularies for one library.** Recipes says `All` / `Favorites` / `Cooked`; the picker says
+  `Everything` / `Cooked before` / `Recently saved` / `Imported`. The two surfaces are now adjacent in one
+  flow. Also: `Favorites` probably belongs in the picker.
+- **[polish] Nested radius skips a rung** (sheet r22 → contents r14; §11 says step one, and the frame drew
+  r18), **the pushed door shows no evidence of its premise** (rows inside `Cooked before` never say when
+  they were cooked), **three tracked-out caps labels in one sheet**, and **the empty library kept a search
+  field frame `3d` deliberately omitted**.
+
 ## Incoming (S46) — surfaced building 1E.5 Slice 2 (W8 + W10)
 
 - **[V1.5, with household sharing] §B's who-clause on a picked meal.** The ledger draws

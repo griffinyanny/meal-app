@@ -254,18 +254,27 @@
      survive the merge is the tab bar, which was on glass-surface and is
      chrome — it now says `.spec-chrome` at its single call site, because
      chrome sits DARKER than the floor and glass sits lighter, and one utility
-     cannot be both. */
+     cannot be both.
+
+     ⚠️ NEVER hand-write `-webkit-backdrop-filter` beside the standard property
+     here. These three carried a manual prefix and the other two (`.spec-chrome`,
+     `.spec-floating`) did not, which is exactly how this was caught: the built
+     CSS gave the un-prefixed pair BOTH declarations and gave this trio only
+     `-webkit-`, because lightningcss collapses the duplicate onto the prefixed
+     form. Chrome and Android dropped `-webkit-backdrop-filter` long ago, so
+     every `.glass-card` and `.glass-surface` in the app has rendered with NO
+     BLUR since 1E.7 — a flat fill that looks deliberate rather than broken,
+     which is why nine sessions of visual QA walked past it. Let the toolchain
+     prefix; it targets browserslist and gets it right. */
   .glass-surface {
     background: rgba(70, 58, 46, 0.4);
     backdrop-filter: blur(32px) saturate(115%);
-    -webkit-backdrop-filter: blur(32px) saturate(115%);
     border: 1px solid rgba(240, 222, 190, 0.11);
   }
 
   .glass-sheet {
     background: rgba(22, 16, 11, 0.94);
     backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
     border: 1px solid rgba(240, 222, 190, 0.14);
     border-bottom: none;
   }
@@ -273,7 +282,6 @@
   .glass-card {
     background: rgba(70, 58, 46, 0.4);
     backdrop-filter: blur(32px) saturate(115%);
-    -webkit-backdrop-filter: blur(32px) saturate(115%);
     border: 1px solid rgba(240, 222, 190, 0.11);
     /* Rung 18 — list cards. Was --radius-xl, which is the 14px icon-button
        rung after item 06 renumbered the scale. */

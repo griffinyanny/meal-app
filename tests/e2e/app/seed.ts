@@ -127,6 +127,7 @@ export async function seedPlanState(
         weekStart: spec.weekStart,
         status: spec.status,
         chefSummary: spec.chefSummary,
+        chefNote: spec.chefNote ?? null,
         confirmedAt: spec.status === "confirmed" ? new Date() : null,
       })
       .returning();

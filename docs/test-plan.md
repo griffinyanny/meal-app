@@ -229,6 +229,17 @@ chef names the night.
 | L13 | A pick made **before any week exists** is held, shown, and carried into generation — the third invocation, same picker, different verb | `PICKABLE` | 🟢 |
 | L14 | The survival guarantee is **stated before the ask**, on the screen whose button replaces the week | `PICKED` | 🟢 |
 | L15 | Picks survive a regenerate, **performed**: the week is freshly generated and the pick is still pinned with its provenance | `PICKED` | 🟢 |
+| L16 | The picker **covers the tab bar** rather than sharing the bottom edge with it — the nav occupies the bottom edge and is not what you would touch there | `PICKABLE` | 🟢 |
+
+**L16 exists because a screenshot lied and a measurement did not (S47).** The Layer A captures appeared to
+show the tab bar sitting on top of the open picker. It was the capture: the runtime grows the viewport to
+content height before shooting, vaul does not reflow to that, so the sheet kept its 844-based geometry
+while the fixed tab bar dropped to the new bottom. Measured at a real viewport the sheet spans 418→844,
+the nav spans 779→844, and the topmost element at the nav's centre is the sheet's own tile grid. **The
+pixels said "bug"; the measurement said the app was right.** The spec guards the version of this that
+*would* be real: the tab bar and the drawer content are both `z-50` and the scrim is `z-40`, so the whole
+thing rests on DOM order, and a refactor that portals the drawer earlier would leave `Groceries` tappable
+through the sheet — D2's vaul pointer-events class in different clothes.
 
 **L15 needed a change to the mock, and that change is the point.** `buildGenerationFixture()` took no
 prompt, so it answered every generation with the same seven chef-written dinners — meaning a regenerate
@@ -279,10 +290,25 @@ past the whole E2E suite and was caught in code review instead.
 4. **Phase close** — at minimum once per phase, on the phase's primary surface.
 5. **Model or provider change** — a new model is a new output distribution.
 
-**Owed today (as of S40):** **Plan ✅ (S30, S38, S40) · onboarding ✅ (S38, S40).**
+**Owed today (as of S47):** **Plan ✅ (S30, S38, S40, S45, S47) · onboarding ✅ (S38, S40, S47).**
 **Groceries, Recipes and You have still never had a real-model capture**, so their fixtures
 remain unvalidated against live output. Clearing that backlog is one live capture per tab —
 schedule it at the next phase close rather than as its own session.
+
+**S47 added a sixth trigger, learned the hard way: a code path that ERASES ITS OWN EVIDENCE
+cannot be judged from the finished screen.** `absorb-method.ts` had been unit-tested since S45
+and had never once executed against a real generation — and no amount of reading the output
+could tell you, because after the strip "the code ran" and "the model never repeated a method"
+produce identical titles. It took one `console.log` on the server, fired only when the strip
+happens, to see the path at all. **If a rule's effect is an absence, log the moment it acts.**
+
+**S47 is also the case study for trigger #2 through a second door.** S45 fixed BUG-031 by giving
+*generation* a real day map, and nobody asked whether *modify* had the same hole. It did — the
+modify prompt addressed the week as `Day 0:` and supplied no weekday names at all, so the chef
+wrote "Placed Congee … on **Day 0**" straight onto the Recipes detail screen and "This dish fits
+perfectly on **Day 1**" onto the Plan rail. **A prompt fix is not done until every prompt that
+shares the defect has been checked**, and a fix verified on one path is evidence about that path
+only.
 
 **S40 is the case study for why trigger #2 is not optional.** The `chef-system.ts` reuse rule
 shipped in S39 with the full mock suite green. Layer B then found three user-visible copy

@@ -8,6 +8,7 @@ import { CountSlot, SLOT_PADDING_BARE } from "./rail/floating-slot";
 
 export interface StreamingPlanProps {
   chefSummary?: string;
+  chefNote?: string | null;
   meals: DisplayMeal[];
   weekStart: string;
   /** Every night the user asked for, known before generation starts. */
@@ -35,6 +36,7 @@ export interface StreamingPlanProps {
  */
 export function StreamingPlan({
   chefSummary,
+  chefNote,
   meals,
   weekStart,
   plannedDates,
@@ -80,6 +82,7 @@ export function StreamingPlan({
       <ChefHeader
         status={total > 0 ? `Writing · ${written} of ${total}` : "Writing"}
         summary={chefSummary ?? null}
+        rationale={chefNote}
         thinking
       />
       <PlanRail

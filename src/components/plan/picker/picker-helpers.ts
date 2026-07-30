@@ -215,10 +215,20 @@ function formatHours(minutes: number): string {
 const SPELLED = ["", "one", "two", "three", "four"];
 
 export function pickVerb(count: number, dayName?: string | null): string {
-  if (dayName) {
-    return count > 1 ? `Put these on ${dayName}` : `Put it on ${dayName}`;
-  }
+  // A NAMED NIGHT ONLY SURVIVES A SINGLE PICK, and the reason is mechanical
+  // rather than stylistic: the `3e` invocation replaces ONE slot, and
+  // `validateModification` dedupes changed meals by dayOffset — so two recipes
+  // cannot both land on Friday no matter what the button says.
+  //
+  // This took two passes to get right. The first dropped §A's count on this
+  // branch ("Put these on Friday"), which hid how many were selected when one
+  // was scrolled out of sight. The second added the count back ("Put these two
+  // on Friday") and made the sentence *precisely* wrong: it now promised a
+  // placement the product cannot perform. Both passes assumed the NIGHT was
+  // the fixed part. §B says the opposite — a chosen recipe is a constraint on
+  // the chef, not a scheduler — so above one pick the night goes back to the
+  // chef and §A's own multi-select copy applies.
+  if (dayName && count === 1) return `Put it on ${dayName}`;
   if (count === 1) return "Give the chef this one";
-  const word = SPELLED[count] ?? String(count);
-  return `Give the chef these ${word}`;
+  return `Give the chef these ${SPELLED[count] ?? String(count)}`;
 }

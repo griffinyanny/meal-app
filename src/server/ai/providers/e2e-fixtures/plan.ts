@@ -51,6 +51,13 @@ function freshMeal(dayOffset: number): AIMeal {
 export const GENERATION_CHEF_SUMMARY =
   "A fresh, balanced week from your test chef.";
 
+// The argument half (BUG-034). The fixture emits BOTH strings because the real
+// model now does — a fixture that returned only the claim would leave the gold
+// slot empty in every mock capture and hide any regression in the field the fix
+// exists to fill.
+export const GENERATION_CHEF_NOTE =
+  "Built around one shop, with the shorter nights kept for midweek.";
+
 /**
  * A generated week — and, when the request carried picks, a week built around
  * them (W8).
@@ -71,7 +78,11 @@ export function buildGenerationFixture(promptText = ""): AIPlan {
     if (i < meals.length) meals[i] = pickedMeal(title, i + 1, i);
   });
 
-  return { chefSummary: GENERATION_CHEF_SUMMARY, meals };
+  return {
+    chefSummary: GENERATION_CHEF_SUMMARY,
+    chefNote: GENERATION_CHEF_NOTE,
+    meals,
+  };
 }
 
 // Chef sentence for a whole-week ("lighter") modify — drives the M4 ack pill.

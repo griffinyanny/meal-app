@@ -4,6 +4,52 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S47) — BUG-034: split the chef's voice into a claim and an argument, with the ceiling in code
+
+**Decision (Griffin).** `chefSummary` becomes the **short claim** — one sentence, enforced in code — and a
+new `chefNote` carries the **argument** into the `rationale` prop `chef-header.tsx` already had. New
+`chef_note` column, migration `0009`. The two render at 22px cream and 14.5px italic gold, which is what
+frame `3i` draws.
+
+**Rationale.** The alternatives on the table were "cap the prompt at one sentence" and "clamp the render
+to three lines with the rest on tap". Both treat this as a copy-length problem, and it was not one: the
+frame draws two strings, the component has props for both, `week-wrapped-state.tsx` passes both, and
+**`plan-review.tsx` passed only one**. An unwired field. Capping the prompt would have left the gold slot
+permanently empty on Plan's main screen and lost the chef's range for nothing.
+
+**Two things about the implementation are load-bearing.** (1) **The ceiling is in code, not the prompt** —
+BUG-033 established that a style clause loses to the request competing with it, so "one sentence" as an
+instruction is a preference and `splitChefVoice` is a fact. (2) **It splits rather than truncates.** An
+over-long claim loses nothing: the overflow past the first sentence boundary becomes the argument, which
+is the slot it belonged in. Truncating would cut the chef mid-thought to protect a layout, which is the
+failure this whole fix exists to avoid.
+
+**Verified live.** Real claims came back at 76–89 characters and the first meal now sits ~210px down a
+390×844 screen. **Residual, deliberately not papered over:** the guarantee is one *sentence*, not one
+*line*; a single long sentence is still unbounded, and `adversarial` photographs that on purpose.
+
+---
+
+## 2026-07-30 (S47) — Never hand-write a vendor prefix in `globals.css`
+
+**Decision.** The `-webkit-backdrop-filter` declarations come out of `.glass-surface`, `.glass-sheet` and
+`.glass-card`, and no hand-written vendor prefix goes back into that file. The build prefixes from
+browserslist. Enforced by `src/app/globals.test.ts`.
+
+**Rationale.** Not a style preference — those three classes had **no working blur at all in Chrome or
+Android since 1E.7**. lightningcss collapses a hand-written prefix and its standard property onto the
+**prefixed** form and drops the standard one; Chrome removed `-webkit-backdrop-filter` years ago. The two
+classes that never wrote the prefix by hand (`.spec-chrome`, `.spec-floating`) were correct the whole
+time, which is what made the pattern legible once the built CSS was read.
+
+**Future impact.** Anything added to the elevation ladder inherits this. Also a standing lesson for the
+QA apparatus: this was invisible to every layer we had — the fill alpha stayed correct, so a blur-less
+card reads as deliberate flatness. It took reading the compiled stylesheet, and **BUG-022 had already
+misattributed the symptom to the spec's intended `.94` translucency and parked it for 1F on that basis.**
+Attributing a symptom to a deliberate design value is how a real defect survives five sessions.
+
+---
+
 ## 2026-07-29 (S46) — Who names the night depends on which invocation of the picker you used
 
 **Decision.** `plan.pick` honours a night the person named, and chooses one otherwise. Opened from a meal

@@ -34,6 +34,11 @@ export const mealPlans = pgTable(
       .notNull()
       .default("draft"),
     chefSummary: text("chef_summary"),
+    // The argument beneath the claim (BUG-034). Separate column rather than a
+    // parsed suffix of chef_summary, because the two are different type at
+    // different sizes and a delimiter in one text field is a bug waiting to
+    // happen the first time the chef writes a sentence with a period in it.
+    chefNote: text("chef_note"),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

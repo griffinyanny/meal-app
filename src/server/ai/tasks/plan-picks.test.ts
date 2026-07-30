@@ -107,6 +107,24 @@ describe("buildPicksBlock", () => {
     expect(buildPicksBlock([CARBONARA], 2)!).toContain("this recipe");
     expect(buildPicksBlock([CARBONARA, LAMB], 2)!).toContain("these recipes");
   });
+
+  // §B: "the boundary is STATED, not enforced silently."
+  //
+  // The instruction used to say "in your summary", and the pick path has no
+  // field called summary — it returns `chefResponse`. So the chef dropped the
+  // sentence entirely, which is what S47's Layer B found on BOTH invocations.
+  // A rule aimed at a field that does not exist is not a rule; it is BUG-033
+  // wearing the opposite face, and the only way to keep it honest is to name
+  // the fields that actually exist on each path.
+  it("should point the boundary sentence at fields that actually exist", () => {
+    const block = buildPicksBlock([CARBONARA], 2)!;
+
+    expect(block).toContain("it is their recipe, so you will not rewrite it");
+    expect(block).toContain("chefResponse");
+    expect(block).toContain("chefNote");
+    // The old wording, which named nothing the modify schema returns.
+    expect(block).not.toContain("in your summary");
+  });
 });
 
 describe("resolvePickedRecipeId", () => {

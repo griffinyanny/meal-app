@@ -75,6 +75,7 @@ export async function applyPlanChange({
 
   const mod = await modifyPlan({
     request: typeof request === "function" ? request(weekStart) : request,
+    weekStart,
     currentMeals: slots.map((s) => ({
       dayOffset: dateToOffset(weekStart, s.date),
       slotType: s.slotType,

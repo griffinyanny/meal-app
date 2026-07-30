@@ -16,7 +16,19 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN and CODE-COMPLETE — every workstream W1–W10 is built (S46, 2026-07-29). What remains are gates, not features.** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+**Phase 1E.5 (Plan Design Buildout) is 🔨 OPEN. Every gate is CLOSED except Griffin's taste pass (S47, 2026-07-30).** Scope: `docs/scope-1E.5.md`. Read `docs/whats-next.md` first.
+
+**606 unit + 110 E2E green, lint + typecheck clean, migrations `0007`–`0009` applied. Layer A 0 blockers / 0 high across 17 Plan + 6 Recipes states; Layer B run twice; `ux-design-critic` done.**
+
+**S47 answered BUG-034, cleared both visual-QA layers, and found a bug that had been shipping since 1E.7.**
+
+- **BUG-034 was an unwired field, and Griffin chose to wire it.** Frame `3i` draws TWO strings at two sizes; `chef-header.tsx` had props for both and `week-wrapped-state.tsx` passed both, but **`plan-review.tsx` passed only `summary`**. New `chefNote` (migration `0009`) carries the argument into the gold slot. **The one-sentence ceiling lives in CODE, not the prompt** (BUG-033's lesson), and it **splits rather than truncates** — overflow becomes the argument. `absorbRepeatedMethod` had to start matching BOTH halves, or the split would have silently disabled absorption. Live: claims 76–89 chars, first meal ~210px down. ⚠️ Residual: one *sentence* is guaranteed, one *line* is not.
+- **🔴 Every `.glass-card` / `.glass-surface` / `.glass-sheet` in the app had NO backdrop blur in Chrome and Android since 1E.7.** Those three hand-wrote `-webkit-backdrop-filter` beside the standard property; **lightningcss collapses the duplicate onto the prefixed form and drops the standard one**, and Chrome removed the prefix years ago. The `.94` fill stayed correct, so it read as deliberate flatness. **NEVER hand-write a vendor prefix in `globals.css`** — `src/app/globals.test.ts` enforces it. This is also **BUG-022's real cause**, which S42 had misattributed to the spec's intended translucency and parked for 1F on that basis.
+- **Layer A had never captured a single sheet state.** W7's meal sheet shipped in S44 and Slice 1 cleared 0/0 without one frame of the surface that sits on top of everything else. Fixed; `meal-sheet` is a capture state, and the runtime gained `useHud`/`viewportOnly` for drawer states.
+- **Layer B fired the absorption path live for the first time** (owed since S45 — it needed a server log, because absorption erases its own evidence), verified the named night is honoured, and found **BUG-040 🔴: the chef writing `Day 0` straight to the user.** BUG-031's exact defect through a second door — S45 gave *generation* a day map and nobody asked whether *modify* had the same hole. Fixed and verified live (it says "Sunday" and lands on a Sunday).
+- **Two races diagnosed rather than retried.** D4's drag failed only in full runs (BUG-019's signature): the sheet was still animating open, translateY running 416→196→57→21 during a drag meant to move it down. And an *apparent* bug — the tab bar seemingly above the picker — was killed by measurement: it was the capture growing the viewport, which vaul does not reflow to. **Judging that screenshot by eye would have produced a fix for a bug that did not exist.**
+
+**⚠️ Griffin's two open calls:** **BUG-041** (§B's boundary sentence has now failed to appear in two live rounds; recommendation is BUG-033's precedent — stop asking, render it as product copy), and **which of the critic's 16 staged findings to apply**. Also still open: `DEV_TOOLS_EMAILS` in Vercel Production (eighth session), BUG-035, BUG-037, BUG-038, scope-v1's closed-beta question. — History below is retained for context.
 
 **S46 closed BUG-019 by fixing it, and built Slice 2's two entry points.**
 

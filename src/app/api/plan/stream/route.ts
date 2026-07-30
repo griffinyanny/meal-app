@@ -71,6 +71,7 @@ async function persistPlan(
         weekStart,
         status: "draft",
         chefSummary: plan.chefSummary,
+        chefNote: plan.chefNote,
       })
       .returning();
 

@@ -21,6 +21,8 @@ import { formatEstimate, sumSlotEstimates } from "./cost-helpers";
 
 export interface PlanReviewProps {
   chefSummary: string | null;
+  /** The argument beneath the claim — italic gold, the chef speaking (§3i). */
+  chefNote?: string | null;
   meals: DisplayMeal[];
   weekStart: string;
   isConfirmed: boolean;
@@ -78,6 +80,7 @@ function confirmLabel(meals: DisplayMeal[]): string {
  */
 export function PlanReview({
   chefSummary,
+  chefNote,
   meals,
   weekStart,
   isConfirmed,
@@ -103,6 +106,7 @@ export function PlanReview({
       <ChefHeader
         status={isConfirmed ? "Set" : "Draft"}
         summary={chefSummary}
+        rationale={chefNote}
         onRevise={isConfirmed ? onStartOver : onTalkToChef}
         reviseLabel={isConfirmed ? "Plan a new week" : "Something's off"}
       />
