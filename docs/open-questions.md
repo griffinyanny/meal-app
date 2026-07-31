@@ -14,6 +14,17 @@ now refuses to run the suite against any project outside a committed allow-list,
 harness still deletes rows in the project that holds your real data — it just can no longer be pointed at
 somebody else's.
 
+**⚠️ S53 — this question absorbed BUG-042, and the two are now one decision.** BUG-042's standing instruction
+("disable the Supabase Email provider — the app has never used that path") turns out to be **wrong and
+destructive**: the E2E harness's only sign-in is `signInWithPassword`, which rides the email provider.
+Measured — GoTrue returns `<provider>_provider_disabled` on the password grant *before* checking
+credentials (verified against this project's already-off **phone** provider: `422 phone_provider_disabled`,
+versus `400 invalid_credentials` for the enabled email one). Disabling Email would red the whole 121-spec
+suite. **A separate non-prod project is what would let prod turn Email off while the harness keeps it on**,
+which is a real new argument for doing this — and still not enough to move the recommendation, because
+BUG-042 is measured **not exploitable** (`mailer_autoconfirm: false`). So what acting now buys is hygiene,
+not a closed hole. **Griffin's call is one word: accept (both → V1.5) or set it up now.**
+
 **Recommendation: V1.5, not now.** Three reasons, in the order they matter:
 
 1. **A second free-tier project pauses on inactivity, and the E2E suite is exactly the workload that
@@ -28,6 +39,12 @@ somebody else's.
    mid-run — was the suite fighting a live session over the same identity. A separate project would fix it,
    but so would not running the suite while you are using the app, and the guard does not address it either
    way.
+   > ⚠️ **Reproduced by accident, S53, which is the strongest evidence this entry has.** Two E2E runs
+   > overlapped on the same test household and **six Plan specs went red for pure data contention** — the
+   > seeds were wiping each other. Re-run alone, clean. Read it in both directions: it is a real cost of
+   > sharing one project, **and** it is the failure mode a second project would trade for a project that
+   > pauses on inactivity. The cheap mitigation is a rule, not infrastructure: **one suite at a time, and
+   > not while you are using the app.**
 
 **What would change the answer:** a second person running the suite (your wife's machine, a CI runner), or
 prod holding two real households' data. Both arrive with V1.5's household sharing, which is also when a

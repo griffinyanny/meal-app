@@ -58,6 +58,20 @@ one. Both were closed by B1 + B5:
   (`grocery-list.tsx`, tracked as **BUG-045**). It is the same miscast one affordance over and is deliberately
   out of B5's scope, not overlooked. `src/components/palette.test.ts` allow-lists that exact line.
 
+⚠️ **TRACKED, NOT EXEMPT — the distinction matters (S53).** The two entries below are known. **Flag them if
+you find them**; they are recorded here so a judge knows they are already filed, not so a judge stays quiet
+about them. An exemption is a licence to ignore a real defect and outlives the reason for it — that is the
+S42/S52 failure this section keeps re-learning. A *tracked* note costs nothing if it goes stale.
+- **BUG-046 🟡 — the recipe detail body wears the action hue on three non-pressable elements.** The
+  ingredient bullet (`bg-primary`), the step-duration meta and the `Modified` badge all resolve to cream
+  `#F4EBDC`. §01 says cream is what you press. **B1's exact finding, one surface over**, routed to B6/B8.
+  Graded **medium**, so it does not block the 0 blockers / 0 high bar. `View original source` is genuinely a
+  link and is correct — this is a per-element call, never a token sweep.
+- **The Recipes detail captures show a POPULATED recipe body for the first time (S53).** The seeder wrote
+  `ingredients: []` / `steps: []` for every recipe until now, so `recipes-detail-add-to-week` had never once
+  photographed a real ingredient list or numbered steps. **Judge it as first-time surface, not as a
+  re-shoot** — nothing about that body has ever been graded.
+
 **Anti-patterns (Guidelines §7 — hard rules):**
 - [ ] Glass surfaces: cards read as translucent/layered, not flat opaque boxes.
 - [ ] **No emojis in app chrome** (headers, buttons, labels).

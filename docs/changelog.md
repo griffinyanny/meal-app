@@ -4,6 +4,98 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 53 — 2026-07-31 (1F/B9 closed, and a standing instruction that would have broken the suite)
+
+**B9 closed (BUG-037 + BUG-038).** The two filed bugs were the smaller half of the session. What the work
+actually found was that the visual gate could not see either surface it was being asked to grade, and that
+a four-session-old instruction sitting in Griffin's owed list was destructive.
+
+### Griffin's question killed a standing action item
+
+He asked why we were disabling the Supabase Email provider, and whether it was what powered his SSO.
+**It is not** — `external.email` and `external.google` are independent fields on
+`GET /auth/v1/settings`, both `true`, and turning Email off leaves Google alone. That half of the question
+was clean.
+
+**But checking it surfaced the thing nobody had checked.** BUG-042's standing instruction — *"disable the
+Email provider; the app has never used that path"* — is **wrong and destructive**. The E2E harness's only
+sign-in is `signInWithPassword` (`tests/e2e/harness/supabase-session.ts:160`), which rides the email
+provider. **Measured rather than reasoned:** GoTrue rejects a password grant with
+`<provider>_provider_disabled` *before* it checks credentials. A password grant against this project's
+already-off **phone** provider returns `422 phone_provider_disabled`; the enabled email provider returns
+`400 invalid_credentials`. Same code path, symmetric check. **Disabling Email reds all 121 specs.**
+
+The tell was already in the repo: line 182 of that same file tells you to *"Check that the Email provider
+is enabled in Supabase → Authentication → Providers."* Written by a past session that knew, and never
+connected to the tracker row for four sessions — including twice in S52, where it was handed back to
+Griffin unexamined.
+
+**Fifth instance of the phase's lesson, and the sharpest: the parked recommendation was not merely wrong,
+it was destructive.** BUG-042 now bundles with the separate non-prod Supabase project decision, because
+that project is precisely what would let prod disable Email while the harness keeps it on.
+
+### B9: the seed was three times the size of both filed bugs
+
+`seed.ts` hard-coded `ingredients: []` / `steps: []` for **every** recipe the Recipes seeder produced.
+Consequences, none of which were visible from either bug report:
+
+- BUG-038 was not an edge case in the harness. It was **100% of seeded recipes**.
+- `recipes-detail-add-to-week`, the tab's only detail capture, **had never once shown a populated recipe
+  body**. The visual gate was grading the degenerate state as the canonical one.
+- **Fixing BUG-038 alone would have made the gate blinder**, converting that capture into the "nothing here
+  yet" fallback and grading it as normal.
+
+Both later seeders (`seedPlanState`, `seedGroceryState`) already wrote real ingredients. This one was the
+outlier, and nothing failed because of it. Third instance of *ask what the layer cannot see* (S47 sheet
+states, S52 `grocery-complete-banner`), and the sharpest: **here the state existed but was silently the
+wrong one.**
+
+A second blindness, self-inflicted and older: `recipes-facts.ts` waited on
+`[data-testid="add-to-week"]:not([disabled])` before shooting, a workaround that stepped around BUG-037 and
+made the layer structurally unable to see it.
+
+### The fixes
+
+- **BUG-038** — sections omitted when empty; both empty gives one line of flat muted type, centred with
+  `py-12`. No fill, no border (law 05). The copy **invents no cause**, because an un-hydrated draft and a
+  failed URL import are indistinguishable from the screen.
+- **BUG-037** — the refusal stays and is correct; it now says so, reading `Checking your week…`.
+- **The seed carries real bodies**, with exactly one recipe left deliberately body-less so both states stay
+  reachable.
+- **Three capture states** where there was one: settled, loading (held by a routed delay, not a throttle),
+  and empty.
+- **RC14 + RC15 verified failing against pre-fix code**, via physical file backups and `git show HEAD:`
+  restores rather than `stash && test && pop`. Both reds named the predicted cause. **RC14 asserts in both
+  directions**, because "the empty recipe hides the cards" would also pass against a build that deleted the
+  sections outright.
+
+### `you-field-editor` was a stale selector, not B7's problem
+
+Carried in from S52 as a `CAPTURE_ISSUE` for whoever took B7. It asserted **"How many you're cooking for"**,
+a string that has not existed in `src/` since A3 (S50) replaced the single stepper with the shared
+`HouseholdComposer` and retitled the sheet to **"Who I'm cooking for"**. So the You tab's direct-edit
+surface has gone ungraded for three sessions, and its capture `facts` still described one stepper where
+there are now three bands. Fixed. BUG-030's class again: a stale capture selector fails **silently** where a
+spec fails loudly.
+
+### One near-miss worth recording
+
+The full-suite run came back `EXIT=1` with no pass/fail summary. Not a test failure — a leftover
+`next start` from an earlier backgrounded run was still holding port 3102. **Recording that as a red would
+have been S52's false-red mistake in the other direction**: the exit code was real, the conclusion would
+have been wrong.
+
+### Filed, not swept
+
+**BUG-046 🟡** — populating the seed made the recipe body visible for the first time, and it carries
+**B1's exact finding**: `bg-primary` on the ingredient bullet, `text-primary` on the step-duration meta and
+on the `Modified` badge all resolve to cream `#F4EBDC`, the *action* hue, on three things you cannot press.
+Proven from the token chain, not from eyeballing a capture. The fourth use, `View original source`, is a
+real link and is correct — which makes it a per-element semantic call rather than a token sweep. Routed to
+**B6/B8** per S52's BUG-045 precedent.
+
+---
+
 ## Session 52 — 2026-07-31 (1F Workstream B opens: B1 + B5, and the bug that had already fixed itself)
 
 **Griffin answered B5's two taste calls at the top of the session, both as recommended** — the amber

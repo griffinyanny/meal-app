@@ -21,15 +21,37 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 code-complete (S52), 7 items remain.** **691 unit + 121 E2E green,
-migration `0010` applied.** Next: the `/visual-qa` pass B1+B5 still owe, then B9 → B2 → B3 → B4 → B6 → B7 →
-B8. **No taste calls are pending on any of them.**
+**Workstream B is 🔨 OPEN: B1 + B5 (S52) and B9 (S53) closed — 3 of 9, 6 items remain.** **691 unit +
+123 E2E green, migration `0010` applied.** Next: B2 → B3 → B4 → B6 → B7 → B8. **No taste calls are pending
+on any of them.**
 
-**⚠️ THE LESSON, now four sessions deep, and it has changed shape every time. S50: the tracker was WRONG
+**⚠️ THE LESSON, now five sessions deep, and it has changed shape every time. S50: the tracker was WRONG
 about what three of the six bugs WERE. S51: right about the bug, WRONG ABOUT THE FIX, twice. S52: the bug
-had ALREADY FIXED ITSELF, and the doc had the reason backwards.** Reading the code is not enough, following
-the recommendation is not enough, and neither is trusting that the defect still exists — a parked item's
-description is a hypothesis from the day it was filed, not a spec.
+had ALREADY FIXED ITSELF, and the doc had the reason backwards. S53: the parked instruction was not merely
+wrong, it was DESTRUCTIVE — and the filed bugs were the smaller half of what was actually broken.** Reading
+the code is not enough, following the recommendation is not enough, and neither is trusting that the defect
+still exists — a parked item's description is a hypothesis from the day it was filed, not a spec.
+
+- **S53 · the gate could not see either surface it was grading.** `seed.ts` hard-coded
+  `ingredients: []` / `steps: []` for EVERY recipe the Recipes seeder produced, so BUG-038 was **100% of
+  seeded recipes** and `recipes-detail-add-to-week` — the tab's only detail capture — **had never once
+  shown a populated recipe body.** Fixing the filed bug alone would have made the gate *blinder*, turning
+  that capture into the empty-state fallback and grading it as canonical. Both later seeders already wrote
+  real ingredients; this one was the outlier and nothing failed because of it. **Third instance of
+  *ask what the layer cannot see*** (S47 sheet states, S52 `grocery-complete-banner`), and the sharpest:
+  here the state existed but was silently the **wrong** one.
+- **S53 · a capture workaround is a blindfold.** `recipes-facts.ts` waited on
+  `[data-testid="add-to-week"]:not([disabled])` before shooting, stepping around BUG-037 and making the
+  visual layer structurally unable to see it. **When a capture waits out a condition, ask whether the
+  condition is the bug.**
+- **S53 · `you-field-editor`'s CAPTURE_ISSUE was a stale selector, carried two sessions as product work.**
+  It asserted "How many you're cooking for", absent from `src/` since A3 (S50) retitled the sheet to
+  "Who I'm cooking for". BUG-030's class: a stale capture selector fails **silently** where a spec fails
+  loudly. **Whenever copy changes, grep the capture `readyText` and `facts` for it.**
+- **S53 · two overlapping E2E runs reddened six Plan specs on pure data contention** (both seeding the same
+  test household). That is S37's failure mode, live. **Never run two suites at once, and never run the
+  suite while using the app.** A red with no pass/fail summary line is usually infrastructure, not tests —
+  a leftover `next start` holding port 3102 produced `EXIT=1` earlier in the same session.
 
 - **S52 · the "indigo draft pill" had not been indigo since 1E.7.** Spec §12 item 03 and scope-1F both
   called it *"the last live indigo after 1E.7 retired `--primary`"* — but retiring `--primary` is exactly

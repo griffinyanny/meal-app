@@ -503,8 +503,13 @@ export async function seedRecipeState(state: RecipeState): Promise<void> {
           totalTimeMinutes: r.totalTimeMinutes,
           servings: r.servings,
           tags: r.tags,
-          ingredients: [],
-          steps: [],
+          // ⚠️ These were hard-coded `[]` until S53, which made every seeded
+          // recipe render BUG-038's empty labelled cards and left the Recipes
+          // detail capture grading a body-less screen as though it were normal.
+          // The bodies now come from the spec, which keeps exactly one recipe
+          // deliberately empty. See `recipe-seed-states.ts`.
+          ingredients: r.ingredients,
+          steps: r.steps,
         }))
       );
     }

@@ -95,18 +95,91 @@ export const RECIPE_CAPTURE_STATES: CaptureStateDef[] = [
       // §D's rule at the bottom edge: the floating primary clears the tab bar
       // and nothing else competes with it down there.
       exactlyOneFloatingLayerAboveTheTabBar: true,
+      // ⚠️ NEW S53, and the reason this capture is worth re-reading rather than
+      // re-approving: until now the seeder wrote `ingredients: []` / `steps: []`
+      // for EVERY recipe, so this shot has never once shown a populated body.
+      // It graded two empty labelled cards (BUG-038) as the canonical detail
+      // screen. The body is real now — judge the ingredient list and the
+      // numbered steps as first-time surface, not as a re-shoot.
+      ingredientsAndStepsRenderWithContent: true,
     },
     prepare: () => seedRecipeState("RECIPES_LIBRARY"),
     navigate: async (page) => {
       await gotoLibrary(page);
       await page.getByText("Miso-Glazed Salmon", { exact: false }).first().click();
-      // ENABLED, not merely present. The verb is disabled while `plan.current`
-      // is in flight — deliberately, so a fast tap on a slow connection cannot
-      // be answered from "no data yet" as though it meant "no week". Shooting on
-      // presence alone caught it mid-flight at `disabled:opacity-60`, and a
-      // grey primary photographs as a dead control rather than a loading one.
+      // Settled, not merely present — this state is the verb at rest. The
+      // in-flight treatment used to be an unlabelled grey button (BUG-037) that
+      // this wait quietly stepped around, which made the gate structurally
+      // unable to see it. It is now a named state of its own
+      // (`recipes-detail-checking-week`) rather than something to wait out.
       await page
         .locator('[data-testid="add-to-week"]:not([disabled])')
+        .waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    // BUG-038's production repro, and it had no capture state at all: a plan
+    // draft whose recipe body was never generated. The rule under test is that
+    // a section with nothing in it is OMITTED — never a labelled container that
+    // opens and says nothing.
+    id: "recipes-detail-empty",
+    briefRef: "bug-tracker BUG-038 — recipe detail with no ingredients or steps",
+    readyText: "Chicken Katsu Bowls",
+    facts: {
+      noEmptyLabelledContainers: true,
+      omitsIngredientsAndStepsCardsEntirely: true,
+      saysWhyInOneLine: "No ingredients or steps on this one yet.",
+      // The screen is SHORT on purpose. There is nothing to read, so the void
+      // that used to sit under two empty cards should be gone rather than
+      // redistributed — if this shot still shows a long scroll, the fix missed.
+      noLongVoidAboveTheFloatingVerb: true,
+    },
+    prepare: () => seedRecipeState("RECIPES_LIBRARY"),
+    navigate: async (page) => {
+      await gotoLibrary(page);
+      await page.getByTestId("drafts-toggle").click();
+      await page.getByTestId("drafts-list").waitFor({ timeout: 8_000 });
+      await page.getByText("Chicken Katsu Bowls", { exact: false }).first().click();
+      await page.getByTestId("recipe-body-empty").waitFor({ timeout: 8_000 });
+      // ⚠️ The FIRST run of this state shot the verb mid-load, so it came back
+      // reading "Checking your week…" — this state and
+      // `recipes-detail-checking-week` were photographing the same thing and
+      // neither was being graded cleanly. Waiting for the settled verb is what
+      // makes the two states distinct subjects rather than a race.
+      await page
+        .locator('[data-testid="add-to-week"]:not([disabled])')
+        .waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    // BUG-037. The verb is deliberately refused while `plan.current` is in
+    // flight, and that reasoning is right — answering a fast tap from "no data
+    // yet" would send someone with a live week to the intent screen. What was
+    // wrong is that the refusal had no words, so the tab's ONE floating object
+    // photographed as a dead control. Held open by a routed delay rather than a
+    // throttle, so the state is deterministic instead of machine-speed
+    // dependent (S50's rule: a spec that only reproduces on a slow machine is
+    // worse than none).
+    id: "recipes-detail-checking-week",
+    briefRef: "bug-tracker BUG-037 — the verb while plan.current is in flight",
+    readyText: "Miso-Glazed Salmon",
+    facts: {
+      verbNamesTheWait: "Checking your week…",
+      readsAsWorkingNotBroken: true,
+      stillRefusesTheTap: true,
+    },
+    prepare: () => seedRecipeState("RECIPES_LIBRARY"),
+    navigate: async (page) => {
+      await page.route("**/api/trpc/**", async (route) => {
+        if (route.request().url().includes("plan.current")) {
+          await new Promise((r) => setTimeout(r, 15_000));
+        }
+        await route.continue();
+      });
+      await gotoLibrary(page);
+      await page.getByText("Miso-Glazed Salmon", { exact: false }).first().click();
+      await page
+        .locator('[data-testid="add-to-week"][disabled]')
         .waitFor({ timeout: 8_000 });
     },
   },
