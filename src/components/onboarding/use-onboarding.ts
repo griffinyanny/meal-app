@@ -231,9 +231,18 @@ export function useOnboarding(): OnboardingController {
     // complete-flag, so the interview never re-prompts.
     skipMutation.mutate(undefined, {
       onSuccess: leaveToPlan,
-      onError: leaveToPlan,
+      // BUG-021 · MIRRORS `finish` ABOVE, and used to be its exact opposite.
+      //
+      // Both outcomes routed to `leaveToPlan`, so a failed skip walked the user
+      // out with `onboardingCompletedAt` still NULL — and the first-run gate put
+      // them straight back into the interview on their next load, with nothing
+      // explaining why "Skip for now" had not stuck. No data is lost, unlike a
+      // failed finish, but a control that silently does not work is worse on a
+      // first run than one that says it could not.
+      onError: () =>
+        showToast("I couldn't skip just now. Tap again and I'll retry."),
     });
-  }, [leaveToPlan, skipMutation]);
+  }, [leaveToPlan, showToast, skipMutation]);
 
   const isSaving =
     finishMutation.isPending || skipMutation.isPending || isRetrying;

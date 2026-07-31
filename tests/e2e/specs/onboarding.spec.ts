@@ -415,3 +415,142 @@ test("OB8 - the deep round is adaptive and always offers a way out", async ({ pa
   expect(saved.onboardingMemories.length).toBeGreaterThanOrEqual(2);
   expect(saved.onboardingMemories.join(" ").toLowerCase()).toContain("heat");
 });
+
+// OB16 - BUG-020. The honest-about-saves contract (BUG-016, OB15 above) reached
+// through the one path that fix did not cover.
+//
+// `retryFailed` retried FAILED saves but never awaited IN-FLIGHT ones, and a
+// save that has not landed yet is in neither bucket — so tapping through fast
+// enough meant `finishOnboarding` succeeded, the flag was written, and the
+// pending save then failed with nothing left to retry and no surface to say so.
+//
+// The in-flight window is held open by a gate the TEST releases, rather than by
+// racing a timer: the whole bug is about a specific interleaving, and a spec
+// that reproduced it only on a slow machine would be worse than no spec.
+test("OB16 - a save still in flight is awaited before the interview reports success (BUG-020)", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  // The 4th core write is the weeknight-time turn — the last one before the
+  // deepen offer, and therefore the one that can still be open on reflect.
+  let seen = 0;
+  await page.route("**/api/trpc/user.updatePreferences*", async (route) => {
+    seen += 1;
+    if (seen === 4) {
+      await held;
+      return route.abort();
+    }
+    return route.continue();
+  });
+
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+  await page.getByTestId("onboarding-deepen-no").click();
+  await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+
+  // Tapped while the save is still open — guaranteed, not raced.
+  await page.getByTestId("onboarding-build-plan").click();
+  release();
+
+  // The end point awaits the open save, sees it fail, retries it, and only then
+  // lets the user out — so the interview still completes.
+  await expect(page).toHaveURL(/\/plan$/, { timeout: 20_000 });
+
+  const saved = await readOnboardingResult();
+  expect(saved.onboardingCompletedAt).not.toBeNull();
+  // THE ASSERTION THAT FALSIFIES THE BUG. The old code reported "all clear"
+  // while this write was still open, wrote the completed flag, and left — and
+  // because the flag makes the interview fire exactly once per account, the
+  // answer was gone for good with no surface left to retry it on. Awaiting the
+  // in-flight save is what turns that permanent loss back into a retry.
+  expect(saved.maxCookTimeWeeknight).toBe(30);
+});
+
+// OB18 - BUG-020's other half. When the end-point retry ALSO fails there is
+// nothing left to try, so the interview must stay put rather than write the
+// once-per-account flag over an answer it never saved.
+test("OB18 - an in-flight save that cannot be recovered keeps the user in the interview (BUG-020)", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  // Drop the 4th write AND every attempt after it: the connection is gone, not
+  // blipping. OB16 covers the blip.
+  let seen = 0;
+  await page.route("**/api/trpc/user.updatePreferences*", async (route) => {
+    seen += 1;
+    if (seen === 4) {
+      await held;
+      return route.abort();
+    }
+    if (seen > 4) return route.abort();
+    return route.continue();
+  });
+
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-start").click();
+  await answerCoreQuestions(page);
+  await page.getByTestId("onboarding-deepen-no").click();
+  await expect(page.getByTestId("onboarding-reflect-hook")).toBeVisible();
+
+  await page.getByTestId("onboarding-build-plan").click();
+  release();
+
+  await expect(page.getByTestId("onboarding-toast")).toContainText(
+    "Still can't reach the kitchen",
+    { timeout: 20_000 }
+  );
+  await expect(page).toHaveURL(/\/welcome$/);
+  // The flag is what makes the interview fire once. Writing it here would end
+  // the user's only chance to give this answer.
+  expect((await readOnboardingResult()).onboardingCompletedAt).toBeNull();
+});
+
+// OB17 - BUG-021. `skipAll` routed onSuccess AND onError to the same
+// `leaveToPlan`, so a failed skip left `onboardingCompletedAt` NULL and the
+// first-run gate sent the user straight back into the interview on their next
+// load, with nothing explaining why "Skip for now" did not stick.
+//
+// No data is lost (unlike a failed finish), which is why this is 🟠 — but a
+// control that silently does not work is a trust bug on a first run.
+test("OB17 - a skip that fails stays put with a retry, instead of pretending it worked (BUG-021)", async ({
+  page,
+}) => {
+  await seedOnboardingState("ONBOARDING_NEW");
+
+  let dropped = false;
+  await page.route("**/api/trpc/user.skipOnboarding*", (route) => {
+    if (!dropped) {
+      dropped = true;
+      return route.abort();
+    }
+    return route.continue();
+  });
+
+  await page.goto("/welcome");
+  await page.getByTestId("onboarding-skip-all").click();
+
+  await expect(page.getByTestId("onboarding-toast")).toContainText(
+    "couldn't skip",
+    { timeout: 10_000 }
+  );
+  await expect(page).toHaveURL(/\/welcome$/);
+  expect((await readOnboardingResult()).onboardingCompletedAt).toBeNull();
+
+  // The retry is the same control, and this time it lands.
+  await page.getByTestId("onboarding-skip-all").click();
+  await expect(page).toHaveURL(/\/plan$/);
+  expect((await readOnboardingResult()).onboardingCompletedAt).not.toBeNull();
+});
