@@ -6,6 +6,36 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### A separate non-prod Supabase project — now, or V1.5? (raised S51, from BUG-018)
+
+**The guard shipped; this is the thing the guard is a substitute for.** `tests/e2e/app/project-guard.ts`
+now refuses to run the suite against any project outside a committed allow-list, and requires
+`NEXT_PUBLIC_SUPABASE_URL` and `DATABASE_URL` to name the same one. What it does *not* change is that the
+harness still deletes rows in the project that holds your real data — it just can no longer be pointed at
+somebody else's.
+
+**Recommendation: V1.5, not now.** Three reasons, in the order they matter:
+
+1. **A second free-tier project pauses on inactivity, and the E2E suite is exactly the workload that
+   triggers it.** We already have that scar on this project (`meal-app` Supabase pauses; every pooler
+   variant returns *"tenant not found"* until you resume it in the dashboard). A test suite that goes red
+   for infrastructure reasons trains you to ignore red — which is the precise failure BUG-019 cost three
+   sessions to unlearn. Trading a real guard for a recurring false alarm is a bad trade.
+2. **The realistic vector is closed.** For a data-loss event you now need the right project **and** a real
+   household literally named `E2E Test Kitchen` **and** with exactly one member who is the harness's own
+   test user. That is not something a misconfiguration reaches.
+3. **The residual risk is contention, not deletion.** The S37 incident — the harness's auth user vanishing
+   mid-run — was the suite fighting a live session over the same identity. A separate project would fix it,
+   but so would not running the suite while you are using the app, and the guard does not address it either
+   way.
+
+**What would change the answer:** a second person running the suite (your wife's machine, a CI runner), or
+prod holding two real households' data. Both arrive with V1.5's household sharing, which is also when a
+staging environment earns its keep on more than the test harness. **Cost when we do it:** a new project, the
+migration chain replayed, a second `.env.local`, the test user bootstrapped, and one line added to
+`ALLOWED_PROJECT_REFS`. Call it an hour, plus whatever the free-tier project limit forces (Supabase allows
+two active projects per org; a third needs a second org or Pro).
+
 ### ✅ RESOLVED S47 — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
 
 **Griffin's call: split the output.** `chefSummary` becomes the short claim with a **code-enforced**

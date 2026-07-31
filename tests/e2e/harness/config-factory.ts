@@ -45,6 +45,12 @@ export function baseE2EConfig(opts: BaseE2EOptions): PlaywrightTestConfig {
       {
         name: "mobile-chromium",
         dependencies: ["setup"],
+        // Specs are `.spec.ts` by convention here (captures carry their own
+        // configs with their own testMatch). Stated rather than left to
+        // Playwright's default, which also collects `*.test.ts` — so a vitest
+        // file co-located with a harness helper would be picked up by BOTH
+        // runners and fail under this one.
+        testMatch: /\.spec\.ts$/,
         use: { storageState: opts.storageStatePath },
       },
     ],

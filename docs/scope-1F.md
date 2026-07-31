@@ -32,7 +32,7 @@ order, though the recommendation below has a reason:
 
 | # | Workstream | One line | Gate |
 |---|---|---|---|
-| **A** | **Ship-blockers** | The bugs that must not reach a real first run | Each closed with a test that can fail |
+| **A** ✅ | **Ship-blockers** | The bugs that must not reach a real first run | Each closed with a test that can fail — **6 of 6 done, S50 + S51** |
 | **B** | **The design-system pass** | Spec §12 items 03/04/05/07 + the two semantic calls + control consolidation | `/visual-qa` per surface, 0 blockers / 0 high |
 | **C** | **PWA** | R1 installs to the home screen and launches without browser chrome | Verified on Griffin's and his wife's actual phones |
 | **D** | **Production readiness** | Observability, security, performance, a11y, error states | Ship checklist |
@@ -90,11 +90,21 @@ sharing arrives and the invite flow has to exist anyway. `ALLOWED_EMAILS` remain
 
 ---
 
-# Workstream A — Ship-blockers
+# Workstream A — Ship-blockers ✅ **CLOSED S51 (6 of 6)**
 
-*The bar: every one of these closes with a test that could have failed. Three sessions running have found
-an apparatus that was structurally incapable of catching the thing it existed to catch (BUG-030, S40's
-silent prompt test, S46's prompt-blind generation fixture). A fix without a falsifiable test is not a fix.*
+*The bar: every one of these closes with a test that could have failed. Three sessions running had found an
+apparatus that was structurally incapable of catching the thing it existed to catch (BUG-030, S40's silent
+prompt test, S46's prompt-blind generation fixture). A fix without a falsifiable test is not a fix.*
+
+**A fourth instance landed in S51, inside this very workstream** — BUG-013's values assertion could not fail
+because the branch it targeted lowercases its output, so an uppercase marker never matched a string that had
+in fact been planted. The bar caught it. That is the bar working, not the bar failing.
+
+**What the six items taught, across S50 and S51.** In S50 the tracker was wrong about what three of the bugs
+WERE, and twice the real defect was worse than the filed one. In S51 the tracker was right about the bug and
+wrong about the FIX, twice: BUG-013's recommended recompute would have made the injection more than twice as
+large, and BUG-018's named `assertNotProductionUrl()` would have failed **open** on every unrecognised
+project. **A parked bug's recommendation is a hypothesis from the moment it was filed, not a spec.**
 
 ### A1 — BUG-035 ✅ **CLOSED S50** — *was filed as a 90-second timeout; both open questions were answered wrong in the tracker*
 
@@ -201,20 +211,26 @@ injection. Marked **before R1 ship** in the tracker.
       narrowing it means moving the framework list into a shared pure module (four files) and that is not a
       ship-blocker's scope.
 
-### A5 — the two access-gate rows that arrived with the S48 merge (BUG-042 🟠, BUG-043 🟠)
+### A5 — the two access-gate rows that arrived with the S48 merge ✅ **RESOLVED S51** (BUG-042 🟠, BUG-043 🟠)
 
 *Added after this doc was first drafted: the access-gate work merged into `main` alongside 1E.5's close
 and brought two findings of its own. Neither is a code defect.*
 
-- [ ] **BUG-042 — email became an authorization boundary, and the config it now depends on was never
-      checked.** `ALLOWED_EMAILS` trusts the `email` claim to decide who may hold an account. The login UI
-      offers Google only, but the Supabase Auth REST API is directly callable with the publishable key and
-      GoTrue's **email provider is enabled by default**. If email signup is on *and* confirmations are off,
-      someone can `POST /auth/v1/signup` claiming an allowlisted address and walk through Gate 2 without
-      ever controlling that inbox. Supabase's default has confirmations ON, which is why this is 🟠.
-      **Dormant while the gates stay unset** (Griffin's no-beta call), so it is not a ship-blocker for R1
-      — but the fix is a **dashboard toggle**, not code, and the app only ever uses Google. Do it anyway.
-- [ ] **BUG-043 — `noindex` and `robots.txt` are unconditional and will outlive the beta.**
+- [x] **BUG-042 — measured S51, and it is NOT exploitable today.** The assumption the row was filed on has
+      now been checked instead of assumed: `GET /auth/v1/settings` on the live project returns
+      `external.email: true` — the provider **is** on — with **`mailer_autoconfirm: false`**, so
+      confirmations are required. The bypass needs both halves and has one. A signup claiming an
+      allowlisted address gets no session until the real inbox owner confirms it.
+- [ ] **Still Griffin's toggle, as hygiene rather than a fix.** Authentication → Sign In / Providers →
+      disable **Email**. The app has never used that path, and an auth path nothing uses is surface area
+      whose safety rests on a dashboard setting nobody re-reads.
+- ⚠️ **Worth saying plainly, and it is not what BUG-042 is about:** the same probe returns
+      `disable_signup: false` with `google: true`, and both access-gate env vars are unset per the S49
+      no-beta call. **Prod is open to anyone who finds the URL, through Google.** That is the deliberate
+      state, `robots.txt`/`noindex` are what keep the URL unfound, and this toggle does not change it.
+- [x] **BUG-043 — confirmed correct as-is, S51; graduates rather than gets fixed.** Both call sites verified
+      to carry their `LAUNCH-DAY ITEM` comment pointing back at the tracker row.
+      **`noindex` and `robots.txt` are unconditional and will outlive the beta.**
       `public/robots.txt` (`Disallow: /`) and the `X-Robots-Tag: noindex, nofollow` header in
       `next.config.ts` are deliberately **not** env-driven: `headers()` evaluates at build time while the
       gates read env at request time, so wiring them together would let the two silently disagree. The
@@ -222,17 +238,33 @@ and brought two findings of its own. Neither is a code defect.*
       R1** (two users, no public launch) — it graduates to the launch-day checklist below rather than
       being fixed in this phase.
 
-### A6 — BUG-018 🟠 the harness deletes rows in the real Supabase project
+### A6 — BUG-018 ✅ **CLOSED S51** (the guard) · the separate project is Griffin's open call
 
-`seed.ts` runs deletes over a service-role-equivalent connection against **production**, guarded only by a
+`seed.ts` ran deletes over a service-role-equivalent connection against **production**, guarded only by a
 household *name*. No environment check on `DATABASE_URL`, no DB-level privilege limit. S37 already saw the
 harness's auth user vanish mid-run during a concurrent session.
 
-- [ ] Add `assertNotProductionUrl()` alongside the existing name check. That is the cheap fix and it lands
-      here.
-- [ ] **The real answer is a separate non-prod Supabase project.** Sized and recommended in this phase; the
-      call on whether to do it now or at V1.5 is Griffin's, and it is the one A-item that is not obviously
-      worth doing before ship.
+- [x] **Built as an allow-list, not the `assertNotProductionUrl()` this doc named.** No property of a URL
+      says "production", so inverting the question would make the guard fail **open** on every project it
+      did not recognise. `tests/e2e/app/project-guard.ts` parses the project ref out of **both**
+      `NEXT_PUBLIC_SUPABASE_URL` and `DATABASE_URL`, requires the two to agree, and requires the result to be
+      in a committed allow-list. The two-URL agreement check earns its place on its own: a half-edited
+      `.env.local` would otherwise have the app talking to one project while the seeder deleted rows in
+      another.
+- [x] **The ref is committed rather than configured.** The failure mode this bug names *is* a misconfigured
+      `.env.local`, and a guard living in that same file cannot catch it. The ref is not a secret — it is the
+      host in `NEXT_PUBLIC_SUPABASE_URL`, which ships to every browser that loads the app.
+- [x] **Wired at module load** in `tests/e2e/app/env.ts`, so it fires before Playwright builds a project
+      list. Verified by pointing the suite at a foreign ref: it refuses at config load, no server started, no
+      connection opened. 10 unit tests.
+- [x] Two config lines came with it — vitest's blanket `tests/e2e/**` exclusion narrowed to the Playwright
+      *file patterns*, and the harness config's `testMatch` pinned to `.spec.ts`. A pure harness helper was
+      previously unreachable from **either** runner, so it could not have carried a test at all.
+- [ ] **The separate non-prod Supabase project is Griffin's call, and it is now a decision rather than a
+      defect** → `open-questions.md`. **Recommendation: V1.5, not now.** Reasons in that entry; the short
+      version is that a second free-tier project pauses on inactivity, and an E2E suite that goes red for
+      infrastructure reasons trains you to ignore red — which is the exact failure BUG-019 cost three
+      sessions to unlearn.
 
 ---
 
@@ -379,6 +411,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-30 (S51) | **Workstream A CLOSED at 6 of 6.** A4 (BUG-013), A5 (BUG-042 measured + BUG-043 confirmed), A6 (BUG-018). **BUG-044 🟡 opened** (interviewStateSchema's `dietaryFramework` is a bounded string where the persist path enforces an enum) and routed to Workstream D's security review. The separate non-prod Supabase project moved out of this doc into `open-questions.md` as a decision with a recommendation (V1.5), since it is a call rather than a defect. | Two of the three items had a tracker recommendation that was wrong in a way only building it surfaced — BUG-013's recompute would have doubled the injection, BUG-018's named guard would have failed open. Recording that in the scope doc, not just the changelog, because it is the second phase running where the parked recommendation was the thing to distrust |
 | 2026-07-30 (S49) | **1F opened → 🔨.** Scope drafted from the carried-in list: BUG-035 first (the only *before R1 ship* item on the app's most important call), the standing bug list, spec §12 items 03/04/05/07, the S42 amber/green semantic calls, the S48 critic slate's four deferrals, PWA, and production readiness. Split into four independent workstreams (ship-blockers / design system / PWA / production readiness) with A→B→C→D recommended. | 1E.5 closed at M5.5 and 1F is the last phase of R1. Splitting by workstream rather than by surface keeps the per-surface `/visual-qa` discipline intact — the same argument that split 1E.7 out of 1F in the first place |
 | 2026-07-30 (S49) | **A5 added after first draft: BUG-042 + BUG-043**, which arrived on `main` with the access-gate work that merged alongside 1E.5's close. Neither is a code defect — BUG-042 is a Supabase dashboard toggle (dormant while the gates stay unset, but do it anyway), BUG-043 is correct to leave in place through all of R1 and graduates to a launch-day checklist instead of being fixed here. The closed-beta section was corrected in the same pass: the gate it assumed would need building **already exists on `main`** (PR #6). | The doc was drafted against a tree that did not yet carry the access gate. Scoping a phase against a stale picture of `main` is how an item gets built twice or missed entirely |
 | 2026-07-30 (S49) | **scope-v1 open question #1 RESOLVED: no closed beta.** Two-user validation (Griffin + wife, 2 consecutive real weeks) is enough to ship R1. Removes the invite gate, feedback capture, support path, and onboarding-for-strangers pass from this phase. `ALLOWED_EMAILS` stays fail-open as the V1.5 seam. | Parked *for* 1E and carried through three phase closes; it gated 1F's shape and could not be deferred again without opening the phase blind. The wife's first run is the nearest thing R1 has to a cold user, and it is already in the DoD |

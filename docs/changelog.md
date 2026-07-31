@@ -4,6 +4,106 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 51 — 2026-07-30 (1F Workstream A CLOSED at 6 of 6: the fix the tracker recommended would have doubled the bug)
+
+**Workstream A is done.** A4 (BUG-013), A5 (BUG-042/043) and A6 (BUG-018) closed, on top of S50's A1–A3.
+**688 unit + 121 E2E green** on `main` (from 671 + 121), lint + typecheck clean. Next is **Workstream B**,
+the design-system pass.
+
+The through-line: **S50's lesson held for a third session running, but with a new twist.** In S50 the
+tracker was wrong about what the bug WAS. Here the tracker was right about the bug and wrong about the
+FIX — applying its recommendation literally would have made the defect more than twice as large.
+
+### A4 — BUG-013: the recommended fix was the bug's own delivery mechanism
+
+The filed defect: `finishOnboarding` persisted `deepAnswers[].memory` verbatim — a string the **client**
+computed, capped at 300 chars — stamped `sourceType: 'onboarding'`, the provenance the You ledger reads
+back as *"You told me when we started."* The code's own comments called it deterministic server-side
+synthesis. It was not.
+
+The filed fix: *"recompute `memory` server-side from `(questionId, dimension, values)`."* That recompute
+lands in `memoryForAnswer`, whose label lookup fell back to the **raw value** — `?? v`. On the client that
+is harmless (it produced the values it is looking up). On the server `values` is caller-controlled and
+bounded at `z.array(z.string().max(60)).max(12)`, so recomputing alone would have echoed **~720 characters**
+of the caller's own text into the sentence. **More than double the cap the filed bug had.**
+
+Not reasoned — measured. The naive version was implemented first and the values test went red against it.
+
+**Three parts shipped.** (1) `deepAnswerSchema` drops `memory` **and** `dimension`; zod strips unknown
+keys, so the client posts the state it holds and neither field reaches the server at all. That is stronger
+than ignoring them: there is nothing left to start trusting again by accident. (2) `memoryForAnswer` filters
+`values` to the options its question actually offers, de-duplicated, so the sentence is built entirely from
+the server's own labels; the category is read off `question.dimension`, so a caller cannot file a preference
+as a behavior by relabelling. The filter lives in `memoryForAnswer` rather than at the call site so client
+and server keep producing the identical sentence. (3) The same echo through a quieter door:
+`synthesizeHeadlineMemory` did `DIET_LABEL[x] ?? x` on a field this input types as a free string — it now
+**drops** a framework it has no label for.
+
+**The `as InterviewState` cast is gone**, and it was load-bearing in the wrong direction: it is what let a
+schema field typed `string` stand in for one typed as an enum without anyone noticing. `synthesizeMemories`
+now takes a `MemorySource` naming exactly what it reads and nothing else. The residual schema mismatch
+(bounded string here, enum on the persist path) is **BUG-044 🟡** → Workstream D, because narrowing it means
+moving the framework list into a shared pure module and that is not a ship-blocker's scope.
+
+⚠️ **One of the six new tests initially could not fail.** The proteins branch lowercases its list, so an
+uppercase marker never matched a string that had in fact landed — the assertion walked straight past the
+defect it existed to catch. **Fourth instance in five sessions** of the same class (BUG-030's stale capture
+spec, S40's silent `toContain` prompt test, S46's prompt-blind generation fixture). *The apparatus has to be
+able to fail.* Every one of the six is now verified failing against the code it targets: four against the
+pre-fix code, the values one against the naive fix, the diet one against the old `?? x` line. PR **#12**.
+
+### A5 — BUG-042 measured instead of assumed, and it is not exploitable
+
+The row was filed on an assumption about a dashboard setting nobody had read. `GET /auth/v1/settings` on
+the live project answers it: `external.email: true` — the provider **is** on — with
+**`mailer_autoconfirm: false`**, so confirmations are required. The `ALLOWED_EMAILS` bypass needs both
+halves and has one; a signup claiming an allowlisted address gets no session until the real inbox owner
+confirms. **Still worth Griffin's toggle** as hygiene: the app has never used the email path, and an auth
+path nothing uses is surface area resting on a setting nobody re-reads.
+
+⚠️ **What the same probe DID show, and it is not what BUG-042 is about:** `disable_signup: false` with
+`google: true`, and both access-gate env vars unset per the S49 no-beta call. **Prod is open to anyone who
+finds the URL, through Google.** That is the deliberate state — `robots.txt` + `noindex` are what keep the
+URL unfound — and the email toggle does not change it.
+
+**BUG-043** confirmed correct as-is; both call sites carry their `LAUNCH-DAY ITEM` comment. It graduates to
+the launch-day checklist rather than being fixed here.
+
+### A6 — BUG-018: built as an allow-list, because the named fix would have failed open
+
+The tracker asked for `assertNotProductionUrl()`. **No property of a URL says "production"**, so inverting
+the question makes the guard fail **open** on every project it does not recognise — the opposite of what a
+destructive-write guard is for. `tests/e2e/app/project-guard.ts` is an allow-list instead: it parses the
+Supabase project ref out of **both** `NEXT_PUBLIC_SUPABASE_URL` and `DATABASE_URL` (pooler form, where the
+ref is a suffix on the username; direct form, where it is a label in the host), requires the two to
+**agree**, and requires the result to be allow-listed.
+
+The agreement check earns its place on its own: a half-edited `.env.local` would otherwise have the app
+talking to one project while the seeder deleted rows in another.
+
+**The ref is committed, not configured.** The failure mode BUG-018 names *is* a misconfigured `.env.local`,
+and a guard living in that same file cannot catch it. The ref is not a secret either — it is the host in
+`NEXT_PUBLIC_SUPABASE_URL`, which ships to every browser that loads the app.
+
+Wired at **module load** in `tests/e2e/app/env.ts`, so it fires before Playwright builds a project list.
+Verified by pointing the suite at a foreign ref: it refuses at config load, no server started, no
+connection opened.
+
+**Two config lines came with it, and the reason is worth keeping.** A pure harness helper was previously
+unreachable from *either* runner — vitest excluded `tests/e2e/**` wholesale, and Playwright's default
+`testMatch` collects `*.test.ts`, so a vitest file there would have been picked up by both and failed under
+one. Vitest's exclusion is now by Playwright FILE PATTERN, and the harness config pins `testMatch` to
+`.spec.ts`. Harness helpers can carry tests now; before this they could not.
+
+**The separate non-prod Supabase project is now a decision, not a defect** → `open-questions.md`.
+**Recommendation: V1.5.** A second free-tier project pauses on inactivity (we have that scar on this very
+project), and a suite that goes red for infrastructure reasons trains you to ignore red — the exact failure
+BUG-019 cost three sessions to unlearn. The realistic data-loss vector is closed by the guard, and the
+residual risk (S37's vanishing auth user) is contention, which a separate project would fix but so would
+not running the suite mid-session.
+
+---
+
 ## Session 50 — 2026-07-30 (1F Workstream A: three PRs, six bugs, and a tracker that was wrong about two of them)
 
 **Workstream A's first three items closed and merged** — A1 (BUG-035), A2 (BUG-020/021), A3

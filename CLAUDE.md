@@ -19,13 +19,35 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 **Phase 1F (Polish / Production Readiness) is 🔨 OPEN.** Scope: `docs/scope-1F.md` — four workstreams,
 **A ship-blockers → B design-system pass → C PWA → D production readiness**. Read `docs/whats-next.md` first.
 
-**Workstream A is 3 of 6 done (S50), all merged to `main`: A1 (BUG-035), A2 (BUG-020/021), A3
-(BUG-011/012/010) as PRs #9/#10/#11. 671 unit + 121 E2E green, migration `0010` applied.** Next is **A4
-(BUG-013**, marked *before R1 ship*), then A5, A6, then Workstream B.
+**Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
+A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
+**688 unit + 121 E2E green, migration `0010` applied.** Next is **Workstream B**, the design-system pass
+(spec §12 items 03/04/05/07, the two semantic calls, the S48 critic slate, BUG-037/038).
 
-**⚠️ THE LESSON OF S50, and it is the one to carry into A4: the tracker was WRONG about three of the six
-bugs, and twice the real defect was worse than the filed one.** Reading the code was not enough — each
-took forcing the failure and looking at what actually happened.
+**⚠️ THE LESSON, now two sessions deep and it changed shape in S51. S50: the tracker was WRONG about what
+three of the six bugs WERE, and twice the real defect was worse than the filed one. S51: the tracker was
+right about the bug and WRONG ABOUT THE FIX, twice.** Reading the code is not enough, and neither is
+following the recommendation — a parked bug's "address by" line is a hypothesis from the day it was filed,
+not a spec.
+
+- **BUG-013's recommended fix would have doubled the injection.** "Recompute from `(questionId, values)`"
+  lands in `memoryForAnswer`, whose label lookup fell back to the **raw value** (`?? v`) — harmless on the
+  client, which produced the values it is looking up; on the server `values` is caller-controlled at
+  12 × 60 chars. The naive version was built first and the test went red against it. **A recompute is only
+  as trustworthy as the inputs it recomputes from, or it is laundering.**
+- **BUG-018's named `assertNotProductionUrl()` would have failed OPEN.** No property of a URL says
+  "production," so the guard has to enumerate prod and pass everything else — exactly backwards for a
+  destructive-write guard. Shipped as an **allow-list** with a committed project ref (a guard stored in
+  `.env.local` cannot catch a bad `.env.local`).
+- **BUG-042 was measured rather than assumed.** `GET /auth/v1/settings`: `external.email: true` but
+  `mailer_autoconfirm: false`, so the bypass needs both halves and has one. Not exploitable. ⚠️ The same
+  probe shows `disable_signup: false` + `google: true` with both gates unset — **prod is open to anyone who
+  finds the URL**, by Griffin's deliberate S49 call, and the email toggle does not change that.
+- **A fourth "the apparatus could not fail" instance, inside the workstream whose bar exists to catch it.**
+  BUG-013's values assertion matched case-sensitively against a branch that lowercases its output, so it
+  walked past a string that had in fact been planted.
+
+### The lesson of S50 (retained — it is the one that opened this run)
 
 - **BUG-035 had no 90-second timeout at all.** The only `90_000` in the repo is the Playwright `waitFor`
   ceiling in `plan-live.capture.ts`; S45 recorded the *test harness's own wall* as the server's. The real

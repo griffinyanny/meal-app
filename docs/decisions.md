@@ -4,6 +4,49 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S51) — Destructive-write guards are allow-lists, never "is this production" tests
+
+**Decision (Claude, against the tracker's own wording, for Griffin to override if he disagrees).**
+BUG-018 asked for `assertNotProductionUrl()`. The guard shipped as `assertAllowedProject()` instead.
+
+**Why.** No property of a URL says "production." Any implementation of the named function would have to
+enumerate the projects it considers production and pass everything else — so it **fails open on every
+project it does not recognise**, which is precisely the case the guard exists for (a `.env.local` pointing
+somewhere unexpected). An allow-list fails closed on exactly that case. Same amount of code, opposite
+default.
+
+**The allowed ref is committed to the repo, not read from env.** The failure mode BUG-018 describes *is* a
+misconfigured `.env.local`; a guard stored in that same file cannot catch it. The ref is not a secret — it
+is the host in `NEXT_PUBLIC_SUPABASE_URL`, which ships to every browser that loads the app — and the repo is
+private besides.
+
+**Future impact.** Adding a non-prod project is one line in `ALLOWED_PROJECT_REFS`. The generalisation is
+worth carrying to FFOS and Leila's Briefing, both of which have harnesses that write to real projects.
+
+---
+
+## 2026-07-30 (S51) — A client-computed value the server persists is a server value that happens to arrive by post
+
+**Decision (Claude, closing BUG-013).** `finishOnboarding` no longer accepts `memory` or `dimension` at
+all — the fields are absent from the input schema, so zod strips them and they never reach the process.
+
+**Why not just ignore them.** Ignoring is a rule someone has to keep. Absence is a property of the type.
+The original bug was written by someone who believed the synthesis *was* server-side — the comments say so —
+so the failure mode is a future reader re-wiring a field that is sitting right there looking authoritative.
+Deleting it removes the temptation along with the value.
+
+**The generalisation, which is the part worth carrying:** a recompute is only as trustworthy as the inputs
+it recomputes from. Recomputing the memory sentence from `(questionId, values)` while `values` stayed
+caller-controlled would have produced a **larger** injection than the one being fixed, because the label
+lookup fell back to the raw value. **Every input to a server-side recompute has to be validated against the
+server's own domain, or the recompute is just laundering.**
+
+**Future impact.** The same shape exists anywhere the client precomputes a display string the server then
+stores. `user.talk` is the deliberate exception — it stores what the user actually said, stamped `explicit`,
+which is a different provenance claim.
+
+---
+
 ## 2026-07-30 (S50) — A failed generation keeps the week you already had
 
 **Decision (Griffin).** When generation fails and a plan is already on file, the failure is **named in the
