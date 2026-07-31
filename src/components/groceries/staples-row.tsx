@@ -25,9 +25,9 @@ export function StaplesRow({ onList, onAdd }: StaplesRowProps) {
 
   return (
     <div data-testid="staples-row">
-      <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+      <h2 className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
         Quick add · Your staples
-      </p>
+      </h2>
       <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-0.5">
         {staples.map((s) => (
           <button

@@ -60,9 +60,9 @@ export function GrocerySection({
           >
             <GripVertical className="size-[15px]" />
           </button>
-          <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
             {CATEGORY_LABELS[category]}
-          </p>
+          </h2>
         </div>
         <span className="text-[11px] text-muted-foreground/60">{items.length}</span>
       </div>

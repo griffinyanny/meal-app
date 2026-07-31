@@ -125,7 +125,7 @@ export function PlanReview({
             />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[15.5px] font-semibold leading-[1.25] text-[var(--spec-text-primary)]">
+            <span className="spec-row-title block">
               {groceryItemCount != null
                 ? `${groceryItemCount} things to buy`
                 : "Your grocery list"}

@@ -183,6 +183,29 @@ mechanics are deterministic; the cooked harvest runs server-side on list load. S
 **Recipes: 13 passing**, 0 findings. Taste (does the tier split read calm now the bottom
 bar is single) → Griffin.
 
+## SH — the app shell's chrome (Phase 1F Workstream B, Session 54)
+
+*The tab bar and the icon-button primitive are on every screen, so their geometry is asserted **once** here
+rather than per-tab. Everything in this family is **measured from computed style or the accessibility
+tree**, never from a class name — RC11's precedent: the property being asserted is a measurement, so
+measure it.*
+
+| ID | Seed | Action | Expected | Status |
+|----|------|--------|----------|--------|
+| SH1 | *(none)* | Open `/plan` | **B2 / spec §07 Fix 1.** The nav's computed `border-top-left/right-radius` is `0px` — a full-bleed bar pinned to the device bottom is system chrome, and a rounded top reads as a sheet stuck halfway up. **Asserted in BOTH directions**: the hairline `border-top` must survive, or a build that squared the corners by dropping `.spec-chrome` entirely would pass the radius half while deleting its replacement | 🟢 |
+| SH2 | CONFIRMED → RECIPES_LIBRARY → *(detail)* → GROCERY_READY → YOU_RETURNING | Sweep every tab, then open the recipe detail | **B3 / spec §12 item 05.** Every icon-only control (`innerText` empty + an `<svg>` inside, derived from the rendered tree rather than a class list) measures ≥ **44×44**. Also asserts the sweep found *something*, because a broken selector would otherwise read as a clean app. ⚠️ **It opens the recipe DETAIL on purpose** — three of the app's icon buttons live only in that dialog, and the tab-only version of this sweep was structurally blind to them | 🟢 |
+| SH3 | GROCERY_READY / YOU_RETURNING / RECIPES_LIBRARY | Read the accessibility tree on each tab | **B4 / spec §12 item 07.** The subsection labels resolve as **headings**, not paragraphs (`Produce`, `What I cook around`, `What I've picked up`, `Account`, `Recently cooked`), with the screen title still the `h1` above them. **Asserted by ROLE, never by text** — `getByText` passes happily against the paragraphs these used to be, so only the role can fail on the thing being fixed | 🟢 |
+
+**Deliberately NOT in SH3:** the two eyebrows sitting directly above an `<h1>` (`Groceries · This week`,
+`Your chef`). Those are kickers in a title block, and promoting them would put an `h2` **before** the `h1`.
+Two more labels live inside a `<button>`, where the text is already the control's accessible name. **A sweep
+of "every uppercase label" would have broken all four** — which is why the promotion list was derived by
+reading each site, not by pattern-matching.
+
+**Shell: 3 passing**, 0 findings. One item is still Griffin's and cannot be machine-verified: **B2's phone
+check** — whether S28's density complaint is actually resolved now the two halves of the fix are finally on
+screen together.
+
 ---
 
 ## Visual-QA capture coverage (Layer A — `playwright.capture.config.ts`)

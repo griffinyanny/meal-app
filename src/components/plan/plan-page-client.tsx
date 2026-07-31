@@ -637,7 +637,7 @@ export function PlanPageClient() {
         <Link
           href="/you"
           aria-label="Settings"
-          className="rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground"
+          className="grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
         >
           <Settings className="size-5" />
         </Link>

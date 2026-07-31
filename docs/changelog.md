@@ -4,6 +4,65 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 54 — 2026-07-31 (1F/B2 + B3 + B4 closed; Workstream B at 6 of 9)
+
+**Three items, all app-wide and all mechanical, built as one batch** — the same bundling argument S52 used
+for B1+B5. Three separate five-surface capture passes for a 4px corner, a padding sweep and an `<h2>`
+promotion would have been ceremony rather than discipline.
+
+**BUG-042 is CLOSED as won't-do**, on Griffin's explicit call. It is out of the Open table and into the
+Resolved log with both reasons recorded — not exploitable (S51's measurement) *and* the remedy would have
+turned all 123 specs red (S53's measurement). The hygiene residual now lives entirely in the non-prod
+Supabase project decision, which is the only thing still owed by Griffin.
+
+### The finding: the sweep that was supposed to be the audit was blind to two thirds of the problem
+
+B3 shipped a DOM sweep (`SH2`) that walks the rendered tree for icon-only controls and measures their real
+boxes. It found two offenders: a 32×32 `Settings` link and the 36×36 recipe-card heart. **A source-side
+cross-check found four more it could not see** — three `icon-sm` buttons inside the recipe-detail dialog and
+the shared dialog close, all 28×28, on surfaces the tab sweep never opens.
+
+And the cross-check found the thing that mattered: **these were not six call-site defects.**
+`ui/button.tsx`'s icon variants are **24 / 28 / 32 / 36px** — *every rung of the shared primitive is below
+the 44px floor*, so the next `size="icon"` anyone writes is wrong by default. Fixed at the primitive with a
+`min-w-11 min-h-11` floor; `SH2` now opens the recipe detail so the layer can see what it missed.
+
+**Fourth instance of *ask what the layer cannot see*** (S47 sheet states, S52 `grocery-complete-banner`,
+S53 `seed.ts`), and the first where the blind spot was in **new** apparatus written the same session.
+
+### B4 was smaller than filed, and its other half was free
+
+The type half is **two sites, not a sweep.** Searching for the pattern the spec actually describes — a label
+paired with a 12.5px meta line — returns exactly one genuine fake. **The ~13 uppercase labels that look
+faked are not:** 11px Section label is a real, existing rung doing its real job, and item 07's words are
+"a 15px semibold paragraph." The two new levels (`.spec-group-title`, `.spec-row-title`) did not exist at
+all, which is the actual reason subsections were built at random weights.
+
+The element half — 9 sites, `<p>` → `<h2>`, zero pixels moved — was free and is Workstream D's a11y work
+done early. **Four candidates were deliberately excluded, and a naive sweep would have broken all of them:**
+two are kickers directly above an `<h1>` (promoting them puts an `h2` *before* the `h1`), two are labels
+inside a `<button>` where the text is already the accessible name.
+
+### Two near-misses in the verification itself
+
+1. **A stale build reported a false red.** The first re-run after the B3 fixes used `E2E_REUSE_BUILD=1` and
+   returned the *pre-fix* numbers — indistinguishable from a fix that did not work. S52's "it went red for
+   the reason I predicted" lesson through a new door: **the run has to be against the code you think it is.**
+2. **`SH3` had to assert by ROLE, not by text.** `getByText` passes happily against the paragraphs these
+   labels used to be, so a text assertion could not have failed on the thing being fixed.
+
+All three specs were verified failing against pre-fix code first — SH1 and SH2 by being written before the
+fix, SH3 by a physical file backup + `git checkout` revert + full rebuild (never chained `stash && test &&
+pop`, per S52).
+
+### Still owed by Griffin
+
+- **The non-prod Supabase project** — accept (V1.5) or set it up now. Now the only open item.
+- **B2's phone check** — confirm S28's density complaint is resolved. The fix arrived in two pieces a phase
+  apart and nobody has seen them together on a device. A capture is a proxy, not the check.
+
+---
+
 ## Session 53 — 2026-07-31 (1F/B9 closed, and a standing instruction that would have broken the suite)
 
 **B9 closed (BUG-037 + BUG-038).** The two filed bugs were the smaller half of the session. What the work

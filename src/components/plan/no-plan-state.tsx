@@ -133,7 +133,7 @@ export function NoPlanState({
           placeholder="Or just start talking. What sounds good?"
           rows={3}
           disabled={isGenerating}
-          className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-12 text-base"
+          className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-14 text-base"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSubmit) {
               onGenerate(text.trim());
@@ -146,7 +146,7 @@ export function NoPlanState({
           onClick={() => onGenerate(text.trim())}
           disabled={!canSubmit}
           aria-label="Send to chef"
-          className="absolute bottom-2.5 right-2.5 size-9 rounded-full"
+          className="absolute bottom-2.5 right-2.5 size-11 rounded-full"
         >
           <ArrowUp className="size-4" />
         </Button>

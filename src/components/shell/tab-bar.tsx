@@ -19,8 +19,13 @@ export function TabBar() {
     // content scrolling underneath dims rather than brightens. It was on
     // glass-surface, which is the L2 lighter rung — the one thing the glass
     // trio's merge onto the elevation ladder could not carry.
+    //
+    // Square on top (spec §07 Fix 1, 1F/B2): a full-bleed bar pinned to the
+    // bottom of the device is system chrome, and a rounded top makes it read as
+    // a sheet that got stuck halfway up. `.spec-chrome`'s hairline border-top is
+    // what does the separating instead — SH1 asserts both halves.
     <nav
-      className="spec-chrome fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 rounded-t-[18px]"
+      className="spec-chrome fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center justify-around h-16 px-2">
