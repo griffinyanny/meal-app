@@ -15,26 +15,44 @@
 import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { protectedProcedure } from "../init";
-import { users, aiMemories } from "@/server/db/schema";
+import {
+  users,
+  aiMemories,
+  restrictionsSchema,
+  cuisinePreferencesSchema,
+} from "@/server/db/schema";
 import { householdCompositionSchema } from "@/lib/household";
 import { synthesizeMemories } from "@/lib/onboarding/synthesize";
-import type { InterviewState } from "@/lib/onboarding/types";
 
+// BUG-013 · `memory` and `dimension` are DELIBERATELY absent. Both are
+// derivations the client happens to hold, and both are recomputed server-side
+// from `questionId` + `values` against the question bank. Zod strips unknown
+// keys, so the client posts the state it has and the two fields simply never
+// reach this process — which is stronger than ignoring them, because there is
+// nothing left here to start trusting again by accident.
 const deepAnswerSchema = z.object({
   questionId: z.string().max(50),
-  dimension: z.string().max(30),
   values: z.array(z.string().max(60)).max(12),
-  memory: z.string().max(300).nullable(),
 });
 
 // The finished interview, as the client accumulated it. Bounded everywhere —
 // this is user-controlled input that becomes chef-context text.
-const interviewStateSchema = z.object({
+//
+// The array fields reuse the SAME schemas `user.updatePreferences` enforces
+// rather than restating their bounds a second time.
+//
+// `dietaryFramework` stays a bounded string, even though the persist path
+// restricts it to an enum, because narrowing it here means moving the framework
+// list into a shared pure module and re-typing the client's `InterviewState` —
+// scope this fix does not need. Nothing here PERSISTS the field: it is read only
+// by `synthesizeHeadlineMemory`, which now drops a framework it does not
+// recognise instead of echoing it back as memory text. Logged as BUG-044.
+export const interviewStateSchema = z.object({
   composition: householdCompositionSchema.nullable(),
   dietaryFramework: z.string().max(30).nullable(),
-  restrictions: z.array(z.string().max(100)).max(50),
+  restrictions: restrictionsSchema,
   maxCookTimeWeeknight: z.number().int().min(5).max(300).nullable(),
-  cuisinePreferences: z.array(z.string().max(50)).max(20),
+  cuisinePreferences: cuisinePreferencesSchema,
   freeTextDimensions: z.array(z.string().max(30)).max(20),
   // Display-only on the client, and nothing here reads it. Accepted (and
   // bounded) rather than rejected so the client can post the state it holds.
@@ -48,7 +66,7 @@ export const onboardingMutations = {
   finishOnboarding: protectedProcedure
     .input(z.object({ state: interviewStateSchema }))
     .mutation(async ({ ctx, input }) => {
-      const memories = synthesizeMemories(input.state as InterviewState);
+      const memories = synthesizeMemories(input.state);
 
       const written = await ctx.db.transaction(async (tx) => {
         const rows = await tx

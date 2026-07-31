@@ -190,11 +190,21 @@ export function memoryForAnswer(
   question: DeepQuestion,
   values: string[]
 ): string | null {
-  const chosen = values.filter((v) => v !== "nothing");
+  // BUG-013 · only values this question actually offers, de-duplicated. The
+  // label lookup used to fall back to the raw value, which is harmless on the
+  // client (it produced the values it is looking up) and NOT harmless on the
+  // server, where `values` is caller-controlled: recomputing the memory from
+  // (questionId, values) would have echoed up to 12 x 60 chars of the caller's
+  // own text back into a sourceType:'onboarding' sentence. The filter lives
+  // here rather than at the call site so the client and the server go on
+  // producing the identical sentence for the same answer.
+  const offered = new Map(question.options.map((o) => [o.value, o.label]));
+  const chosen = [...new Set(values)].filter((v) => v !== "nothing" && offered.has(v));
   if (chosen.length === 0) return null;
 
-  const labelOf = (v: string) =>
-    question.options.find((o) => o.value === v)?.label ?? v;
+  // The `?? v` is unreachable after that filter; it is what keeps the lookup
+  // total without a non-null assertion.
+  const labelOf = (v: string) => offered.get(v) ?? v;
   const list = (vs: string[]) => {
     const labels = vs.map(labelOf);
     if (labels.length === 1) return labels[0];
