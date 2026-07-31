@@ -169,15 +169,37 @@ so three steppers is an in-pattern change rather than the new surface this phase
       destroy real answers to fix a cosmetic inconsistency. `updatePreferences` accepts an explicit null so
       an UNDO can restore never-answered, and nulls `householdSize` alongside it.
 
-### A4 — BUG-013 🟠 `finishOnboarding` trusts client-supplied memory text
+### A4 — BUG-013 ✅ **CLOSED S51** — *the recommended fix, applied literally, would have doubled the payload*
 
-An authenticated caller can plant 300 characters into `ai_memories` stamped `sourceType: 'onboarding'` —
+An authenticated caller could plant 300 characters into `ai_memories` stamped `sourceType: 'onboarding'` —
 the exact provenance the You ledger displays as *"You told me when we started."* Scoped to the caller's own
-household and treated as untrusted user-role content downstream, so this is data integrity rather than
-prompt injection. Marked **before R1 ship** in the tracker.
+household and treated as untrusted user-role content downstream, so data integrity rather than prompt
+injection. Marked **before R1 ship** in the tracker.
 
-- [ ] Recompute `memory` server-side from `(questionId, dimension, values)` against the server's own
-      question table; ignore the client's field entirely.
+- [x] **This doc's recommendation had the same shape of hole A3's did.** "Recompute from
+      `(questionId, dimension, values)`" lands in `memoryForAnswer`, whose label lookup fell back to the
+      **raw value** (`?? v`). Recomputing alone would have echoed **12 values × 60 chars** of caller text
+      into the sentence — more than double the 300-char cap the filed bug had. Confirmed rather than
+      reasoned: the naive version was built first and the values test went red against it.
+- [x] **Three parts.** `deepAnswerSchema` drops `memory` **and** `dimension` (zod strips unknown keys, so
+      the client posts what it holds and neither field reaches the server — stronger than ignoring them,
+      because nothing is left to start trusting again). `memoryForAnswer` filters `values` to the options
+      the question actually offers, de-duplicated, so the sentence is built entirely from the server's own
+      labels; the category is read off `question.dimension`, so a caller cannot file a preference as a
+      behavior. And `synthesizeHeadlineMemory`'s `DIET_LABEL[x] ?? x` — the same echo through a quieter
+      door — now **drops** a framework it has no label for.
+- [x] **The `as InterviewState` cast is gone.** That cast is what let a schema field typed `string` stand
+      in for one typed as an enum unnoticed; `synthesizeMemories` now takes a `MemorySource` naming exactly
+      what it reads.
+- [x] **6 tests, each verified failing against the code it targets** — 4 against pre-fix, the values one
+      against the naive fix, the diet one against the old `?? x` line. ⚠️ One of them **initially could not
+      fail**: the proteins branch lowercases its list, so an uppercase marker never matched a string that
+      had in fact landed. Fourth instance in five sessions of *the apparatus has to be able to fail*.
+- [x] **New: BUG-044 🟡** — `interviewStateSchema` types `dietaryFramework` as a bounded string where the
+      persist path enforces an 8-value enum. No longer an injection path, but the two boundaries disagreeing
+      about one domain is how the echo got there. Routed to **Workstream D**'s security review, because
+      narrowing it means moving the framework list into a shared pure module (four files) and that is not a
+      ship-blocker's scope.
 
 ### A5 — the two access-gate rows that arrived with the S48 merge (BUG-042 🟠, BUG-043 🟠)
 
