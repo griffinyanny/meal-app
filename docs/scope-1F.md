@@ -37,9 +37,23 @@ order, though the recommendation below has a reason:
 | **C** | **PWA** | R1 installs to the home screen and launches without browser chrome | Verified on Griffin's and his wife's actual phones |
 | **D** | **Production readiness** | Observability, security, performance, a11y, error states | Ship checklist |
 
-**Recommended order: A → B → C → D**, because A contains the only item flagged *before R1 ship* on the
-app's most important call (BUG-035), and because B changes pixels that C then has to be validated against
-on a real device. D is last only because it grades a finished product.
+**Order: A → B → C → D**, then the two validation weeks. A contained the only item flagged *before R1 ship*
+on the app's most important call (BUG-035); B changes pixels that C then has to be validated against on a
+real device.
+
+**⚠️ D is NOT last because it "grades a finished product" — that framing was wrong and was corrected in S52.**
+Claude proposed pulling D's instrumentation forward to start the two-week clock sooner; Griffin overruled
+it, and the order is now load-bearing for two reasons rather than one:
+
+- **Validate the artifact you ship.** The PWA (C) is how Griffin actually intends to use the product, so
+  validating in a browser tab spends the two expensive, uncompressible weeks on a configuration that is not
+  what ships.
+- **D is the debugging substrate for the validation weeks themselves**, not merely the source of the
+  time-to-list number. Without it Griffin describes a bug from memory and Claude guesses. This is *why* D
+  still precedes validation — which is what Claude's reorder was actually chasing, and which B → C → D
+  already delivered.
+
+Full reasoning in `decisions.md` (2026-07-31).
 
 ---
 
@@ -402,6 +416,20 @@ Both were caught by Layer A in S47 and both are 1F-routed loading/empty-state wo
 *Decided 2026-07-24: R1 ships as an installable PWA folded into this phase; native iOS/Android stays held
 pending a real capability (push/camera), validation, or a distribution trigger. Roughly one slice.*
 
+**⚠️ Why C is not optional before validation (Griffin, S52).** The two validation weeks are the expensive,
+uncompressible resource, and **the PWA is how Griffin actually intends to use the product.** Validating in a
+browser tab would spend those two weeks on a configuration that is not what ships — the result either does
+not transfer or has to be re-run. *(Claude argued for pulling D's instrumentation forward and starting the
+clock ~2 weeks earlier; Griffin overruled it on exactly this ground, and the reasoning is recorded in
+`decisions.md`. The order stays **B → C → D → validate**.)*
+
+**🎨 Design pass: RECOMMENDED for this workstream — and this is a reversal of the "skip it" call that
+applies to B.** B applies a locked spec to screens that are already designed, so a design round would only
+re-litigate settled decisions. **C is net-new surface that exists in no spec and no mock:** the app icon,
+the splash/launch screen, the install prompt, and the offline grocery-list state. It is also the surface
+Griffin sees every time he opens the app from his home screen, and he has said explicitly that he wants it
+to look and feel finished so his validation-week feedback can be about design rather than about gaps.
+
 - [ ] Web app manifest + home-screen icon set (every size iOS and Android actually ask for)
 - [ ] Service worker + offline shell — **scope it honestly**: this app is useless offline except as a
       *read* of an already-generated list, which is precisely the moment it matters (standing in a store
@@ -417,6 +445,24 @@ pending a real capability (push/camera), validation, or a distribution trigger. 
 
 - [ ] **Observability: PostHog** with the event taxonomy from S9, **+ Sentry.** Without this, the
       two-week validation run produces anecdotes instead of the time-to-list measurement the DoD requires.
+      ⚠️ **And, per Griffin (S52), that is the smaller half of why it comes before validation:** it is the
+      *debugging substrate for the validation weeks themselves*. Without it he reports a bug from memory and
+      Claude guesses. With it, the error and the path that produced it are both visible.
+- [ ] **PostHog session replay** (added S52, Griffin's call). The event taxonomy gives a named *sequence*
+      (`intent_submitted` → `plan_confirmed`); Sentry gives the stack, release and user. **Neither shows what
+      he actually tapped** — replay does, which is precisely the gap he named.
+      **⚠️ The masking posture must INVERT the vendor default, and this is the part to get right.** PostHog
+      (and FullStory, LogRocket, every tool in the category) defaults to masking *input fields* — passwords,
+      card numbers, typed text — because in a typical SaaS the sensitive material is what users type. **In
+      this app it is mostly rendered OUTPUT:** the chef's memories about the household, the dietary and
+      health answers from the interview, household composition and children's ages, and the grocery list.
+      Masking inputs by default covers almost none of that. So: **mask everything, then explicitly unmask
+      the chrome and structure** (nav, buttons, state labels, error copy). A denylist fails open on exactly
+      the screen we would most regret recording — the same argument that made BUG-018's guard an allow-list.
+      **Do it now rather than retrofit:** with two consenting users the real risk is ~zero today, but the
+      config is what carries forward, and if replay ever meets a real user on vendor defaults the leak is
+      already live. Confirm the current free-tier recording quota at build time rather than assuming it.
+      **Griffin's wife is recorded too** — she should be told; it costs one sentence.
 - [ ] **Time-to-list instrumentation specifically** — the DoD says *"< 10 minutes on a real week"*, and
       that is a measurement, not a feeling. It needs an event at intent-submit and an event at
       list-ready, shipped **before** the validation weeks start or the weeks do not count.
@@ -476,6 +522,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-31 (S52) | **B1 + B5 CLOSED** (`/visual-qa` 0 blockers / 0 high). **Order B → C → D reaffirmed and its rationale rewritten** after Claude proposed pulling D forward and Griffin overruled it. **PostHog session replay added to D**, with a masking posture that inverts the vendor default. **A design pass is now RECOMMENDED for C** (reversing the blanket "skip" that still applies to B). **BUG-045 opened.** | Two of Griffin's arguments beat Claude's: validate the artifact you actually ship (the PWA is how he will use it, so a browser-tab validation spends the two uncompressible weeks on the wrong configuration), and observability is the *debugging substrate for the validation weeks*, not just the source of the DoD metric. C also turned out to carry genuinely new design surface — icon, splash, install prompt, offline state — which exists in no spec, unlike B's already-designed screens |
 | 2026-07-30 (S51) | **Workstream A CLOSED at 6 of 6.** A4 (BUG-013), A5 (BUG-042 measured + BUG-043 confirmed), A6 (BUG-018). **BUG-044 🟡 opened** (interviewStateSchema's `dietaryFramework` is a bounded string where the persist path enforces an enum) and routed to Workstream D's security review. The separate non-prod Supabase project moved out of this doc into `open-questions.md` as a decision with a recommendation (V1.5), since it is a call rather than a defect. | Two of the three items had a tracker recommendation that was wrong in a way only building it surfaced — BUG-013's recompute would have doubled the injection, BUG-018's named guard would have failed open. Recording that in the scope doc, not just the changelog, because it is the second phase running where the parked recommendation was the thing to distrust |
 | 2026-07-30 (S49) | **1F opened → 🔨.** Scope drafted from the carried-in list: BUG-035 first (the only *before R1 ship* item on the app's most important call), the standing bug list, spec §12 items 03/04/05/07, the S42 amber/green semantic calls, the S48 critic slate's four deferrals, PWA, and production readiness. Split into four independent workstreams (ship-blockers / design system / PWA / production readiness) with A→B→C→D recommended. | 1E.5 closed at M5.5 and 1F is the last phase of R1. Splitting by workstream rather than by surface keeps the per-surface `/visual-qa` discipline intact — the same argument that split 1E.7 out of 1F in the first place |
 | 2026-07-30 (S49) | **A5 added after first draft: BUG-042 + BUG-043**, which arrived on `main` with the access-gate work that merged alongside 1E.5's close. Neither is a code defect — BUG-042 is a Supabase dashboard toggle (dormant while the gates stay unset, but do it anyway), BUG-043 is correct to leave in place through all of R1 and graduates to a launch-day checklist instead of being fixed here. The closed-beta section was corrected in the same pass: the gate it assumed would need building **already exists on `main`** (PR #6). | The doc was drafted against a tree that did not yet carry the access gate. Scoping a phase against a stale picture of `main` is how an item gets built twice or missed entirely |

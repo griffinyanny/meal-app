@@ -93,6 +93,34 @@ raced the `git stash pop` and produced a *green* against restored code. Only the
 file backup and no chained commands, produced the real red naming the exact six offending lines.
 **"It went red" is not the check; "it went red for the reason I predicted" is.**
 
+### The sequencing argument, and who was right
+
+Claude proposed reordering 1F to pull D's instrumentation forward and start the two validation weeks ~2
+weeks earlier, on the grounds that calendar time is the uncompressible resource. **Griffin overruled it on
+two arguments that were both better:**
+
+1. **Validate the artifact you ship.** The PWA is how he actually intends to use the product. Spending the
+   two expensive weeks in a browser tab validates a configuration that is not what ships — the result either
+   does not transfer or has to be re-run. Starting the clock sooner on the wrong artifact is a bad trade.
+2. **Observability is the debugging substrate for the validation weeks, not just the DoD metric.** Claude
+   had scoped D as "the instrumentation the time-to-list number needs." Too narrow: its larger job is that
+   Griffin reports a bug and Claude can *see* the error and the path, rather than working from a
+   description. And because B → C → D already places D before validation, his order already delivered the
+   thing the reorder was chasing.
+
+**Order stands: B → C → D → validate.** Two consequences folded into `scope-1F.md`:
+
+- **PostHog session replay added to D.** The taxonomy gives a sequence, Sentry gives a stack; neither shows
+  what he tapped. ⚠️ **The masking posture must invert the vendor default** — PostHog and every tool in the
+  category mask *input fields*, because in a typical SaaS the sensitive material is typed. Here it is
+  rendered **output**: the chef's memories, the interview's dietary and health answers, household
+  composition and children's ages, the grocery list. Mask everything, then unmask chrome and structure. A
+  denylist fails open on the screen we would most regret recording — the same argument that made BUG-018's
+  guard an allow-list.
+- **A design pass is now RECOMMENDED for C**, reversing the blanket skip that still applies to B. B applies
+  a locked spec to designed screens; C's app icon, splash, install prompt and offline state exist in no spec
+  and no mock, and it is the surface he sees every time he opens the app from the home screen.
+
 ### Open
 
 - **BUG-045 🟡 (new)** — the quick-add dedupe notice is the same amber miscast one affordance over, and is
