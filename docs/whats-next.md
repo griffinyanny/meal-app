@@ -143,8 +143,8 @@ first** — the security review is the one remaining item with real reasoning in
 ```
 Resume meal app — S55 closed 1F/B6, the S48 critic's four deferred findings. 693 unit + 127 E2E green on
 main (126 + new L18), lint + typecheck clean, visual-qa 0 blockers/0 high on Recipes + Plan. Three built,
-one moved: I ruled that Recipes' words win the
-vocabulary unification (the picker's Everything/Cooked before are now All/Cooked) and that the caps-label
+one moved: I ruled that Recipes' words win the vocabulary unification (the picker's Everything/Cooked
+before are now All/Cooked) and that the caps-label
 tracking goes to B8 with the rest of the type scale — it measured at ~46 sites across 8 tracking values
 against a spec that states exactly 2 rungs, so it's a classification, not a tweak. Worth carrying, and it's
 a NEW shape of the lesson: the critic's "+ is the loudest object" finding named one object where §08 states
