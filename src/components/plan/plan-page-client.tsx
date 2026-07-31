@@ -17,6 +17,7 @@ import { PlanSheet } from "./sheet/plan-sheet";
 import { usePlanSheet } from "./use-plan-sheet";
 import { usePlanModify } from "./use-plan-modify";
 import { usePlanHydration } from "./use-plan-hydration";
+import type { SlotToast } from "./rail/floating-slot";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
 import type { PlanDay } from "./rail-helpers";
 import { takeHandoff } from "@/lib/onboarding/handoff";
@@ -154,6 +155,32 @@ export function PlanPageClient() {
     else sheet.close();
   });
 
+  // BUG-035 · A DEAD STREAM IS NOT AN `error`.
+  //
+  // `useObject` only populates `error` for a failed REQUEST — a non-OK status or
+  // a fetch that throws. The generation route has already returned 200 and
+  // opened a body by the time anything can go wrong, so a stream that dies
+  // mid-pipe (our own abort, the provider stalling, the function being killed)
+  // arrives at the client as a body that simply CLOSES. `isLoading` goes false,
+  // `error` stays undefined, and nothing renders — which is why X3 and X4 both
+  // found the failure card unreachable on every path, not just the guarded one.
+  //
+  // `onFinish` is the honest signal: it fires once at stream end and reports the
+  // final object, which is `undefined` exactly when no valid plan arrived.
+  const [streamDied, setStreamDied] = useState(false);
+  /**
+   * The generation to run again.
+   *
+   * Held as the submitted payload rather than reconstructed at retry time: the
+   * intent screen has already cleared `intentPicks` by then (they were handed to
+   * the server), so rebuilding the ask from current state would silently retry
+   * WITHOUT the recipes the person chose.
+   */
+  const [lastGeneration, setLastGeneration] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+
   const {
     object: streamed,
     submit: submitGeneration,
@@ -162,10 +189,22 @@ export function PlanPageClient() {
   } = useObject({
     api: "/api/plan/stream",
     schema: aiPlanSchema,
-    onFinish: () => {
+    onFinish: ({ object, error }) => {
+      if (error || object === undefined) setStreamDied(true);
       utils.plan.current.invalidate();
     },
   });
+
+  // Either signal means the same thing to the user: they asked for a week and
+  // did not get one. `streamError` still matters — it is the one that fires when
+  // the request never got off the ground (401, 429, the daily budget).
+  const generationFailed = streamDied || !!streamError;
+
+  function retryGeneration() {
+    if (!lastGeneration) return;
+    setStreamDied(false);
+    submitGeneration(lastGeneration);
+  }
 
   const confirmMutation = trpc.plan.confirm.useMutation({
     onSuccess: () => utils.plan.current.invalidate(),
@@ -201,11 +240,14 @@ export function PlanPageClient() {
     cancelInFlight();
     setIntentMode(false);
     sheet.close();
+    setStreamDied(false);
     const pickedRecipeIds = intentPicks.map((p) => p.id);
-    submitGeneration({
+    const payload = {
       ...(request ? { request } : {}),
       ...(pickedRecipeIds.length > 0 ? { pickedRecipeIds } : {}),
-    });
+    };
+    setLastGeneration(payload);
+    submitGeneration(payload);
     // Cleared once handed over: they are now the week's, and leaving them here
     // would re-apply them to the NEXT generation as well as this one. Picks the
     // person wants carried across a regenerate are carried by the server, off
@@ -376,13 +418,15 @@ export function PlanPageClient() {
       );
     }
 
-    if (streamError && !plan) {
+    // No week to fall back to, so the failure owns the screen. With a plan on
+    // file it must NOT — see `slotToast` below.
+    if (generationFailed && !plan) {
       return (
         <div className="glass-card flex flex-col items-center space-y-3 p-8 text-center">
           <p className="text-sm text-muted-foreground">
             The chef got stuck putting your plan together.
           </p>
-          <Button size="sm" onClick={() => handleGenerate(undefined)}>
+          <Button size="sm" onClick={retryGeneration}>
             Try again
           </Button>
         </div>
@@ -499,13 +543,36 @@ export function PlanPageClient() {
   // and where the count already owns the slot). It is also suppressed behind an
   // open sheet: the sheet shows its own pending line and its own retry, and a
   // message at bottom-96 under a sheet is a message nobody can read.
-  const slotToast = !sheetOpen && !intentMode && !isStreaming ? toast : null;
+  // A FAILED GENERATION MUST NOT COST YOU THE WEEK YOU ALREADY HAD (Griffin,
+  // S50 — option B over "the error card replaces the screen").
+  //
+  // You asked for a new week and did not get one. That is a failed action, not
+  // a reason to take away the week on file — and replacing the screen has a
+  // worse edge: dismissing the error would drop you onto a plan you never asked
+  // to see, with nothing explaining why. So the failure borrows §C's slot, the
+  // same one a failed modify uses, and the plan behind it stays put.
+  //
+  // The message says the week is unchanged because the screen alone cannot: a
+  // retained plan and a newly-generated one look exactly the same.
+  const generationToast: SlotToast | null =
+    generationFailed && plan
+      ? {
+          message: "The chef got stuck. Your week is unchanged.",
+          tone: "error",
+          action: { label: "Try again", onClick: retryGeneration },
+        }
+      : null;
+
+  // Generation outranks a modify toast: it is the newer news, and it is the one
+  // the user is currently waiting on.
+  const slotToast =
+    !sheetOpen && !intentMode && !isStreaming ? (generationToast ?? toast) : null;
 
   const derivedState = isStreaming
     ? "streaming"
     : intentMode
       ? "intent"
-      : streamError && !plan
+      : generationFailed && !plan
         ? "stream-error"
         : plan && persistedMeals.length > 0
           ? isElapsed

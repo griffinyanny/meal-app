@@ -112,6 +112,16 @@ generate/review rows. D3 — the pointer-lockup regression — is verified sound
 |----|-----|-------|----------|--------|
 | X1 | DRAFT, force modify failure | Tap an inline chip that fails | Bottom "That didn't take — try again?" pill with a Retry button; Retry re-fires the same request | 🟢 (via [E2E:FAIL] token) |
 | X2 | DRAFT, force modify failure | Fail a modify launched from a sheet | Sheet stays open with the retry line; send/actions re-enabled | 🟢 (via [E2E:FAIL] token) |
+| X3 | EMPTY, force generation failure | Send a failing request from the intent screen | Named failure card + Try again — the first-run control case | 🟢 (BUG-035, S50) |
+| X4 | DRAFT, force generation failure | Start over → send a failing request | Failure is named AND the seeded week survives (Griffin's option B) | 🟢 (BUG-035, S50) |
+| X5 | EMPTY, `[E2E:FAIL_ONCE]` | Send a request whose first attempt dies | A week arrives; NO failure is ever named — the retry is invisible when it works | 🟢 (BUG-035, S50) |
+| X6 | EMPTY, `[E2E:SLOW=20000]` | Stall past both attempts (bound is 2.5s in the suite) | Named failure + Try again, not a spinner — drives the REAL timeout path | 🟢 (BUG-035, S50) |
+
+> **X3 and X4 both failed before the fix**, which is the point of them: the
+> generation failure card had been unreachable on every path since it was
+> written, because `useObject` reports a dead *stream* as a completed one. X1/X2
+> only ever covered a *modify* failure, so nothing in five phases had asked what
+> the generation path renders. See `docs/bug-tracker.md` → BUG-035.
 
 ---
 
