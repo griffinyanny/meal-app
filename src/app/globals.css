@@ -210,6 +210,15 @@
     background: rgba(244, 235, 220, 0.1);
     border: 1px solid rgba(244, 235, 220, 0.32);
   }
+  /* The soft fill + line the spec states for --spec-success, and the only green
+     in the product (spec §12 item 03). It replaces the 1D-era iOS #30D158,
+     which was a COOL green on a warm floor — law 04's exact complaint, wearing
+     a semantic label. Fill and line only: the hue goes on the glyph or the
+     chip's own type, never on a sentence the user reads (law 03). */
+  .spec-success-soft {
+    background: rgba(156, 184, 111, 0.14);
+    border: 1px solid rgba(156, 184, 111, 0.3);
+  }
   /* Lighting (spec §03). One wash per screen, entering once from above, always
      gold, never animated, always beneath the content layer. `hero` is the only
      recipe permitted two stops and is reserved for screens the orb is on. */

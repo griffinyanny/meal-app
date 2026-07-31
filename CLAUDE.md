@@ -21,14 +21,30 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**688 unit + 121 E2E green, migration `0010` applied.** Next is **Workstream B**, the design-system pass
-(spec §12 items 03/04/05/07, the two semantic calls, the S48 critic slate, BUG-037/038).
+**Workstream B is 🔨 OPEN: B1 + B5 code-complete (S52), 7 items remain.** **691 unit + 121 E2E green,
+migration `0010` applied.** Next: the `/visual-qa` pass B1+B5 still owe, then B9 → B2 → B3 → B4 → B6 → B7 →
+B8. **No taste calls are pending on any of them.**
 
-**⚠️ THE LESSON, now two sessions deep and it changed shape in S51. S50: the tracker was WRONG about what
-three of the six bugs WERE, and twice the real defect was worse than the filed one. S51: the tracker was
-right about the bug and WRONG ABOUT THE FIX, twice.** Reading the code is not enough, and neither is
-following the recommendation — a parked bug's "address by" line is a hypothesis from the day it was filed,
-not a spec.
+**⚠️ THE LESSON, now four sessions deep, and it has changed shape every time. S50: the tracker was WRONG
+about what three of the six bugs WERE. S51: right about the bug, WRONG ABOUT THE FIX, twice. S52: the bug
+had ALREADY FIXED ITSELF, and the doc had the reason backwards.** Reading the code is not enough, following
+the recommendation is not enough, and neither is trusting that the defect still exists — a parked item's
+description is a hypothesis from the day it was filed, not a spec.
+
+- **S52 · the "indigo draft pill" had not been indigo since 1E.7.** Spec §12 item 03 and scope-1F both
+  called it *"the last live indigo after 1E.7 retired `--primary`"* — but retiring `--primary` is exactly
+  what **killed** it. Zero indigo literals remain in `src/`. **The real defect was underneath and was not
+  what was filed:** with indigo gone the pill had become **cream**, the *action* hue, so a status label was
+  wearing the one colour that means "tap me". **Verify the defect still exists, and in the form described,
+  before you fix the thing that was written down.**
+- **S52 · a force-failure that nearly recorded a false red.** Stashing the fix and re-running gave exit 1 —
+  the right shape of proof — from `--reporter=basic`, a flag vitest 4 does not have. The suite never ran. A
+  second attempt raced `git stash pop` and went green against restored code. **"It went red" is not the
+  check. "It went red for the reason I predicted" is** — read the failure text, never the exit code alone.
+  Use a physical file backup, never chained `stash && test && pop`.
+- **S52 · a stale exception is worse than no exception.** `visual-qa-rubric.md` told the judge to ignore the
+  exact two things B1/B5 had just fixed. Whenever an item closes, grep the rubric, `PROJECT-CONTEXT.md` and
+  the capture `facts` for its do-not-flag entry — a licence to ignore outlives the reason for it.
 
 - **BUG-013's recommended fix would have doubled the injection.** "Recompute from `(questionId, values)`"
   lands in `memoryForAnswer`, whose label lookup fell back to the **raw value** (`?? v`) — harmless on the
@@ -72,8 +88,14 @@ worse than none.
 **✅ `DEV_TOOLS_EMAILS` is CLOSED (Griffin verified test mode on prod, S50).** Carried for nine sessions;
 do not raise it again.
 
-**Owed by Griffin:** a look at whether `maxDuration: 120` got clamped on the generation route (if so, fluid
-compute is off on the project — a free toggle). **BUG-042 is a Supabase dashboard toggle only he can do.**
+**✅ `maxDuration` CLOSED (S52) — it was NOT clamped.** Checked via the Vercel API rather than handed back:
+the production build of `00062a4` (the tree carrying `maxDuration = 120`) completed with no clamp warning
+and deployed READY, and Vercel fails the build outright when the value exceeds the plan ceiling — so 120 was
+accepted and **fluid compute is on**. Residual: that proves the *declared* ceiling was accepted at build
+time; only a real generation running past 60s proves the runtime honours it. Do not raise it again.
+
+**Owed by Griffin:** **BUG-042 is a Supabase dashboard toggle only he can do** (Authentication → Sign In /
+Providers → disable Email). Hygiene, not a fix — measured not-exploitable in S51.
 
 ### Prior sessions (retained for context)
 

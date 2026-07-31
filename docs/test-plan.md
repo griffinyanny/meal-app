@@ -146,8 +146,10 @@ through the real AI mock (deterministic `grocery-talk` fixture). Spec:
 | GR9 | GROCERY_READY | Open the chef (brain), pick "Add stuff for taco night", send | NL→ops adds the meal's items; the chef's reply shows; items land on the list | 🟢 |
 | GR10 | GROCERY_READY | Open the chef, pick "What am I out of?", send | Query-only: the reply shows, the list is unchanged (no ops applied) | 🟢 |
 | GR11 | GROCERY_READY | Open the chef, type "remove the garlic", send | The item's `[N]` ref resolves to the real row and it's removed (the ID-safety path) | 🟢 |
+| GR-L1 | GROCERY_PENDING_CACHED | Open Groceries; the fully-cached plan confirms | Lands on the merged list with no normalize hang; the two recipes' shared garlic is ONE row carrying the merge marker. **S52: asserts the marker's TEXT (`2 dinners`), not its presence** — the old amber dot was visible whenever `sources.length > 1` was truthy at all, so it could not fail on a wrong count | 🟢 |
+| GR-L2 | GROCERY_HYDRATING_STRAGGLERS | Open Groceries mid-generation | The straggler hint names the exact remaining count ("Finishing 2 recipes…"), not a generic shimmer; the list stays hidden | 🟢 |
 
-**Groceries: 11 passing**, 0 findings. Merge quality (canonical sums, under-merge
+**Groceries: 13 passing**, 0 findings. Merge quality (canonical sums, under-merge
 correctness) and NL→ops quality are wrap-time real-model checks + Griffin's taste pass
 — the harness mocks the model.
 

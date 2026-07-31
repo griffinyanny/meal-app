@@ -248,13 +248,17 @@ test("GR-L1 - a fully-cached plan confirms straight to the merged list, no norma
   // the merged list. A generous timeout still proves the point (no 37s batch).
   await expect(list(page)).toBeVisible({ timeout: 15_000 });
 
-  // The two recipes share garlic → one merged row (2 sources = the amber merge dot),
-  // plus the two single-source items. Proves the cached path aggregates correctly.
+  // The two recipes share garlic → one merged row, plus the two single-source
+  // items. Proves the cached path aggregates correctly.
   await expect(rowByName(page, /garlic/i)).toHaveCount(1);
   await expect(rowByName(page, /salmon/i)).toBeVisible();
   await expect(rowByName(page, /pasta/i)).toBeVisible();
   const garlicRow = rowByName(page, /garlic/i);
-  await expect(garlicRow.getByTestId("grocery-merge-dot")).toBeVisible();
+  // The merge marker carries the COUNT as its type (1F/B5). Asserting the string
+  // rather than the element's presence is the point: the old amber dot was
+  // visible whenever `sources.length > 1` was truthy at all, so it could not
+  // fail on a wrong count. "2 dinners" can.
+  await expect(garlicRow.getByTestId("grocery-merge-marker")).toHaveText("2 dinners");
 });
 
 test("GR-L2 - a plan confirmed with stragglers shows the honest 'Finishing N recipes…' hint", async ({

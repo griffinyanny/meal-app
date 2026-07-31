@@ -18,7 +18,8 @@ export function capitalizeName(name: string): string {
 }
 
 // The provenance/meta line under an item name. A multi-source item summarizes how
-// many meals it spans (paired with the amber dot); manual/staple items say so.
+// many meals it spans — and for those, this string IS the merge marker, rendered
+// as a neutral inset chip; manual/staple items say so as plain muted text.
 export function itemMeta(item: GroceryItem): string | null {
   const sourceCount = item.sources?.length ?? 0;
   if (sourceCount > 1) return `${sourceCount} dinners`;

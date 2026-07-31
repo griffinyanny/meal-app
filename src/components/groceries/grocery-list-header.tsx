@@ -58,11 +58,11 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
         <div
           className={cn(
             "flex items-center gap-2.5 rounded-2xl px-3.5 py-3",
-            "border border-[#30D158]/30 bg-[#30D158]/10"
+            "spec-success-soft"
           )}
           data-testid="grocery-complete-banner"
         >
-          <Check className="size-5 text-[#30D158]" strokeWidth={2.4} />
+          <Check className="size-5 text-[var(--spec-success)]" strokeWidth={2.4} />
           <span className="text-[13.5px] font-semibold">
             List complete — everything&apos;s covered.
           </span>

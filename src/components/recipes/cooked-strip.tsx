@@ -31,7 +31,7 @@ export function CookedStrip({ recipes, onOpen }: CookedStripProps) {
                 className="glass-card shrink-0 w-[54%] max-w-[220px] flex flex-col gap-2 p-[14px] text-left cursor-pointer active:scale-[0.99] transition-transform"
               >
                 {cooked && (
-                  <span className="self-start text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#30D158]/12 text-[#30D158] border border-[#30D158]/30">
+                  <span className="self-start text-[10px] font-semibold px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
                     Cooked {cooked}
                   </span>
                 )}

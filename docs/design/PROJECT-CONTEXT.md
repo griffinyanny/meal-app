@@ -81,16 +81,23 @@ family is now an alias layer over the spec tokens with no independent colour val
 retired indigo `#3A86FF` is gone from the build entirely, including `--primary`, which is now cream.
 **Screenshots of any surface are safe to sample from again.**
 
-**Three things are still deliberately un-migrated, and they are the ONLY places the build knowingly
-disagrees with the spec.** All three are routed to 1F (spec §12 items 03/04/05/07), where each gets its
-own visual-QA pass:
-- the **iOS green `#30D158`** cooked/complete checks in `recipe-card`, `cooked-strip` and the Groceries
-  header (item 03 → `#9CB86F`);
-- the **amber `#FF9F0A`** merge/dedupe markers in Groceries — the spec has no caution hue on purpose,
-  because amber is the chef, so this one needs a semantic decision rather than a token swap;
-- the **double bottom bar** on Recipes (item 04) and the icon-only hit targets (item 05).
+**What is still deliberately un-migrated — the ONLY places the build knowingly disagrees with the spec.**
+Routed to 1F Workstream B (spec §12 items 04/05/07), each with its own visual-QA pass:
+- the **double bottom bar** on Recipes (item 04 — only the nav's square top corners remain; the
+  floating-primary half landed in 1E.5) and the icon-only hit targets (item 05);
+- **faked subsection headings** not yet promoted to real Group/Row title levels (item 07);
+- one amber survivor: the **quick-add dedupe notice** in `grocery-list.tsx`, tracked as **BUG-045**.
 
-**Design against the spec on all three anyway** — they are the "before", the rest of the app is not.
+**✅ Item 03 and the amber merge markers CLOSED (S52).** The cooked/complete checks are
+`--spec-success` `#9CB86F` via the new `.spec-success-soft` utility — Griffin's call was that the check
+**keeps a hue** rather than going neutral. The Groceries merge marker is now a **neutral inset carrying the
+count as type** ("2 dinners"), which was the semantic decision this entry was waiting on: amber is the chef,
+and a merge is a mechanical fact about the list. The `Plan draft` pill went neutral in the same pass — it
+had stopped being indigo when 1E.7 aliased `--primary` to cream, so it was reading in the **action** hue,
+which says "press me" about a label. `src/components/palette.test.ts` now fails the build on any
+reintroduction.
+
+**Design against the spec on the remaining items anyway** — they are the "before", the rest of the app is not.
 
 **Token pin — the SPEC values (`--spec-*` in `src/app/globals.css`):**
 - **Floor `#0F0B08`** — warm near-black. NOT `#0E0E10`, which was the cool floor this replaced.
