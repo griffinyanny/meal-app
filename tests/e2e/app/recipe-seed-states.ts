@@ -31,10 +31,34 @@ export type RecipeState =
   | "RECIPES_COOKED_HARVEST" // confirmed past slot → tab load must stamp it cooked
   | "RECIPES_EMPTY"; // first run
 
+export interface SeedIngredient {
+  qty: string;
+  unit: string;
+  item: string;
+  notes?: string;
+}
+
+export interface SeedStep {
+  number: number;
+  text: string;
+  durationMinutes?: number;
+}
+
 export interface SeedRecipe {
   id: string;
   title: string;
   description: string | null;
+  // ⚠️ These two exist because they did NOT, and their absence was invisible.
+  // `seed.ts` hard-coded `ingredients: []` / `steps: []` for every recipe this
+  // builder produced, so 100% of seeded recipes rendered BUG-038's empty
+  // labelled cards — and `recipes-detail-add-to-week`, the tab's only detail
+  // capture, had NEVER shown a populated recipe body. The visual gate was
+  // grading the degenerate state as the canonical one. Both seeders that came
+  // later (`seedPlanState`, `seedGroceryState`) already carried real
+  // ingredients; this one was the outlier. Third instance of "ask what the
+  // layer cannot see" (S47 sheet states, S52 grocery-complete-banner).
+  ingredients: SeedIngredient[];
+  steps: SeedStep[];
   sourceType:
     | "ai_generated"
     | "url_import"
@@ -66,6 +90,28 @@ export interface SeedRecipeSpec {
   slots: SeedRecipeSlot[];
 }
 
+// A plausible body, so a detail capture shows the screen a real user reads.
+// Deliberately varied per recipe via the title, rather than one shared constant:
+// identical bodies across ten cards would make a layout that only works for one
+// length look like it works for all of them.
+function body(item: string, method: string): Pick<SeedRecipe, "ingredients" | "steps"> {
+  return {
+    ingredients: [
+      { qty: "1", unit: "lb", item, notes: "patted dry" },
+      { qty: "2", unit: "tbsp", item: "olive oil" },
+      { qty: "3", unit: "cloves", item: "garlic", notes: "thinly sliced" },
+      { qty: "1", unit: "bunch", item: "flat-leaf parsley" },
+      { qty: "1/2", unit: "tsp", item: "kosher salt" },
+    ],
+    steps: [
+      { number: 1, text: `Season the ${item} generously and let it come to room temperature.`, durationMinutes: 15 },
+      { number: 2, text: `${method} until deeply coloured and cooked through.`, durationMinutes: 12 },
+      { number: 3, text: "Add the garlic to the pan and cook until fragrant, stirring so it doesn't catch." },
+      { number: 4, text: "Finish with the parsley, taste for salt, and serve straight from the pan." },
+    ],
+  };
+}
+
 function recipe(partial: Partial<SeedRecipe> & { id: string; title: string }): SeedRecipe {
   return {
     description: null,
@@ -76,6 +122,7 @@ function recipe(partial: Partial<SeedRecipe> & { id: string; title: string }): S
     totalTimeMinutes: 30,
     servings: 2,
     tags: [],
+    ...body("chicken thighs", "Sear skin-side down in a heavy pan"),
     ...partial,
   };
 }
@@ -87,7 +134,7 @@ function libraryState(): SeedRecipeSpec {
     plan: { id: PLAN_ID, status: "draft", weekStart: daysAgoISODate(-1) },
     recipes: [
       // Deliberate library — a couple favorited, two already cooked.
-      recipe({ id: rid(1), title: "Miso-Glazed Salmon", sourceType: "url_import", isFavorite: true, tags: ["Seafood"], totalTimeMinutes: 30, servings: 2 }),
+      recipe({ id: rid(1), title: "Miso-Glazed Salmon", sourceType: "url_import", isFavorite: true, tags: ["Seafood"], totalTimeMinutes: 30, servings: 2, description: "Sweet-savoury glaze, broiler finish, on the table in half an hour.", ...body("skin-on salmon fillets", "Broil 4 inches from the element") }),
       recipe({ id: rid(2), title: "Sheet-Pan Chicken Thighs", sourceType: "ai_generated", tags: ["Sheet-pan"], totalTimeMinutes: 40, servings: 4 }),
       recipe({ id: rid(3), title: "Shrimp Scampi Linguine", sourceType: "manual", isFavorite: true, tags: ["Pasta"], totalTimeMinutes: 25, servings: 3 }),
       recipe({ id: rid(4), title: "Herb Roast Chicken", sourceType: "ai_generated", lastCookedAt: isoAt(9), tags: ["Roast"], totalTimeMinutes: 90, servings: 4 }),
@@ -97,7 +144,14 @@ function libraryState(): SeedRecipeSpec {
       // Plan drafts — plan_generated + sourcePlanId set (ephemeral until promoted).
       recipe({ id: rid(8), title: "Gochujang-Glazed Tofu Bowls", sourceType: "plan_generated", sourcePlanId: PLAN_ID, tags: ["Bowl"], totalTimeMinutes: 35, servings: 2 }),
       recipe({ id: rid(9), title: "Lemon Orzo with Feta", sourceType: "plan_generated", sourcePlanId: PLAN_ID, tags: ["Vegetarian"], totalTimeMinutes: 25, servings: 4 }),
-      recipe({ id: rid(10), title: "Chicken Katsu Bowls", sourceType: "plan_generated", sourcePlanId: PLAN_ID, tags: ["Bowl"], totalTimeMinutes: 45, servings: 2 }),
+      // DELIBERATELY BODY-LESS, and the only one. This is the un-hydrated plan
+      // draft BUG-038 names as its production repro — a title the plan created
+      // before the recipe itself was generated. Keeping exactly one means the
+      // empty state stays reachable and gradeable while every other capture
+      // shows the populated screen. Remove the empty body and the visual gate
+      // goes blind to the fallback; make them all empty and it goes blind to
+      // the real one, which is the state this file was in until S53.
+      recipe({ id: rid(10), title: "Chicken Katsu Bowls", sourceType: "plan_generated", sourcePlanId: PLAN_ID, tags: ["Bowl"], totalTimeMinutes: 45, servings: 2, ingredients: [], steps: [] }),
     ],
     slots: [],
   };
