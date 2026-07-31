@@ -12,8 +12,8 @@ import {
   describeHousehold,
   type HouseholdComposition,
 } from "@/lib/household";
-import { isLowSignal } from "./planner";
-import type { InterviewState } from "./types";
+import { DEEP_QUESTIONS, memoryForAnswer } from "./questions";
+import type { DeepAnswer, InterviewState } from "./types";
 
 export interface SynthesizedMemory {
   content: string;
@@ -35,16 +35,21 @@ const DIET_LABEL: Record<string, string> = {
 // even when they skipped every optional turn. The brief's requirement: a
 // completed interview ALWAYS leaves at least one sourceType:'onboarding' memory,
 // so the You tab can honestly say "you told me when we started".
-export function synthesizeHeadlineMemory(state: InterviewState): string {
+export function synthesizeHeadlineMemory(state: MemorySource): string {
   const parts: string[] = [];
 
   if (state.composition) {
     parts.push(`Cooking for ${householdPhrase(state.composition)}`);
   }
 
-  if (state.dietaryFramework && state.dietaryFramework !== "omnivore") {
-    parts.push(DIET_LABEL[state.dietaryFramework] ?? state.dietaryFramework);
-  }
+  // BUG-013 · the label table decides, and an unrecognised framework is DROPPED
+  // rather than echoed. The old `?? state.dietaryFramework` put the caller's own
+  // string into a sourceType:'onboarding' sentence, which is the same defect as
+  // the deep-answer one through a quieter door. Omitting the clause is also the
+  // honest outcome: a framework the chef has no label for is one it cannot cook
+  // to either.
+  const diet = state.dietaryFramework ? DIET_LABEL[state.dietaryFramework] : null;
+  if (diet && state.dietaryFramework !== "omnivore") parts.push(diet);
 
   if (state.maxCookTimeWeeknight) {
     parts.push(`keeps weeknights under ${state.maxCookTimeWeeknight} minutes`);
@@ -65,20 +70,47 @@ function householdPhrase(c: HouseholdComposition): string {
   return c.adults === 1 ? "1 adult" : `${c.adults} adults`;
 }
 
+// Exactly what the memory writes read from a finished interview, and nothing
+// more. Deliberately NOT `InterviewState`: an answer contributes a question id
+// and the options chosen, full stop. `memory` and `dimension` are the client's
+// own derivations and are recomputed here, so naming them in this type would
+// only invite trusting them again (BUG-013). `InterviewState` is assignable to
+// it, so the client-side callers are unaffected.
+//
+// The old signature took `InterviewState` and the router reached it through an
+// `as InterviewState` cast, which is what let a schema field typed `string`
+// stand in for one typed as an enum without anyone noticing.
+export interface MemorySource {
+  composition: HouseholdComposition | null;
+  dietaryFramework: string | null;
+  maxCookTimeWeeknight: number | null;
+  deepAnswers: Array<Pick<DeepAnswer, "questionId" | "values">>;
+}
+
 // Every memory a finished interview writes: the headline, then one per deep
 // answer that actually carried signal. All stamped sourceType:'onboarding' by
 // the caller.
-export function synthesizeMemories(state: InterviewState): SynthesizedMemory[] {
+//
+// BUG-013: the sentence is built HERE, from the server's own question bank. It
+// is the text the You ledger reads back under "You told me when we started", so
+// its provenance has to be ours.
+export function synthesizeMemories(state: MemorySource): SynthesizedMemory[] {
   const memories: SynthesizedMemory[] = [
     { content: synthesizeHeadlineMemory(state), category: "preference" },
   ];
 
   for (const answer of state.deepAnswers) {
-    if (isLowSignal(answer) || !answer.memory) continue;
+    const question = DEEP_QUESTIONS.find((q) => q.id === answer.questionId);
+    if (!question) continue;
+
+    const content = memoryForAnswer(question, answer.values);
+    if (!content) continue;
+
     memories.push({
-      content: answer.memory,
+      content,
       // Shopping cadence is something they DO; the rest is what they like.
-      category: answer.dimension === "shopping" ? "behavior" : "preference",
+      // Read off the question, not off a dimension the caller sent.
+      category: question.dimension === "shopping" ? "behavior" : "preference",
     });
   }
 
