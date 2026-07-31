@@ -6,59 +6,81 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### A separate non-prod Supabase project — now, or V1.5? (raised S51, from BUG-018)
+> **✅ Nothing is pending here as of S54.** The last standing item — the non-prod Supabase project — closed
+> below, and BUG-042 closed with it in `bug-tracker.md`. **The one thing still owed by Griffin on 1F is not
+> a decision but an observation he has to make himself:** B2's phone check, whether S28's density complaint
+> reads resolved now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on
+> screen together.
 
-**The guard shipped; this is the thing the guard is a substitute for.** `tests/e2e/app/project-guard.ts`
-now refuses to run the suite against any project outside a committed allow-list, and requires
-`NEXT_PUBLIC_SUPABASE_URL` and `DATABASE_URL` to name the same one. What it does *not* change is that the
-harness still deletes rows in the project that holds your real data — it just can no longer be pointed at
-somebody else's.
+### ✅ RESOLVED S54 — A separate non-prod Supabase project: **NO.** And the real risk was somewhere else.
 
-**⚠️ S53 — this question absorbed BUG-042, and the two are now one decision.** BUG-042's standing instruction
-("disable the Supabase Email provider — the app has never used that path") turns out to be **wrong and
-destructive**: the E2E harness's only sign-in is `signInWithPassword`, which rides the email provider.
-Measured — GoTrue returns `<provider>_provider_disabled` on the password grant *before* checking
-credentials (verified against this project's already-off **phone** provider: `422 phone_provider_disabled`,
-versus `400 invalid_credentials` for the enabled email one). Disabling Email would red the whole 121-spec
-suite. **A separate non-prod project is what would let prod turn Email off while the harness keeps it on**,
-which is a real new argument for doing this — and still not enough to move the recommendation, because
-BUG-042 is measured **not exploitable** (`mailer_autoconfirm: false`). So what acting now buys is hygiene,
-not a closed hole. **Griffin's call is one word: accept (both → V1.5) or set it up now.**
+**Griffin's call (S54): no second project.** Raised S51 from BUG-018, carried through S52/S53 and asked
+four times in a form that could not actually be answered — "accept or set it up now" never said what was
+being accepted. Griffin pushed back on exactly that, and pushing on it found the framing was wrong.
 
-**✅ S54 — half of the pair is settled. BUG-042 is CLOSED as won't-do** on Griffin's explicit instruction
-("do not do the toggle"), and has moved from the tracker's Open table into its Resolved log carrying both
-measurements. **This question is therefore no longer a pair — it is back to being one decision about one
-thing**, and it is the last item owed by Griffin on 1F. What BUG-042's closure changes here: the "a separate
-project would let prod disable Email" argument is now the *only* remaining reason to build one early, and it
-buys hygiene on a hole that is measured shut. **Recommendation unchanged: accept, V1.5.**
+**What the question assumed:** that the E2E suite deletes rows dangerously close to real data, and that the
+fix is a separate database. **What the code actually does** (read in S54, not summarised):
 
-**Recommendation: V1.5, not now.** Three reasons, in the order they matter:
+- **The dedicated test account already exists** — `e2e-harness@example.com`, in its own household
+  `E2E Test Kitchen`. Griffin's proposal ("just stand up a test account and run the suite against that")
+  **is what is already built.**
+- **Every delete is scoped.** `wipe()` in `tests/e2e/app/seed.ts` has **9 deletes and 9
+  `WHERE householdId = <test household>` clauses — zero unscoped.** It never deletes users, households or
+  membership.
+- **Three guards fire before any write** (`assertTestHousehold`): the household must exist, its name must
+  equal the sentinel, and it must have exactly one member who is the test user. BUG-018's committed
+  project allow-list sits on top of that.
 
-1. **A second free-tier project pauses on inactivity, and the E2E suite is exactly the workload that
-   triggers it.** We already have that scar on this project (`meal-app` Supabase pauses; every pooler
-   variant returns *"tenant not found"* until you resume it in the dashboard). A test suite that goes red
-   for infrastructure reasons trains you to ignore red — which is the precise failure BUG-019 cost three
-   sessions to unlearn. Trading a real guard for a recurring false alarm is a bad trade.
-2. **The realistic vector is closed.** For a data-loss event you now need the right project **and** a real
-   household literally named `E2E Test Kitchen` **and** with exactly one member who is the harness's own
-   test user. That is not something a misconfiguration reaches.
-3. **The residual risk is contention, not deletion.** The S37 incident — the harness's auth user vanishing
-   mid-run — was the suite fighting a live session over the same identity. A separate project would fix it,
-   but so would not running the suite while you are using the app, and the guard does not address it either
-   way.
-   > ⚠️ **Reproduced by accident, S53, which is the strongest evidence this entry has.** Two E2E runs
-   > overlapped on the same test household and **six Plan specs went red for pure data contention** — the
-   > seeds were wiping each other. Re-run alone, clean. Read it in both directions: it is a real cost of
-   > sharing one project, **and** it is the failure mode a second project would trade for a project that
-   > pauses on inactivity. The cheap mitigation is a rule, not infrastructure: **one suite at a time, and
-   > not while you are using the app.**
+So "the suite deletes rows in the project holding your real data" was technically true and practically
+misleading: it deletes rows in **its own household, behind four independent checks.**
 
-**What would change the answer:** a second person running the suite (your wife's machine, a CI runner), or
-prod holding two real households' data. Both arrive with V1.5's household sharing, which is also when a
-staging environment earns its keep on more than the test harness. **Cost when we do it:** a new project, the
-migration chain replayed, a second `.env.local`, the test user bootstrapped, and one line added to
-`ALLOWED_PROJECT_REFS`. Call it an hour, plus whatever the free-tier project limit forces (Supabase allows
-two active projects per org; a third needs a second org or Pro).
+**⚠️ A correction this entry owed.** Earlier versions implied a separate project fixes contention. **For the
+S53 incident it would not have** — that was two suite *runs* colliding with each other, and they would
+collide in a separate project just the same. A second project only addresses suite-vs-Griffin contention,
+which his usage pattern already covers: heavy suite work and real usage do not overlap (bug-bashing is not
+"really using" the app), and the standing rule — one suite at a time, not while he is in the app — is
+cheaper and more reliable than infrastructure.
+
+**Cost that settled it:** FFOS + meal-app are the two free-tier projects. A third means Pro (~$25/mo) or a
+second org — real money for protection against a hypothetical future scoping bug that four guards already
+stack against.
+
+**What would reopen it:** a second machine running the suite (his wife's laptop, or CI). That arrives with
+V1.5, and only then.
+
+### ⭐ The thing this question was standing in front of — migration safety → Workstream D
+
+**Griffin asked the right follow-up: "isn't this what staging is for, and what's the right long-term
+solution?"** Interrogating it surfaced the risk the second-project debate had been obscuring, which is not
+about the test suite at all:
+
+**`drizzle-kit generate` cannot tell a rename from a drop-plus-add.** Rename a column in `schema/` and it
+emits `DROP COLUMN` + `ADD COLUMN`, silently destroying that column's data; `db:migrate` then applies it
+to the project holding real data, with no automatic backup on Supabase Free. **One bad generated migration,
+silent and unrecoverable.**
+
+**Why it has never bitten:** all 11 migrations are **purely additive** — zero `DROP TABLE`, `DROP COLUMN`,
+`TRUNCATE` or `DELETE FROM`. That is a young schema, not a control. **The first genuinely destructive
+change is V1.5's household sharing.**
+
+**The agreed answer (Griffin, S54) — a discipline plus one guard, NOT infrastructure. → Workstream D:**
+
+1. **Expand/contract as the default.** No migration both removes something and depends on its absence: add
+   nullable → backfill → switch reads → drop later as a separate migration. Rollback becomes a code deploy
+   rather than a data restore. ⚠️ **Already done instinctively once** — migration `0010` dropped a *default*
+   and deliberately did not backfill existing rows, because a genuine "2 adults" answer is byte-identical to
+   the default. The reasoning exists; it is not written down as the rule.
+2. **A destructive-SQL guard** (`migrations.test.ts`) scanning the migration files and failing unless a
+   destructive statement carries an explicit acknowledgement comment. This repo's established idiom —
+   `config.test.ts` scrapes `maxDuration` from route source, `palette.test.ts` scrapes hexes with an
+   allow-list, `globals.test.ts` fails on hand-written vendor prefixes. Turns "we remembered to read the
+   SQL" into "the gauntlet will not let it through."
+3. **A `pg_dump` before any acknowledged-destructive migration.** ⚠️ **This is the part a staging project
+   would NOT have given us:** rehearsing a bad migration and then applying the same bad migration to prod
+   loses the data either way. The dump is the only step that helps at the moment it matters.
+
+**Why D and not now:** the trigger is not on the board until V1.5, D lands before both validation and V1.5,
+and 1F's remaining B items are the critical path to shipping R1.
 
 ### ✅ RESOLVED S47 — The chef's week summary pushes the first meal below the fold (BUG-034, raised S45)
 

@@ -4,6 +4,47 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S54) — No second Supabase project. The risk was in migrations, not in the test suite.
+
+**Decision (Griffin, S54): NO separate non-prod Supabase project.** Raised S51, carried through S52/S53, and
+asked four times in a form that could not be answered — *"accept or set it up now"* never said what was
+being accepted. Griffin pushed back on exactly that, and pushing on it showed the framing was wrong.
+
+**What reading the code changed.** The question assumed the suite deletes rows dangerously near real data.
+In fact: the dedicated test account already exists (`e2e-harness@example.com` / `E2E Test Kitchen`) — so
+Griffin's own proposal, *"just stand up a test account and run the suite against that,"* **is what was
+already built**; `wipe()` carries **9 deletes and 9 household-scoped `WHERE` clauses, zero unscoped**, and
+never touches users, households or membership; and three guards fire before any write, under BUG-018's
+committed project allow-list. **"The suite deletes rows in the project holding your real data" was
+technically true and practically misleading.**
+
+⚠️ **A correction the entry owed:** it had implied a second project fixes contention. For the S53 incident
+it would not have — that was two suite *runs* colliding, which happens in any single project. A second
+project only addresses suite-vs-Griffin contention, and his usage pattern already covers that (heavy suite
+work and real use do not overlap), as does the standing one-suite-at-a-time rule.
+
+**Cost that settled it:** FFOS + meal-app are the two free-tier projects; a third means Pro (~$25/mo) or a
+second org — real money for protection against a hypothetical future scoping bug four guards already stack
+against. **Reopens only on a second machine running the suite (wife's laptop, or CI) → V1.5.**
+
+**The decision this unblocked — migration safety → Workstream D.** Griffin's follow-up (*"isn't this what
+staging is for, and what's the right long-term solution?"*) surfaced the actual exposure:
+**`drizzle-kit generate` cannot distinguish a rename from a drop-plus-add**, so renaming a column emits
+`DROP COLUMN` + `ADD COLUMN` and silently destroys its data, applied straight to the project holding real
+data with no automatic backup on Supabase Free. It has never bitten because all 11 migrations are purely
+additive — a young schema, not a control. **The agreed answer is a discipline plus one guard, not
+infrastructure:** expand/contract as the written default, a `migrations.test.ts` destructive-SQL guard in
+this repo's source-scraping idiom, and a `pg_dump` before any acknowledged-destructive migration.
+**Explicitly rejected: a staging database** — it only catches what reading the generated SQL already
+catches, and gives nothing at the moment it matters, since rehearsing a bad migration and then applying it
+to prod loses the data either way.
+
+**Future impact.** V1.5's household sharing is the first genuinely destructive schema change, so the guard
+must exist before it. D lands before both validation and V1.5, which is why this did not displace
+Workstream B.
+
+---
+
 ## 2026-07-31 (S54) — BUG-042 is closed as won't-do; the 44px floor lives on the primitive, not the call sites
 
 **Decision 1 (Griffin, S54).** BUG-042 is **closed as won't-do** and moved to the tracker's Resolved log.

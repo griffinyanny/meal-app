@@ -578,6 +578,32 @@ to look and feel finished so his validation-week feedback can be about design ra
       list-ready, shipped **before** the validation weeks start or the weeks do not count.
 - [ ] **Security review of the full surface** + rate-limiting audit. Per the standing rule for
       auth/secrets/PII work, live-code vulnerabilities ship as their own PR first.
+- [ ] **⭐ Migration safety — added S54, and it is the risk the non-prod-Supabase-project debate was standing
+      in front of.** That question closed **NO** (`open-questions.md`): the suite already runs as its own
+      account in its own household behind four guards, and Griffin's own proposal turned out to be what was
+      already built. Interrogating it surfaced the real exposure, which has nothing to do with the test
+      suite: **`drizzle-kit generate` cannot tell a rename from a drop-plus-add.** Rename a column in
+      `schema/` and it emits `DROP COLUMN` + `ADD COLUMN`, silently destroying that column's data;
+      `db:migrate` applies it to the project holding real data, with no automatic backup on Supabase Free.
+      **One bad generated migration, silent and unrecoverable.** It has never bitten because all 11
+      migrations are **purely additive** — zero `DROP TABLE` / `DROP COLUMN` / `TRUNCATE` / `DELETE FROM` —
+      which is a young schema, not a control. **The first genuinely destructive change is V1.5's household
+      sharing**, which is why this lands in D rather than displacing Workstream B. Three parts:
+      - [ ] **Expand/contract written into `.claude/rules/drizzle-schema.md` as the standing discipline.** No
+            migration both removes something and depends on its absence: add nullable → backfill → switch
+            reads → drop later, as a separate migration. Rollback becomes a code deploy, not a data restore.
+            ⚠️ **Already done instinctively once** — `0010` dropped a *default* and deliberately did not
+            backfill, because a genuine "2 adults" answer is byte-identical to the default. The reasoning
+            exists; it is not written down as a rule.
+      - [ ] **`migrations.test.ts`** — scan `src/server/db/migrations/*.sql` for destructive statements and
+            fail unless the file carries an explicit acknowledgement comment. This repo's established idiom
+            (`config.test.ts` scrapes `maxDuration` from route source; `palette.test.ts` scrapes hexes with an
+            allow-list; `globals.test.ts` fails on hand-written vendor prefixes). Turns "we remembered to read
+            the SQL" into "the gauntlet will not let it through."
+      - [ ] **`pg_dump` before any acknowledged-destructive migration.** ⚠️ **This is the part a staging
+            project would NOT have given us** — rehearsing a bad migration and then applying the same bad
+            migration to prod loses the data either way. The dump is the only step that helps at the moment
+            it matters.
 - [ ] **Performance + a11y pass** (B3's hit targets verified here)
 - [ ] **Error-state sweep** — every surface has a fallback with a retry, not a blank screen
 - [ ] **BUG-017 🟡** — the first-run gate is not synchronous with first paint, so a brand-new account's

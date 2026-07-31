@@ -37,19 +37,42 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 argument S52 used for B1+B5. **126 E2E green** (123 + SH1/SH2/SH3), **691 unit**, lint + typecheck clean,
 `/visual-qa` at **0 blockers / 0 high** with all **54** capture states `captureStatus: ok`.
 
-### ✅ Your BUG-042 call is applied and the row is CLOSED
+### ✅ Both of your open items are CLOSED — no decisions are owed
 
-Moved out of the Open table into the Resolved log as **won't-do**, carrying both measurements so it cannot
-return a sixth time: not exploitable (S51), *and* the remedy would have reddened all 123 specs (S53).
-**One thing is still owed by you, and it is now the only one:**
+**BUG-042** moved out of the tracker's Open table into the Resolved log as **won't-do**, carrying both
+measurements so it cannot return a sixth time.
 
-> **For the rest of R1, the E2E suite keeps deleting rows in the same Supabase project that holds your real
-> data. Do you accept that until V1.5?**
+**The non-prod Supabase project: NO** — and Griffin was right to push on the framing. Asked four times as
+*"accept or set it up now,"* which never said what was being accepted. Reading the code rather than my own
+write-up showed the question was wrong:
 
-**Recommendation unchanged: accept.** One word — "accept" or "set it up now." Write-up in
-[open-questions.md](open-questions.md).
+- **The dedicated test account already exists** (`e2e-harness@example.com` / `E2E Test Kitchen`). Griffin's
+  proposal — *"just stand up a test account and run the suite against that"* — **is what was already built.**
+- **`wipe()` has 9 deletes and 9 household-scoped `WHERE` clauses, zero unscoped**, and never touches users,
+  households or membership. Three guards fire before any write, under BUG-018's committed allow-list.
+- ⚠️ **And a correction:** a second project would NOT have prevented S53's contention — that was two suite
+  *runs* colliding, which happens in any single project.
 
-### ⚠️ And one thing is yours that a capture cannot answer
+**Reopens only on a second machine running the suite (wife's laptop, or CI) → V1.5.**
+
+### ⭐ What that question was standing in front of — migration safety, now in Workstream D
+
+Griffin's follow-up (*"isn't this what staging is for, and what's the right long-term solution?"*) found the
+real exposure, and it has nothing to do with the test suite. **`drizzle-kit generate` cannot tell a rename
+from a drop-plus-add** — rename a column and it emits `DROP COLUMN` + `ADD COLUMN`, silently destroying its
+data, applied straight to the project holding real data with no automatic backup on Supabase Free.
+
+**It has never bitten because all 11 migrations are purely additive** (zero `DROP TABLE`/`DROP COLUMN`/
+`TRUNCATE`/`DELETE FROM`) — a young schema, not a control. **The first genuinely destructive change is
+V1.5's household sharing.**
+
+Agreed answer, **a discipline plus one guard, not infrastructure** → **Workstream D**: expand/contract
+written into the drizzle rule as the standing default, a `migrations.test.ts` destructive-SQL guard in this
+repo's source-scraping idiom, and a `pg_dump` before any acknowledged-destructive migration. ⚠️ **A staging
+database was explicitly rejected** — it only catches what reading the generated SQL already catches, and
+rehearsing a bad migration then applying it to prod loses the data either way.
+
+### ⚠️ One thing is still yours, and it is an observation rather than a decision
 
 **B2's phone check.** Spec §12 item 04's fix arrived in **two pieces a phase apart** — the floating toolbar
 deleted in 1E.5, the nav's corners squared now — and **nobody has seen them together on a device.** The
@@ -142,8 +165,10 @@ the last three B items in order — B6 (the S48 critic slate's four, plus BUG-04
 into the spec §09 control), B8 (type scale/motion/component library, plus BUG-045 — note palette.test.ts
 allow-lists its exact line so closing it reds the test until the exception goes too). No taste calls pending
 on any of them. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line
-scope check. maxDuration is CLOSED, don't raise it. Don't run the E2E suite while I'm using the app. Still
-owed by me: the non-prod Supabase project call (your rec is accept/V1.5) and B2's phone check — whether the
+scope check. maxDuration is CLOSED, don't raise it. Don't run the E2E suite while I'm using the app. No
+decisions are owed by me — the non-prod Supabase project closed NO in S54 (the suite already runs as its own
+account in its own household behind four guards) and the real risk it was hiding, drizzle emitting DROP
+COLUMN for a rename, is now a Workstream D item. The only thing left on me is B2's phone check: whether the
 bottom edge reads calm now the toolbar deletion and the squared nav corners are finally on screen together.
 On Opus 4.8.
 ```

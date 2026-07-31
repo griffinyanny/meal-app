@@ -145,7 +145,27 @@ the parked recommendation was not merely wrong, it was destructive** — and Cla
 without checking. It now bundles with the separate non-prod Supabase project decision (that project is what
 would let prod disable Email while the harness keeps it on).
 
-**Owed by Griffin:** the separate non-prod Supabase project call — one word, accept (V1.5) or set it up now.
+**✅ The separate non-prod Supabase project — CLOSED **NO** (Griffin, S54). Do not raise it again.** The
+question was asked four times as *"accept or set it up now"*, which never said what was being accepted;
+Griffin pushed on the framing and reading the code showed the premise was wrong. **The dedicated test
+account already exists** (`e2e-harness@example.com` / `E2E Test Kitchen`) — his own proposal was what was
+already built — `wipe()` carries **9 deletes and 9 household-scoped `WHERE` clauses, zero unscoped**, and
+three guards fire before any write under BUG-018's committed allow-list. ⚠️ A second project would also NOT
+have prevented S53's contention (that was two suite *runs* colliding). Reopens only on a second machine
+running the suite → V1.5.
+
+**⭐ What that question was hiding, now a Workstream D item: `drizzle-kit generate` cannot tell a rename from
+a drop-plus-add.** Renaming a column emits `DROP COLUMN` + `ADD COLUMN`, silently destroying its data,
+applied straight to the project holding real data with no automatic backup on Supabase Free. It has never
+bitten because **all 11 migrations are purely additive** — a young schema, not a control — and the first
+destructive change is V1.5's household sharing. Answer is **a discipline plus one guard, not
+infrastructure**: expand/contract as the written default, a `migrations.test.ts` destructive-SQL guard, and
+a `pg_dump` before any acknowledged-destructive migration. **A staging DB was explicitly rejected** — it
+only catches what reading the generated SQL catches, and rehearsing a bad migration then applying it to prod
+loses the data either way.
+
+**Owed by Griffin:** nothing to decide. One observation only — **B2's phone check** (does the bottom edge
+read calm now the 1E.5 toolbar deletion and S54's squared nav corners are on screen together).
 
 ### Prior sessions (retained for context)
 
