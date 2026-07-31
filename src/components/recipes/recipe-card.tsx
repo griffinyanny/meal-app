@@ -70,7 +70,9 @@ export function RecipeCard({
 
       <button
         type="button"
-        className="shrink-0 grid place-items-center size-9 rounded-full"
+        // 44px, the control the spec names by hand (§12 item 05). The glyph
+        // stays 18px and the box paints nothing, so this is hit area only.
+        className="shrink-0 grid place-items-center size-11 rounded-full"
         onClick={(e) => {
           e.stopPropagation();
           onFavorite(id, !isFavorite);

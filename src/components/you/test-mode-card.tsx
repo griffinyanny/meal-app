@@ -41,9 +41,9 @@ export function TestModeCard({ onError }: TestModeCardProps) {
     <div className="mt-4 rounded-[18px] border border-dashed border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.02)] p-4">
       <div className="mb-2 flex items-center gap-2">
         <FlaskConical className="size-3.5 text-muted-foreground" strokeWidth={2} />
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           Test mode
-        </p>
+        </h2>
       </div>
       <p className="mb-3 text-sm text-muted-foreground">
         Clears your preferences and the memories the interview wrote, then starts

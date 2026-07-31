@@ -70,7 +70,10 @@ export function CountRow({
   return (
     <div className="flex items-center gap-3.5 px-[18px] py-[15px]">
       <div className="flex-1">
-        <div className="text-[16px] font-semibold text-[var(--spec-text-primary)]">{label}</div>
+        {/* Row title (spec §10): the name of a thing in a list, paired with the
+            12.5px meta beneath. Was 16px, which is off the ladder in both
+            directions — §12 item 07's exact complaint. */}
+        <div className="spec-row-title">{label}</div>
         {sub && <div className="mt-0.5 text-[12.5px] text-[var(--spec-text-muted)]">{sub}</div>}
       </div>
       <div className="flex items-center gap-3">

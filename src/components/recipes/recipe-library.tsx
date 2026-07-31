@@ -309,9 +309,9 @@ function SearchResults({
 }: SearchResultsProps) {
   return (
     <div className="space-y-3 pb-8">
-      <p className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
+      <h2 className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
         Search results
-      </p>
+      </h2>
       {isLoading ? (
         <LoadingSkeleton />
       ) : isError ? (

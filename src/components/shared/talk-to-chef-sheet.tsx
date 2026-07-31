@@ -104,7 +104,7 @@ export function TalkToChefSheet({
               rows={3}
               autoFocus
               disabled={isSubmitting}
-              className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-12 text-base"
+              className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-14 text-base"
               onKeyDown={(e) => {
                 // Enter submits; Shift+Enter inserts a newline. Ignore Enter
                 // while an IME composition is active (don't submit mid-compose).
@@ -124,7 +124,7 @@ export function TalkToChefSheet({
               onClick={handleSubmit}
               disabled={!canSubmit}
               aria-label="Send to chef"
-              className="absolute bottom-2.5 right-2.5 size-9 rounded-full"
+              className="absolute bottom-2.5 right-2.5 size-11 rounded-full"
             >
               <ArrowUp className="size-4" />
             </Button>
