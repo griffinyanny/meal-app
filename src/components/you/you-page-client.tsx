@@ -109,7 +109,8 @@ export function YouPageClient() {
     const before: PreferencesPatch = {};
     if (patch.dietaryFramework !== undefined)
       before.dietaryFramework = prefs.dietaryFramework as PreferencesPatch["dietaryFramework"];
-    if (patch.householdSize !== undefined) before.householdSize = prefs.householdSize;
+    if (patch.householdComposition !== undefined)
+      before.householdComposition = prefs.householdComposition;
     if (patch.maxCookTimeWeeknight !== undefined)
       before.maxCookTimeWeeknight = prefs.maxCookTimeWeeknight;
     if (patch.maxCookTimeWeekend !== undefined)

@@ -371,6 +371,7 @@ export async function seedYouState(state: YouState): Promise<void> {
         restrictions: spec.preferences.restrictions,
         dislikes: spec.preferences.dislikes,
         householdSize: spec.preferences.householdSize,
+        householdComposition: spec.preferences.householdComposition,
         maxCookTimeWeeknight: spec.preferences.maxCookTimeWeeknight,
         maxCookTimeWeekend: spec.preferences.maxCookTimeWeekend,
         cuisinePreferences: spec.preferences.cuisinePreferences,

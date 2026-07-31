@@ -12,6 +12,12 @@ import {
   type AIPreferencesTalkResponse,
   type PreferencesTalkSnapshot,
 } from "@/server/ai/prompts/preferences-talk";
+import {
+  DEFAULT_HOUSEHOLD_COMPOSITION,
+  deriveHouseholdSize,
+  normalizeComposition,
+  type HouseholdComposition,
+} from "@/lib/household";
 
 export type { PreferencesTalkSnapshot };
 
@@ -27,7 +33,18 @@ export type PreferencesTalkOp =
   | { kind: "remove_avoid"; value: string }
   | { kind: "add_dislike"; value: string }
   | { kind: "remove_dislike"; value: string }
-  | { kind: "set_household"; amount: number }
+  // BUG-011 · bands when the person gave bands, a bare total when they didn't.
+  // "We're 2 adults and 2 kids now" carries the shape; "we're 4 now" carries
+  // only a number, and a number cannot say WHICH band grew. Both are kept raw
+  // here and reconciled against the stored composition at apply time, where the
+  // current bands are in scope.
+  | {
+      kind: "set_household";
+      adults: number | null;
+      children: number | null;
+      babies: number | null;
+      total: number | null;
+    }
   | { kind: "set_weeknight"; amount: number }
   | { kind: "set_weekend"; amount: number }
   | { kind: "add_cuisine"; value: string }
@@ -90,8 +107,14 @@ export function coercePreferencesTalk(
         if (value) ops.push({ kind: "remove_cuisine", value });
         break;
       case "set_household": {
-        const amount = clampInt(raw.amount, 1, 20);
-        if (amount !== null) ops.push({ kind: "set_household", amount });
+        const adults = clampInt(raw.adults, 1, 12);
+        const children = clampInt(raw.children, 0, 12);
+        const babies = clampInt(raw.babies, 0, 6);
+        const total = clampInt(raw.amount, 1, 20);
+        // An op that names nothing changes nothing.
+        if (adults !== null || children !== null || babies !== null || total !== null) {
+          ops.push({ kind: "set_household", adults, children, babies, total });
+        }
         break;
       }
       case "set_weeknight": {
@@ -133,7 +156,9 @@ export interface PreferencesState {
   dietaryFramework: string;
   restrictions: string[];
   dislikes: string[];
+  // Derived from householdComposition, never set independently of it (BUG-011).
   householdSize: number;
+  householdComposition: HouseholdComposition | null;
   maxCookTimeWeeknight: number;
   maxCookTimeWeekend: number;
   cuisinePreferences: string[];
@@ -176,7 +201,7 @@ export function applyPreferencesTalkOps(
   let dietaryFramework = orig.dietaryFramework;
   let restrictions = [...orig.restrictions];
   let dislikes = [...orig.dislikes];
-  let householdSize = orig.householdSize;
+  let householdComposition = orig.householdComposition;
   let maxCookTimeWeeknight = orig.maxCookTimeWeeknight;
   let maxCookTimeWeekend = orig.maxCookTimeWeekend;
   let cuisinePreferences = [...orig.cuisinePreferences];
@@ -222,9 +247,41 @@ export function applyPreferencesTalkOps(
       case "remove_cuisine":
         cuisinePreferences = cuisinePreferences.filter((c) => !ciEqual(c, op.value));
         break;
-      case "set_household":
-        householdSize = op.amount;
+      case "set_household": {
+        // Merge onto what is already known so an utterance about one band never
+        // silently erases the others: "we've got a baby now" must not drop the
+        // children the chef already knew about.
+        const base = householdComposition ?? DEFAULT_HOUSEHOLD_COMPOSITION;
+        const named =
+          op.adults !== null || op.children !== null || op.babies !== null;
+
+        if (named) {
+          const babies = op.babies ?? base.babies;
+          householdComposition = normalizeComposition({
+            ...base,
+            adults: op.adults ?? base.adults,
+            children: op.children ?? base.children,
+            babies,
+            // A newly-mentioned baby needs a stage to be actionable; 6-to-12
+            // months is the same conservative guess the interview proposes,
+            // and the You tab is one tap away for a correction.
+            babyStage:
+              babies > 0 ? base.babyStage ?? "6_to_12m" : null,
+          });
+        } else if (op.total !== null) {
+          // A BARE TOTAL LANDS ON ADULTS. It is a guess, and it is the least
+          // surprising one available: an unspecified extra person is an adult,
+          // and adults are the only band that always counts toward servings.
+          // The bands the person did not mention are preserved, so correcting
+          // it on the You tab is one tap rather than a re-entry.
+          const eatingBabies = base.babyStage === "12_to_24m" ? base.babies : 0;
+          householdComposition = normalizeComposition({
+            ...base,
+            adults: Math.max(1, Math.min(12, op.total - base.children - eatingBabies)),
+          });
+        }
         break;
+      }
       case "set_weeknight":
         maxCookTimeWeeknight = op.amount;
         break;
@@ -266,7 +323,21 @@ export function applyPreferencesTalkOps(
   markScalar("dietaryFramework", dietaryFramework, orig.dietaryFramework);
   markArray("restrictions", restrictions, orig.restrictions);
   markArray("dislikes", dislikes, orig.dislikes);
-  markScalar("householdSize", householdSize, orig.householdSize);
+  // Both, together, always: the count is the composition's derivation, and a
+  // patch carrying one without the other is exactly the drift BUG-011 was.
+  if (
+    JSON.stringify(householdComposition) !== JSON.stringify(orig.householdComposition)
+  ) {
+    nextPatch.householdComposition = householdComposition;
+    undoPatch.householdComposition = orig.householdComposition;
+    const nextSize = householdComposition
+      ? deriveHouseholdSize(householdComposition)
+      : orig.householdSize;
+    if (nextSize !== orig.householdSize) {
+      nextPatch.householdSize = nextSize;
+      undoPatch.householdSize = orig.householdSize;
+    }
+  }
   markScalar("maxCookTimeWeeknight", maxCookTimeWeeknight, orig.maxCookTimeWeeknight);
   markScalar("maxCookTimeWeekend", maxCookTimeWeekend, orig.maxCookTimeWeekend);
   markArray("cuisinePreferences", cuisinePreferences, orig.cuisinePreferences);

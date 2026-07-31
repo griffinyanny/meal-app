@@ -25,6 +25,7 @@ import {
   type PreferencesState,
 } from "@/server/ai/tasks/preferences-talk";
 import { describeCaught, fieldsTouchedBy } from "@/lib/onboarding/caught";
+import type { HouseholdComposition } from "@/lib/household";
 
 export const userTalkMutations = {
   talk: aiProcedure
@@ -73,6 +74,8 @@ export const userTalkMutations = {
         restrictions: [...((prefs?.restrictions as string[] | null) ?? [])],
         dislikes: [...((prefs?.dislikes as string[] | null) ?? [])],
         householdSize: prefs?.householdSize ?? 2,
+        householdComposition:
+          (prefs?.householdComposition as HouseholdComposition | null) ?? null,
         maxCookTimeWeeknight: prefs?.maxCookTimeWeeknight ?? 45,
         maxCookTimeWeekend: prefs?.maxCookTimeWeekend ?? 90,
         cuisinePreferences: [...((prefs?.cuisinePreferences as string[] | null) ?? [])],
