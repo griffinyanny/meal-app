@@ -29,6 +29,14 @@ test("RC1 - the three tiers render: cooked strip, segmented library, folded draf
   await expect(page.getByTestId("recipe-filter-fav")).toContainText("2");
   await expect(page.getByTestId("recipe-filter-cooked")).toContainText("2");
 
+  // The WORDS, not just the counts (S55). These three chips are the source of
+  // truth for the picker's door labels — one word per concept across both
+  // surfaces — and every assertion here addressed them by testid, so a rename
+  // on this side could silently re-open the split the picker just closed.
+  await expect(page.getByTestId("recipe-filter-all")).toContainText("All");
+  await expect(page.getByTestId("recipe-filter-fav")).toContainText("Favorites");
+  await expect(page.getByTestId("recipe-filter-cooked")).toContainText("Cooked");
+
   // Drafts folded by default.
   await expect(page.getByTestId("drafts-toggle")).toContainText("From your plans");
   await expect(page.getByText(/3 tucked away/)).toBeVisible();

@@ -449,13 +449,83 @@ verb needed the Recipes screen's single floating primary and the 1D toolbar occu
       **B7**'s scope. Flagged rather than folded in, since the rubric treats a non-`ok` captureStatus as a
       signal on its own.
 
-### B6 — The critic's four deferred findings (S48 slate)
+### B6 — The critic's four deferred findings (S48 slate) ✅ **CLOSED S55** — *three built, one measured and moved*
 
-- [ ] **The Recipes `+` weight** — it competes with the floating primary that arrived in 1E.5.
-- [ ] **Picker / Recipes vocabulary unification** — the two surfaces name the same objects differently.
-- [ ] **Cooked-when evidence inside pushed doors** — a pushed `Cooked before` door drops the very evidence
-      its name promises.
-- [ ] **Caps-label tracking** — inconsistent letter-spacing across the eyebrow labels.
+Each of the four was verified against source before anything was touched, per the phase's standing rule that
+a parked finding is a hypothesis from the day it was filed. **Two of the four were not the size they were
+filed at**, in opposite directions.
+
+- [x] **The Recipes `+` weight** — real, and the finding named one object where the spec states a rule.
+      `recipe-header.tsx` drew a filled cream 44px square, so manual recipe entry outranked the tab's actual
+      job. Routed to the existing **`.spec-control-cream`**, which already *is* the spec's `action.soft` rung
+      (`.1` fill / `.32` line, cream label) — a route to a class rather than a new treatment.
+      ⚠️ **THE HALF THE CRITIC COULD NOT SEE, and it is why softening the `+` alone would have been
+      cosmetic.** §08 reads *"One filled cream button per viewport. If two actions both feel primary, one of
+      them is not."* The Recipes library had **two**: the `+` and the **selected filter chip**, which was
+      `bg-primary text-primary-foreground border-primary` — a fully filled cream button standing in for a
+      filter state. Softening only the `+` would have handed the primary rung to a filter. The spec draws a
+      chip as cream-**tinted**, never filled (`on: .14 fill / .36 line / 600 · off: .05 / .12 / 500`, at
+      36px · 13.5px · r12, 9px gap), with selection on the action cream and rest on the neutral cream. Both
+      are now right. ⚠️ **Stated precisely, because the capture makes it visible:** the Recipes **library**
+      viewport now carries **zero** filled cream buttons, and the **detail** viewport carries exactly one
+      (`Add to this week`). Law 06's *"exactly one filled cream button"* is read here as a **ceiling, not a
+      floor** — a browse screen whose primary action lives on the next screen should not manufacture one, and
+      manufacturing one is precisely the defect the critic filed. The hierarchy now reads: browse is quiet,
+      the screen where the decision happens carries the weight.
+      ⚠️ **The rubric already carried the rule that would have caught it.** `visual-qa-rubric.md` law 06 has
+      said *"exactly one filled cream button"* per viewport since S42, and `/visual-qa` passed this surface at
+      0 blockers / 0 high in S52, S53 and S54 with two of them on screen. **A rule the judge holds is not the
+      same as a rule the judge applies.**
+- [x] **Picker / Recipes vocabulary unification** — real, and smaller than it reads. Only two concepts are
+      genuinely shared: `All` ≡ `Everything` and `Cooked` ≡ `Cooked before`. `Recently saved`, `Imported` and
+      `Under N min` have no Recipes counterpart, so this is a two-word rename rather than a merge.
+      **Griffin's call (S55): Recipes' words win** — its chips are a width-constrained non-wrapping row where
+      the longer pair risks a wrap at 360px, and a door labelled `Cooked` with its count beneath loses
+      nothing. The tiles-vs-chips split is untouched: §A's rule is about the **control**, and only the copy
+      was ever duplicated.
+      ⚠️ **Neither surface's words were pinned by any test.** The picker unit test hand-fed its label into
+      `tileHeading`, so it could never fail on a rename; the Recipes specs addressed every chip by `testid`
+      and asserted only counts. Both sides now assert the copy — a new `browseTiles` vocabulary test reading
+      the **real** labels, and three text assertions in `RC1`.
+      ⚠️ **`Favorites` in the picker was deliberately NOT built** — the critic's second clause. A rename is
+      not a new door: a tile brings its own count, suppression behaviour and a place in a four-tile budget
+      `3e` already spends on the night's constraint. → `idea-backlog.md`, V1.5.
+- [x] **Cooked-when evidence inside pushed doors** — real, and **worse than filed**. `toPickerRecipe` built
+      every row's meta as `Saved in {month} · {N} min · never cooked`, with the third segment rendering
+      **only in the negative**. So inside the `Cooked` door — where every row carries a stamp by definition —
+      it vanished, and each row showed the month it was **saved** and nothing else. Not merely missing
+      evidence: a door named for when you cooked something, over rows whose only date is when you saved it,
+      invites reading one as the other. The clause now answers in both directions (`Cooked May 2`) using the
+      existing `formatCookedDate` — same slot, same length, no per-tile branch, so every other door gains the
+      fact too. A stamp that exists but will not parse says **nothing**, because `never cooked` would be the
+      one wrong answer available.
+      ⚠️ **The existing unit test asserted the defect as the design** — its name was *"should drop the
+      never-cooked clause once it has been cooked."* It went red on the fix, which is the right shape of
+      proof, but it is a fifth instance of the apparatus encoding the bug.
+      **New `L18`, verified failing against pre-fix code** via a physical file backup and a **full rebuild**
+      — the red read `"Miso-Glazed SalmonSaved in July · 25 min"`, the defect verbatim from the rendered DOM.
+      Only the cooked clause was reverted, not the labels, so the red isolates one cause. It asserts the
+      never-cooked half **first**, or it would pass against a build that stamped a date on every row.
+- [x] **BUG-046 🟡 CLOSED** — the recipe body's three cream non-pressables, fixed per element rather than
+      swept (the fourth `text-primary` on that screen, `View original source`, is a real link and keeps
+      cream). Detail in `bug-tracker.md`.
+- [x] **Gate: `/visual-qa` Layer A on Recipes + Plan, 0 blockers / 0 high**, all 8 Recipes and all Plan
+      capture states `captureStatus: ok`. Captures: `A-recipes-2026-07-31T19-23-06-426Z`,
+      `A-2026-07-31T19-21-31-407Z`.
+- [ ] ⚠️ **NEW: BUG-047 🟡, found BY this gate and deliberately not swept.** The picker's search placeholder
+      reads `Search 5 recipes` while standing inside the `Cooked` door, which holds **2** — it counts the
+      `everything` tile regardless of which door is pushed, contradicting S48's own rule that search stays
+      inside the room. **Pre-existing, identical in `HEAD`.** Same class as the finding B6 just closed one
+      control over. → **B7**, and ⚠️ **it adds a fourth site to B7's three**.
+- [→] **Caps-label tracking — MOVED TO B8 (Griffin's call, S55).** Filed as *"three tracked-out caps labels
+      in one sheet."* Measured: **~46 caps-label sites across eight different tracking values** (0.5 / 1.2 /
+      1.3 / 1.5 / 1.8 / 2px / 0.15em / `tracking-wider`), four sizes and two weights. The spec states
+      **exactly two rungs, and they are semantic rather than one number** — **Section eyebrow** (11px / 600 /
+      2px / `#A79A8C`, *"names a shelf of content"*) and **Label** (10.5px / 700 / 1.3px / `#A29484`, *"names
+      a field or a slot inside a card"*). **Neither exists as a class**, so the next caps label written is
+      improvised by default — B3's `ui/button.tsx` condition in a different primitive. This is not a tracking
+      tweak, it is the caps half of B8's type scale; doing it here would mean classifying 46 type sites now
+      and opening the same files again one item later.
 
 ### B7 — Consolidate the four freeform-input controls into the single spec §09 control
 
@@ -464,6 +534,19 @@ Onboarding was done in S39. **You, Groceries, and the chef sheet remain.**
 ### B8 — Type scale, motion, and component-library consolidation
 
 The remaining design-system work the spec calls for beyond §12's enumerated items.
+
+- [ ] **The caps-label rungs (moved here from B6, Griffin's call S55).** ~46 sites on eight tracking values
+      against the spec's two named rungs — **Section eyebrow** (11px / 600 / 2px / `#A79A8C`, names a shelf
+      of content) and **Label** (10.5px / 700 / 1.3px / `#A29484`, names a field or a slot inside a card).
+      ⚠️ **Add them as classes first, then route** — B4 added `.spec-group-title` / `.spec-row-title` and
+      stopped, and B3's finding was that an unnamed rung means the next call site is wrong by default. The
+      per-site work is a **classification**, not a find-and-replace: the two rungs differ in size, weight and
+      colour as well as tracking, and which rung a label belongs to is a question about what it names.
+- [ ] **BUG-045 🟡** — the last `#FF9F0A`, the quick-add dedupe notice. ⚠️ `palette.test.ts` allow-lists that
+      exact line, so **closing it reds the test until the exception is deleted too**.
+- [ ] **A `bg-primary` audit is likely owed here.** 32 call sites carry it today, spanning genuine primaries,
+      list markers and badges. §08 allows one filled cream button per viewport; nothing enforces it, and S55
+      found two on the Recipes library that three `/visual-qa` passes had cleared.
 
 ### B9 — Recipe-detail empty states ✅ **CLOSED S53** (BUG-038 🟡, BUG-037 🟠) — *the filed bugs were the smaller half*
 
@@ -658,6 +741,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-31 (S55) | **B6 CLOSED; Workstream B at 7 of 9.** Three of the S48 critic's four findings built, the fourth **moved to B8** (Griffin's call) — the caps-label item measured at ~46 sites across eight tracking values against a spec stating exactly two rungs, making it the caps half of B8's type scale rather than a tracking tweak. **BUG-046 CLOSED.** **Griffin's vocabulary call: Recipes' words win** (`Everything`/`Cooked before` → `All`/`Cooked`). **The Recipes filter chip came off the primary rung** with the `+`. New `L18`, verified failing against pre-fix code by physical backup + full rebuild. `Favorites` as a picker door deliberately NOT built → V1.5. **Two stale rubric/PROJECT-CONTEXT exemptions flipped to reportable.** | **The critic named one object where §08 states a rule.** *"One filled cream button per viewport"* — and that viewport had **two**, because the selected filter chip was `bg-primary`, a filled cream button standing in for a filter state, so softening only the `+` would have handed the primary rung to a filter. ⚠️ **`visual-qa-rubric.md` law 06 has carried that exact sentence since S42 and `/visual-qa` cleared this surface at 0/0 in S52, S53 AND S54 with both objects on screen.** Sixth instance of *ask what the layer cannot see* and a **new shape**: the check was not missing (S47), not stale (S52), not seed-blinded (S53) — it was **present, correct, and unrun**. Two more: the vocabulary rename turned **nothing** red because both surfaces' tests hand-fed or bypassed the copy, and piping the suite through `tail` reported **exit 0 while the summary said "1 failed"** — a false green mirroring S54's false red |
 | 2026-07-31 (S54) | **B2 + B3 + B4 CLOSED as one batch; Workstream B at 6 of 9.** New `tests/e2e/specs/shell.spec.ts` (SH1/SH2/SH3), each verified failing against pre-fix code. **BUG-042 CLOSED as won't-do** on Griffin's call and moved to the tracker's Resolved log, so the retracted instruction cannot be re-derived from an open row. **Two new type levels added** (`.spec-group-title`, `.spec-row-title`) — they did not exist, which is why subsections were built at random weights. Bundled deliberately, per S52's B1+B5 precedent: three five-surface capture passes for a 4px corner, a padding sweep and an `<h2>` promotion would be ceremony rather than discipline. | **The sweep written to BE B3's audit was blind to two thirds of its subject.** It found 2 undersized controls; a source-side cross-check found 4 more inside a dialog it never opens — and then the real finding: `ui/button.tsx`'s icon variants are 24/28/32/36px, so **every rung of the shared primitive was under the 44px floor** and the next `size="icon"` was wrong by default. Fourth instance of *ask what the layer cannot see*, and the first where the blind spot was in apparatus written that same session. **B4 ran the lesson in the other direction:** the item was *smaller* than filed (type half = 2 sites, not a sweep), and 4 promotion candidates had to be excluded — 2 kickers above an `<h1>`, 2 labels inside a `<button>` — where a pattern-matched sweep would have broken all four |
 | 2026-07-31 (S53) | **B9 CLOSED** (BUG-037 + BUG-038); Workstream B at 3 of 9. **BUG-046 🟡 opened** (the recipe detail body wears cream, the action hue, on three non-pressable elements — B1's finding one surface over) and routed to B6/B8. **BUG-042's toggle RETRACTED, not deferred** — disabling the Supabase Email provider would red all 123 specs, because the harness's only sign-in is `signInWithPassword`; it bundles into the non-prod Supabase project decision, collapsing Griffin's two owed items into one. | The filed bugs were the smaller half. `seed.ts` hard-coded `ingredients: []` / `steps: []` for every recipe, so BUG-038 was **100% of seeded recipes** and the tab's only detail capture had **never once shown a populated recipe body** — the gate was grading the degenerate state as canonical, and fixing the bug alone would have made it blinder. A second, older blindness came with it: the capture *waited out* BUG-037 rather than photographing it. Third instance of *ask what the layer cannot see*, and the first where the state existed but was silently the wrong one |
 | 2026-07-31 (S52) | **B1 + B5 CLOSED** (`/visual-qa` 0 blockers / 0 high). **Order B → C → D reaffirmed and its rationale rewritten** after Claude proposed pulling D forward and Griffin overruled it. **PostHog session replay added to D**, with a masking posture that inverts the vendor default. **A design pass is now RECOMMENDED for C** (reversing the blanket "skip" that still applies to B). **BUG-045 opened.** | Two of Griffin's arguments beat Claude's: validate the artifact you actually ship (the PWA is how he will use it, so a browser-tab validation spends the two uncompressible weeks on the wrong configuration), and observability is the *debugging substrate for the validation weeks*, not just the source of the DoD metric. C also turned out to carry genuinely new design surface — icon, splash, install prompt, offline state — which exists in no spec, unlike B's already-designed screens |

@@ -4,7 +4,7 @@
 // rather than a rendering detail: what "stale" means, what a browse tile counts,
 // and what makes a recipe unfittable are the things the picker is FOR.
 import type { RecipeListItem } from "@/components/recipes/types";
-import { isPlanDraft } from "@/components/recipes/types";
+import { formatCookedDate, isPlanDraft } from "@/components/recipes/types";
 
 /** What the day/meal invocation constrains the library by (frame `3e`). */
 export interface SlotConstraint {
@@ -93,10 +93,19 @@ export function fitsSlot(
  *
  * TWO HONEST DOORS BEAT FOUR WITH TWO FAKE (S48, critic's finding): a tile
  * whose count is zero is a door onto nothing, and a tile whose count equals
- * `Everything`'s is the same door twice — for any library under 13 recipes,
- * `Recently saved` IS `Everything`, which is the majority case for R1. Both
- * are suppressed. `Everything` itself always stays: it is the floor the others
+ * `All`'s is the same door twice — for any library under 13 recipes,
+ * `Recently saved` IS `All`, which is the majority case for R1. Both
+ * are suppressed. `All` itself always stays: it is the floor the others
  * are judged against, and the one door that is never a lie.
+ *
+ * ONE WORD PER CONCEPT, ACROSS BOTH SURFACES (S55, the S48 critic's deferred
+ * finding). The picker said `Everything` / `Cooked before` for the two sets
+ * the Recipes tab already called `All` / `Cooked`, and 1E.5 put the two
+ * surfaces adjacent in one flow. Recipes' words win: its chips are a
+ * width-constrained row where the longer pair risks a wrap on a 360px phone,
+ * and a door labelled `Cooked` with its count beneath loses nothing. The
+ * tiles-vs-chips split is untouched — §A's rule is about the CONTROL, and
+ * only the copy was ever duplicated.
  */
 export function browseTiles(
   items: RecipeListItem[],
@@ -105,12 +114,12 @@ export function browseTiles(
   const lib = libraryOf(items);
   const everything: BrowseTile = {
     key: "everything",
-    label: "Everything",
+    label: "All",
     count: lib.length,
   };
   const cooked: BrowseTile = {
     key: "cooked",
-    label: "Cooked before",
+    label: "Cooked",
     count: cookedBefore(items).length,
   };
   const imported: BrowseTile = {
@@ -230,10 +239,28 @@ export function toPickerRecipe(
     r.totalTimeMinutes != null &&
     r.totalTimeMinutes > constraint.maxMinutes;
 
+  // THE COOKED CLAUSE ANSWERS IN BOTH DIRECTIONS (S55, the S48 critic's
+  // deferred finding). It used to render only when a recipe had NEVER been
+  // cooked, so inside the `Cooked` door — where every row has a cooked stamp by
+  // definition — the segment vanished and the row showed its SAVED month and
+  // nothing else. Not merely missing evidence: a door named for when you cooked
+  // something, over rows whose only date is when you saved it, invites reading
+  // one as the other. Same slot, same length, no per-tile branch — the door
+  // gets its premise back and every other door gains the same fact.
+  // The three cases are deliberately spelled out: a stamp that exists but will
+  // not parse says NOTHING, because "never cooked" would be the one wrong
+  // answer available — the recipe was cooked, we just cannot name the day.
+  let cookedClause: string | null = null;
+  if (r.lastCookedAt == null) cookedClause = "never cooked";
+  else {
+    const cookedOn = formatCookedDate(r.lastCookedAt);
+    if (cookedOn) cookedClause = `Cooked ${cookedOn}`;
+  }
+
   const meta = [
     savedMonth(r.createdAt) ? `Saved in ${savedMonth(r.createdAt)}` : null,
     r.totalTimeMinutes ? `${r.totalTimeMinutes} min` : null,
-    r.lastCookedAt == null ? "never cooked" : null,
+    cookedClause,
   ]
     .filter(Boolean)
     .join(" · ");

@@ -86,7 +86,16 @@ export function RecipeHeader({
 
       {/* 44px, per spec §12 item 05's metrics floor — this control shrank from a
           54px FAB, and shrinking it past the hit-target minimum would trade one
-          spec violation for another. */}
+          spec violation for another.
+
+          SECONDARY, NOT PRIMARY (S55, the S48 critic's deferred finding). As a
+          filled cream square it was the loudest object on the screen, which
+          made manual recipe entry outrank the tab's actual job — browsing what
+          you already have. §08 allows exactly one filled cream button per
+          viewport, and this tab spends that budget on the detail screen's
+          `Add to this week`. `.spec-control-cream` IS the spec's `action.soft`
+          rung (.1 fill / .32 line, cream label), so this is a route to an
+          existing class rather than a new treatment. */}
       <button
         type="button"
         onClick={() => setMenuOpen((o) => !o)}
@@ -94,7 +103,7 @@ export function RecipeHeader({
         aria-haspopup="menu"
         aria-expanded={menuOpen}
         data-testid="recipe-add"
-        className="grid size-11 flex-none place-items-center rounded-[14px] bg-[var(--spec-action)] text-[var(--spec-action-on)] transition-transform active:scale-95"
+        className="spec-control-cream grid size-11 flex-none place-items-center rounded-[14px] text-[var(--spec-action)] transition-transform active:scale-95"
       >
         <Plus className="size-5" />
       </button>

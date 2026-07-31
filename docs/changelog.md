@@ -4,6 +4,97 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 55 — 2026-07-31 (1F/B6 closed; Workstream B at 7 of 9)
+
+**The S48 critic's four deferred findings, verified before touched.** Three were built; the fourth was
+measured, found to be a different item than the one filed, and moved to B8 on Griffin's call. **BUG-046
+closed with them.**
+
+### The two calls Griffin made
+
+1. **Vocabulary: Recipes' words win.** The picker's `Everything` / `Cooked before` become `All` / `Cooked`.
+   The spec governs the control, not the copy, so this was taste.
+2. **The caps labels go to B8** with the rest of the type scale.
+
+Both in `decisions.md`. ⚠️ **`whats-next.md` said no taste calls were pending on B6 and that was wrong** —
+the vocabulary finding contains one, and it only becomes visible once you ask *which* word wins.
+
+### The finding: the rule was already written, and the gate simply did not apply it
+
+The critic's `+`-weight finding named **one** object. §08 states a **rule**: *"One filled cream button per
+viewport. If two actions both feel primary, one of them is not."* The Recipes library had **two** — the `+`
+and the **selected filter chip**, which was `bg-primary text-primary-foreground border-primary`, a fully
+filled cream button standing in for a filter state. **Softening only the `+` would have handed the primary
+rung to a filter**, which is a cosmetic fix wearing the shape of a real one.
+
+⚠️ **`visual-qa-rubric.md` law 06 has said "exactly one filled cream button" per viewport since S42**, and
+`/visual-qa` cleared this exact surface at 0 blockers / 0 high in **S52, S53 and S54** with both objects on
+screen. This is the sixth instance of *ask what the layer cannot see* and a **new shape**: the check was not
+missing (S47's sheet states), not stale (S52's rubric exemptions), and not blinded by the seed (S53). It was
+**present, correct, and unrun.** A rule the gate holds is not a rule the gate applies.
+
+The chip now takes the spec's own rung — cream-**tinted**, never filled (`on: .14 / .36 / 600 · off:
+.05 / .12 / 500`, 36px · 13.5px · r12, 9px gap), selection on the action cream and rest on the neutral cream,
+*"because filtering is the user's act, not the chef's."* The `+` routes to the existing
+**`.spec-control-cream`**, which already *is* the spec's `action.soft` rung — a route to a class rather than
+a new treatment.
+
+### The cooked door was missing its own premise, and worse than filed
+
+`toPickerRecipe` built every row's meta as `Saved in {month} · {N} min · never cooked`, with the third
+segment rendering **only in the negative**. Inside the `Cooked` door — where every row carries a stamp by
+definition — it vanished, and each row showed the month it was **saved** and nothing else. Not merely
+missing evidence: **a door named for when you cooked something, over rows whose only date is when you saved
+it, invites reading one as the other.** The clause answers in both directions now (`Cooked May 9`), reusing
+the existing `formatCookedDate`. Same slot, same length, no per-tile branch — every other door gains the
+fact too. A stamp that exists but will not parse says **nothing**, because `never cooked` would be the one
+wrong answer available.
+
+⚠️ **The existing unit test asserted the defect as the design** — it was named *"should drop the never-cooked
+clause once it has been cooked"* and went red on the fix. The right shape of proof, and a fifth instance of
+the apparatus encoding the bug it was meant to guard.
+
+### Three things the verification itself found
+
+1. ⚠️ **Neither surface's vocabulary was pinned by any test.** The picker unit test **hand-fed** its label
+   into `tileHeading`, so it could never fail on a rename; the Recipes specs addressed every chip by
+   `testid` and asserted only counts. The rename turned **nothing** red at the unit layer. S54's *assert the
+   property that changed* through a new door: a test that supplies the value it checks is checking nothing.
+   Both sides now assert the real copy.
+2. **L18's first assertion pinned the wrong row, and the red said so.** It targeted the carbonara inside the
+   `Cooked` door; `unfittableReason` **replaces** the meta rather than joining it (S48 — one row type must
+   not render two separators), so on the seeded 30-minute night the 40-minute carbonara reads *"longer than
+   Saturday allows"* and carries no date at all. **That is a considered trade, not a defect** — on a night
+   the recipe cannot fit, why it cannot fit outranks when it was last cooked. Re-pointed at the fitting row
+   and the reason recorded in the spec, so nobody later "fixes" it.
+3. ⚠️ **Two stale exemptions were still live, and one of them was written the session before.**
+   `visual-qa-rubric.md` still told the judge not to flag **any** of B2/B3/B4's subjects — all three closed
+   in S54 — and `PROJECT-CONTEXT.md`, the file Claude Design reads, still described them as un-migrated.
+   **S52 recorded this exact lesson in this exact file, and S54 missed it anyway.** Both now flipped to
+   reportable, along with BUG-046's tracked entry.
+
+### The gate found one new thing, of the same class it was grading
+
+**BUG-047 🟡.** The picker's search placeholder reads `Search 5 recipes` while standing inside the `Cooked`
+door, which holds **2**. It counts the `everything` tile regardless of which door is pushed — contradicting
+S48's own rule that *search stays inside the room it is standing in*, the fix that exists precisely because
+a field reaching through the walls makes the tile decoration. **A surface advertising something its contents
+do not support** — the same class as the cooked door missing its premise, one control over. **Pre-existing,
+identical in `HEAD`**, filed rather than swept. → **B7**, and ⚠️ it **adds a fourth site to B7's three**.
+
+**Gate: `/visual-qa` Layer A at 0 blockers / 0 high** on Recipes + Plan, every capture state `ok`.
+⚠️ **Stated precisely:** the Recipes **library** now carries **zero** filled cream buttons, the **detail**
+screen exactly one. Law 06's *"exactly one"* is read as a **ceiling, not a floor** — a browse screen whose
+primary action lives on the next screen should not manufacture one, which is the defect the critic filed.
+
+### Deliberately not built
+
+**`Favorites` as a picker door** (the critic's second clause). A rename is not a new door: a tile brings its
+own count, suppression behaviour and a place in a budget `3e` already spends. → `idea-backlog.md`, V1.5,
+with the argument on both sides preserved.
+
+---
+
 ## Session 54 — 2026-07-31 (1F/B2 + B3 + B4 closed; Workstream B at 6 of 9)
 
 **Three items, all app-wide and all mechanical, built as one batch** — the same bundling argument S52 used
