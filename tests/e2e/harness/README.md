@@ -46,13 +46,25 @@ then runs against canned fixtures.
 2. **`app/env.ts`** — load `.env.local` (`process.loadEnvFile`) and export the
    target's Supabase URL + publishable key + `DATABASE_URL`, plus test constants
    (a dedicated port, a test-user email, a sentinel household/tenant name). No
-   service-role key needed.
+   service-role key needed. **Then assert the project allow-list at module load**
+   (`app/project-guard.ts`) so nothing opens a connection to a project the harness
+   does not recognise — see step 4 for why the sentinel name is not enough on its
+   own.
 3. **`app/auth.setup.ts`** — call `mintSupabaseSession` + `sessionToStorageState`,
    then bootstrap the app's "minimum functioning user" rows (whatever its
    `ensureOnboarded` equivalent creates). Persist ids for the seed helpers.
 4. **`app/seed.ts`** — `seedState()` / `resetState()` over the app's schema, with
    the same **household/tenant-scoped safety guard** (refuse to write unless the
    resolved tenant matches the sentinel and is owned solely by the test user).
+   ⚠️ **That guard is IN-project and does not cover being pointed at the wrong
+   project** (meal-app BUG-018). Pair it with `project-guard.ts`: parse the project
+   ref out of BOTH the API URL and the connection string, require them to agree,
+   and require the result to be in a **committed** allow-list. Commit the ref
+   rather than reading it from env — the failure mode is a misconfigured
+   `.env.local`, and a guard stored in that same file cannot catch it. Write it as
+   an allow-list, never an `isProduction()` test: no property of a URL says
+   "production," so that shape fails **open** on every project it does not
+   recognise, which is the exact case it exists for.
 5. **AI mock** — per `ai-mock-pattern.md`, add the double-gated branch at the
    app's `getModel` seam, define fixtures, and pick a `[E2E:*]` token grammar for
    forced-failure / latency / behavior routing. Then a root `playwright.config.ts`

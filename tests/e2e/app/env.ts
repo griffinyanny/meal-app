@@ -2,6 +2,7 @@
 // auto-loads it for the app, but Playwright's config + setup run in plain Node)
 // and names the meal-app env vars + test constants.
 import path from "node:path";
+import { assertAllowedProject } from "./project-guard";
 
 try {
   process.loadEnvFile(path.resolve(process.cwd(), ".env.local"));
@@ -35,3 +36,9 @@ export const env = {
   anonKey: required("NEXT_PUBLIC_SUPABASE_ANON_KEY"),
   databaseUrl: required("DATABASE_URL"),
 };
+
+// BUG-018 · at MODULE LOAD, so nothing — not the seeder, not the web server the
+// Playwright config starts — gets as far as opening a connection to a project
+// this harness does not recognise. Every entry point that can write already
+// imports this module for `databaseUrl`, so there is no path around it.
+assertAllowedProject(env.supabaseUrl, env.databaseUrl);
