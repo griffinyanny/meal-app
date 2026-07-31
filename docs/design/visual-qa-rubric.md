@@ -40,10 +40,17 @@ or on law 04 is a blocker.
 not content you read.** Law 03 grants the italic rationale colour while law 06 counts marks against it —
 when they collide, ask who is talking. The chef's voice keeps gold; a list of decisions you read does not.
 
-**Still deliberately un-migrated — do NOT flag these as new findings** (spec §12 items 04/05/07, routed to
-1F Workstream B, see `PROJECT-CONTEXT.md`): the Recipes double bottom bar (the nav's square top corners —
-the floating-primary half already landed in 1E.5), icon-only controls under 44px, and faked subsection
-headings not yet promoted to real Group/Row title levels.
+⚠️ **Spec §12 items 04/05/07 are CLOSED (S54) and have flipped from excused to reportable.** This block
+used to exempt the Recipes double bottom bar, icon-only controls under 44px, and faked subsection headings.
+All three shipped in S54 and the exemption outlived them by a session — **the exact failure the two ⚠️
+blocks below describe, missed in the session that re-recorded it.** They are now findings:
+- **Any icon-only control under 44px is reportable.** `ui/button.tsx`'s icon variants were 24/28/32/36px —
+  every rung of the shared primitive below the floor — and are now ≥44px, so a small target means a call
+  site overrode the primitive.
+- **A squared-off nav top edge and a single bottom bar are the shipped state.** A floating toolbar above the
+  tab bar is a regression, not a known gap.
+- **A subsection heading built out of body text at a random weight is reportable.** `.spec-group-title` and
+  `.spec-row-title` exist now, so there is a rung to reach for.
 
 ⚠️ **Two former exceptions are now CLOSED (S52) and have flipped from excused to reportable.** The list
 above is a licence to ignore a real defect, so a stale entry is worse than no entry — it is the same failure
@@ -62,11 +69,10 @@ one. Both were closed by B1 + B5:
 you find them**; they are recorded here so a judge knows they are already filed, not so a judge stays quiet
 about them. An exemption is a licence to ignore a real defect and outlives the reason for it — that is the
 S42/S52 failure this section keeps re-learning. A *tracked* note costs nothing if it goes stale.
-- **BUG-046 🟡 — the recipe detail body wears the action hue on three non-pressable elements.** The
-  ingredient bullet (`bg-primary`), the step-duration meta and the `Modified` badge all resolve to cream
-  `#F4EBDC`. §01 says cream is what you press. **B1's exact finding, one surface over**, routed to B6/B8.
-  Graded **medium**, so it does not block the 0 blockers / 0 high bar. `View original source` is genuinely a
-  link and is correct — this is a per-element call, never a token sweep.
+- ✅ **BUG-046 is CLOSED (S55) and is now reportable.** The ingredient bullet, the step-duration meta and the
+  `Modified` badge no longer wear cream — the bullet is muted, the other two inherit the meta row. Cream on
+  a non-pressable element in the recipe body is a **law 02 finding** now, not a known gap.
+  `View original source` is genuinely a link and stays cream.
 - **The Recipes detail captures show a POPULATED recipe body for the first time (S53).** The seeder wrote
   `ingredients: []` / `steps: []` for every recipe until now, so `recipes-detail-add-to-week` had never once
   photographed a real ingredient list or numbered steps. **Judge it as first-time surface, not as a

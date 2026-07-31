@@ -254,9 +254,9 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       chefLineCountsThem: "3 of these have been waiting — 1 of them fits",
       pickerRowCount: 3,
       // Named doors with counts. Tiles, never filter chips — and only HONEST
-      // ones (S48): zero-count doors and doors identical to `Everything` are
+      // ones (S48): zero-count doors and doors identical to `All` are
       // suppressed, so this five-recipe library shows three (`Recently saved`
-      // was `Everything` under a different name).
+      // was `All` under a different name).
       browseTileCount: 3,
       tilesCarryCounts: true,
       // The three-hour lamb against a 30-minute night. It DIMS AND SAYS WHY in
@@ -290,7 +290,7 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
       await PICKER_OPEN_FROM_MEAL(page);
       await page
         .getByTestId("picker-tile")
-        .filter({ hasText: "Cooked before" })
+        .filter({ hasText: "Cooked" })
         .click();
       await page
         .getByTestId("picker-row")
@@ -335,7 +335,7 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
         .click();
       await page
         .getByTestId("picker-tile")
-        .filter({ hasText: "Cooked before" })
+        .filter({ hasText: "Cooked" })
         .click();
       await page
         .getByTestId("picker-row")

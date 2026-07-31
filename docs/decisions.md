@@ -4,6 +4,49 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S55) — Recipes' words win, and the caps labels go with the type scale
+
+**Two calls, both Griffin's, both taken as recommended.**
+
+**1. One word per concept, and the shorter pair wins.** The picker said `Everything` / `Cooked before` for
+the two sets the Recipes tab already called `All` / `Cooked`, and 1E.5 put the two surfaces adjacent in one
+flow. The spec could not settle it: §A governs the **control** (browse is named tiles with counts, never
+filter chips) and says nothing about the copy, so this was taste. **Recipes' words win.** The chips are a
+width-constrained non-wrapping row where `Everything` + `Favorites` + `Cooked before` risks a wrap at 360px,
+and a door labelled `Cooked` with its count beneath loses nothing conversational. Only the copy changes; the
+tiles-vs-chips split stands.
+
+⚠️ **`Favorites` in the picker was deliberately not built.** The critic's finding carried a second clause,
+and a rename is not a new door — a tile brings its own count, its own suppression behaviour, and a place in
+the four-tile budget frame `3e` already spends on the night's constraint. → `idea-backlog.md`, V1.5, with
+the argument on both sides preserved.
+
+**2. The caps-label rungs move to B8, with the rest of the type scale.** Filed by the S48 critic as *"three
+tracked-out caps labels in one sheet."* Measured: **~46 sites across eight tracking values**, four sizes and
+two weights, against a spec that states **exactly two rungs** — Section eyebrow (11px / 600 / 2px, *names a
+shelf of content*) and Label (10.5px / 700 / 1.3px, *names a field or a slot inside a card*). It is a
+**classification** rather than a find-and-replace, and it is the caps half of the type scale B8 already
+owns. Doing it in B6 meant touching 46 type sites and reopening the same files one item later, for two
+passes and two visual reviews over one subject.
+
+### The engineering call this produced, stated rather than buried
+
+**The Recipes filter chip came off the primary rung, and the `+` finding is why.** §08 reads *"One filled
+cream button per viewport. If two actions both feel primary, one of them is not."* The critic named the `+`
+as the loudest object; it did not ask what else on that viewport was wearing the same rung. The **selected
+filter chip** was `bg-primary` — a fully filled cream button standing in for a filter state — so softening
+only the `+` would have handed the primary rung to a filter. The spec draws a chip as cream-**tinted**
+(`on: .14 / .36 / 600 · off: .05 / .12 / 500`), with selection on the action cream and rest on the neutral
+cream, *"because filtering is the user's act, not the chef's."* Both are now right.
+
+⚠️ **The rubric already held the rule and the judge did not apply it.** `visual-qa-rubric.md` law 06 has said
+*"exactly one filled cream button"* per viewport since S42, and `/visual-qa` cleared this surface at 0
+blockers / 0 high in S52, S53 and S54 with two of them on screen. **A rule the gate holds is not the same as
+a rule the gate applies** — worth more than the fix itself, because it is the first instance where the
+missing check was neither absent nor stale but simply unrun.
+
+---
+
 ## 2026-07-31 (S54) — No second Supabase project. The risk was in migrations, not in the test suite.
 
 **Decision (Griffin, S54): NO separate non-prod Supabase project.** Raised S51, carried through S52/S53, and

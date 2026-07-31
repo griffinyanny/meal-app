@@ -21,9 +21,11 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53) and B2 + B3 + B4 (S54) closed — 6 of 9, 3 items
-remain.** **691 unit + 126 E2E green, migration `0010` applied.** Next: **B6 → B7 → B8.** **No taste calls
-are pending on any of them.**
+**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54) and B6 (S55) closed — 7 of 9, 2
+items remain.** **693 unit + 127 E2E green, migration `0010` applied.** Next: **B7 → B8.**
+⚠️ **Do NOT write "no taste calls are pending" without checking.** S55's handoff said exactly that about B6
+and it was false: the vocabulary finding contained one, and it only became visible on asking *which word
+wins* rather than restating the finding. **A finding that names a problem has not yet named its fix.**
 
 **⚠️ THE LESSON, now five sessions deep, and it has changed shape every time. S50: the tracker was WRONG
 about what three of the six bugs WERE. S51: right about the bug, WRONG ABOUT THE FIX, twice. S52: the bug
@@ -32,6 +34,24 @@ wrong, it was DESTRUCTIVE — and the filed bugs were the smaller half of what w
 the code is not enough, following the recommendation is not enough, and neither is trusting that the defect
 still exists — a parked item's description is a hypothesis from the day it was filed, not a spec.
 
+- **S55 · the rule was written, the gate held it, and the gate did not run it.** The S48 critic named the
+  Recipes `+` as the loudest object; §08 states a *rule* — **"one filled cream button per viewport"** — and
+  that viewport had **two**, because the selected filter chip was `bg-primary`, a filled cream button
+  standing in for a filter state. **Softening the `+` alone would have handed the primary rung to a filter.**
+  `visual-qa-rubric.md` law 06 has carried that exact sentence since S42, and `/visual-qa` cleared this
+  surface at 0/0 in **S52, S53 and S54** with both objects on screen. **Sixth instance of *ask what the layer
+  cannot see*, and a new shape: the check was not missing, not stale, not seed-blinded — it was present,
+  correct, and UNRUN.** When a finding names one object, ask whether the spec states a rule about the class.
+- **S55 · a test that supplies the value it checks is checking nothing.** The picker's vocabulary rename
+  turned **nothing** red: the unit test hand-fed its label into `tileHeading`, and every Recipes spec
+  addressed the chips by `testid` and asserted only counts. S54's *assert the property that changed* through
+  a new door — **the assertion must read the value from the code, not hand it in.**
+- **S55 · a false GREEN, the mirror of S54's false red.** `npm run test:e2e | tail -35` reported **exit code
+  0 while the summary line said "1 failed"** — a pipeline's status is the last command's. **Never let a pipe
+  swallow the exit code, and read the summary line rather than the status.**
+- **S55 · a parked finding names a problem, not its fix.** Two of B6's four were not the size they were
+  filed at, in opposite directions: the caps-label item measured at ~46 sites against two spec rungs (moved
+  to B8), and the vocabulary item was two words plus a **taste call** the handoff had declared absent.
 - **S54 · the sweep written to BE the audit was blind to two thirds of its own subject.** B3's `SH2` walks
   the rendered tree for icon-only controls and measures them; it found 2. A **source-side cross-check**
   found 4 more inside a dialog the tab sweep never opens — and then the thing that mattered: `ui/button.tsx`
@@ -163,6 +183,11 @@ infrastructure**: expand/contract as the written default, a `migrations.test.ts`
 a `pg_dump` before any acknowledged-destructive migration. **A staging DB was explicitly rejected** — it
 only catches what reading the generated SQL catches, and rehearsing a bad migration then applying it to prod
 loses the data either way.
+
+**✅ BUG-046 CLOSED (S55).** The recipe body's three cream non-pressables fixed per element, never swept —
+the bullet to muted, the step duration and `Modified` badge inheriting the meta row. `View original source`
+keeps cream because it is a real link, and is now the only cream on that screen, which is what makes the
+other three legible as *not* pressable.
 
 **Owed by Griffin:** nothing to decide. One observation only — **B2's phone check** (does the bottom edge
 read calm now the 1E.5 toolbar deletion and S54's squared nav corners are on screen together).

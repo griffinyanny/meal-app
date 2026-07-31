@@ -1,5 +1,18 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S55) — surfaced closing the S48 critic slate
+
+- **[V1.5] A `Favorites` door in the picker.** The critic's vocabulary finding carried a second clause —
+  *"Also: `Favorites` probably belongs in the picker"* — and S55 deliberately did **not** build it. Unifying
+  the two surfaces' words is a rename; adding a door is a new browse tile with its own count, suppression
+  behaviour and place in the four-tile budget that frame `3e` already spends on the night's constraint.
+  ⚠️ **The argument for it is real** and should not be lost: favouriting is the strongest explicit signal
+  the library has, and the picker is the one screen where "what do I actually like" is the question being
+  asked. **The argument against is the tile budget** — `browseTiles` already suppresses doors that duplicate
+  `All`, and on a small R1 library `Favorites` will frequently BE a duplicate or a zero. Revisit when a real
+  library is big enough for the door to be honest, which is a validation-week observation rather than a
+  design call.
+
 ## Incoming (S47) — `ux-design-critic`'s staged findings — ⚖️ DISPOSED S48 (2026-07-30)
 
 **Griffin ruled on all sixteen in S48** (decisions.md, "The critic's slate"): **eleven applied** (the

@@ -130,24 +130,57 @@ test("L6 - browse is honest named doors with counts, and they push", async ({ pa
   // §A: a chip implies subtraction from a list you can already see; a tile
   // implies a door. The counts are the whole affordance — and only honest
   // doors survive (S48): `Recently saved` on this five-recipe library IS
-  // `Everything` under a different name, so it is suppressed rather than
+  // `All` under a different name, so it is suppressed rather than
   // shown as a second copy of the same door. Zero-count doors go the same way.
+  // The doors say `All` and `Cooked` because the Recipes tab's chips do — one
+  // word per concept across both surfaces (S55).
   await openPickerFromMeal(page);
 
   const tiles = page.getByTestId("picker-tile");
   await expect(tiles).toHaveCount(3);
-  await expect(tiles.filter({ hasText: "Cooked before" })).toContainText("2 recipes");
-  await expect(tiles.filter({ hasText: "Everything" })).toContainText("5 recipes");
+  await expect(tiles.filter({ hasText: "Cooked" })).toContainText("2 recipes");
+  await expect(tiles.filter({ hasText: "All" })).toContainText("5 recipes");
   await expect(tiles.filter({ hasText: "Recently saved" })).toHaveCount(0);
 
   // PUSH, not filter (S43 call): the pushed view carries its own heading, and
   // the doors are gone because you are through one of them.
-  await tiles.filter({ hasText: "Cooked before" }).click();
+  await tiles.filter({ hasText: "Cooked" }).click();
   await expect(page.getByTestId("picker-tile")).toHaveCount(0);
   await expect(page.getByTestId("picker-row")).toHaveCount(2);
   await expect(
     page.getByTestId("picker-row").filter({ hasText: "Spaghetti alla Carbonara" })
   ).toBeVisible();
+});
+
+test("L18 - a pushed door's rows carry the door's own premise", async ({ page }) => {
+  // S55, the S48 critic's deferred finding. The cooked clause rendered ONLY in
+  // the negative — `never cooked`, and nothing at all once a recipe had been
+  // cooked. So inside `Cooked`, where every row carries a stamp by definition,
+  // it vanished and each row showed the month it was SAVED and nothing else.
+  // Not merely missing evidence: a door named for when you cooked something,
+  // over rows whose only date is when you saved it, invites reading one as the
+  // other. Asserted on the seeded stamp rather than a pattern, so a row that
+  // reverts to saved-month-only fails here instead of passing on a loose match.
+  await openPickerFromMeal(page);
+
+  // BOTH DIRECTIONS, and this half comes first because the doors are gone once
+  // you are through one (L6). Without it the assertion below would pass against
+  // a build that simply stamped a date on every row.
+  await expect(
+    page.getByTestId("picker-row").filter({ hasText: "Sichuan Dry-Fried Green Beans" })
+  ).toContainText("never cooked");
+
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked" }).click();
+
+  // ⚠️ THE FITTING ROW, ON PURPOSE. `unfittableReason` REPLACES the meta rather
+  // than joining it (S48 — one row type must not render two separators), so the
+  // 40-minute carbonara on this 30-minute night reads "longer than Saturday
+  // allows" and carries no date at all. That is a considered trade, not a
+  // defect: on a night the recipe cannot fit, WHY it cannot fit outranks when it
+  // was last cooked. Asserting the carbonara would pin the wrong behaviour.
+  await expect(
+    page.getByTestId("picker-row").filter({ hasText: "Miso-Glazed Salmon" })
+  ).toContainText("Cooked May 9");
 });
 
 test("L7 - a recipe that cannot fit the night dims and says why, rather than vanishing", async ({
@@ -192,7 +225,7 @@ test("L8 - there is no action bar until something is selected, and the count liv
 
   // Selections hold across sections, which is what makes multi-select real
   // rather than a checkbox you can only use once.
-  await page.getByTestId("picker-tile").filter({ hasText: "Cooked before" }).click();
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked" }).click();
   await page
     .getByTestId("picker-row")
     .filter({ hasText: "Spaghetti alla Carbonara" })
@@ -251,7 +284,7 @@ test("L10 - a picked night says it was scaled, and only when it actually was", a
   // `serves 2` would say nothing at all.
   await openPickerFromMeal(page);
 
-  await page.getByTestId("picker-tile").filter({ hasText: "Cooked before" }).click();
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked" }).click();
   await page
     .getByTestId("picker-row")
     .filter({ hasText: "Spaghetti alla Carbonara" })
@@ -475,7 +508,7 @@ test("L17 - the picker's walls do not move: one pane height across opened, pushe
   expect(opened).toBeGreaterThan(0);
 
   // Push a door — two rows of content instead of the opening tier plus tiles.
-  await page.getByTestId("picker-tile").filter({ hasText: "Cooked before" }).click();
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked" }).click();
   await expect(
     page.getByTestId("picker-row").filter({ hasText: "Spaghetti alla Carbonara" })
   ).toBeVisible();

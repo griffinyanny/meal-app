@@ -6,11 +6,26 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-> **✅ Nothing is pending here as of S54.** The last standing item — the non-prod Supabase project — closed
-> below, and BUG-042 closed with it in `bug-tracker.md`. **The one thing still owed by Griffin on 1F is not
-> a decision but an observation he has to make himself:** B2's phone check, whether S28's density complaint
-> reads resolved now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on
-> screen together.
+> **✅ Nothing is pending here as of S55.** **The one thing still owed by Griffin on 1F is not a decision but
+> an observation he has to make himself:** B2's phone check, whether S28's density complaint reads resolved
+> now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on screen together.
+
+### ✅ RESOLVED S55 — which vocabulary wins, and a note on how it stayed invisible
+
+**Griffin's call: Recipes' words.** The picker's `Everything` / `Cooked before` become `All` / `Cooked`.
+The chips are a width-constrained non-wrapping row where the longer pair risks a wrap at 360px, and a door
+labelled `Cooked` with its count beneath loses nothing conversational.
+
+⚠️ **Recorded because this question should not have been a surprise.** Four sessions of handoffs asserted
+*"no taste calls are pending on any of the B items,"* and the S48 critic's own filing — *"the two surfaces
+name the same objects differently"* — reads like a defect with an obvious repair. It is not: **unifying two
+vocabularies means choosing one, and choosing user-facing words is taste.** The claim survived because
+nobody converted the finding into the question it implies. **A finding names a problem; it has not yet named
+its fix.**
+
+**Also settled, and deliberately not built:** `Favorites` as a picker door (the critic's second clause). A
+rename is not a new door — a tile brings its own count, suppression behaviour and a place in a four-tile
+budget frame `3e` already spends. → `idea-backlog.md`, V1.5, with both sides of the argument preserved.
 
 ### ✅ RESOLVED S54 — A separate non-prod Supabase project: **NO.** And the real risk was somewhere else.
 

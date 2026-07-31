@@ -475,7 +475,7 @@ function uncookedPastWeek(today: string, opts?: SeedOptions): SeedPlanSpec {
 //
 // The five recipes are chosen so every rule in §A has something to be true or
 // false about: three never cooked (the opening content and its count), two
-// cooked (the `Cooked before` door), one imported (its own door), and one that
+// cooked (the `Cooked` door), one imported (its own door), and one that
 // runs three hours — the recipe that must DIM AND SAY WHY against a 30-minute
 // night rather than quietly vanishing. The carbonara serves 4 against a
 // household of 2, which is what makes `scaled to 2` observable at all.

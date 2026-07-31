@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-31 (Session 54; 1F/B2 + B3 + B4 closed — Workstream B at 6 of 9)
+Last updated: 2026-07-31 (Session 55; 1F/B6 closed — Workstream B at 7 of 9)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,167 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B2 + B3 + B4 are CLOSED. Workstream B is 6 of 9; 3 items remain.**
+## ▶ NEXT SESSION — **B6 is CLOSED. Workstream B is 7 of 9; B7 and B8 remain.**
+
+**S55 closed B6, the S48 critic's four deferred findings.** Three were built; the fourth was measured, found
+to be a different item than the one filed, and moved to **B8** on your call. **BUG-046 closed with them.**
+**693 unit + 127 E2E green**, lint + typecheck clean, `/visual-qa` Layer A at **0 blockers / 0 high** on
+Recipes + Plan with every capture state `ok`, nothing on a branch.
+
+⚠️ **The gate found one new thing, and it is the same class as the finding it was grading: BUG-047.** The
+picker's search placeholder reads **`Search 5 recipes`** while you are standing inside the `Cooked` door,
+which holds **2** — it counts the whole library regardless of which door is pushed, contradicting S48's own
+rule that *search stays inside the room it is standing in*. **Pre-existing, identical in `HEAD`.** → **B7**,
+and it **adds a fourth site to B7's three**.
+
+### ✅ You answered two, and one of them whats-next had told you did not exist
+
+**Vocabulary: Recipes' words win.** The picker's `Everything` / `Cooked before` are now `All` / `Cooked`.
+⚠️ **The previous handoff said "no taste calls pending on B6" and that was wrong** — the spec governs the
+*control* (§A: browse is tiles with counts, never filter chips) and says nothing about the *copy*, so which
+word wins was always yours. It only becomes visible once you ask the question rather than restate the
+finding.
+
+**The caps labels move to B8.** Filed as *"three tracked-out caps labels in one sheet."* Measured: **~46
+sites across eight tracking values**, four sizes and two weights, against a spec that states **exactly two
+rungs** — Section eyebrow (11px / 600 / 2px, *names a shelf of content*) and Label (10.5px / 700 / 1.3px,
+*names a field or a slot inside a card*). Neither exists as a class. It is a **classification**, not a
+find-and-replace, and it is the caps half of the type scale B8 already owns.
+
+### ⚠️ Still yours, unchanged from S54 and still the only thing
+
+**B2's phone check.** The 1E.5 toolbar deletion and S54's squared nav corners have still never been seen on
+a device together, and S28's density complaint was made on a phone. Open Recipes and Groceries on your phone
+and tell me whether the bottom edge reads calm. **Nothing else is owed.**
+
+### The finding: the rule was already written, and the gate simply did not apply it
+
+The critic's `+`-weight finding named **one object**. §08 states a **rule**: *"One filled cream button per
+viewport. If two actions both feel primary, one of them is not."* The Recipes library had **two** — the `+`
+and the **selected filter chip**, which was `bg-primary`, a fully filled cream button standing in for a
+filter state. **Softening only the `+` would have handed the primary rung to a filter**: a cosmetic fix
+wearing the shape of a real one.
+
+⚠️ **`visual-qa-rubric.md` law 06 has said "exactly one filled cream button" per viewport since S42**, and
+`/visual-qa` cleared this exact surface at 0 blockers / 0 high in **S52, S53 and S54** with both objects on
+screen. **Sixth instance of *ask what the layer cannot see*, and a new shape:** the check was not missing
+(S47's sheet states), not stale (S52's rubric exemptions), and not blinded by the seed (S53). It was
+**present, correct, and unrun.** A rule the gate holds is not a rule the gate applies.
+
+The chip now takes the spec's own rung — cream-**tinted**, never filled — and the `+` routes to the existing
+`.spec-control-cream`, which already *is* the spec's `action.soft`. No new treatment was invented.
+
+### The cooked door was missing its own premise, and it was worse than filed
+
+`toPickerRecipe` built every row's meta as `Saved in {month} · {N} min · never cooked`, with the third
+segment rendering **only in the negative**. Inside the `Cooked` door — where every row carries a stamp by
+definition — it vanished, and each row showed the month it was **saved** and nothing else. Not merely
+missing evidence: **a door named for when you cooked something, over rows whose only date is when you saved
+it, invites reading one as the other.**
+
+⚠️ **The existing unit test asserted the defect as the design**, named *"should drop the never-cooked clause
+once it has been cooked."* Fifth instance of the apparatus encoding the bug it was meant to guard.
+
+### Three things the verification itself found
+
+1. ⚠️ **Neither surface's vocabulary was pinned by anything.** The picker unit test **hand-fed** its label
+   into `tileHeading`, so it could not fail on a rename; the Recipes specs addressed every chip by `testid`
+   and asserted only counts. **The rename turned nothing red at the unit layer.** S54's *assert the property
+   that changed* through a new door: a test that supplies the value it checks is checking nothing. Both
+   sides now assert the real copy.
+2. **A false GREEN, the mirror of S54's false red.** The full run was piped through `tail`, so the harness
+   reported **exit code 0 while the suite said "1 failed."** `tail`'s status is not the suite's. S54 learned
+   never to trust a reused build; this adds: **never let a pipe swallow the exit code** — read the summary
+   line, not the status.
+3. ⚠️ **Two stale exemptions were still live, and one was written the session before.** `visual-qa-rubric.md`
+   still told the judge not to flag **any** of B2/B3/B4's subjects — all three closed in S54 — and
+   `PROJECT-CONTEXT.md`, the file Claude Design reads, still described them as un-migrated. **S52 recorded
+   this exact lesson in this exact file, and S54 missed it anyway.** Both flipped to reportable, with
+   BUG-046's entry.
+
+**L18 was verified failing against pre-fix code** via a physical file backup and a **full rebuild** — the red
+read `"Miso-Glazed SalmonSaved in July · 25 min"`, the defect verbatim. Only the cooked clause was reverted,
+not the labels, so the red isolates one cause.
+
+### ⭐ Next up — the last two B items
+
+**B7** (the freeform controls — You, Groceries, the chef sheet, **and now the picker's search field**, which
+BUG-047 adds) → **B8** (type scale incl. the two caps rungs, motion, component-library consolidation, plus
+**BUG-045**). ⚠️ `palette.test.ts` allow-lists BUG-045's exact line, so **closing it reds the test until the
+exception goes too.**
+
+⚠️ **One thing to state precisely before B7, because the capture makes it visible.** The Recipes **library**
+now carries **zero** filled cream buttons and the **detail** screen exactly one. Law 06's *"exactly one
+filled cream button"* is being read as a **ceiling, not a floor** — a browse screen whose primary action
+lives on the next screen should not manufacture one, and manufacturing one is the defect the critic filed.
+If you read that line as a floor, say so and the `+` goes back up a rung.
+
+**A `bg-primary` audit is likely owed in B8.** 32 call sites carry it, spanning genuine primaries, list
+markers and badges. §08 allows one filled cream button per viewport and nothing enforces it — which is
+precisely how the Recipes library kept two through three passes.
+
+**🎨 Design pass — offered, recommendation is still skip for B.** ⚠️ **B7 is the one to watch:** if
+consolidating the three freeform controls wants a *new* control rather than aligning three existing ones,
+that flips the recommendation. I'll raise it if it happens rather than deciding it quietly.
+
+**⭐ Model recommendation: Opus 4.8.** B7 and B8 are judgement against a locked spec — reading captures,
+grading against the six laws with the gold line as tie-breaker, and applying small colour/geometry changes.
+Same work 4.8 did across S40/S42/S45/S47/S48/S52/S53/S54/S55. **Go higher only if you take Workstream D
+first** — the security review is the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S55 closed 1F/B6, the S48 critic's four deferred findings. 693 unit + 127 E2E green on
+main (126 + new L18), lint + typecheck clean, visual-qa 0 blockers/0 high on Recipes + Plan. Three built,
+one moved: I ruled that Recipes' words win the
+vocabulary unification (the picker's Everything/Cooked before are now All/Cooked) and that the caps-label
+tracking goes to B8 with the rest of the type scale — it measured at ~46 sites across 8 tracking values
+against a spec that states exactly 2 rungs, so it's a classification, not a tweak. Worth carrying, and it's
+a NEW shape of the lesson: the critic's "+ is the loudest object" finding named one object where §08 states
+a rule — one filled cream button per viewport — and the Recipes library had TWO, because the selected filter
+chip was bg-primary, a filled cream button standing in for a filter state. Softening the + alone would have
+handed the primary rung to a filter. The rubric has carried that exact rule since S42 and /visual-qa cleared
+this surface at 0/0 in S52, S53 AND S54 with both objects on screen — so the check wasn't missing, stale, or
+seed-blinded like the last three instances. It was present, correct, and UNRUN. Also: neither surface's
+vocabulary was pinned by any test (the picker unit test hand-fed its own label, the Recipes specs asserted
+by testid only), so the rename turned nothing red — both sides assert the copy now. And a false GREEN, the
+mirror of S54's false red: piping the suite through tail reported exit 0 while the summary said "1 failed."
+And the visual gate found one new thing of the SAME class it was grading, BUG-047: the picker's search
+placeholder says "Search 5 recipes" while you're inside the Cooked door holding 2 — it counts the whole
+library regardless of which door is pushed, contradicting S48's own "search stays inside the room" rule.
+Pre-existing, filed not swept, and it adds a FOURTH site to B7's three. Next: the last two B items in order
+— B7 (freeform controls: You/Groceries/chef sheet + now the picker search field, into the single
+spec §09 control) then B8 (type scale incl. the 2 caps rungs, motion, component library, plus BUG-045 — note
+palette.test.ts allow-lists its exact line so closing it reds the test until the exception goes too), and a
+bg-primary audit is probably owed in B8 (32 call sites, nothing enforcing the one-per-viewport rule). Read
+docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check.
+maxDuration is CLOSED, BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO — don't reopen
+any of them. Don't run the E2E suite while I'm using the app. The only thing owed by me is still B2's phone
+check: whether the bottom edge reads calm now the toolbar deletion and the squared nav corners are on screen
+together. On Opus 4.8.
+```
+
+**Design-independent alternative** (B7 is the one B item that could surface a design question, so this skips
+to the workstream where a design pass is already decided):
+```
+Resume meal app — S55 closed 1F/B6 (693 unit + 127 E2E green on main). Skip the last two B items this
+session and take Workstream C, the PWA, instead: web app manifest + the full home-screen icon set iOS and
+Android actually ask for, a service worker whose offline scope is honestly bounded (offline READ of the
+current grocery list — standing in a store with bad signal — not offline generation), the install prompt,
+and full-screen launch without browser chrome. It has to be verified on my phone and my wife's, not a
+desktop emulator, so tell me exactly what to tap and what to look for. Offer me the design pass FIRST — S52
+decided C gets one (icon/splash/install prompt/offline state are net-new surface in no spec), unlike B.
+Order is B -> C -> D -> validate and I already overruled pulling D forward, so don't propose it. BUG-042 is
+closed as won't-do and the non-prod Supabase project closed NO; don't reopen either. Read docs/whats-next.md,
+docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check, keep 693 unit + 127 E2E
+green. Don't run the E2E suite while I'm using the app. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S54 (superseded by S55 above — B6 is closed)
+
+### **B2 + B3 + B4 are CLOSED. Workstream B was 6 of 9 at S54's end.**
 
 **S54 closed B2, B3 and B4 as one batch** — all three are app-wide mechanical items, the same bundling
 argument S52 used for B1+B5. **126 E2E green** (123 + SH1/SH2/SH3), **691 unit**, lint + typecheck clean,

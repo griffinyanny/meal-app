@@ -109,6 +109,25 @@ describe("browseTiles", () => {
     expect(tiles.find((t) => t.key === "everything")?.count).toBe(3);
   });
 
+  it("should name the two shared sets exactly as the Recipes tab does", () => {
+    // ONE WORD PER CONCEPT ACROSS BOTH SURFACES (S55, the S48 critic's
+    // deferred finding). `recipe-filters.tsx` calls these same two sets `All`
+    // and `Cooked`, and 1E.5 put the picker and the Recipes tab adjacent in
+    // one flow. Asserted against the REAL labels: the `tileHeading` test below
+    // hand-feeds its label, so it could never have failed on a rename.
+    const items = [
+      recipe({ id: "a" }),
+      recipe({ id: "b", lastCookedAt: new Date("2026-05-01T12:00:00Z") }),
+    ];
+
+    const labels = Object.fromEntries(
+      browseTiles(items).map((t) => [t.key, t.label])
+    );
+
+    expect(labels.everything).toBe("All");
+    expect(labels.cooked).toBe("Cooked");
+  });
+
   it("should keep all four doors when every one of them is distinct", () => {
     // Thirteen recipes is the first library where `recent`'s 12-slice differs
     // from `everything` — the suppression rule must NOT fire here.
@@ -184,8 +203,8 @@ describe("tileHeading", () => {
 
   it("should read a browse tile's heading off the tile itself", () => {
     expect(
-      tileHeading("cooked", [{ key: "cooked", label: "Cooked before", count: 2 }])
-    ).toBe("Cooked before");
+      tileHeading("cooked", [{ key: "cooked", label: "Cooked", count: 2 }])
+    ).toBe("Cooked");
   });
 });
 
@@ -235,9 +254,19 @@ describe("toPickerRecipe", () => {
     expect(row.unfittableReason).toBeNull();
   });
 
-  it("should drop the never-cooked clause once it has been cooked", () => {
+  it("should say WHEN it was cooked, which is the evidence the Cooked door promises", () => {
     const row = toPickerRecipe(
       recipe({ lastCookedAt: new Date("2026-05-02T12:00:00Z") })
+    );
+
+    expect(row.meta).toBe("Saved in March · 40 min · Cooked May 2");
+  });
+
+  it("should say nothing rather than 'never cooked' when the stamp will not parse", () => {
+    // The one wrong answer available: the recipe WAS cooked, so falling back to
+    // the never-cooked clause would state the opposite of the truth.
+    const row = toPickerRecipe(
+      recipe({ lastCookedAt: new Date("not-a-date") })
     );
 
     expect(row.meta).toBe("Saved in March · 40 min");

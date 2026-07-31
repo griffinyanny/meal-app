@@ -81,12 +81,19 @@ family is now an alias layer over the spec tokens with no independent colour val
 retired indigo `#3A86FF` is gone from the build entirely, including `--primary`, which is now cream.
 **Screenshots of any surface are safe to sample from again.**
 
-**What is still deliberately un-migrated — the ONLY places the build knowingly disagrees with the spec.**
-Routed to 1F Workstream B (spec §12 items 04/05/07), each with its own visual-QA pass:
-- the **double bottom bar** on Recipes (item 04 — only the nav's square top corners remain; the
-  floating-primary half landed in 1E.5) and the icon-only hit targets (item 05);
-- **faked subsection headings** not yet promoted to real Group/Row title levels (item 07);
-- one amber survivor: the **quick-add dedupe notice** in `grocery-list.tsx`, tracked as **BUG-045**.
+**✅ Spec §12 items 04, 05 and 07 CLOSED (S54).** The Recipes nav carries square top corners over a single
+bottom bar; every icon-only control clears 44px, fixed at the primitive (`ui/button.tsx` shipped icon
+variants at 24/28/32/36px, so *every* rung was under the floor); and `.spec-group-title` / `.spec-row-title`
+exist as real H4/H5 rungs, with 9 subsection headings promoted from `<p>` to `<h2>`. **Sample screenshots of
+these freely — they are the shipped system now, not a known gap.**
+
+**What is still deliberately un-migrated — the ONLY places the build knowingly disagrees with the spec:**
+- one amber survivor: the **quick-add dedupe notice** in `grocery-list.tsx`, tracked as **BUG-045** → B8;
+- the **caps-label rungs**: ~46 small-caps labels sit on eight different letter-spacings where the spec
+  states exactly two rungs — **Section eyebrow** (11px / 600 / 2px / `#A79A8C`, "names a shelf of content")
+  and **Label** (10.5px / 700 / 1.3px / `#A29484`, "names a field or a slot inside a card"). Neither exists
+  as a class yet, so the next caps label written is improvised by default. Routed to **B8** with the rest of
+  the type scale (Griffin's call, S55) rather than fixed in isolation.
 
 **✅ Item 03 and the amber merge markers CLOSED (S52).** The cooked/complete checks are
 `--spec-success` `#9CB86F` via the new `.spec-success-soft` utility — Griffin's call was that the check
