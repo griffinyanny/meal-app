@@ -61,8 +61,13 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
                 {recipe.servings} servings
               </span>
             )}
+            {/* BUG-046: `Modified` is a status, not a control. It sat in cream
+                — the hue §01 reserves for what you press — beside two plain
+                muted facts. Dropping the colour lets it inherit the meta row it
+                belongs to; the link below is the only cream on this screen and
+                is the only thing here you can actually tap. */}
             {recipe.parentRecipeId && (
-              <span className="flex items-center gap-1 text-primary">
+              <span className="flex items-center gap-1">
                 <GitBranch className="size-3" />
                 Modified
               </span>
@@ -90,7 +95,8 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
           <ul className="space-y-2">
             {recipe.ingredients.map((ing, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="shrink-0 size-1.5 rounded-full bg-primary mt-1.5" />
+                {/* BUG-046: a list marker is structure, not an affordance. */}
+                <span className="shrink-0 size-1.5 rounded-full bg-[var(--spec-text-muted)] mt-1.5" />
                 <span>
                   <span className="text-foreground">
                     {ing.qty} {ing.unit}
@@ -120,8 +126,10 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
                 </span>
                 <div>
                   <p className="text-foreground leading-relaxed">{step.text}</p>
+                  {/* BUG-046: the step's duration is a fact about the step,
+                      and reads beside a step number already drawn in muted. */}
                   {step.durationMinutes && (
-                    <span className="text-xs text-primary mt-1 inline-flex items-center gap-1">
+                    <span className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1">
                       <Clock className="size-3" />
                       {step.durationMinutes} min
                     </span>
