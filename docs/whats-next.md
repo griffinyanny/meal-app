@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-30 (Session 48; merged the concurrent access-gate + Instacart sessions)
+Last updated: 2026-07-30 (Session 50; 1F Workstream A — A1/A2/A3 closed and merged)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,105 +31,81 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **1E.5 is ✅ CLOSED at M5.5 (taste gate closed on three S49 fixes). 1F is open: start Workstream A.**
+## ▶ NEXT SESSION — **1F Workstream A is 3 of 6 done. Next: A4 (BUG-013), then A5, A6 — then Workstream B.**
 
-**S48 ran your taste pass as a decision ballot** (you couldn't see the captures, so you delegated to the
-recommendation slate) **and built everything it decided.** Work is on **`session-43-1e5-plan-rebuild`,
-worktree `../meal-app-1e5`**. Scope doc: [scope-1E.5.md](scope-1E.5.md).
+**S50 closed A1, A2 and A3 as three merged PRs (#9, #10, #11).** `main` is at **671 unit + 121 E2E green**,
+lint + typecheck clean, migration `0010` applied. Nothing is left on a branch.
 
-**614 unit + 111 E2E green (L17 is new), lint + typecheck clean.**
+### What closed, and the part worth remembering
 
-### What was decided and built (full dispositions in decisions.md S48)
+**Three of the six bugs were mis-described in the tracker, and twice the real defect was worse than the
+filed one.** Reading the code was not enough to find that — each took forcing the failure and looking.
 
-- **BUG-041 closed your way.** The prompt no longer asks the model to state the boundary; *"Your recipe —
-  the chef won't rewrite it."* renders as product copy on the picked row — caption colour, not gold,
-  because gold marks the chef speaking and this is the product's promise. The sharper argument found
-  while writing it up: the sentence was hardcoded in the seed, the mock AND an E2E assertion, so the
-  suite was proving a guarantee the live model never kept. All three now carry what the model actually
-  says. This also mostly dissolved the critic's gold-budget finding — the one sentence that had to be
-  singular left the gold register entirely; the seven rationales keep §D's licence.
-- **The critic's slate: eleven applied** — the picker pane pinned at 80vh (picker subject only; `L17`
-  measures it across opened/pushed/selected and asserts the meal sheet still content-sizes), the support
-  line as the receipt, the opening line counting what fits, un-dim on a selected unfittable row (+ the
-  `3e` overrule acknowledged: *"Runs long for the night — your call."*), duplicate/zero-count door
-  suppression, the eyebrow glyph beside `PICKED` with every row flush left, the opening tier capped at
-  3 + `N more`, the library door refiled under `ASK ME FOR A CHANGE` on BOTH sheets, one honest
-  empty-library door, the r22→r18 radius rung, the empty library's search field removed.
-  **Two rejected** — hierarchy inversion (the critic mis-measured: 16/13.5px, not 16/22px; the copy trim
-  was applied instead) and the loudest-object inversion (`Let the chef write it` stays primary).
-  **Four to 1F** — Recipes `+` weight, vocabulary unification, cooked-when evidence, caps-label tracking.
-- **Two locked-frame deviations ratified:** the pane sits at ~176px, not §A's 76px (at 76 the week
-  behind vanishes; the real defect was the walls moving), and the overrun acknowledgment line is new
-  copy the frame never drew.
+- **A1 · BUG-035** was filed as "a 90-second server-side timeout" with two open questions. **Both tracker
+  answers were wrong.** There is no 90s timeout in the app (the only `90_000` is the Playwright `waitFor`
+  ceiling; S45 recorded the harness's own wall as the server's), and the failure card was **unreachable on
+  every path**, not just the guarded one — `useObject` reports a stream that dies mid-pipe as one that
+  *completed*, so nothing rendered at all. First run erased your typed request; regenerate silently
+  reappeared the old plan. **🔴, not 🟡.** Fixed in four parts + a timeout ladder pinned by a test that
+  scrapes `maxDuration` out of the route source.
+- **A2 · BUG-020/021** — the in-flight save bucket, and a skip that silently didn't stick. The subtle half:
+  a state update from an awaited callback is not visible to the closure that awaited it, so the failures
+  list needed a synchronously-written ref mirror or the fix would have passed the same lie one step later.
+- **A3 · BUG-011/012/010** — **this doc's own recommendation had a hole** (read-only `householdSize` would
+  have broken both bare-count writers). Griffin chose the real fix over two cheaper ones; the You tab now
+  edits bands through a `HouseholdComposer` shared with onboarding, the talk op is band-aware, and the
+  scalar is read-only.
 
-### `DEV_TOOLS_EMAILS` — set, redeployed, one 10-second behavioral check owed
+### ⭐ Next up — A4, A5, A6, then Workstream B
 
-The variable is marked **sensitive** in Vercel, so no read-back is possible (the "empty" pulls were
-masking, by design). Claude set it via CLI, Griffin re-added his email in the dashboard, and the
-dashboard save triggered a production redeploy that applies it. **Check: open prod → You tab → the
-test-mode card should be there for Griffin's account.** If absent after that deploy, debug next session
-(most likely a stray duplicate or the login email differing from the allowlisted one). `ALLOWED_EMAILS`
-is fail-open by design; it becomes the invite list at closed beta.
+1. **A4 — BUG-013 🟠**, marked *before R1 ship*. `finishOnboarding` trusts client-supplied memory text, so
+   an authenticated caller can plant 300 characters into `ai_memories` stamped `sourceType: 'onboarding'`
+   — the exact provenance the You ledger displays as *"You told me when we started."* Recompute `memory`
+   server-side from `(questionId, dimension, values)` and ignore the client's field entirely.
+2. **A5 — BUG-042 / BUG-043.** Neither is a code defect. BUG-042 is a **Supabase dashboard toggle** (disable
+   the email provider; the app only ever uses Google) and needs Griffin, not Claude. BUG-043 is **correct to
+   leave in place through all of R1** and graduates to the launch-day checklist.
+3. **A6 — BUG-018 🟠.** `seed.ts` runs deletes against production guarded only by a household *name*. Add
+   `assertNotProductionUrl()` — that is the cheap fix and it lands here. **The real answer is a separate
+   non-prod Supabase project, and whether to do that now or at V1.5 is Griffin's call.**
+4. Then **Workstream B**, the design-system pass (spec §12 items 03/04/05/07), which is where the four
+   S48 critic items and BUG-037/038 land.
 
-### ⭐ Next up — 1E.5 is CLOSED at M5.5; 1F is OPEN with its scope doc written
+### Owed, unchanged
 
-**⚠️ Correction to how the taste gate actually closed** (this section was first written from the other
-half of a two-session split and overstated it). Griffin did **not** wave the captures through. Presented
-with the after-captures and a read of them, he chose **"fix the three, then merge"** — so the gate closed
-on **three S49 fixes**, not on a clean look:
-
-1. **The 80vh pane was anchoring its primary in two places ~700px apart** — pinned to the pane bottom with
-   a selection, floating inline under the content on an empty library. One sheet, one loudest object, two
-   positions depending on whether the library had anything in it. The empty-library primary moved into the
-   same pinned footer slot; `L11` now **measures** the gap to the pane's bottom edge, because the fix is a
-   DOM move that would pass every text assertion either way.
-2. **The empty library promised `five dinners`** while the app confirms seven — a hardcoded number the
-   person can compare against what they get. Now "a week"; the count is the request's to make. Same class
-   as BUG-041, one size smaller.
-3. **The unfittable-reason line broke the app's own separator grammar** — `3 hr — longer than Friday
-   allows` beside `Saved in July · 25 min · never cooked`, same row, two separators, and the em dash is the
-   tell Griffin flags. Now ` · `, which also brings every picker screen to ≤1 em dash.
-
-The branch merged `origin/main` in (the concurrent access-gate + Instacart sessions; their BUG-030/031
-renumbered **BUG-042/043**), and [scope-1F.md](scope-1F.md) was opened with four workstreams
-(A ship-blockers → B design-system pass → C PWA → D production readiness); scope-v1 is flipped.
-
-1. **Start 1F Workstream A** per [scope-1F.md](scope-1F.md): BUG-035 first (the 90s generation timeout —
-   the only *before R1 ship* item), then the ship-blocker list.
-2. **Carried into 1F from S48:** BUG-037/BUG-038, the slate's four 1F items (Recipes `+` weight,
-   picker/Recipes vocabulary unification, cooked-when evidence, caps-label tracking), BUG-042 (email
-   provider config check), BUG-043 (launch-day noindex removal — correct to leave in place through R1).
-3. **✅ The closed-beta question is ANSWERED (Griffin, S49): no beta.** Two-user validation is enough to
-   ship R1. It costs nothing to honour — `SITE_ACCESS_CODE` + `ALLOWED_EMAILS` shipped S43a and **default
-   off when unset**, so the decision is "leave two env vars alone." What it removes from 1F: feedback
-   capture, a support path, an onboarding-for-strangers pass, multi-user load/abuse modelling. A beta is
-   **deferred to V1.5**, not cancelled. scope-v1's last open release question is now closed.
+- **`DEV_TOOLS_EMAILS` behavioral check** — open prod → You tab → the test-mode card should be there for
+  Griffin's account. One glance, still owed.
+- **One deploy-time check new from S50:** `maxDuration` is now **120** on the generation route. Hobby allows
+  300s with fluid compute (on by default), so this should just work — but if it gets clamped, fluid compute
+  is off on the project and needs flipping on. Free toggle, one dashboard visit.
 
 ### Also still open
-- **BUG-035** — 1 real generation in 9 timed out server-side at 90s; nobody knows whether that path
-  shows a named failure or a spinner that never resolves. **Before R1 ship.**
-- **BUG-020/021, BUG-011/012/010/013, BUG-017, BUG-018, BUG-023, BUG-003** — the standing list, all
-  with address-by targets in [bug-tracker.md](bug-tracker.md).
+- **BUG-037, BUG-038** (→ Workstream B), **BUG-023** (V1.5+, not reachable today), **BUG-017**, **BUG-003**,
+  and the four S48 critic items (Recipes `+` weight, vocabulary unification, cooked-when evidence,
+  caps-label tracking). All with address-by targets in [bug-tracker.md](bug-tracker.md).
 
-**⭐ Model recommendation: Opus 4.8.** Workstream A opens on BUG-035 — an intermittent server-side
-timeout on the app's most important call, where the work is diagnosis (ours or the provider's?) and
-designing the failure the user sees. That is judgement on the AI path, not process work.
+**⭐ Model recommendation: Opus 4.8.** A4 is a security fix on a provenance boundary — recomputing memory
+text server-side means deciding what the server considers authoritative, which is judgement about trust,
+not mechanical work. A6 carries a real architecture call (separate non-prod project or not). If the session
+is only A5's dashboard toggle plus doc work, Sonnet 4.5 is enough.
 
 **Copy-paste kickoff prompt:**
 ```
-Resume meal app — 1E.5 CLOSED at M5.5 (S48 built the taste-pass ballot; S49 reviewed the after-captures
-and fixed three before merge: the 80vh picker pane now anchors its primary in one place across every
-state with L11 measuring it, the empty library stopped promising "five dinners" when the app confirms
-seven, and the unfittable-reason line took the app's own " · " separator). Merged to main, worktree
-removed. I also decided the closed-beta question: NO beta — two-user validation ships R1, the gate stays
-unset. 1F is open: docs/scope-1F.md, four workstreams, A->B->C->D. Start Workstream A: A1 is BUG-035
-(1 real generation in 9 timed out server-side at 90s — find out whether that path shows the user a named
-failure with a retry or a spinner that never resolves, then fix whichever it is; X1/X2 only cover modify
-failures), then A2 (BUG-020/021, the onboarding save-path pair), then A3 (BUG-011/012/010, the
-household-composition cluster). Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first,
-give me the <=6-line scope check. Note main now carries the closed-beta access gate (BUG-042 is a
-Supabase dashboard toggle; BUG-043 is a launch-day item, correct to leave alone through R1) and the
-Instacart standing watch. 641 unit + 111 E2E green on main. On Opus 4.8.
+Resume meal app — 1F Workstream A is 3 of 6 done, all merged to main (PRs #9, #10, #11). S50 closed A1
+(BUG-035), A2 (BUG-020/021) and A3 (BUG-011/012/010). Worth knowing: three of those six were
+mis-described in the tracker and twice the real defect was worse than the filed one — BUG-035 had no 90s
+timeout at all (that was the Playwright waitFor ceiling recorded as the server's) and its failure card
+had been unreachable on EVERY path since it was written, because useObject reports a stream that dies
+mid-pipe as one that completed. So: force the failure, don't just read the code. Next is A4 (BUG-013,
+marked before R1 ship — finishOnboarding trusts client-supplied memory text stamped as onboarding
+provenance; recompute it server-side from questionId/dimension/values and ignore the client field), then
+A5 (BUG-042 is a Supabase dashboard toggle I have to do myself, BUG-043 is correctly a launch-day item),
+then A6 (BUG-018, seed.ts deletes against prod guarded only by a household name — add
+assertNotProductionUrl, and tell me whether a separate non-prod Supabase project is worth doing now or at
+V1.5). Then Workstream B. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me
+the <=6-line scope check. 671 unit + 121 E2E green on main, migration 0010 applied. Still owed from me:
+the DEV_TOOLS_EMAILS check on prod's You tab, and a look at whether maxDuration 120 got clamped on the
+generation route (if it did, fluid compute is off and needs turning on). On Opus 4.8.
 ```
 
 ---

@@ -4,6 +4,58 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-30 (S50) — A failed generation keeps the week you already had
+
+**Decision (Griffin).** When generation fails and a plan is already on file, the failure is **named in the
+action bar's slot and the existing week stays on screen** — not replaced by an error card.
+
+**Why.** You asked for a new week and did not get one. That is a failed action, not a reason to take away
+the week you have. The replace-the-screen alternative also has a worse edge: dismissing the error would
+drop you onto a plan you never asked to see, with nothing explaining what happened.
+
+**Also settled here:** an automatic retry, **plus** a retry control. Griffin's words: *"we should do a
+retry (b). We should not do a partial result, and we should definitely try to retry and give them a retry
+button."* Partial results — shipping whatever days generated and letting the person fill the rest — were
+explicitly rejected.
+
+**One consequence that shaped the build:** a client-side auto-retry re-POSTs the route, which re-runs
+`consumeDailyAiBudget` and bills the daily cap twice per attempt. The retry therefore lives **server-side,
+inside the request that already paid**, and only fires before the first token — past that the client holds
+half a JSON document a second attempt would corrupt.
+
+**Future impact.** Partial results stay available as a V1.5 option if the two-week validation run shows
+generation failing often enough to matter. Nothing in this fix forecloses it.
+
+---
+
+## 2026-07-30 (S50) — The You tab edits the household composition, not a servings count
+
+**Decision (Griffin).** BUG-011's fix is the **real one**: the You tab gets a band editor (adults /
+children / babies), the talk op becomes band-aware, and `householdSize` becomes read-only. Griffin's
+words: *"I don't see why we wouldn't just make the real fix right now."* He also declined a Claude Design
+pass on the new control: *"I don't think we need a design pass for this."*
+
+**Why the cheaper options were declined.** Two were offered. **Absorb-into-adults only** (a bare count
+adjusts `composition.adults`) keeps one source of truth with no new UI, but leaves the You tab unable to
+say "two adults and two children" at all. **Derive at read time** (compute the size from composition in
+`getChefContext`, leave the writers alone) kills the contradictory-prompt symptom in ~5 lines but leaves
+the stored column drifting, and `seedChips` already reads `composition.children`.
+
+**Why this was in-scope for a phase that forbids redesign.** `field-edit-sheet` already *was* a stepper
+sheet, so going from one stepper to three is an in-pattern change inside an existing surface, not a new
+all-states design pass. My initial framing that it broke 1F's scope rule was wrong and was withdrawn.
+
+**The one guess this design makes, stated rather than buried:** a bare head count ("we're 5 now") has no
+bands in it, so it **lands on adults** and preserves the bands it was not told about. An unspecified extra
+person is an adult, and adults are the only band that always counts toward servings. The You tab is one
+tap away for a correction.
+
+**Future impact.** V1.5's family member profiles extend `HouseholdComposition` with a `members` array
+additively; the shared `HouseholdComposer` is the control that grows for it, and there is now exactly one
+of them rather than two that could disagree.
+
+---
+
 ## 2026-07-30 (S49) — No closed beta: two-user validation ships R1
 
 **Decision (Griffin).** `scope-v1.md`'s open release question #1 — parked *for* 1E and carried through

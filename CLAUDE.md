@@ -16,13 +16,50 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 "I have no idea what to cook" -> "My grocery list is ready" in under 10 minutes.
 
 ## Current Phase
-**Phase 1E.5 (Plan Design Buildout) is ✅ CLOSED at M5.5 (2026-07-30). Phase 1F (Polish / Production Readiness) is 🔨 OPEN** — scope: `docs/scope-1F.md` (four workstreams, **A ship-blockers first, BUG-035 first within it**). Read `docs/whats-next.md` first. The S48 merge folded in the concurrent access-gate + Instacart sessions; their bug IDs were renumbered **BUG-042/043**.
+**Phase 1F (Polish / Production Readiness) is 🔨 OPEN.** Scope: `docs/scope-1F.md` — four workstreams,
+**A ship-blockers → B design-system pass → C PWA → D production readiness**. Read `docs/whats-next.md` first.
 
-**The taste gate closed on three S49 fixes, not on a clean look** — worth knowing because it is the precedent. S48 ran Griffin's taste pass as a **decision ballot** (he could not see the captures, so he delegated to the recommendation slate). S49 then put eyes on the after-captures before merge and found three things, all visible only in a screenshot: the pinned 80vh picker pane was **anchoring its primary ~700px apart** depending on whether the library had anything in it (fixed; `L11` now *measures* the gap to the pane's bottom edge, because a DOM move passes every text assertion either way), the empty library promised **`five dinners` while the app confirms seven** (BUG-041's class one size smaller), and the unfittable-reason line broke the app's own ` · ` separator grammar. **The rule: when a taste pass is delegated to a recommendation slate, the visual half still runs as its own pass before merge** — a ballot answered without eyes on the pixels is a delegation, not a sign-off.
+**Workstream A is 3 of 6 done (S50), all merged to `main`: A1 (BUG-035), A2 (BUG-020/021), A3
+(BUG-011/012/010) as PRs #9/#10/#11. 671 unit + 121 E2E green, migration `0010` applied.** Next is **A4
+(BUG-013**, marked *before R1 ship*), then A5, A6, then Workstream B.
 
-**✅ scope-v1's last open release question is closed (Griffin, S49): NO closed beta.** Two-user validation ships R1. It costs nothing — `SITE_ACCESS_CODE` + `ALLOWED_EMAILS` shipped S43a and **default off when unset**, so the decision is "leave two env vars alone" and reversing it later is setting them, not a code diff. What it removes from 1F: feedback capture, a support path, an onboarding-for-strangers pass, multi-user load/abuse modelling. A beta is **deferred to V1.5**, not cancelled. Two rows attach to the dormant gate: **BUG-042** (GoTrue's email provider is on by default and `ALLOWED_EMAILS` made the `email` claim an authorization boundary — a dashboard toggle) and **BUG-043** (`noindex` + `robots.txt` are build-time and deliberately not env-driven; **correct to leave in place through all of R1**, graduating to a launch-day item).
+**⚠️ THE LESSON OF S50, and it is the one to carry into A4: the tracker was WRONG about three of the six
+bugs, and twice the real defect was worse than the filed one.** Reading the code was not enough — each
+took forcing the failure and looking at what actually happened.
 
-**641 unit + 111 E2E green on `main`, lint + typecheck clean, migrations `0007`–`0009` applied. Layer A 0 blockers / 0 high; Layer B run twice; `ux-design-critic` sixteen findings disposed (11 applied / 2 rejected / 4 → 1F, decisions.md S48). BUG-041 closed: the boundary sentence is product copy on the picked row, and the seed/mock/spec that hardcoded it as chef output were made honest.**
+- **BUG-035 had no 90-second timeout at all.** The only `90_000` in the repo is the Playwright `waitFor`
+  ceiling in `plan-live.capture.ts`; S45 recorded the *test harness's own wall* as the server's. The real
+  abort was ours at 60s.
+- **Its failure card had been unreachable on EVERY path since it was written.** `useObject` only sets
+  `error` for a failed *request*, and the route has already returned 200 with an open body by the time a
+  stall happens — so a dead stream arrives as a body that simply **closes**, and nothing renders. First run
+  erased the user's typed request; regenerate silently reappeared the old plan. **🔴, not the 🟡 filed.**
+- **`maxDuration` (60) EQUALLED the AI abort (60)**, so on Vercel the platform's kill and our timeout landed
+  at the same instant. Now a ladder — 45s attempt → 100s outer → 120s `maxDuration` — pinned by
+  `config.test.ts`, which **scrapes `maxDuration` out of the route source** rather than retyping it.
+- **A3's fix was chosen against this doc's own recommendation.** "Read-only `householdSize`" would have
+  broken both bare-count writers. Griffin took the real fix: a shared `HouseholdComposer`, a band-aware
+  `set_household` op, and the scalar read-only. A bare head count **lands on adults** — a stated guess, not
+  drift.
+
+**Two S50 habits worth keeping.** Every fix shipped with a test **verified failing against the pre-fix
+code** (stash the source, re-run, confirm red). And where a race was the bug, the spec holds the window open
+with a **gate the test releases** rather than a timer — a spec that only reproduces on a slow machine is
+worse than none.
+
+**Owed by Griffin:** the `DEV_TOOLS_EMAILS` check on prod's You tab (ninth session), and a look at whether
+`maxDuration: 120` got clamped on the generation route (if so, fluid compute is off on the project — a free
+toggle). **BUG-042 is a Supabase dashboard toggle only he can do.**
+
+### Prior sessions (retained for context)
+
+**S49 closed 1E.5 at M5.5 and opened 1F.** The taste gate closed on **three S49 fixes, not on a clean
+look** — worth knowing because it is the precedent. S48 ran Griffin's taste pass as a **decision ballot**
+(he could not see the captures, so he delegated to the recommendation slate); S49 then put eyes on the
+after-captures before merge and found three things visible only in a screenshot. **The rule: when a taste
+pass is delegated to a recommendation slate, the visual half still runs as its own pass before merge.**
+Also settled: **NO closed beta** — two-user validation ships R1, both gates stay unset (env, not code), and
+a beta is deferred to V1.5.
 
 **S47 answered BUG-034, cleared both visual-QA layers, and found a bug that had been shipping since 1E.7.**
 

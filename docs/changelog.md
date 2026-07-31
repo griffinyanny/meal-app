@@ -4,6 +4,122 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 50 — 2026-07-30 (1F Workstream A: three PRs, six bugs, and a tracker that was wrong about two of them)
+
+**Workstream A's first three items closed and merged** — A1 (BUG-035), A2 (BUG-020/021), A3
+(BUG-011/012/010) — as PRs **#9, #10, #11**. **671 unit + 121 E2E green** on `main` (from 641 + 111),
+lint + typecheck clean, migration `0010` applied.
+
+The through-line of the session: **three of the six bugs were mis-described in the tracker, and in two
+cases the real defect was worse than the filed one.** Reading the code was not enough to find that; each
+one took forcing the failure and looking at what actually happened.
+
+### A1 — BUG-035 was filed with two open questions, and both tracker answers were wrong
+
+**There is no 90-second timeout in the app.** The only `90_000` in the repo is the Playwright `waitFor`
+ceiling in `plan-live.capture.ts`. S45 recorded the *test harness's own wall* as the server's. The real
+abort was ours, `AbortSignal.timeout(60_000)`.
+
+**The failure card was unreachable on EVERY path, not just the guarded one.** The tracker (and my own
+first read) expected the `streamError && !plan` guard to be the bug. It was worse: `useObject` only sets
+`error` for a failed *request*, and the route has already returned 200 with an open body by the time a
+stall happens — so a dead stream arrives as a body that simply **closes**. `isLoading` goes false, `error`
+stays undefined, nothing renders. The card had been dead code since it was written.
+
+- **First run:** the user is dropped back on the intent screen with their typed request erased.
+- **Regenerate:** the old plan silently reappears (a timeout never reaches `persistPlan`, so `plan` stays
+  truthy). A silent no-op — BUG-019's class — and the *more likely* path in real use, since after week one
+  you always have a plan.
+
+**🔴, not the 🟡 it was filed as.** X3 and X4 both failed before the fix.
+
+**A second bug underneath it:** `maxDuration` (60) EQUALLED the AI abort (60), so on Vercel the platform's
+kill and our own timeout land at the same instant and the route never gets to render its failure. Hobby
+allows **300s** with fluid compute (verified against Vercel's docs, not memory), so the 60 was
+self-imposed, not a ceiling.
+
+**The fix, four parts.** Detection via `onFinish({object, error})`; two surfaces per **Griffin's option B**
+(no plan → the failure owns the screen; plan on file → it borrows §C's slot and **the week stays put**,
+because you asked for a new week and did not get one, which is a failed action rather than a reason to
+take away the week you had); **one silent server-side retry before the first token only**
+(`withStreamRetry`, at the model layer — a client retry is a second request that re-runs
+`consumeDailyAiBudget` and double-bills the daily cap, and past the first token the client holds half a
+JSON document a second attempt would corrupt); and a **timeout ladder** of 45s attempt → 100s outer → 120s
+`maxDuration`, each strictly slower than the one it contains. `config.test.ts` **scrapes `maxDuration` out
+of the route source** rather than retyping it, so the two cannot drift back into a tie.
+
+Plus escalating copy while nothing has arrived — a silent retry inside an unchanging screen is how a
+90-second hang gets built.
+
+**X6 drives the real timeout in 2.5s** via an E2E-only per-attempt override production cannot honour,
+rather than letting a forced error stand in for a timeout. Given three sessions running found apparatus
+structurally unable to catch its own target, an error masquerading as a timeout was the obvious trap.
+
+### A2 — the third bucket
+
+**BUG-020:** `retryFailed` retried FAILED saves but never awaited IN-FLIGHT ones. A save still open had
+neither succeeded nor failed, so it was in **neither bucket**, and `retryFailed` returned `true` the moment
+`failedSaves` was empty. Because the completed flag makes the interview fire **once per account**, the
+answer was gone for good.
+
+**A second part was needed to make the fix work**, and it is the more interesting half: `retryFailed`
+awaits saves whose error handlers call `setFailedSaves`, and **a state update from an awaited callback is
+not visible to the closure that awaited it**. Without a synchronously-written ref mirror, the fix would
+await correctly and then read a stale empty array — passing the same lie one step later.
+
+**BUG-021:** `skipAll` routed `onSuccess` AND `onError` to the same `leaveToPlan`, the exact opposite of
+what BUG-016 landed on the finish path. Now mirrors `finish`: stay put, toast a retry.
+
+**All three specs (OB16/OB17/OB18) verified failing against the pre-fix code** by stashing the source and
+re-running. OB16/OB18 hold the in-flight window open with a **gate the test releases** rather than a timer:
+the bug is a specific interleaving, and a spec that only reproduced it on a slow machine would be worse
+than none.
+
+**OB16's first draft asserted the wrong thing** and is worth recording. It expected the interview to stay
+put; with the fix in place it correctly *proceeds*, because awaiting the in-flight save reveals the failure
+and the end-point retry then succeeds. The assertion that actually falsifies the bug is the **data**:
+`maxCookTimeWeeknight === 30`. OB18 covers the stay-put case separately.
+
+### A3 — the scope doc's own recommendation had a hole
+
+"Make `householdSize` read-only" is right in principle, but **both non-onboarding writers send a bare
+count** — the You-tab stepper and the `set_household` talk op — and a count cannot say which band changed
+(2 adults + 2 children stepped 4→5 is either a third adult or a third child). Read-only alone would have
+broken them.
+
+**Raised as a fork with three options.** Offered (a) absorb-into-adults, (b) a cheap read-time patch in
+`getChefContext`, (c) the real fix. Recommended (a); **Griffin chose (c)** — *"I don't see why we wouldn't
+just make the real fix right now"* — and declined a design pass on the new control.
+
+**Both of his calls held up, and my framing against (c) did not.** I had argued it "lands a new control on
+the You tab during a phase that said it wouldn't do that"; `field-edit-sheet` already WAS a stepper sheet,
+so three steppers is an in-pattern change rather than a new surface. I also over-estimated the effort — the
+onboarding screen already had every piece, so it was an *extraction*, not a build.
+
+**What I did under-weight, and should have led with: (c) does not close BUG-011 by itself.** The You tab is
+two of three writers; the talk op still carried `{ amount: number }`. The complete fix is three parts, and
+naming the third up front is what made it complete.
+
+### The gauntlet caught one thing I would not have predicted
+
+Extending the talk op's schema broke **six talk specs** — the e2e fixture didn't carry the new required
+band keys, so the loose op schema rejected every op. Exactly the fixture-drift class `.claude/rules/e2e.md`
+warns about. The defaults are deliberately **out of range** so an unrelated op arrives naming no band
+rather than silently claiming one.
+
+### Also
+
+- **Two of my own tests caught my mistakes rather than the code's.** A `withStreamRetry` fixture used
+  `controller.error()` inside `start()`, which resets the queue and discards the chunks — so it never
+  delivered the token the test was about. The implementation was right; the test was not.
+- **The prompt snapshot test fired on the `set_household` change**, which is the deliberate-review gate
+  working as designed. Updated after reading the diff.
+- **`householdSize` and `householdComposition` now move together or not at all**, including to NULL: an
+  explicit null means "we don't know who they cook for", and a stale servings count beside that is the same
+  contradiction in a quieter form.
+
+---
+
 ## Session 49 — 2026-07-30 (the after-capture pass: three fixes, 1E.5 closes at M5.5, 1F opens, closed beta answered)
 
 **The session ran alongside a concurrent one on the same worktree**, which is worth recording because it
