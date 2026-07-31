@@ -4,6 +4,44 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S52) — Validate in the shipping configuration: B → C → D → validate, and session replay is part of D
+
+**Decision (Griffin, S52, overruling Claude's proposed reorder).** The 1F workstream order stays
+**B → C → D**, with the two validation weeks starting only after all three.
+
+**Claude argued for pulling D's instrumentation forward** and starting the two-week clock ~2 weeks earlier,
+on the grounds that calendar time is the uncompressible resource. **Griffin overruled it on two arguments,
+both better:**
+
+1. **Validate the artifact you ship.** The PWA is how he actually intends to use the product. Spending the
+   two expensive weeks in a browser tab validates a configuration that is not what ships — the result
+   either does not transfer or has to be re-run. Starting the clock sooner on the wrong artifact is a bad
+   trade, not a cheap one. He also wants the surface finished enough that his feedback during those weeks is
+   *about the design* rather than about gaps.
+2. **Observability is the debugging substrate, not just the DoD metric.** Claude had scoped D as "the
+   instrumentation the time-to-list measurement needs." That was too narrow. Its larger job is that during
+   validation Griffin reports a bug and Claude can *see* the error and the path that produced it, instead of
+   working from a description. That makes D a precondition for the validation being productive at all — and
+   since B → C → D already puts D before validation, Griffin's order already satisfied the concern Claude's
+   reorder was chasing.
+
+**Consequence — PostHog session replay is added to Workstream D.** The event taxonomy gives a named
+sequence and Sentry gives the stack; neither shows what he tapped. Replay closes exactly the gap he named.
+
+**⚠️ Its masking posture must INVERT the vendor default.** PostHog and every tool in the category default to
+masking *input fields*, because in a typical SaaS the sensitive material is what users type. **In this app
+it is mostly rendered output** — the chef's memories, the interview's dietary/health answers, household
+composition and children's ages, the grocery list. So: mask everything, then explicitly unmask chrome and
+structure. A denylist fails open on the screen we would most regret recording. **Same argument that made
+BUG-018's guard an allow-list.**
+
+**Future impact.** With two consenting users the privacy risk today is ~zero; the reason to build the
+posture now is that the config carries forward, and replay meeting a real user on vendor defaults means the
+leak is already live. This is also the first R1 decision that would need real review before a public launch
+— it belongs on the same launch-day checklist as BUG-043.
+
+---
+
 ## 2026-07-31 (S52) — The two 1F/B5 semantic calls: a merge marker is neutral, a cooked check keeps its hue
 
 **Decision (Griffin, S52 — *"i'm good with your recos"*).** Both of the semantic calls S42 deliberately

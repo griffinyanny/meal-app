@@ -76,10 +76,21 @@ the bug had already fixed itself, and the doc had the reason backwards.**
    (`2 dinners ⌄`) and the standalone chevron is gone. The cooked badge is deliberately left as a
    non-tappable fill+border chip, because the spec's §07 gallery draws exactly that component.
 
-### ⚠️ Still yours, unchanged
+### ⛔ NOT yours any more — DO NOT do the BUG-042 toggle
 
-**The BUG-042 Supabase toggle.** Authentication → Sign In / Providers → **disable Email**. Hygiene, not a
-fix (measured not-exploitable in S51). **Claude cannot do this.**
+**Retracted. Disabling the Supabase Email provider would turn all 121 E2E specs red.** The standing
+instruction ("the app has never used that path, so turn it off") rested on a premise that is **false**: the
+harness's only sign-in is `signInWithPassword` (`tests/e2e/harness/supabase-session.ts:160` and `:174`),
+which rides the email provider — and line 182's own error string already said *"Check that the Email
+provider is enabled."* Nobody connected that string to this row for four sessions, and Claude repeated the
+instruction twice in S52 without checking it.
+
+**Fifth instance of the phase's running lesson, and the sharpest one:** a parked recommendation is a
+hypothesis, and this one was not merely wrong but *destructive*. The email path is **load-bearing test
+infrastructure**, not dormant surface area.
+
+This now bundles with the separate non-prod Supabase project decision — that project is what would let prod
+disable Email while the harness keeps it on where it lives. See [open-questions.md](open-questions.md).
 
 **✅ `maxDuration` is CLOSED — it was NOT clamped.** Checked in S52 via the Vercel API rather than handed
 back: the production build of `00062a4` (the tree carrying `maxDuration = 120`) completed with **no clamp
@@ -107,10 +118,32 @@ already adjudicated by the S48 slate.
 state failing its pre-shot check). Not on a B1/B5 surface, so it was flagged rather than folded in — but
 the You freeform control is B7's scope and this should be answered there, not silently inherited.
 
-**🎨 Design pass — offered, recommendation is still skip.** B applies a locked spec to already-designed
-surfaces, and scope-1F's own rule is that 1F must not produce a new all-states pass. B5's call landed as a
+**🎨 Design pass — SKIP for B, RECOMMENDED for C.** B applies a locked spec to already-designed surfaces,
+and scope-1F's own rule is that 1F must not produce a new all-states pass; B5's call landed as a
 token-and-treatment swap rather than a new component, which was the one condition that would have changed
-this.
+that. **C is the reversal:** the app icon, splash/launch screen, install prompt and offline
+grocery-list state exist in no spec and no mock, it is net-new surface, and it is what Griffin sees every
+time he opens the app from his home screen.
+
+### ⚠️ The order is settled, and the reasoning changed (S52)
+
+**B → C → D, then the two validation weeks.** Claude proposed pulling D's instrumentation forward to start
+the clock ~2 weeks earlier; **Griffin overruled it on two better arguments:**
+
+1. **Validate the artifact you ship.** The PWA is how he actually intends to use the product, so a
+   browser-tab validation spends the two expensive, uncompressible weeks on a configuration that is not
+   what ships — the result either does not transfer or has to be re-run.
+2. **Observability is the debugging substrate for the validation weeks, not just the DoD metric.** Claude
+   had scoped D too narrowly. Its bigger job is that Griffin reports a bug and Claude can *see* the error
+   and the path, rather than working from a description. Since B → C → D already puts D before validation,
+   his order already satisfied the concern the reorder was chasing.
+
+**Consequence: PostHog session replay is now in D**, because the event taxonomy gives a sequence and Sentry
+gives a stack — neither shows what he tapped. ⚠️ **Its masking posture must invert the vendor default:**
+these tools mask *input fields*, but this app's sensitive material is rendered **output** (the chef's
+memories, the interview's dietary/health answers, household composition, the grocery list). Mask everything,
+unmask chrome and structure. Same argument that made BUG-018's guard an allow-list. Full entry in
+[decisions.md](decisions.md).
 
 ### Also still open
 

@@ -94,8 +94,16 @@ and deployed READY, and Vercel fails the build outright when the value exceeds t
 accepted and **fluid compute is on**. Residual: that proves the *declared* ceiling was accepted at build
 time; only a real generation running past 60s proves the runtime honours it. Do not raise it again.
 
-**Owed by Griffin:** **BUG-042 is a Supabase dashboard toggle only he can do** (Authentication → Sign In /
-Providers → disable Email). Hygiene, not a fix — measured not-exploitable in S51.
+**⛔ BUG-042 — DO NOT disable the Supabase Email provider. The standing instruction was wrong AND
+destructive, retracted S52/S53.** Its premise ("the app has never used that path") is false: the E2E
+harness's only sign-in is `signInWithPassword` (`tests/e2e/harness/supabase-session.ts:160`, `:174`), which
+rides the email provider, and line 182's own error string already said *"Check that the Email provider is
+enabled."* Turning it off reds all 121 specs. **Fifth instance of the phase's lesson and the sharpest one:
+the parked recommendation was not merely wrong, it was destructive** — and Claude repeated it twice in S52
+without checking. It now bundles with the separate non-prod Supabase project decision (that project is what
+would let prod disable Email while the harness keeps it on).
+
+**Owed by Griffin:** the separate non-prod Supabase project call — one word, accept (V1.5) or set it up now.
 
 ### Prior sessions (retained for context)
 
