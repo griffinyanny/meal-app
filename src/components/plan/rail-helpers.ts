@@ -161,6 +161,26 @@ export function writtenCount(meals: DisplayMeal[]): { written: number; total: nu
   };
 }
 
+// BUG-035 · WHAT THE SLOT SAYS WHILE NOTHING HAS ARRIVED YET.
+//
+// `writtenCount` above has nothing to report until the first meal lands, and the
+// server may now spend two 45s attempts before giving up. A silent retry inside
+// an unchanging screen is how a 90-second hang gets built: the person cannot
+// tell a stalled generation from a slow one, so the screen has to tell them.
+//
+// Deliberately vague about time and deliberately honest about state — it never
+// promises a finish, because at this point nothing knows when that is. Returns
+// null for a normal-speed generation (healthy runs are 7-20s), so the common
+// case says nothing at all.
+const WAITING_LINES: { afterMs: number; text: string }[] = [
+  { afterMs: 30_000, text: "Taking longer than usual. Still trying." },
+  { afterMs: 12_000, text: "Still working on it." },
+];
+
+export function waitingMessage(elapsedMs: number): string | null {
+  return WAITING_LINES.find((line) => elapsedMs >= line.afterMs)?.text ?? null;
+}
+
 const SHORT_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function shortDayName(isoDate: string): string {

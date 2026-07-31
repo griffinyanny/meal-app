@@ -97,6 +97,28 @@ export function CountSlot({ written, total }: { written: number; total: number }
 }
 
 /**
+ * The same readout BEFORE there is anything to count (BUG-035).
+ *
+ * `CountSlot` has nothing to say until the first meal lands, which used to mean
+ * the screen was identical at second 2 and second 80. It borrows the count's
+ * exact box and register so a slow start resolving into "1 of 7 written" reads
+ * as one line updating, not as a warning being replaced by progress.
+ */
+export function WaitingSlot({ message }: { message: string }) {
+  return (
+    <div className={SLOT}>
+      <p
+        data-testid="plan-waiting"
+        className="m-0 text-center text-[13px] text-[var(--spec-text-caption)]"
+        aria-live="polite"
+      >
+        {message}
+      </p>
+    </div>
+  );
+}
+
+/**
  * The bar BECOMING the message (§C).
  *
  * It inherits the primary's exact box so the transition is one object changing

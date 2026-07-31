@@ -61,8 +61,24 @@ carries into the prompt verbatim):
 | Token | Effect |
 |-------|--------|
 | `[E2E:FAIL]` | throw → exercise the real error/retry UI |
+| `[E2E:FAIL_ONCE=<key>]` | fail the FIRST call for that key, succeed after → prove a server-side retry recovers |
 | `[E2E:SLOW=<ms>]` | delay before responding → race/concurrency tests |
 | domain keywords / title match | route to specific fixtures (e.g. scoped vs whole-week change) |
+
+**Why `FAIL_ONCE` needs a key and `FAIL` does not.** Every directive above is
+derived from prompt TEXT, and a server-side retry re-sends the identical prompt —
+so a text-only directive cannot tell attempt 1 from attempt 2, and "the first
+attempt died and the second carried the user through" is untestable with it. The
+key gives the mock a place to remember it has been asked. Counts are module-level
+and never reset: use a distinct key per spec (the E2E server is a fresh process
+per run).
+
+**Timeouts are driven, not simulated.** `E2E_AI_ATTEMPT_TIMEOUT_MS` (set in
+`playwright.config.ts`) shortens the real per-attempt stall bound from 45s to
+2.5s, so a spec exercises the same code path in seconds instead of asserting that
+an error part *stands in for* a timeout. It is honoured only when the AI mock is
+on (`streamAttemptTimeoutMs` in `src/server/ai/config.ts`), so it cannot leak
+into a deployment.
 
 ### Rate limits
 

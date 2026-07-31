@@ -1,10 +1,23 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { DisplayMeal } from "./plan-helpers";
-import { writtenCount } from "./rail-helpers";
+import { writtenCount, waitingMessage } from "./rail-helpers";
 import { ChefHeader } from "./rail/chef-header";
 import { PlanRail } from "./rail/plan-rail";
-import { CountSlot, SLOT_PADDING_BARE } from "./rail/floating-slot";
+import { CountSlot, WaitingSlot, SLOT_PADDING_BARE } from "./rail/floating-slot";
+
+// Ticks once a second for as long as generation is on screen. Mounted only
+// while streaming, so it stops on its own when the plan lands or fails.
+function useElapsedMs(): number {
+  const [elapsedMs, setElapsedMs] = useState(0);
+  useEffect(() => {
+    const startedAt = Date.now();
+    const id = setInterval(() => setElapsedMs(Date.now() - startedAt), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return elapsedMs;
+}
 
 export interface StreamingPlanProps {
   chefSummary?: string;
@@ -75,7 +88,11 @@ export function StreamingPlan({
     }
   }
 
+  const elapsedMs = useElapsedMs();
   const { written, total } = writtenCount(withPlaceholders);
+  // Only while there is genuinely nothing to report. Once a count exists the
+  // count IS the reassurance, and two readouts would be competing for one slot.
+  const waiting = total === 0 ? waitingMessage(elapsedMs) : null;
 
   return (
     <div className={SLOT_PADDING_BARE}>
@@ -90,7 +107,11 @@ export function StreamingPlan({
         weekStart={weekStart}
         showRationale
       />
-      {total > 0 ? <CountSlot written={written} total={total} /> : null}
+      {total > 0 ? (
+        <CountSlot written={written} total={total} />
+      ) : waiting ? (
+        <WaitingSlot message={waiting} />
+      ) : null}
     </div>
   );
 }

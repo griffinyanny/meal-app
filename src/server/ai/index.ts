@@ -1,7 +1,13 @@
 import { generateObject, generateText, streamObject } from "ai";
 import type { Schema } from "zod";
-import { getModel, AI_DEFAULTS, type AITask } from "./config";
+import {
+  getModel,
+  AI_DEFAULTS,
+  streamAttemptTimeoutMs,
+  type AITask,
+} from "./config";
 import { withRetry } from "./retry";
+import { withStreamRetry } from "./providers/retry-stream";
 import { logAICall } from "./logger";
 
 interface GenerateStructuredOptions<T> {
@@ -122,7 +128,14 @@ export async function generateTextResponse(
 }
 
 export function generateStream<T>(options: StreamStructuredOptions<T>) {
-  const model = getModel(options.task);
+  // BUG-035 · one silent retry, and only before the first token. The rule and
+  // the reasoning live in `withStreamRetry`; the short version is that a stall
+  // with nothing emitted is recoverable and a stall mid-document is not.
+  const model = withStreamRetry(getModel(options.task), {
+    attemptTimeoutMs: streamAttemptTimeoutMs(),
+    onRetry: (reason) =>
+      console.warn(`[AI] ${options.task} | attempt 1 abandoned (${reason}) | retrying`),
+  });
   const start = Date.now();
 
   return streamObject({
@@ -132,7 +145,10 @@ export function generateStream<T>(options: StreamStructuredOptions<T>) {
     schema: options.schema,
     maxOutputTokens: options.maxTokens ?? AI_DEFAULTS.maxTokens,
     maxRetries: AI_DEFAULTS.maxRetries,
-    abortSignal: AbortSignal.timeout(AI_DEFAULTS.streamTimeoutMs),
+    // The OUTER budget across both attempts. Per-attempt stall detection is the
+    // wrapper's job — this only has to guarantee we give up before the route's
+    // `maxDuration` does, so our failure is the one the user sees.
+    abortSignal: AbortSignal.timeout(AI_DEFAULTS.streamTotalTimeoutMs),
     async onFinish({ usage, error, response, object }) {
       logAICall({
         task: options.task,

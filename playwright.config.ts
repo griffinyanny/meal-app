@@ -24,6 +24,12 @@ export default baseE2EConfig({
   webServerEnv: {
     E2E_AI_MOCK: "1",
     E2E_AI_MOCK_LATENCY_MS: "700",
+    // BUG-035 · the real per-attempt stall bound is 45s, which no suite can
+    // afford to wait out twice. This drives the SAME code path in seconds, so
+    // the timeout is exercised for real rather than simulated with an error.
+    // Honoured only when the AI mock is on (see `streamAttemptTimeoutMs`), so
+    // it cannot leak into a deployment.
+    E2E_AI_ATTEMPT_TIMEOUT_MS: "2500",
     // Test mode is off unless a deployment names the accounts that get it, so
     // the suite has to name its own test identity to exercise the controls at
     // all. Scoped to this one address: a spec that could enable dev tools for an
