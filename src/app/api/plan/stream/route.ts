@@ -25,7 +25,15 @@ import { MAX_PICKS_PER_WEEK } from "@/lib/plan/pick-limits";
 import { checkAiRateLimit, consumeDailyAiBudget } from "@/server/ratelimit";
 import { isEmailAllowed } from "@/lib/access";
 
-export const maxDuration = 60;
+// BUG-035. Was 60 — EQUAL to the AI abort it was supposed to outlive, so on
+// Vercel the platform's kill and our own timeout landed at the same instant and
+// this route never got to report its own failure. Hobby allows up to 300s with
+// fluid compute (on by default), so the old 60 was self-imposed, not a ceiling.
+//
+// 120 sits above the 100s outer AI budget, which sits above two 45s attempts.
+// Each layer must be strictly slower than the one it contains, or the outer one
+// silently pre-empts the inner one's error handling.
+export const maxDuration = 120;
 
 const bodySchema = z.object({
   request: z.string().max(1000).optional(),

@@ -11,6 +11,7 @@ import {
   mealTypeRank,
   metaLine,
   unplannedSpan,
+  waitingMessage,
   writtenCount,
 } from "./rail-helpers";
 
@@ -268,5 +269,35 @@ describe("unplannedSpan", () => {
       meal({ id: "2", date: "2026-07-31" }),
     ]);
     expect(unplannedSpan(days, weekStart)).toBe("Sun–Mon, Wed–Thu, Sat");
+  });
+});
+
+// BUG-035. The server may now spend two 45s attempts before giving up, so the
+// screen has to distinguish a stalled generation from a slow one. These pin the
+// two ends: a healthy run says nothing, and a stall cannot stay silent.
+describe("waitingMessage", () => {
+  it("should say nothing during a healthy generation", () => {
+    // Healthy runs measured at 7-20s (S45, three Layer B rounds). Reassurance
+    // at that speed would be noise on the common path.
+    expect(waitingMessage(0)).toBeNull();
+    expect(waitingMessage(11_999)).toBeNull();
+  });
+
+  it("should speak up once the run is slower than any healthy one", () => {
+    expect(waitingMessage(12_000)).toBe("Still working on it.");
+  });
+
+  it("should escalate rather than repeat itself once a retry is plausible", () => {
+    // Past the 45s per-attempt bound the server is on its second attempt, and
+    // an unchanged line for another 45s is the hang this exists to prevent.
+    expect(waitingMessage(30_000)).toBe("Taking longer than usual. Still trying.");
+    expect(waitingMessage(89_000)).toBe("Taking longer than usual. Still trying.");
+  });
+
+  it("should never promise a finish it cannot know is coming", () => {
+    const lines = [0, 12_000, 30_000, 60_000].map(waitingMessage);
+    for (const line of lines) {
+      if (line) expect(line).not.toMatch(/almost|nearly|any second|soon/i);
+    }
   });
 });
