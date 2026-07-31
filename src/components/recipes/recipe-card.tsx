@@ -53,11 +53,14 @@ export function RecipeCard({
         {(badge === "draft" || (badge === "cooked" && cooked)) && (
           <div className="mt-2">
             {badge === "draft" ? (
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-primary/12 text-primary/90 border border-primary/25">
+              // Neutral inset, not the cream action hue. "Plan draft" is a state
+              // you read, and cream is what you press (§01) — painting a label
+              // in it says "tap me" about a word that does nothing.
+              <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.07)] text-muted-foreground">
                 Plan draft
               </span>
             ) : (
-              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#30D158]/12 text-[#30D158] border border-[#30D158]/30">
+              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
                 Cooked {cooked}
               </span>
             )}
