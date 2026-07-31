@@ -4,6 +4,53 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S53) — BUG-042's toggle is retracted, not deferred: disabling the Supabase Email provider would break the E2E suite
+
+**Decision (Claude, S53, retracting a standing instruction handed to Griffin four sessions running).** Do
+**not** disable the Supabase Email provider. The row's premise was false and the action was destructive.
+
+**What the row said:** *"The app has never used the email path, and an auth path nothing uses is surface
+area whose safety rests on a dashboard setting nobody re-reads. Griffin's action, not Claude's."*
+
+**What is actually true:** the app has not used it, but the **E2E harness's only sign-in mechanism does**.
+`mintSupabaseSession` calls `signInWithPassword` (`tests/e2e/harness/supabase-session.ts:160`, `:174`),
+which is the email provider. GoTrue rejects a password grant with `<provider>_provider_disabled` **before it
+checks credentials** — so the harness would fail to mint a session and all 123 specs would die at setup.
+
+**Measured, not reasoned.** A password grant against this project's already-disabled **phone** provider
+returns `422 phone_provider_disabled`; the same request against the enabled email provider returns
+`400 invalid_credentials`. Same code path, symmetric check. That is the proof the email case behaves
+identically when off, obtained without flipping a switch that would have broken the suite.
+
+**The evidence was already in the repo and nobody read it.** Line 182 of that same file — the harness's own
+cold-start error message — reads *"Check that the Email provider is enabled in Supabase → Authentication →
+Providers."* Written by a past session that understood the dependency, never connected to the tracker row.
+It was handed back to Griffin unexamined twice in S52 alone.
+
+**Why it is retracted rather than re-scoped.** The hygiene argument was real but small: BUG-042 is measured
+**not exploitable** (`mailer_autoconfirm: false`, so a signup claiming an allowlisted address gets no
+session until the real inbox owner confirms it). Trading a working test suite for a closed-but-already-safe
+auth path is a bad trade. The alternative — re-plumbing the harness off password sign-in — is expensive and
+documented as such in `supabase-session.ts`: the admin API is unusable on this project's `sb_publishable_` /
+`sb_secret_` keys with ES256 JWTs (`403 bad_jwt: unrecognized JWT kid <nil>`), and public `signUp` rejects
+the deliberately-unroutable `@example.com` test address.
+
+**Where it goes instead.** BUG-042 **bundles into the separate non-prod Supabase project decision**
+(`open-questions.md`), because that project is precisely what would let prod disable Email while the harness
+keeps it on where it lives. Recommendation unchanged: **V1.5**. This collapses two owed items into one.
+
+**Future impact.** If the non-prod project is ever built, disabling Email on prod becomes free and should
+ship with it. Until then, **the Email provider staying on is a deliberate, load-bearing state**, and any
+future security review that flags it must be pointed at this entry rather than re-filing the same action.
+
+**The generalisable lesson, and it is the fifth shape this phase's lesson has taken.** S50: the tracker was
+wrong about what the bug was. S51: right about the bug, wrong about the fix. S52: the bug had already fixed
+itself. **S53: the recommendation was not merely wrong, it was destructive — and the thing that disproved it
+was a comment sitting in the very file the fix would have broken.** Before executing a parked action, grep
+the codebase for what depends on the thing being changed.
+
+---
+
 ## 2026-07-31 (S52) — Validate in the shipping configuration: B → C → D → validate, and session replay is part of D
 
 **Decision (Griffin, S52, overruling Claude's proposed reorder).** The 1F workstream order stays

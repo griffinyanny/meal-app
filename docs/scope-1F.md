@@ -398,16 +398,59 @@ Onboarding was done in S39. **You, Groceries, and the chef sheet remain.**
 
 The remaining design-system work the spec calls for beyond §12's enumerated items.
 
-### B9 — Recipe-detail empty states (BUG-038 🟡, BUG-037 🟠)
+### B9 — Recipe-detail empty states ✅ **CLOSED S53** (BUG-038 🟡, BUG-037 🟠) — *the filed bugs were the smaller half*
 
 Both were caught by Layer A in S47 and both are 1F-routed loading/empty-state work.
 
-- [ ] **BUG-038** — labelled but empty `INGREDIENTS` and `STEPS` cards plus ~800px of void. **Omit the
-      section entirely when empty, or say what is missing in one line. Never an empty labelled container.**
-      Reachable in production via an un-hydrated draft or a failed URL import.
-- [ ] **BUG-037** — `Add to this week` photographs as a dead grey control while `plan.current` is in
-      flight. Cheapest honest fix is a named working state ("Checking your week…"); the alternative is to
-      keep it enabled and await the query inside `handleClick`.
+- [x] **BUG-038** — each section is omitted when its array is empty; when **both** are, one line of flat
+      muted type (`No ingredients or steps on this one yet.`), centred with `py-12` so it reads as a
+      deliberate state rather than a caption orphaned under the meta. No fill and no border — law 05
+      reserves a container for something that responds to a tap. Reachable in production via an
+      un-hydrated draft or a failed URL import, which is why the copy names the state and **invents no
+      cause**: from the screen those two are indistinguishable.
+- [x] **BUG-037** — the refusal stays (answering a fast tap from "no data yet" would send someone with a
+      live week to the intent screen); what changed is that it says so. The verb reads
+      **`Checking your week…`** while `plan.current` is in flight instead of an unlabelled dim.
+
+- [x] ⚠️ **THE REAL FINDING, and it was three times the size of both bugs.** `seed.ts` hard-coded
+      `ingredients: []` / `steps: []` for **every** recipe the Recipes seeder produced. So BUG-038 was not
+      an edge case in the harness — it was **100% of seeded recipes**, and
+      `recipes-detail-add-to-week`, the tab's only detail capture, **had never once shown a populated
+      recipe body.** The visual gate was grading the degenerate state as the canonical one. Fixing BUG-038
+      without fixing the seed would have made the gate *blinder*: that capture would have become the
+      "nothing here yet" fallback, graded as normal. `SeedRecipe` now carries real bodies, with **exactly
+      one** recipe left deliberately body-less (the un-hydrated plan draft) so both states stay reachable.
+      Third instance of *ask what the layer cannot see* (S47 sheet states, S52 `grocery-complete-banner`),
+      and the sharpest: here the state existed but was silently the **wrong** one. Both later seeders
+      (`seedPlanState`, `seedGroceryState`) already wrote real ingredients — this one was the outlier.
+- [x] **A second gate-blindness, self-inflicted and older.** `recipes-facts.ts` waited on
+      `[data-testid="add-to-week"]:not([disabled])` before shooting — a workaround that stepped around
+      BUG-037 and made the visual layer structurally unable to see it. Now two distinct states:
+      `recipes-detail-checking-week` (held open by a **routed delay**, not a throttle, so it does not
+      depend on machine speed — S50's rule) and the settled `recipes-detail-add-to-week`.
+- [x] **New capture state `recipes-detail-empty`.** ⚠️ Its first run shot the verb mid-load and came back
+      reading `Checking your week…`, conflating it with the loading state so neither graded cleanly — my
+      own race, fixed by waiting for the settled verb.
+- [x] **RC14 + RC15, both verified failing against pre-fix code** via a physical file backup and
+      `git show HEAD:` restores — never chained `stash && test && pop` (S52's false-red lesson). Both reds
+      named the predicted cause: RC15's output showed the `disabled` button still reading
+      `"Add to this week"`, and RC14's accessibility snapshot showed `heading "Ingredients"` and
+      `heading "Steps"` rendered over nothing on the body-less draft — BUG-038 verbatim. **RC14 asserts in
+      BOTH directions on purpose**, because "the empty recipe hides the cards" alone would also pass
+      against a build that deleted the sections outright.
+- [x] **Gate: all 8 Recipes capture states `captureStatus: ok`.** The long void beneath the empty state was
+      left alone deliberately — `recipes-empty`, which has cleared several `/visual-qa` passes at 0/0, sits
+      the same way, so matching it is consistency with the shipped system rather than a defect. Changing it
+      would be the new all-states pass this phase forbids.
+- [ ] ⚠️ **NEW: BUG-046 🟡, deliberately not swept.** Populating the seed made a surface visible for the
+      first time, and it carries **B1's exact finding**: `bg-primary` on the ingredient bullet,
+      `text-primary` on the step-duration meta and on the `Modified` badge all resolve to cream
+      `#F4EBDC` — the *action* hue — on three things you cannot press. Proven from the token chain
+      (`text-primary` → `--primary` → `--spec-action`), not from eyeballing a capture. The fourth use,
+      `View original source`, is genuinely a link and is correct, which makes this a per-element semantic
+      call rather than a token sweep. Routed to **B6/B8** per S52's BUG-045 precedent: B9's scope is
+      loading/empty states, and repainting a surface Griffin has never been shown is exactly the
+      adjacent-code improvement the rules forbid.
 
 ---
 
@@ -522,6 +565,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-31 (S53) | **B9 CLOSED** (BUG-037 + BUG-038); Workstream B at 3 of 9. **BUG-046 🟡 opened** (the recipe detail body wears cream, the action hue, on three non-pressable elements — B1's finding one surface over) and routed to B6/B8. **BUG-042's toggle RETRACTED, not deferred** — disabling the Supabase Email provider would red all 123 specs, because the harness's only sign-in is `signInWithPassword`; it bundles into the non-prod Supabase project decision, collapsing Griffin's two owed items into one. | The filed bugs were the smaller half. `seed.ts` hard-coded `ingredients: []` / `steps: []` for every recipe, so BUG-038 was **100% of seeded recipes** and the tab's only detail capture had **never once shown a populated recipe body** — the gate was grading the degenerate state as canonical, and fixing the bug alone would have made it blinder. A second, older blindness came with it: the capture *waited out* BUG-037 rather than photographing it. Third instance of *ask what the layer cannot see*, and the first where the state existed but was silently the wrong one |
 | 2026-07-31 (S52) | **B1 + B5 CLOSED** (`/visual-qa` 0 blockers / 0 high). **Order B → C → D reaffirmed and its rationale rewritten** after Claude proposed pulling D forward and Griffin overruled it. **PostHog session replay added to D**, with a masking posture that inverts the vendor default. **A design pass is now RECOMMENDED for C** (reversing the blanket "skip" that still applies to B). **BUG-045 opened.** | Two of Griffin's arguments beat Claude's: validate the artifact you actually ship (the PWA is how he will use it, so a browser-tab validation spends the two uncompressible weeks on the wrong configuration), and observability is the *debugging substrate for the validation weeks*, not just the source of the DoD metric. C also turned out to carry genuinely new design surface — icon, splash, install prompt, offline state — which exists in no spec, unlike B's already-designed screens |
 | 2026-07-30 (S51) | **Workstream A CLOSED at 6 of 6.** A4 (BUG-013), A5 (BUG-042 measured + BUG-043 confirmed), A6 (BUG-018). **BUG-044 🟡 opened** (interviewStateSchema's `dietaryFramework` is a bounded string where the persist path enforces an enum) and routed to Workstream D's security review. The separate non-prod Supabase project moved out of this doc into `open-questions.md` as a decision with a recommendation (V1.5), since it is a call rather than a defect. | Two of the three items had a tracker recommendation that was wrong in a way only building it surfaced — BUG-013's recompute would have doubled the injection, BUG-018's named guard would have failed open. Recording that in the scope doc, not just the changelog, because it is the second phase running where the parked recommendation was the thing to distrust |
 | 2026-07-30 (S49) | **1F opened → 🔨.** Scope drafted from the carried-in list: BUG-035 first (the only *before R1 ship* item on the app's most important call), the standing bug list, spec §12 items 03/04/05/07, the S42 amber/green semantic calls, the S48 critic slate's four deferrals, PWA, and production readiness. Split into four independent workstreams (ship-blockers / design system / PWA / production readiness) with A→B→C→D recommended. | 1E.5 closed at M5.5 and 1F is the last phase of R1. Splitting by workstream rather than by surface keeps the per-surface `/visual-qa` discipline intact — the same argument that split 1E.7 out of 1F in the first place |

@@ -26,6 +26,18 @@ export interface RecipeViewProps {
 }
 
 export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
+  // BUG-038. A labelled container that renders nothing claims there is a section
+  // to read and then says nothing — BUG-009's class ("a null-title slot renders
+  // as a permanent Thinking… card") on this surface. So each section is omitted
+  // when it has no rows, and when BOTH are missing the screen says so in one
+  // line rather than leaving a title floating over ~800px of void.
+  //
+  // Both empty is REACHABLE IN PRODUCTION, not a seed artifact: an un-hydrated
+  // plan draft, or a URL import that failed to parse. The line names the state
+  // and invents no cause, because from here the two are indistinguishable.
+  const hasIngredients = recipe.ingredients.length > 0;
+  const hasSteps = recipe.steps.length > 0;
+
   return (
     <div className="space-y-4">
       {showHeader && (
@@ -70,52 +82,80 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
       )}
 
       {/* Ingredients */}
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Ingredients
-        </h2>
-        <ul className="space-y-2">
-          {recipe.ingredients.map((ing, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="shrink-0 size-1.5 rounded-full bg-primary mt-1.5" />
-              <span>
-                <span className="text-foreground">
-                  {ing.qty} {ing.unit}
-                </span>{" "}
-                <span className="text-foreground font-medium">{ing.item}</span>
-                {ing.notes && (
-                  <span className="text-muted-foreground"> ({ing.notes})</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {hasIngredients && (
+        <div className="glass-card p-4 space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Ingredients
+          </h2>
+          <ul className="space-y-2">
+            {recipe.ingredients.map((ing, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm">
+                <span className="shrink-0 size-1.5 rounded-full bg-primary mt-1.5" />
+                <span>
+                  <span className="text-foreground">
+                    {ing.qty} {ing.unit}
+                  </span>{" "}
+                  <span className="text-foreground font-medium">{ing.item}</span>
+                  {ing.notes && (
+                    <span className="text-muted-foreground"> ({ing.notes})</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Steps */}
-      <div className="glass-card p-4 space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Steps
-        </h2>
-        <ol className="space-y-4">
-          {recipe.steps.map((step) => (
-            <li key={step.number} className="flex gap-3 text-sm">
-              <span className="shrink-0 size-6 rounded-full bg-[rgba(240,222,190,0.05)] flex items-center justify-center text-xs font-medium text-muted-foreground">
-                {step.number}
-              </span>
-              <div>
-                <p className="text-foreground leading-relaxed">{step.text}</p>
-                {step.durationMinutes && (
-                  <span className="text-xs text-primary mt-1 inline-flex items-center gap-1">
-                    <Clock className="size-3" />
-                    {step.durationMinutes} min
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
+      {hasSteps && (
+        <div className="glass-card p-4 space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Steps
+          </h2>
+          <ol className="space-y-4">
+            {recipe.steps.map((step) => (
+              <li key={step.number} className="flex gap-3 text-sm">
+                <span className="shrink-0 size-6 rounded-full bg-[rgba(240,222,190,0.05)] flex items-center justify-center text-xs font-medium text-muted-foreground">
+                  {step.number}
+                </span>
+                <div>
+                  <p className="text-foreground leading-relaxed">{step.text}</p>
+                  {step.durationMinutes && (
+                    <span className="text-xs text-primary mt-1 inline-flex items-center gap-1">
+                      <Clock className="size-3" />
+                      {step.durationMinutes} min
+                    </span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* Neither half exists. One line, no container, no invented cause, and no
+          retry — the recipe LOADED fine, so this is an empty state rather than
+          an error one and a retry button would be a lie about what went wrong. */}
+      {!hasIngredients && !hasSteps && (
+        // Centred in the space the two cards used to occupy, rather than left
+        // as a caption orphaned under the meta. Same reason `recipes-empty`
+        // centres its own message: an empty state has to read as deliberate,
+        // and a small line hugging the top of an otherwise black screen reads
+        // as a page that failed to load. Flat type, no fill and no border —
+        // law 05 reserves a container for something that responds to a tap.
+        // py-12 rather than a tall min-height: a 220px centred block read well
+        // on its own but pushed the tag row into the middle of an empty screen,
+        // stranded from everything. Enough air to be its own object, not enough
+        // to orphan what follows it.
+        <div className="flex justify-center py-12">
+          <p
+            data-testid="recipe-body-empty"
+            className="text-sm text-muted-foreground"
+          >
+            No ingredients or steps on this one yet.
+          </p>
+        </div>
+      )}
 
       {/* Tags */}
       {recipe.tags && recipe.tags.length > 0 && (

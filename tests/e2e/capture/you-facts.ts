@@ -112,17 +112,28 @@ export const YOU_CAPTURE_STATES: CaptureStateDef[] = [
   },
   {
     id: "you-field-editor",
-    briefRef: "You — direct household stepper editor (feature #2, no conversation needed)",
-    readyText: "How many you're cooking for",
+    briefRef: "You — direct household composer (feature #2, no conversation needed)",
+    // ⚠️ STALE SINCE S50, and it was being carried forward as B7's problem.
+    // This asserted "How many you're cooking for", a string that has not existed
+    // in `src/` since A3 (BUG-011) replaced the single stepper with the shared
+    // `HouseholdComposer` and retitled the sheet. So the state has failed its
+    // pre-shot check for three sessions and the You tab's direct-edit surface
+    // has gone ungraded that whole time — BUG-030's class (a stale capture
+    // selector fails silently where a spec would fail loudly).
+    readyText: "Who I'm cooking for",
     facts: {
-      stepper: "− / value / + stepper with a Save button",
+      // Also corrected: this said ONE stepper. A3 made it three bands, because
+      // a bare count cannot say which band changed.
+      composer: "adults / children / babies band steppers with a Save button",
+      servingsLine:
+        "'I'll cook for N servings' — says the count out loud because a 6-to-12m baby deliberately does NOT move it",
       directEdit: "a typed field is fixable directly, without Talk-to-Chef",
     },
     prepare: () => seedYouState("YOU_RETURNING"),
     navigate: async (page) => {
       await gotoReturning(page);
       await page.getByRole("button", { name: "Cooking for 2 adults" }).click();
-      await page.getByText("How many you're cooking for").waitFor({ timeout: 8_000 });
+      await page.getByText("Who I'm cooking for").waitFor({ timeout: 8_000 });
     },
   },
 ];

@@ -84,7 +84,15 @@ export function AddToWeek({ recipeId, title }: { recipeId: string; title: string
           data-testid="add-to-week"
           className="h-[52px] w-full rounded-2xl bg-[var(--spec-action)] text-[15.5px] font-[650] text-[var(--spec-action-on)] shadow-[0_10px_28px_-12px_rgba(244,235,220,0.3)] transition-opacity disabled:opacity-60"
         >
-          {pickMutation.isPending ? "Working it in…" : "Add to this week"}
+          {/* BUG-037. `undecided` is a real reason to refuse a tap, but with no
+              label of its own it photographed as a dead grey primary rather than
+              a loading one — the screen's ONE floating object, reading as
+              broken. Naming the wait costs nothing and is true. */}
+          {pickMutation.isPending
+            ? "Working it in…"
+            : undecided
+              ? "Checking your week…"
+              : "Add to this week"}
         </button>
       )}
 

@@ -211,3 +211,69 @@ test("RC13 - with no week to add to, the verb carries the recipe to the intent s
   await expect(page).toHaveURL(/\/plan$/);
   await expect(page.getByTestId("plan-pick")).toContainText("Miso-Glazed Salmon");
 });
+
+// BUG-038. Asserted in BOTH directions on purpose: "the empty recipe hides the
+// cards" alone would also pass against a build that deleted the sections
+// outright, which is a different and worse bug. The populated half is what
+// makes this spec able to fail for the right reason.
+test("RC14 - an empty body omits the section entirely; a populated one still renders it", async ({
+  page,
+}) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+
+  // The un-hydrated plan draft: a title the plan made before the recipe existed.
+  await page.getByTestId("drafts-toggle").click();
+  await draftsList(page).waitFor();
+  await card(page, "Chicken Katsu Bowls").click();
+
+  const ingredientsHeading = page.getByRole("heading", { name: "Ingredients" });
+  const stepsHeading = page.getByRole("heading", { name: "Steps" });
+
+  await expect(page.getByTestId("recipe-body-empty")).toHaveText(
+    "No ingredients or steps on this one yet."
+  );
+  await expect(ingredientsHeading).toHaveCount(0);
+  await expect(stepsHeading).toHaveCount(0);
+
+  // The other direction: a recipe that HAS a body still shows both sections and
+  // no fallback line.
+  await page.goto("/recipes");
+  await card(page, "Miso-Glazed Salmon").click();
+
+  await expect(ingredientsHeading).toBeVisible();
+  await expect(stepsHeading).toBeVisible();
+  await expect(page.getByTestId("recipe-body-empty")).toHaveCount(0);
+});
+
+// BUG-037. The refusal is correct and stays; what is under test is that it says
+// so. Held open by a routed delay rather than a throttle so the window exists on
+// a fast machine too — S50's rule that a spec which only reproduces on a slow
+// machine is worse than none.
+test("RC15 - while the week is still loading, the verb names the wait instead of going dead", async ({
+  page,
+}) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+
+  let releasePlanQuery = () => {};
+  const held = new Promise<void>((resolve) => {
+    releasePlanQuery = resolve;
+  });
+  await page.route("**/api/trpc/**", async (route) => {
+    if (route.request().url().includes("plan.current")) await held;
+    await route.continue();
+  });
+
+  await page.goto("/recipes");
+  await card(page, "Miso-Glazed Salmon").click();
+
+  const verb = page.getByTestId("add-to-week");
+  await expect(verb).toHaveText("Checking your week…");
+  await expect(verb).toBeDisabled();
+
+  // And it resolves to the real verb once the week lands, so the loading label
+  // cannot get stuck as the permanent one.
+  releasePlanQuery();
+  await expect(verb).toHaveText("Add to this week");
+  await expect(verb).toBeEnabled();
+});

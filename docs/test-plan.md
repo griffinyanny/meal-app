@@ -177,6 +177,8 @@ mechanics are deterministic; the cooked harvest runs server-side on list load. S
 | RC11 | RECIPES_LIBRARY | Open Recipes | **The library floats nothing** — search + ＋ are in the header, and a computed-style sweep finds **zero** `position: fixed` elements under `main`. Measured rather than asserted from a class name, because "floating" IS `position: fixed` (W10, spec §12 item 04) | 🟢 |
 | RC12 | RECIPES_LIBRARY | Open a recipe | The detail's one floating object is `Add to this week`, and **no dialog opens** — it never asks for a day (`3l`) | 🟢 |
 | RC13 | RECIPES_LIBRARY | Open a recipe → `Add to this week` | With no week to add to, the verb **carries** the recipe to the intent screen rather than failing at a button that reads like it should work | 🟢 |
+| RC14 | RECIPES_LIBRARY | Open the body-less plan draft, then a populated recipe | **BUG-038.** The empty one omits the `Ingredients`/`Steps` cards entirely and says so in one line; the populated one still renders both and shows no fallback. **Asserted in BOTH directions on purpose** — the empty half alone would also pass against a build that deleted the sections outright | 🟢 |
+| RC15 | RECIPES_LIBRARY | Hold `plan.current` open with a routed delay, then release it | **BUG-037.** While the week is loading the verb reads `Checking your week…` and stays disabled; on release it resolves to `Add to this week` and enables, so the loading label cannot get stuck as the permanent one. Held by a **routed delay, not a throttle**, so the window exists on a fast machine (S50's rule) | 🟢 |
 
 **Recipes: 13 passing**, 0 findings. Taste (does the tier split read calm now the bottom
 bar is single) → Griffin.

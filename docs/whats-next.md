@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-31 (Session 52; 1F Workstream B opened — B1 + B5 code-complete)
+Last updated: 2026-07-31 (Session 53; 1F/B9 closed — Workstream B at 3 of 9)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,140 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **Workstream B is open. B1 + B5 are CLOSED; 7 items remain.**
+## ▶ NEXT SESSION — **B9 is CLOSED. Workstream B is 3 of 9; 6 items remain.**
+
+**S53 closed B9 (BUG-037 + BUG-038)** and found that the visual gate could not see either surface it was
+being asked to grade. **691 unit + 123 E2E** (121 + RC14 + RC15), lint + typecheck clean, all 8 Recipes
+capture states `captureStatus: ok`.
+
+### ⛔ THE ONE THING TO READ: a standing instruction in your owed list was destructive
+
+**You asked why we were disabling the Supabase Email provider and whether it was what powered your SSO.**
+It is not — `external.email` and `external.google` are independent fields, both `true`, and turning Email
+off leaves Google alone. **But checking it surfaced what nobody had checked.**
+
+**BUG-042's instruction — *"disable the Email provider; the app has never used that path"* — is wrong and
+destructive.** The E2E harness's only sign-in is `signInWithPassword`
+(`tests/e2e/harness/supabase-session.ts:160`), which rides the email provider. **Measured:** GoTrue rejects
+a password grant with `<provider>_provider_disabled` *before* checking credentials — verified against this
+project's already-off **phone** provider (`422 phone_provider_disabled`) versus the enabled email one
+(`400 invalid_credentials`). **Disabling Email reds all 123 specs.**
+
+The tell was already in the repo: line 182 of that same file says *"Check that the Email provider is
+enabled."* Written by a past session that knew, never connected to the tracker row for four sessions —
+including twice in S52, where it was handed back to you unexamined. **Fifth instance of the phase's lesson
+and the sharpest: the parked recommendation was not merely wrong, it was destructive.**
+
+### ⚠️ Still yours — now ONE decision, not two
+
+**BUG-042 has bundled into the non-prod Supabase project question**, because a separate project is exactly
+what would let prod disable Email while the harness keeps it on where it lives.
+
+> **For the rest of R1, the E2E suite keeps deleting rows in the same Supabase project that holds your real
+> data. Do you accept that until V1.5?**
+
+**Recommendation: accept.** BUG-042 is measured **not exploitable** (`mailer_autoconfirm: false`), so acting
+now buys hygiene rather than a closed hole — at the cost of an hour plus a second free-tier project that
+pauses on inactivity, which is the scar that trains you to ignore red. **One word: "accept" or "set it up
+now."** Write-up in [open-questions.md](open-questions.md).
+
+⚠️ **And the contention risk in that write-up reproduced itself this session, by accident.** Two E2E runs
+overlapped on the same test household and six Plan specs went red for pure data contention. Re-run alone,
+clean. That is the S37 failure mode, live: **do not run the suite while using the app.**
+
+### B9: the seed was three times the size of both filed bugs
+
+`seed.ts` hard-coded `ingredients: []` / `steps: []` for **every** recipe the Recipes seeder produced. So
+BUG-038 was not an edge case in the harness, it was **100% of seeded recipes** — and
+`recipes-detail-add-to-week`, the tab's only detail capture, **had never once shown a populated recipe
+body.** The gate was grading the degenerate state as canonical. **Fixing BUG-038 alone would have made it
+blinder**, turning that capture into the "nothing here yet" fallback and grading *that* as normal.
+
+Both later seeders already wrote real ingredients; this one was the outlier and nothing failed because of
+it. Third instance of *ask what the layer cannot see* (S47 sheet states, S52 `grocery-complete-banner`) and
+the sharpest — **here the state existed but was silently the wrong one.**
+
+### `you-field-editor` was a stale selector, not B7's problem
+
+Carried in from S52 as a `CAPTURE_ISSUE` for whoever took B7. It asserted **"How many you're cooking for"**,
+a string absent from `src/` since A3 (S50) retitled the sheet to **"Who I'm cooking for"**. The You tab's
+direct-edit surface has gone ungraded for three sessions, and its `facts` still described one stepper where
+A3 made three bands. Fixed. **B7 inherits nothing from this.**
+
+### ⭐ Next up — the rest of Workstream B, in this order
+
+**B2** (square the nav's top corners) → **B3** (44px hit targets) → **B4** (promote faked subsection
+headings) → **B6** (the S48 critic slate's four) → **B7** (three freeform controls) → **B8** (type scale,
+motion, component library).
+
+**No taste calls are pending on any of the six.** B6 carries the closest thing, already adjudicated by the
+S48 slate.
+
+**🎨 Design pass — offered, recommendation is still skip.** B applies a locked spec to already-designed
+surfaces, and scope-1F's own rule is that 1F must not produce a new all-states pass.
+
+### Also still open
+
+- **BUG-046 🟡 (new, S53)** — populating the seed made the recipe body visible for the first time, and it
+  carries **B1's exact finding**: the ingredient bullet, the step-duration meta and the `Modified` badge all
+  resolve to cream `#F4EBDC`, the *action* hue, on three things you cannot press. `View original source` is
+  a real link and is correct, so this is a per-element semantic call rather than a token sweep. → **B6/B8**.
+- **BUG-045 🟡** (last `#FF9F0A`; `palette.test.ts` allow-lists that exact line, so closing it reds the test
+  until the exception goes too), **BUG-044 🟡** (→ D's security review), **BUG-023** (V1.5+), **BUG-017**
+  (→ D), **BUG-003**.
+
+**⭐ Model recommendation: Opus 4.8.** The remaining six are judgement against a locked spec — reading
+captures, grading them against the six laws with the gold line as tie-breaker, applying small
+colour/geometry changes. Same work 4.8 did well across S40/S42/S45/S47/S48/S52. **Go higher only if you take
+Workstream D first** — the security review is the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S53 closed 1F/B9 (BUG-037 + BUG-038). 691 unit + 123 E2E green on main, 8/8 Recipes
+capture states ok. Two things worth carrying. FIRST, and it retires a four-session-old item on my list:
+BUG-042's "disable the Supabase Email provider" instruction is WRONG AND DESTRUCTIVE — the E2E harness's
+only sign-in is signInWithPassword, which rides that provider, and GoTrue rejects a password grant with
+<provider>_provider_disabled BEFORE checking credentials (measured against the already-off phone provider:
+422 phone_provider_disabled, vs 400 invalid_credentials for email). Disabling Email reds all 123 specs. Do
+not do the toggle. It has bundled into the non-prod Supabase project decision, which is now the ONLY thing
+owed by me — one word, accept (V1.5) or set it up now. SECOND, the lesson changed shape a fifth time: the
+filed bugs were the smaller half. seed.ts hard-coded ingredients:[]/steps:[] for every recipe, so BUG-038
+was 100% of seeded recipes and the tab's only detail capture had NEVER shown a populated recipe body — the
+gate was grading the degenerate state as canonical, and fixing the bug alone would have made it blinder.
+Also: you-field-editor's CAPTURE_ISSUE was a stale selector from S50, not B7's problem, so B7 inherits
+nothing. Next: the remaining six B items in order — B2 (square the nav's top corners), B3 (44px hit
+targets), B4 (heading levels), B6 (the S48 critic slate's four), B7 (three freeform controls), B8 (type
+scale/motion/component library). No taste calls pending on any of them. New: BUG-046 (the recipe body wears
+cream, the action hue, on three non-pressable elements — B1's finding one surface over) filed to B6/B8, not
+swept. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope
+check. maxDuration is CLOSED, don't raise it. Don't run the E2E suite while I'm using the app — two
+overlapping runs reddened six Plan specs on pure contention this session. On Opus 4.8.
+```
+
+**Design-independent alternative.** ⚠️ **Not a jump to D.** S52 ratified **B → C → D → validate** with
+Griffin overruling exactly that reorder — validate the artifact you ship, and observability is the debugging
+substrate for the validation weeks rather than only the DoD metric. So the alternative is **C, the PWA**,
+which is next in the ratified order anyway. ⚠️ **C is the one workstream where a design pass IS
+recommended** (S52 reversed the blanket skip for it): the icon, splash, install prompt and offline state are
+net-new surface that exists in no spec and no mock, unlike B's already-designed screens.
+```
+Resume meal app — S53 closed 1F/B9 (691 unit + 123 E2E green on main). Take Workstream C, the PWA, instead
+of finishing B this session: web app manifest + the full home-screen icon set iOS and Android actually ask
+for, a service worker whose offline scope is honestly bounded (offline READ of the current grocery list is
+the target — standing in a store with bad signal — not offline generation), the install prompt, and
+full-screen launch without browser chrome. It has to be verified on my phone and my wife's, not a desktop
+emulator, so tell me exactly what to tap and what to look for. Offer me the design pass first — S52 decided C
+gets one (icon/splash/install prompt/offline state are net-new surface in no spec), unlike B. Order is
+B -> C -> D -> validate and I already overruled pulling D forward, so do not propose it. Note BUG-042 is CLOSED as won't-do — its instruction was
+destructive (disabling the Supabase Email provider reds all 123 specs, because the harness signs in with
+signInWithPassword); it bundled into the non-prod Supabase project call, which is the only thing owed by me.
+Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check, keep
+691 unit + 123 E2E green. Don't run the E2E suite while I'm using the app. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S52 (superseded by S53 above — B9 is closed)
 
 **S52 answered both of Griffin's taste calls and closed B1 + B5 together**, because they resolve to the
 same treatment. **691 unit** (688 + 3 new palette guards) **+ 121 E2E green**, lint + typecheck clean,
