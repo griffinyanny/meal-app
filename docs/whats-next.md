@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-30 (Session 51; 1F Workstream A CLOSED at 6 of 6)
+Last updated: 2026-07-31 (Session 52; 1F Workstream B opened — B1 + B5 code-complete)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,140 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **1F Workstream A is CLOSED (6 of 6). Next: Workstream B, the design-system pass.**
+## ▶ NEXT SESSION — **Workstream B is open. B1 + B5 are CLOSED; 7 items remain.**
+
+**S52 answered both of Griffin's taste calls and closed B1 + B5 together**, because they resolve to the
+same treatment. **691 unit** (688 + 3 new palette guards) **+ 121 E2E green**, lint + typecheck clean,
+`/visual-qa` at **0 blockers / 0 high** on Groceries and Recipes, nothing on a branch.
+
+**Griffin's two calls, both taken as recommended:** the amber Groceries merge markers become a **neutral
+inset carrying the count as type**; the cooked/complete check **keeps a hue** (`#9CB86F`) rather than going
+neutral.
+
+### The thing worth carrying — fourth session running, and it changed shape again
+
+**S50: the tracker was wrong about what the bug WAS. S51: right about the bug, wrong about the FIX. S52:
+the bug had already fixed itself, and the doc had the reason backwards.**
+
+- **The indigo draft pill does not exist.** Spec §12 item 03 and scope-1F both called it *"the last live
+  indigo in the product after 1E.7 retired `--primary`."* Retiring `--primary` is exactly what **killed**
+  it — the pill is styled `bg-primary/12 …`, and 1E.7 aliased `--primary` → `--spec-action`. Zero indigo
+  literals remain in `src/`.
+- **The real defect was underneath and is not what was filed.** With indigo gone the pill had become
+  **cream** — the *action* hue. §01 says cream is what you press, so it rendered a status label in the one
+  colour meaning "tap me". Shipped as the same neutral inset the merge marker got.
+- **⚠️ The force-failure nearly recorded a false red.** Stashing the fixes and re-running gave **exit 1** —
+  the right shape of proof. It was `--reporter=basic`, a flag vitest 4 does not have; the suite never ran. A
+  second attempt raced `git stash pop` and went *green* against restored code. Only the third, with a
+  physical file backup and no chained commands, produced the real red naming the exact six offending lines.
+  **"It went red" is not the check. "It went red for the reason I predicted" is.**
+
+### Two things the work found that nobody was looking for
+
+1. **The rubric was about to excuse both fixes.** `visual-qa-rubric.md` §(b) listed `#30D158` and the amber
+   merge markers as do-not-flag. Left alone, the next pass would have graded the **new** palette against the
+   **old** exemption — S42's exact finding about this same file, one section down. Both flipped to
+   reportable; `PROJECT-CONTEXT.md` and a stale `mergeDotOnMultiSourceItem` capture fact went with them.
+2. **`grocery-complete-banner` had no capture state and no spec assertion anywhere.** B1 repainted a surface
+   the visual gate was structurally unable to see. New `grocery-complete` capture state. Same class as S47's
+   "Layer A had never captured a sheet state."
+3. **The `/visual-qa` pass caught a law-05 break in the first version of the fix — the gate earning its
+   keep.** The merge marker shipped as an **inert** chip with fill + border, with the disclosure chevron
+   still beside it. Law 05 says fill + border must respond to a tap; an inert pill next to the control that
+   actually opens the thing is exactly what it forbids. **Invisible to every DOM assertion** — the markup
+   was correct, only the meaning was wrong. Folded together: the marker IS the disclosure now
+   (`2 dinners ⌄`) and the standalone chevron is gone. The cooked badge is deliberately left as a
+   non-tappable fill+border chip, because the spec's §07 gallery draws exactly that component.
+
+### ⚠️ Still yours, unchanged
+
+**The BUG-042 Supabase toggle.** Authentication → Sign In / Providers → **disable Email**. Hygiene, not a
+fix (measured not-exploitable in S51). **Claude cannot do this.**
+
+**✅ `maxDuration` is CLOSED — it was NOT clamped.** Checked in S52 via the Vercel API rather than handed
+back: the production build of `00062a4` (the tree carrying `maxDuration = 120`) completed with **no clamp
+warning and no error** and deployed READY. Vercel fails the build outright when the value exceeds the plan
+ceiling, so 120 was accepted and **fluid compute is on**. No dashboard visit needed. *Residual, stated
+rather than buried:* this proves the declared ceiling was accepted at build time; only a real generation
+running past 60s proves the runtime honours it, and there has not been one.
+
+**The separate non-prod Supabase project** — still open, still a decision rather than a defect.
+Recommendation unchanged: **V1.5**. Write-up in [open-questions.md](open-questions.md).
+
+### ⭐ Next up — the rest of Workstream B, in this order
+
+**B9** (BUG-037/038, recipe-detail loading + empty states) → **B2** (square the nav's top corners) → **B3**
+(44px hit targets) → **B4** (promote faked subsection headings) → **B6** (the S48 critic slate's four) →
+**B7** (three remaining freeform controls) → **B8** (type scale, motion, component library).
+
+**B1 + B5 are closed** — their `/visual-qa` pass ran and cleared at 0 blockers / 0 high on both surfaces,
+with all 13 states `captureStatus: ok`.
+
+**No taste calls are pending on any of the seven.** B6 carries the closest thing, and those four were
+already adjudicated by the S48 slate.
+
+⚠️ **One thing for whoever takes B7:** the capture run flagged `CAPTURE_ISSUE you-field-editor` (a You-tab
+state failing its pre-shot check). Not on a B1/B5 surface, so it was flagged rather than folded in — but
+the You freeform control is B7's scope and this should be answered there, not silently inherited.
+
+**🎨 Design pass — offered, recommendation is still skip.** B applies a locked spec to already-designed
+surfaces, and scope-1F's own rule is that 1F must not produce a new all-states pass. B5's call landed as a
+token-and-treatment swap rather than a new component, which was the one condition that would have changed
+this.
+
+### Also still open
+
+- **BUG-045 🟡 (new, S52)** — the quick-add dedupe notice is the same amber miscast one affordance over, and
+  is now the last `#FF9F0A` in the product. Deliberately not swept: Griffin's call named the merge markers.
+  ⚠️ `palette.test.ts` allow-lists that exact line, so **closing it turns the test red until the exception is
+  deleted too.**
+- **BUG-044 🟡** (→ Workstream D's security review), **BUG-023** (V1.5+, not reachable today), **BUG-017**
+  (→ Workstream D), **BUG-003**, **BUG-037/038** (→ B9).
+
+**⭐ Model recommendation: Opus 4.8.** The remaining seven are judgement against a locked spec — reading
+captures, grading them against the six laws with the gold line as tie-breaker, and applying small
+colour/geometry changes. Same work 4.8 did well across S40/S42/S45/S47/S48. **Go higher only if you take
+Workstream D first** — the security review of the full surface is the one remaining item with real reasoning
+in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S52 opened 1F Workstream B and built B1 + B5 together (I answered both taste calls: merge
+markers are a neutral inset with the count as type, and the cooked check KEEPS #9CB86F). 691 unit + 121 E2E
+green on main, lint + typecheck clean. Worth carrying: the lesson changed shape a fourth time — S50 the
+tracker was wrong about what the bug WAS, S51 right about the bug and wrong about the FIX, S52 the bug had
+already fixed itself and the doc had the reason backwards. The "indigo draft pill" hadn't been indigo since
+1E.7 aliased --primary to cream; the real defect underneath was that it had become CREAM, the action hue, so
+a status label was wearing the one colour that means "tap me". Also: the visual-qa rubric's own do-not-flag
+list was about to excuse both fixes, and grocery-complete-banner had no capture state or spec assertion at
+all. And my force-failure nearly recorded a false red twice (a vitest flag that doesn't exist, then a race
+with git stash pop) — "it went red" is not the check, "it went red for the reason I predicted" is. Next:
+run the /visual-qa pass B1+B5 still owe (0 blockers/0 high), then the remaining seven B items in order —
+B9 (BUG-037/038), B2 (square the nav's top corners), B3 (44px hit targets), B4 (heading levels), B6 (the
+S48 critic slate's four), B7 (three freeform controls), B8 (type scale/motion/component library). No taste
+calls pending on any of them. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me
+the <=6-line scope check. Still owed from me: the BUG-042 Supabase toggle (disable the Email provider) and
+the non-prod Supabase project call (your rec is V1.5, in open-questions.md). maxDuration is CLOSED — it was
+not clamped, fluid compute is on, don't raise it. On Opus 4.8.
+```
+
+**Design-independent alternative** (identical here — B has no pending taste calls — so this is the
+"skip ahead to production readiness" option instead):
+```
+Resume meal app — S52 built 1F/B1 + B5 (691 unit + 121 E2E green on main). Skip the rest of Workstream B
+this session and do Workstream D, production readiness, instead: PostHog with the S9 event taxonomy +
+Sentry, and specifically the time-to-list instrumentation the DoD needs — an event at intent-submit and one
+at list-ready, which has to ship BEFORE the two validation weeks start or the weeks don't count. Then the
+security review of the full surface (BUG-044 is routed there: interviewStateSchema types dietaryFramework as
+a bounded string where the persist path enforces an enum) plus the rate-limiting audit, per the standing
+rule that live-code vulnerabilities ship as their own PR first. Then the error-state sweep and BUG-017, and
+verify the access gate really is open in both directions on prod. Read docs/whats-next.md, docs/scope-v1.md
+and docs/scope-1F.md first, give me the <=6-line scope check, keep 691 unit + 121 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S51 (superseded by S52 above — B1 + B5 are built)
 
 **S51 closed A4 (BUG-013), A5 (BUG-042/043) and A6 (BUG-018)** as PRs **#12** and **#13**. `main` is at
 **688 unit + 121 E2E green**, lint + typecheck clean, migration `0010` applied. Nothing left on a branch.

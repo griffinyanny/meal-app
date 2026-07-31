@@ -4,11 +4,15 @@
 // merge dot, one-zone check-off, quick-add/dedupe, reorder — are deterministic.
 //
 // sourceRecipeId is left null (no recipes rows are seeded), but the `sources`
-// jsonb carries recipe ids/titles as plain data — that's what drives the amber
-// merge dot (sources.length > 1) and the per-meal breakdown, no join required.
+// jsonb carries recipe ids/titles as plain data — that's what drives the merge
+// marker (sources.length > 1) and the per-meal breakdown, no join required.
 
 export type GroceryState =
   | "GROCERY_READY" // a populated, ready list (interaction tests)
+  | "GROCERY_ALL_CHECKED" // GROCERY_READY with every item already checked → the
+  // quiet completion banner. Seeded rather than driven by clicking each row: a
+  // check moves its row into the GOT IT zone, so a click loop races its own
+  // re-render (it timed out on the first attempt, S52).
   | "GROCERY_GENERATING" // mid-generation (the generating UI stays put)
   | "GROCERY_ERROR" // a failed generation (Plan's error card + retry)
   | "GROCERY_PENDING" // fresh pending list, no plan → auto-generates to empty-ready
@@ -86,8 +90,8 @@ const RECIPE_A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const RECIPE_B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 
 // A small, recognizable ready list spanning several aisles, with one merged item
-// (garlic, 2 sources → the amber dot + breakdown) plus single-source, staple, and
-// manual items.
+// (garlic, 2 sources → the "2 dinners" merge marker + breakdown) plus
+// single-source, staple, and manual items.
 function readyItems(): SeedGroceryItem[] {
   return [
     {
@@ -153,7 +157,7 @@ function readyStaples(): SeedStaple[] {
 
 // GR-L1 fixture: two ready recipes that share garlic, each carrying its aligned
 // review-time normalize cache. At confirm, generate reads these caches (zero AI),
-// merges the two garlic lines → one "garlic" row with 2 sources (the amber dot).
+// merges the two garlic lines → one "garlic" row with 2 sources (the merge marker).
 // numericQty is null to match what the ingredient-normalize mock stores (the
 // aggregator parses the raw qty string itself) — so this cache is byte-identical
 // to what cacheSlotNormalization would write under the mock.
@@ -222,6 +226,14 @@ export function buildGrocerySpec(state: GroceryState): SeedGrocerySpec {
         generationError: null,
         organizeMode: "grouped",
         items: readyItems(),
+        staples: readyStaples(),
+      };
+    case "GROCERY_ALL_CHECKED":
+      return {
+        generationStatus: "ready",
+        generationError: null,
+        organizeMode: "grouped",
+        items: readyItems().map((i) => ({ ...i, isChecked: true })),
         staples: readyStaples(),
       };
     case "GROCERY_GENERATING":

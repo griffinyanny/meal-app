@@ -4,6 +4,33 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S52) — The two 1F/B5 semantic calls: a merge marker is neutral, a cooked check keeps its hue
+
+**Decision (Griffin, S52 — *"i'm good with your recos"*).** Both of the semantic calls S42 deliberately
+refused to sweep are now answered, and they resolve in opposite directions on purpose.
+
+**1. The amber `#FF9F0A` Groceries merge markers → a neutral inset carrying the count as type.** Amber is
+the chef (§01), and the spec has no caution hue *because* amber is the chef. A merge is a mechanical fact
+about the list — two meals wanted garlic — so amber said the chef was speaking when the chef was not. The
+marker turned out to be **two** things: an amber dot beside the item name and the meta line beneath it in
+amber. Both are retired; the meta line, which already read `2 dinners`, IS the marker now, styled as the
+caught-tray chip's neutral inset. **The honest cost:** amber was the only thing advertising the row as
+tappable, and a neutral chip is quieter. What pays for it is that the count says more than the dot did — a
+dot said *something happened here*, `2 dinners` names what the chevron is about to show.
+
+**2. The cooked/complete check KEEPS a hue: `--spec-success` `#9CB86F`.** The alternative on the table was
+no hue at all. The gold line governs *gold* and says nothing about a success hue; `#9CB86F` is the spec's
+own; and a check is the exact thing you scan for on Recipes and Groceries, so going hueless would sink it to
+the weight of everything around it.
+
+**Future impact.** `.spec-success-soft` is now the one green in the product, and
+`src/components/palette.test.ts` fails the build on any reintroduction of `#30D158` or indigo. The amber
+rule is enforced as an **allow-list** with exactly one entry (BUG-045, the quick-add dedupe notice), so a
+*new* amber fails while the known survivor is explicitly licensed — and closing BUG-045 turns the test red
+until its exception is deleted too.
+
+---
+
 ## 2026-07-30 (S51) — Destructive-write guards are allow-lists, never "is this production" tests
 
 **Decision (Claude, against the tracker's own wording, for Griffin to override if he disagrees).**

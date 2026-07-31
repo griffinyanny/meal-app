@@ -27,9 +27,10 @@ interface GroceryRowProps {
 }
 
 // One shoppable list row: check off, tap the name or quantity to edit inline, and
-// — when an item was merged across meals (sources > 1) — an amber dot + chevron
-// that opens the per-meal breakdown with a "Split into separate items" action
-// (the inline merge-review; see decisions.md, under-merge + inline review).
+// — when an item was merged across meals (sources > 1) — a neutral count marker
+// ("2 dinners") that IS the disclosure control, opening the per-meal breakdown
+// with a "Split into separate items" action (the inline merge-review; see
+// decisions.md, under-merge + inline review).
 export function GroceryRow({
   item,
   isFirst,
@@ -131,25 +132,40 @@ export function GroceryRow({
               className="block w-full cursor-text text-left text-[15px] font-medium leading-snug"
             >
               {capitalizeName(item.name)}
-              {merged && (
-                <span
-                  className="ml-1.5 inline-block size-1.5 rounded-full bg-[#FF9F0A] align-middle"
-                  data-testid="grocery-merge-dot"
-                  aria-hidden="true"
-                />
-              )}
             </button>
           )}
-          {meta && editing !== "name" && (
-            <p
-              className={cn(
-                "mt-0.5 text-[11.5px]",
-                merged ? "text-[#FF9F0A]" : "text-muted-foreground"
-              )}
-            >
-              {meta}
-            </p>
-          )}
+          {meta &&
+            editing !== "name" &&
+            (merged ? (
+              // The merge marker: a neutral inset carrying the count as type.
+              // It used to be an amber dot plus an amber meta line, and amber is
+              // the chef (§01) — a merge is a mechanical fact about the list, so
+              // amber said the chef was speaking when the chef was not. The
+              // count also says strictly more than the dot did: "2 dinners"
+              // names what this opens, where a dot only said "something here".
+              //
+              // It IS the disclosure control, not a label beside one. Law 05:
+              // fill + border ⇒ it must respond to a tap. The first pass drew
+              // this as an inert chip with a separate chevron alongside, which
+              // put a pill on something decorative — the exact thing law 05
+              // forbids. Folding the two together also deletes a control and
+              // puts the affordance on the words that describe it.
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                aria-label="Show what was combined"
+                aria-expanded={expanded}
+                className="mt-1 inline-flex items-center gap-1 rounded-md border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.07)] py-0.5 pl-1.5 pr-1 text-[11px] font-semibold text-muted-foreground"
+                data-testid="grocery-merge-marker"
+              >
+                {meta}
+                <ChevronDown
+                  className={cn("size-3 transition-transform", expanded && "rotate-180")}
+                />
+              </button>
+            ) : (
+              <p className="mt-0.5 text-[11.5px] text-muted-foreground">{meta}</p>
+            ))}
         </div>
 
         {editing === "qty" ? (
@@ -173,23 +189,6 @@ export function GroceryRow({
             )}
           >
             {qtyLabel || "qty"}
-          </button>
-        )}
-
-        {merged && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            aria-label="Show what was combined"
-            aria-expanded={expanded}
-            className="shrink-0"
-          >
-            <ChevronDown
-              className={cn(
-                "size-4 text-muted-foreground transition-transform",
-                expanded && "rotate-180"
-              )}
-            />
           </button>
         )}
 

@@ -40,9 +40,23 @@ or on law 04 is a blocker.
 not content you read.** Law 03 grants the italic rationale colour while law 06 counts marks against it —
 when they collide, ask who is talking. The chef's voice keeps gold; a list of decisions you read does not.
 
-**Still deliberately un-migrated — do NOT flag these as new findings** (spec §12 items 03/04/05/07, routed
-to 1F, see `PROJECT-CONTEXT.md`): the iOS-green `#30D158` cooked/complete checks, the amber `#FF9F0A`
-Groceries merge markers, the Recipes double bottom bar, and icon-only controls under 44px.
+**Still deliberately un-migrated — do NOT flag these as new findings** (spec §12 items 04/05/07, routed to
+1F Workstream B, see `PROJECT-CONTEXT.md`): the Recipes double bottom bar (the nav's square top corners —
+the floating-primary half already landed in 1E.5), icon-only controls under 44px, and faked subsection
+headings not yet promoted to real Group/Row title levels.
+
+⚠️ **Two former exceptions are now CLOSED (S52) and have flipped from excused to reportable.** The list
+above is a licence to ignore a real defect, so a stale entry is worse than no entry — it is the same failure
+S42 caught in this file's §(b), where the rubric would have passed the retired palette and failed the new
+one. Both were closed by B1 + B5:
+- **The iOS-green `#30D158` cooked/complete checks → `--spec-success` `#9CB86F`** (Griffin's call: the check
+  keeps a hue). Any `#30D158` is now a **blocker** under law 04 — it is a cool green on a warm floor.
+- **The amber `#FF9F0A` Groceries merge markers → a neutral inset carrying the count as type** (Griffin's
+  call). Amber on a merge marker is now a **law 02 finding**: amber is the chef, and a merge is a mechanical
+  fact about the list, so amber there says the chef is speaking when the chef is not.
+- **One amber survivor is still excused, and only this one:** the quick-add dedupe notice
+  (`grocery-list.tsx`, tracked as **BUG-045**). It is the same miscast one affordance over and is deliberately
+  out of B5's scope, not overlooked. `src/components/palette.test.ts` allow-lists that exact line.
 
 **Anti-patterns (Guidelines §7 — hard rules):**
 - [ ] Glass surfaces: cards read as translucent/layered, not flat opaque boxes.

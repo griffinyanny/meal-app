@@ -33,7 +33,7 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
       hasProgressBar: true,
       organizeToggle: ["Grouped", "Ungrouped"],
       aisleSections: true,
-      mergeDotOnMultiSourceItem: "garlic (2 dinners → amber dot)",
+      mergeMarkerOnMultiSourceItem: "garlic → neutral inset chip reading '2 dinners' (NOT an amber dot)",
       hasStaplesRow: true,
       hasTopAddRow: true,
       hasBottomAddRow: true,
@@ -95,6 +95,37 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
       await gotoReady(page);
       await page.getByTestId("grocery-row").first().getByRole("checkbox").click();
       await page.getByTestId("grocery-gotit-zone").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    // Added S52, closing B1. The completion banner was repainted from iOS
+    // #30D158 to --spec-success, and it turned out to have NO capture state and
+    // no spec assertion of any kind — `grocery-complete-banner` was referenced
+    // only by the component that renders it. So the gate was structurally
+    // unable to see one of the two surfaces the item changed. Same class as
+    // S47's finding that Layer A had never captured a sheet state: the fix is
+    // cheap, and the hole is only ever found by asking what the layer CANNOT
+    // see rather than reading what it does.
+    id: "grocery-complete",
+    briefRef: "groceries — every item checked, quiet completion banner",
+    readyText: "Your list",
+    facts: {
+      completionBanner: "List complete — everything's covered.",
+      bannerHue: "--spec-success #9CB86F soft fill + line, never iOS #30D158",
+      progressReadsFull: true,
+      // §7's no-celebration rule: this is the understated moment, not confetti.
+      noCelebration: true,
+    },
+    // SEEDED all-checked rather than driven by clicking each row. The first
+    // attempt clicked through the UI and timed out at 120s: a check moves its
+    // row into the GOT IT zone, so the loop raced its own re-render — it read a
+    // count > 0, then the element it had resolved was gone before the click
+    // landed. The seed builder already carries `isChecked` per item, so the
+    // deterministic state was one line away.
+    prepare: () => seedGroceryState("GROCERY_ALL_CHECKED"),
+    navigate: async (page) => {
+      await gotoReady(page);
+      await page.getByTestId("grocery-complete-banner").waitFor({ timeout: 8_000 });
     },
   },
   {

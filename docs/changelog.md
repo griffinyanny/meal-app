@@ -4,6 +4,106 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 52 — 2026-07-31 (1F Workstream B opens: B1 + B5, and the bug that had already fixed itself)
+
+**Griffin answered B5's two taste calls at the top of the session, both as recommended** — the amber
+Groceries merge markers become a neutral inset carrying the count as type, and the cooked/complete check
+**keeps** a hue (`#9CB86F`) rather than going neutral. B1 and B5 were built together, because both
+resolve to the same treatment.
+
+**691 unit** (688 + 3 new palette guards) **+ 121 E2E**, lint + typecheck clean.
+
+### The through-line, fourth session running: the parked recommendation was again the thing to distrust
+
+S50 the tracker was wrong about what the bug WAS. S51 it was right about the bug and wrong about the FIX.
+**S52 the bug had already been fixed by something else, and the doc had the reason backwards.**
+
+Spec §12 item 03 and this phase doc both name *"the indigo draft pill — the last live indigo in the product
+after 1E.7 retired `--primary`."* **Retiring `--primary` is exactly what killed it.** `recipe-card.tsx`
+styles the pill `bg-primary/12 text-primary/90 border-primary/25`, and 1E.7 aliased `--primary` →
+`--spec-action`. There are **zero** indigo literals left in `src/` — not `#3A86FF`, not `#5E5CE6`, not
+`rgba(94,92,230,…)`.
+
+**But the real defect was underneath, and it is not what was filed.** With indigo gone the pill had become
+**cream** — the *action* hue. §01 is explicit that cream is what you press, so the pill was rendering a
+status label in the one colour that means "tap me", at the same weight as a primary button's own text. The
+spec's ask was a *"provisional neutral chip"*, and cream is not neutral in this system. It ships as the same
+neutral inset the merge marker got.
+
+### What shipped
+
+- **B1 — the 9 `#30D158` literals across 4 sites** (`recipe-card`, `cooked-strip`, the Groceries completion
+  banner + its check) now run on a new **`.spec-success-soft`** utility carrying the spec's own stated pair,
+  plus `text-[var(--spec-success)]` for the glyph. Fill/line are separated from the hue deliberately: the
+  banner's *sentence* stays `foreground`, because law 03 says nothing you read twice is accent-coloured.
+- **B5 — the merge marker was two things, not one.** An amber dot beside the item name *and* the meta line
+  beneath it in amber. Both gone; the meta line, which already read `2 dinners`, **is** the marker now, as
+  the caught-tray chip's neutral inset. The count carries strictly more than the dot did — a dot said
+  *something happened here*, `2 dinners` names what the chevron is about to show. Layout unchanged at 390px,
+  because that string already occupied the row.
+- **`src/components/palette.test.ts`**, a source-scraping guard **verified failing against the pre-fix
+  code** — it named all four green sites and both amber merge-marker lines. A retired hex fails nothing on
+  its own: it renders, it looks deliberate, and it survives every DOM assertion. That is the `.glass-card`
+  blur class of bug, and a source-level guard is the only layer that sees it. The amber case is an
+  **allow-list**, not a block-list, because "is this hex a merge marker or something else" cannot be
+  answered from the string.
+- **`GR-L1` now asserts the marker's TEXT, not its presence.** `grocery-merge-dot` + `toBeVisible` passed
+  whenever `sources.length > 1` was truthy at all, so it could not fail on a wrong count. It reads
+  `toHaveText("2 dinners")`.
+
+### Three things the work found that nobody was looking for
+
+1. **The rubric was about to excuse both fixes.** `visual-qa-rubric.md` §(b) carried a do-not-flag list
+   naming `#30D158` and the amber merge markers as deliberately un-migrated. Left alone, the next pass would
+   have graded the **new** palette against the **old** exemption — S42's exact finding about this same file,
+   one section down. A stale exception is worse than no exception: it is a licence to ignore a real defect.
+   Both entries flipped to reportable, with `PROJECT-CONTEXT.md` and the stale `mergeDotOnMultiSourceItem`
+   capture fact updated alongside.
+2. **`grocery-complete-banner` had no capture state and no spec assertion anywhere** — referenced only by
+   the component that renders it. So B1 repainted a surface the visual gate was structurally unable to see.
+   New `grocery-complete` capture state. Same class as S47's "Layer A had never captured a sheet state",
+   and found the same way: by asking what the layer *cannot* see rather than reading what it does.
+3. **⚠️ The guard initially failed all three of its own cases, against itself** — the file names every
+   literal it forbids, in its comments and its assertions. Caught on the first run; the walk skips it now.
+4. **The `/visual-qa` pass caught a law-05 break in the first version of the fix.** The merge marker shipped
+   as an **inert** chip with fill + border, with the disclosure chevron still beside it. Law 05: *fill +
+   border ⇒ it must respond to a tap; if it only names something, it is flat type with no container.* An
+   inert pill sitting next to the control that actually opens the thing is precisely what that law forbids —
+   and it is **invisible to every DOM assertion**, because the markup was correct and only the meaning was
+   wrong. Folded together: the marker IS the disclosure now (`2 dinners ⌄`), and the standalone chevron is
+   deleted — law 05 satisfied, one fewer control, bigger hit target, affordance on the words that describe
+   it. **The cooked badge is deliberately left as a non-tappable fill+border chip**, because the spec's §07
+   gallery draws exactly that component (`#9CB86F`, soft fill + line, labelled "Cooked twice") — the spec
+   beats a generic reading of its own law, and the merge marker had no such precedent.
+
+### Gate
+
+**`/visual-qa` 0 blockers / 0 high on Groceries and Recipes**, all 13 states `captureStatus: ok`. Critique
+at `tests/e2e/captures/A-groceries-2026-07-31T12-20-44-855Z/critique.md`. **27 targeted E2E green** after
+the law-05 change (Groceries 13 + Recipes 13 + setup), on top of the full **121 E2E** run earlier.
+
+⚠️ One capture issue carried out rather than folded in: `you-field-editor` failed its pre-shot check. Not on
+a surface this pass gates; the You freeform control is **B7**'s scope.
+
+### Method note: the force-failure very nearly recorded a false red
+
+Stashing the fixes and re-running produced **exit 1**, which is the shape of the proof this project asks
+for. It was `--reporter=basic`, a flag vitest 4 does not have — the suite never ran. A second attempt
+raced the `git stash pop` and produced a *green* against restored code. Only the third, with a physical
+file backup and no chained commands, produced the real red naming the exact six offending lines.
+**"It went red" is not the check; "it went red for the reason I predicted" is.**
+
+### Open
+
+- **BUG-045 🟡 (new)** — the quick-add dedupe notice is the same amber miscast one affordance over, and is
+  now the last `#FF9F0A` in the product. Deliberately **not** swept: Griffin's call named the merge markers.
+  The palette guard allow-lists that exact line, so closing BUG-045 turns the test red until the exception
+  is deleted too.
+- **B1/B5 still owe their `/visual-qa` pass** to 0 blockers / 0 high before the items are closed rather than
+  code-complete.
+
+---
+
 ## Session 51 — 2026-07-30 (1F Workstream A CLOSED at 6 of 6: the fix the tracker recommended would have doubled the bug)
 
 **Workstream A is done.** A4 (BUG-013), A5 (BUG-042/043) and A6 (BUG-018) closed, on top of S50's A1–A3.
