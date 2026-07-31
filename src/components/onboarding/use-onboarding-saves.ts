@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import type { PreferencesPatch } from "@/components/you/use-you-mutations";
 
@@ -40,41 +40,83 @@ export function useCoreSaves(showToast: (message: string) => void): CoreSaves {
   const [failedSaves, setFailedSaves] = useState<FailedSave[]>([]);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  // BUG-020 · THE THIRD BUCKET.
+  //
+  // `retryFailed` used to answer "is anything outstanding?" by checking
+  // `failedSaves` alone — but a save still in flight has neither succeeded nor
+  // failed, so it was in NEITHER bucket and the answer came back "all clear"
+  // over a write that had not landed. Tap through the last core turn fast
+  // enough and the completed flag was written, the interview stopped firing,
+  // and the pending save then failed with nothing left to retry.
+  //
+  // Every settled promise lands here so the end point can await them.
+  const inFlight = useRef(new Set<Promise<void>>());
+
+  // Mirrors `failedSaves` synchronously. `retryFailed` awaits in-flight saves
+  // and then has to read the failures THOSE saves just produced — but a setState
+  // from an awaited callback is not visible to the closure that awaited it, so
+  // reading state there would see the array as it was before the await and
+  // report success over a save that had just failed. The ref is the readable
+  // copy; the state exists to re-render the reflect screen's honest line.
+  const failedRef = useRef<FailedSave[]>([]);
+  const writeFailed = useCallback(
+    (next: (current: FailedSave[]) => FailedSave[]) => {
+      failedRef.current = next(failedRef.current);
+      setFailedSaves(failedRef.current);
+    },
+    []
+  );
+
   const persist = useCallback(
     (label: string, patch: PreferencesPatch) => {
       // Deliberately does NOT block the turn. Waiting on a round trip before
       // every advance would trade a rare, now-visible failure for a stutter on
-      // every single answer.
-      savePreferences.mutate(patch, {
-        onSuccess: () =>
-          setFailedSaves((f) => f.filter((x) => x.label !== label)),
-        onError: () => {
-          setFailedSaves((f) => [
+      // every single answer. Tracked rather than awaited, so the interview keeps
+      // its pace AND the end point still knows this is outstanding.
+      const settled = savePreferences.mutateAsync(patch).then(
+        () => writeFailed((f) => f.filter((x) => x.label !== label)),
+        () => {
+          writeFailed((f) => [
             ...f.filter((x) => x.label !== label),
             { label, patch },
           ]);
           showToast(`I didn't get ${label} saved. I'll try again at the end.`);
-        },
-      });
+        }
+      );
+      inFlight.current.add(settled);
+      // Both outcomes are handled above, so `settled` never rejects and the
+      // awaiting end point cannot be taken down by a failed save.
+      settled.finally(() => inFlight.current.delete(settled));
     },
-    [savePreferences, showToast]
+    [savePreferences, showToast, writeFailed]
   );
 
   const retryFailed = useCallback(async () => {
-    if (failedSaves.length === 0) return true;
+    // Land anything still open BEFORE deciding whether anything failed. This
+    // ordering is the entire fix: the old code asked the question first.
+    if (inFlight.current.size > 0) {
+      setIsRetrying(true);
+      await Promise.all([...inFlight.current]);
+    }
+
+    if (failedRef.current.length === 0) {
+      setIsRetrying(false);
+      return true;
+    }
+
     setIsRetrying(true);
     const stillFailing: FailedSave[] = [];
-    for (const failed of failedSaves) {
+    for (const failed of failedRef.current) {
       try {
         await savePreferences.mutateAsync(failed.patch);
       } catch {
         stillFailing.push(failed);
       }
     }
-    setFailedSaves(stillFailing);
+    writeFailed(() => stillFailing);
     setIsRetrying(false);
     return stillFailing.length === 0;
-  }, [failedSaves, savePreferences]);
+  }, [savePreferences, writeFailed]);
 
   return { persist, retryFailed, failedSaves, isRetrying };
 }
