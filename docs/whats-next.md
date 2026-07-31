@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-30 (Session 50; 1F Workstream A — A1/A2/A3 closed and merged)
+Last updated: 2026-07-30 (Session 51; 1F Workstream A CLOSED at 6 of 6)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,132 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **1F Workstream A is 3 of 6 done. Next: A4 (BUG-013), then A5, A6 — then Workstream B.**
+## ▶ NEXT SESSION — **1F Workstream A is CLOSED (6 of 6). Next: Workstream B, the design-system pass.**
+
+**S51 closed A4 (BUG-013), A5 (BUG-042/043) and A6 (BUG-018)** as PRs **#12** and **#13**. `main` is at
+**688 unit + 121 E2E green**, lint + typecheck clean, migration `0010` applied. Nothing left on a branch.
+**Three of four workstreams remain: B (design system), C (PWA), D (production readiness).**
+
+### The thing worth carrying, because it changed shape from S50
+
+**S50: the tracker was wrong about what three of the six bugs WERE.** **S51: the tracker was right about the
+bug and wrong about the FIX — twice.** A parked bug's "address by" line is a hypothesis from the day it was
+filed, not a spec.
+
+- **A4 · BUG-013.** The filed fix — *"recompute `memory` server-side from `(questionId, dimension, values)`"*
+  — lands in `memoryForAnswer`, whose label lookup fell back to the **raw value** (`?? v`). Harmless on the
+  client, which produced the values it is looking up; on the server `values` is caller-controlled at
+  12 × 60 chars, so recomputing **alone** would have echoed ~720 characters of the caller's text into the
+  sentence. **More than double the 300-char cap the filed bug had.** Measured, not reasoned: the naive
+  version was built first and the values test went red against it. The generalisation: **a recompute is only
+  as trustworthy as the inputs it recomputes from, or it is laundering.**
+- **A6 · BUG-018.** The filed fix named `assertNotProductionUrl()`. No property of a URL says "production,"
+  so any such function has to enumerate prod and pass everything else — **failing open on exactly the
+  unrecognised project the guard exists for.** Shipped as an allow-list with a **committed** ref, because a
+  guard living in `.env.local` cannot catch a bad `.env.local`.
+- **A5 · BUG-042 was measured instead of assumed.** `GET /auth/v1/settings` says `external.email: true` with
+  `mailer_autoconfirm: false` — confirmations required, so the bypass needs both halves and has one.
+  **Not exploitable.**
+- ⚠️ **Fourth "the apparatus could not fail" instance in five sessions — and it happened inside the
+  workstream whose entire bar exists to catch it.** BUG-013's values assertion matched case-sensitively
+  against a branch that lowercases its output, so it walked past a string that had in fact been planted.
+
+### ⚠️ Two things are yours
+
+**1. BUG-042 — the Supabase dashboard toggle.** Authentication → Sign In / Providers → **disable Email**.
+Hygiene now rather than a fix (it is not exploitable, see above), but the app has never used that path and
+an auth path nothing uses is surface area resting on a setting nobody re-reads. **Claude cannot do this.**
+
+**2. The separate non-prod Supabase project — a decision, not a defect.** Full write-up in
+[open-questions.md](open-questions.md). **My recommendation: V1.5, not now.** A second free-tier project
+pauses on inactivity — we have that exact scar on this project — and an E2E suite that goes red for
+infrastructure reasons trains you to ignore red, which is the failure BUG-019 cost three sessions to
+unlearn. The realistic data-loss vector is closed by the guard: you would now need the right project **and**
+a real household literally named `E2E Test Kitchen` **and** with exactly one member who is the harness's own
+test user. **What would change my answer:** a second machine running the suite, or prod holding two real
+households — both arrive with V1.5.
+
+### ⚠️ One thing worth knowing, and it is not a bug
+
+**Prod is open to anyone who finds the URL.** `disable_signup: false`, `google: true`, and both access-gate
+env vars unset — your deliberate S49 no-beta call. `robots.txt` + `noindex` are what keep the URL unfound.
+Stated because it came up while measuring BUG-042 and it should be a known state rather than a discovered
+one.
+
+### ⭐ Next up — Workstream B, the design-system pass
+
+Spec §12 items **03/04/05/07**, plus the two semantic calls S42 deliberately did not make, the S48 critic
+slate's four deferrals, and **BUG-037/038**. Full list in [scope-1F.md](scope-1F.md) → Workstream B. Each
+item gets its own `/visual-qa` pass to **0 blockers / 0 high** — that per-surface discipline is exactly why
+these were split out of 1E.7's mechanical sweep.
+
+**Two of the nine are yours to call, and they are taste rather than execution:** **B5**, the amber `#FF9F0A`
+Groceries merge markers (the spec has no caution hue *because amber is the chef*, so a merge marker in amber
+says the chef is speaking when the chef is not — my recommendation is a neutral inset with the count as
+type, matching how the caught-tray chip resolved under the gold line), and whether the cooked/complete check
+carries `#9CB86F` or no hue at all.
+
+**🎨 Design pass — offered, and my recommendation is to skip it.** Workstream B is applying a spec that is
+already locked to surfaces that are already designed; scope-1F's own rule is that 1F must not produce a new
+all-states pass. A Claude Design round would buy re-litigation of decisions already made. **Where it would
+earn its keep:** only if B5's merge-marker call turns out to want a new treatment rather than a token swap.
+Say the word and I'll run it then.
+
+### Owed, unchanged
+
+- **`maxDuration` 120 on the generation route** — still worth a look. Hobby allows 300s with fluid compute
+  (on by default), so it should just work; if it got clamped, fluid compute is off on the project and needs
+  flipping on. Free toggle, one dashboard visit.
+
+### Also still open
+- **BUG-044 🟡** (new, S51) — `interviewStateSchema` types `dietaryFramework` as a bounded string where the
+  persist path enforces an enum. Not an injection path any more; routed to **Workstream D**'s security
+  review because narrowing it means moving the framework list into a shared pure module.
+- **BUG-023** (V1.5+, not reachable today), **BUG-017** (→ Workstream D), **BUG-003**, and
+  **BUG-037/038** (→ Workstream B). All with address-by targets in [bug-tracker.md](bug-tracker.md).
+
+**⭐ Model recommendation: Opus 4.8.** Workstream B is judgement against a locked spec — reading captures,
+grading them against the six laws with the gold line as tie-breaker, and applying small colour/geometry
+changes. That is the same work 4.8 did well across S40/S42/S45/S47/S48. No new architecture. **Go higher
+only if you take Workstream D first** — the security review of the full surface is the one remaining item
+with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — 1F Workstream A is CLOSED at 6 of 6, all merged to main (PRs #9-#13). S51 closed A4
+(BUG-013), A5 (BUG-042/043) and A6 (BUG-018). Worth carrying: S50's lesson changed shape — S50 the tracker
+was wrong about what the bugs WERE, S51 it was right about the bug and wrong about the FIX, twice. BUG-013's
+recommended recompute would have echoed ~720 chars of caller text (the label lookup fell back to the raw
+value) where the filed bug capped at 300, and BUG-018's named assertNotProductionUrl() would have failed
+OPEN on every unrecognised project, so it shipped as an allow-list with a committed ref instead. So: treat a
+parked bug's recommendation as a hypothesis, not a spec, and force the failure before and after. Next is
+Workstream B, the design-system pass — spec §12 items 03/04/05/07, the two semantic calls S42 didn't make,
+the S48 critic slate's four deferrals, and BUG-037/038, each with its own /visual-qa pass to 0 blockers/0
+high. Two calls are mine and I'll answer at the top: B5's amber Groceries merge markers (your rec is a
+neutral inset with the count as type, since amber is the chef) and whether the cooked check carries #9CB86F
+or no hue. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope
+check. 688 unit + 121 E2E green on main, migration 0010 applied. Still owed from me: the BUG-042 Supabase
+toggle (disable the Email provider), whether maxDuration 120 got clamped on the generation route (if it did,
+fluid compute is off and needs turning on), and the separate non-prod Supabase project call — your rec is
+V1.5 and it's written up in open-questions.md. On Opus 4.8.
+```
+
+**Design-independent alternative** (if you'd rather not spend the session on taste calls):
+```
+Resume meal app — 1F Workstream A is CLOSED at 6 of 6, all merged to main (PRs #9-#13). Skip Workstream B
+this session (it opens with two taste calls of mine) and do Workstream D, production readiness, instead:
+PostHog with the S9 event taxonomy + Sentry, and specifically the time-to-list instrumentation the DoD needs
+— an event at intent-submit and one at list-ready, which has to ship BEFORE the two validation weeks start
+or the weeks don't count. Then the security review of the full surface (BUG-044 is routed there: the
+interview input types dietaryFramework as a bounded string where the persist path enforces an enum) plus the
+rate-limiting audit, per the standing rule that live-code vulnerabilities ship as their own PR first. Then
+the error-state sweep and BUG-017. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first,
+give me the <=6-line scope check, keep 688 unit + 121 E2E green. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S50 (superseded by S51 above — Workstream A is closed at 6 of 6)
 
 **S50 closed A1, A2 and A3 as three merged PRs (#9, #10, #11).** `main` is at **671 unit + 121 E2E green**,
 lint + typecheck clean, migration `0010` applied. Nothing is left on a branch.
