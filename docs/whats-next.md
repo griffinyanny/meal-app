@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-31 (Session 53; 1F/B9 closed — Workstream B at 3 of 9)
+Last updated: 2026-07-31 (Session 54; 1F/B2 + B3 + B4 closed — Workstream B at 6 of 9)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,142 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B9 is CLOSED. Workstream B is 3 of 9; 6 items remain.**
+## ▶ NEXT SESSION — **B2 + B3 + B4 are CLOSED. Workstream B is 6 of 9; 3 items remain.**
+
+**S54 closed B2, B3 and B4 as one batch** — all three are app-wide mechanical items, the same bundling
+argument S52 used for B1+B5. **126 E2E green** (123 + SH1/SH2/SH3), **691 unit**, lint + typecheck clean,
+`/visual-qa` at **0 blockers / 0 high** with all **54** capture states `captureStatus: ok`.
+
+### ✅ Your BUG-042 call is applied and the row is CLOSED
+
+Moved out of the Open table into the Resolved log as **won't-do**, carrying both measurements so it cannot
+return a sixth time: not exploitable (S51), *and* the remedy would have reddened all 123 specs (S53).
+**One thing is still owed by you, and it is now the only one:**
+
+> **For the rest of R1, the E2E suite keeps deleting rows in the same Supabase project that holds your real
+> data. Do you accept that until V1.5?**
+
+**Recommendation unchanged: accept.** One word — "accept" or "set it up now." Write-up in
+[open-questions.md](open-questions.md).
+
+### ⚠️ And one thing is yours that a capture cannot answer
+
+**B2's phone check.** Spec §12 item 04's fix arrived in **two pieces a phase apart** — the floating toolbar
+deleted in 1E.5, the nav's corners squared now — and **nobody has seen them together on a device.** The
+captures look right at 390×844, but S28's density complaint was made on a phone and that is where it has to
+be answered. Open Recipes and Groceries on your phone and tell me whether the bottom edge reads calm.
+
+### The finding: the new sweep was blind to two thirds of its own subject
+
+B3 shipped `SH2`, a DOM sweep that walks the rendered tree for icon-only controls and measures their real
+boxes. It found two offenders — a 32×32 `Settings` link and the 36×36 recipe-card heart. **A source-side
+cross-check found four more it could not see**, all inside a dialog the tab sweep never opens.
+
+And the cross-check found the thing that actually mattered: **these were never six call-site defects.**
+`ui/button.tsx`'s icon variants are **24 / 28 / 32 / 36px** — *every rung of the shared primitive sits below
+the 44px floor* — so the next `size="icon"` anyone writes is wrong by default. Fixed once, at the primitive.
+
+**Fourth instance of *ask what the layer cannot see*** (S47 sheet states, S52 `grocery-complete-banner`,
+S53 `seed.ts`) — and the first where the blind spot was in **apparatus written the same session**. Writing
+the sweep did not exempt it from the question.
+
+⚠️ **Stated rather than buried:** the cream send circle in the Plan composer and the chef sheet went
+**36 → 44px**, and that is a *visible* change. Spec §11 bands icon buttons at 40–46px, so 36 was off-system
+in two ways at once — but it is the one part of B3 you will actually see. Both composers' `pr-12` → `pr-14`,
+or text would run under the enlarged circle.
+
+### B4 was smaller than filed, and the half nobody asked for was free
+
+**The type half is TWO sites, not a sweep.** Searching for the pattern the spec actually describes — a label
+paired with a 12.5px meta line — returns exactly one genuine fake. **The ~13 uppercase labels that *look*
+faked are not:** 11px Section label is a real, existing rung doing its real job. What was genuinely missing
+is that **neither new level existed at all**, which is the actual reason subsections got built at random
+weights; `.spec-group-title` and `.spec-row-title` now do.
+
+You chose **both halves**, so the element half shipped too: **9 sites, `<p>` → `<h2>`, zero pixels moved.**
+That is Workstream D's a11y work done early — D now verifies instead of building. ⚠️ **Four candidates were
+excluded, and a naive sweep would have broken all four:** two are kickers directly above an `<h1>`
+(promoting them puts an `h2` *before* the `h1`), two are labels inside a `<button>` where the text is
+already the accessible name.
+
+### Two near-misses in the verification itself
+
+1. ⚠️ **A stale build reported a false red.** The first re-run after the B3 fixes used `E2E_REUSE_BUILD=1`
+   and returned the *pre-fix* numbers — indistinguishable from a fix that had not worked. **S52's lesson
+   through a new door: "it went red for the reason I predicted" also requires the run to be against the code
+   you think it is.**
+2. **`SH3` had to assert by ROLE, not text.** `getByText` passes happily against the paragraphs these labels
+   used to be, so a text assertion could not have failed on the thing being fixed.
+
+All three specs were verified failing first — SH1/SH2 by being written before the fix, SH3 via a physical
+file backup + `git checkout` revert + **full rebuild** (never chained `stash && test && pop`).
+
+### ⭐ Next up — the last three B items, in this order
+
+**B6** (the S48 critic slate's four: Recipes `+` weight, picker/Recipes vocabulary unification, cooked-when
+evidence inside pushed doors, caps-label tracking) → **B7** (the three remaining freeform controls — You,
+Groceries, the chef sheet — into the single spec §09 control) → **B8** (type scale, motion, component-library
+consolidation).
+
+**Two tracked rows land in these:** **BUG-046** (the recipe body wears cream on three non-pressable
+elements) → B6/B8, and **BUG-045** (the last `#FF9F0A`) → B8. ⚠️ `palette.test.ts` allow-lists BUG-045's
+exact line, so **closing it reds the test until the exception goes too.**
+
+**No taste calls are pending on any of the three.** B6 carries the closest thing, already adjudicated by the
+S48 slate.
+
+**🎨 Design pass — offered, recommendation is still skip for B.** B applies a locked spec to already-designed
+surfaces. ⚠️ **B7 is the one to watch:** if consolidating the freeform controls turns out to want a *new*
+control rather than aligning three existing ones, that is the condition that flips the recommendation — same
+test B5 was held to. I'll raise it if it happens rather than deciding it quietly.
+
+**⭐ Model recommendation: Opus 4.8.** The remaining three are judgement against a locked spec — reading
+captures, grading them against the six laws with the gold line as tie-breaker, and applying small
+colour/geometry changes. Same work 4.8 did well across S40/S42/S45/S47/S48/S52/S53/S54. **Go higher only if
+you take Workstream D first** — the security review is the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S54 closed 1F/B2 + B3 + B4 as one batch (they're all app-wide mechanical items, same
+bundling argument S52 used for B1+B5). 691 unit + 126 E2E green on main (123 + new SH1/SH2/SH3), visual-qa
+0 blockers/0 high, 54/54 capture states ok. BUG-042 is CLOSED as won't-do per my call and is out of the Open
+table — don't reopen it. Worth carrying, and it's the lesson a sixth time in a new place: B3's own DOM sweep
+was blind to two thirds of its subject. It found 2 undersized icon controls; a source-side cross-check found
+4 more inside a dialog it never opens, and then found the real thing — ui/button.tsx's icon variants are
+24/28/32/36px, so EVERY rung of the shared primitive was under the 44px floor and the next size="icon"
+anyone writes is wrong by default. Fourth instance of "ask what the layer cannot see", and the first where
+the blind spot was in apparatus written that same session. Also: B4 was smaller than filed (the type half is
+2 sites, not a sweep — the ~13 uppercase labels that look faked are the spec's real 11px Section label doing
+its job), and a stale E2E_REUSE_BUILD run reported a false red that looked exactly like a failed fix. Next:
+the last three B items in order — B6 (the S48 critic slate's four, plus BUG-046), B7 (three freeform controls
+into the spec §09 control), B8 (type scale/motion/component library, plus BUG-045 — note palette.test.ts
+allow-lists its exact line so closing it reds the test until the exception goes too). No taste calls pending
+on any of them. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line
+scope check. maxDuration is CLOSED, don't raise it. Don't run the E2E suite while I'm using the app. Still
+owed by me: the non-prod Supabase project call (your rec is accept/V1.5) and B2's phone check — whether the
+bottom edge reads calm now the toolbar deletion and the squared nav corners are finally on screen together.
+On Opus 4.8.
+```
+
+**Design-independent alternative** (B7 is the one B item that could surface a design question, so this
+skips to the workstream where a design pass is already decided):
+```
+Resume meal app — S54 closed 1F/B2 + B3 + B4 (691 unit + 126 E2E green on main, visual-qa 0/0). Skip the
+last three B items this session and take Workstream C, the PWA, instead: web app manifest + the full
+home-screen icon set iOS and Android actually ask for, a service worker whose offline scope is honestly
+bounded (offline READ of the current grocery list — standing in a store with bad signal — not offline
+generation), the install prompt, and full-screen launch without browser chrome. It has to be verified on my
+phone and my wife's, not a desktop emulator, so tell me exactly what to tap and what to look for. Offer me
+the design pass FIRST — S52 decided C gets one (icon/splash/install prompt/offline state are net-new surface
+in no spec), unlike B. Order is B -> C -> D -> validate and I already overruled pulling D forward, so don't
+propose it. BUG-042 is closed as won't-do; don't reopen it. Read docs/whats-next.md, docs/scope-v1.md and
+docs/scope-1F.md first, give me the <=6-line scope check, keep 691 unit + 126 E2E green. Don't run the E2E
+suite while I'm using the app. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S53 (superseded by S54 above — B2/B3/B4 are closed)
 
 **S53 closed B9 (BUG-037 + BUG-038)** and found that the visual gate could not see either surface it was
 being asked to grade. **691 unit + 123 E2E** (121 + RC14 + RC15), lint + typecheck clean, all 8 Recipes

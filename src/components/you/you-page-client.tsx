@@ -196,9 +196,9 @@ export function YouPageClient() {
         />
 
         <section className="space-y-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
             What I cook around
-          </p>
+          </h2>
           <SafetyConstraintsCard
             restrictions={prefs.restrictions}
             onRemove={removeRestriction}

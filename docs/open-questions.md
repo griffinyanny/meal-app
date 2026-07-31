@@ -25,6 +25,13 @@ which is a real new argument for doing this — and still not enough to move the
 BUG-042 is measured **not exploitable** (`mailer_autoconfirm: false`). So what acting now buys is hygiene,
 not a closed hole. **Griffin's call is one word: accept (both → V1.5) or set it up now.**
 
+**✅ S54 — half of the pair is settled. BUG-042 is CLOSED as won't-do** on Griffin's explicit instruction
+("do not do the toggle"), and has moved from the tracker's Open table into its Resolved log carrying both
+measurements. **This question is therefore no longer a pair — it is back to being one decision about one
+thing**, and it is the last item owed by Griffin on 1F. What BUG-042's closure changes here: the "a separate
+project would let prod disable Email" argument is now the *only* remaining reason to build one early, and it
+buys hygiene on a hole that is measured shut. **Recommendation unchanged: accept, V1.5.**
+
 **Recommendation: V1.5, not now.** Three reasons, in the order they matter:
 
 1. **A second free-tier project pauses on inactivity, and the E2E suite is exactly the workload that

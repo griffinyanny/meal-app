@@ -24,9 +24,9 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
   if (memories.length === 0) {
     return (
       <section data-testid="you-ledger-empty">
-        <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
           Still learning
-        </p>
+        </h2>
         <div className="rounded-[18px] border border-dashed border-[rgba(240,222,190,0.13)] bg-[rgba(240,222,190,0.02)] px-[22px] py-7 text-center">
           <div className="mx-auto mb-3.5 flex size-[46px] items-center justify-center rounded-[14px] bg-primary/10">
             <Eye className="size-[22px] text-primary" strokeWidth={1.7} />
@@ -47,9 +47,9 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
 
   return (
     <section data-testid="you-ledger">
-      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
         What I&apos;ve picked up
-      </p>
+      </h2>
       <div className="flex flex-col gap-2.5">
         {visible.map((m) => (
           <MemoryCard key={m.id} memory={m} onRemove={onRemove} onEdit={onEdit} />

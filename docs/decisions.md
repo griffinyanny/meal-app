@@ -4,6 +4,37 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S54) — BUG-042 is closed as won't-do; the 44px floor lives on the primitive, not the call sites
+
+**Decision 1 (Griffin, S54).** BUG-042 is **closed as won't-do** and moved to the tracker's Resolved log.
+S53 retracted the instruction; S54 closes the row, so the recommendation cannot be re-derived from an open
+entry a sixth time. The residual hygiene concern lives entirely in the non-prod Supabase project question
+(`open-questions.md`), which is now the only item owed by Griffin on 1F.
+
+**Decision 2 (Claude, S54) — B3's 44px floor is enforced at `ui/button.tsx`, not at each call site.**
+The audit found six undersized icon-only controls, but they were not six defects: the shared primitive's
+icon variants are **24 / 28 / 32 / 36px**, so *every rung was below the floor* and the next `size="icon"`
+anyone wrote would be wrong by default. Fixing six call sites would have left the generator of the defect
+in place.
+
+- **Implemented as `min-w-11 min-h-11`, not as a new size.** The declared rung still states the painted
+  intent, and since every consumer is `variant="ghost"` — which paints nothing at rest — the floor buys tap
+  area and changes nothing on screen. Collapsing the four rungs to one size would have made four names for
+  one thing.
+- **The trade accepted, stated rather than buried:** two controls that DO paint (the cream send circle in
+  the Plan composer and the chef sheet) went **36 → 44px**, a visible change. Justified because spec §11
+  bands icon buttons at **40–46px**, so 36 was off-system independently of the hit-target rule — but it is
+  a pixel change to a shipped surface and Griffin should meet it knowingly.
+
+**Future impact.** Workstream D's a11y pass **verifies** hit targets rather than auditing them, and B4's
+element promotion (9 labels `<p>` → `<h2>`) means D verifies heading structure rather than building it.
+
+**Decision 3 (Griffin, S54) — B4 takes both halves**, the type-level adoption *and* the semantic promotion,
+on the argument that the spec names the levels "Group title · **H4**" and "Row title · **H5**", so the
+element is half the ask; and that doing it in B means D does not have to redo the same 9 lines.
+
+---
+
 ## 2026-07-31 (S53) — BUG-042's toggle is retracted, not deferred: disabling the Supabase Email provider would break the E2E suite
 
 **Decision (Claude, S53, retracting a standing instruction handed to Griffin four sessions running).** Do

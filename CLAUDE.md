@@ -21,9 +21,9 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 (S52) and B9 (S53) closed — 3 of 9, 6 items remain.** **691 unit +
-123 E2E green, migration `0010` applied.** Next: B2 → B3 → B4 → B6 → B7 → B8. **No taste calls are pending
-on any of them.**
+**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53) and B2 + B3 + B4 (S54) closed — 6 of 9, 3 items
+remain.** **691 unit + 126 E2E green, migration `0010` applied.** Next: **B6 → B7 → B8.** **No taste calls
+are pending on any of them.**
 
 **⚠️ THE LESSON, now five sessions deep, and it has changed shape every time. S50: the tracker was WRONG
 about what three of the six bugs WERE. S51: right about the bug, WRONG ABOUT THE FIX, twice. S52: the bug
@@ -32,6 +32,25 @@ wrong, it was DESTRUCTIVE — and the filed bugs were the smaller half of what w
 the code is not enough, following the recommendation is not enough, and neither is trusting that the defect
 still exists — a parked item's description is a hypothesis from the day it was filed, not a spec.
 
+- **S54 · the sweep written to BE the audit was blind to two thirds of its own subject.** B3's `SH2` walks
+  the rendered tree for icon-only controls and measures them; it found 2. A **source-side cross-check**
+  found 4 more inside a dialog the tab sweep never opens — and then the thing that mattered: `ui/button.tsx`
+  ships icon variants at **24 / 28 / 32 / 36px**, so *every rung of the shared primitive was under the 44px
+  floor* and the next `size="icon"` was wrong by default. **Fourth instance of *ask what the layer cannot
+  see*, and the first where the blind spot was in apparatus written that same session.** Writing the
+  instrument does not exempt it from the question.
+- **S54 · a stale build reported a false red.** Re-running with `E2E_REUSE_BUILD=1` after source edits
+  returned the *pre-fix* numbers — indistinguishable from a fix that had not worked. **S52's lesson needs a
+  second clause: "it went red for the reason I predicted" AND "the run was against the code I think it
+  was."** After editing `src/`, never reuse the build to verify the edit.
+- **S54 · assert by ROLE, not by text, when the fix IS the role.** `SH3` promotes 9 subsection labels from
+  `<p>` to `<h2>`; `getByText` passes happily against paragraphs, so only `getByRole("heading")` can fail on
+  the thing being fixed. **The assertion has to name the property that changed.**
+- **S54 · a parked item can be SMALLER than filed, not just wrong.** Spec §12 item 07 reads like a sweep;
+  measured, its type half is **2 sites**. The ~13 uppercase labels that look faked are the spec's real 11px
+  Section label doing its real job. ⚠️ And 4 promotion candidates had to be **excluded** — 2 are kickers
+  directly above an `<h1>` (promoting them puts an `h2` *before* the `h1`), 2 are labels inside a `<button>`
+  where the text is already the accessible name. **A pattern-matched sweep would have broken all four.**
 - **S53 · the gate could not see either surface it was grading.** `seed.ts` hard-coded
   `ingredients: []` / `steps: []` for EVERY recipe the Recipes seeder produced, so BUG-038 was **100% of
   seeded recipes** and `recipes-detail-add-to-week` — the tab's only detail capture — **had never once
@@ -116,8 +135,9 @@ and deployed READY, and Vercel fails the build outright when the value exceeds t
 accepted and **fluid compute is on**. Residual: that proves the *declared* ceiling was accepted at build
 time; only a real generation running past 60s proves the runtime honours it. Do not raise it again.
 
-**⛔ BUG-042 — DO NOT disable the Supabase Email provider. The standing instruction was wrong AND
-destructive, retracted S52/S53.** Its premise ("the app has never used that path") is false: the E2E
+**⛔ BUG-042 — CLOSED as won't-do (Griffin's call, S54). DO NOT disable the Supabase Email provider, and do
+not reopen the row.** It is out of the tracker's Open table and in the Resolved log carrying both
+measurements. **The standing instruction was wrong AND destructive.** Its premise ("the app has never used that path") is false: the E2E
 harness's only sign-in is `signInWithPassword` (`tests/e2e/harness/supabase-session.ts:160`, `:174`), which
 rides the email provider, and line 182's own error string already said *"Check that the Email provider is
 enabled."* Turning it off reds all 121 specs. **Fifth instance of the phase's lesson and the sharpest one:

@@ -25,12 +25,20 @@ const buttonVariants = cva(
         xs: "h-6 gap-1 rounded-[7px] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-7 gap-1 rounded-[9px] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
-        icon: "size-8",
+        // Every icon variant carries a 44px FLOOR (spec §12 item 05: "the glyph
+        // is 19px; the target is 44px", and §11 bands icon buttons at 40–46px).
+        // It is a `min-*` rather than a new size so the declared rung still
+        // states the painted intent — for the ghost variants these all use, the
+        // box paints nothing at rest, so the floor buys the tap area and changes
+        // nothing on screen. The floor lives here, on the primitive, because the
+        // next `size="icon"` should be correct without anyone remembering. SH2
+        // sweeps for regressions.
+        icon: "size-8 min-w-11 min-h-11",
         "icon-xs":
-          "size-6 rounded-[7px] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+          "size-6 min-w-11 min-h-11 rounded-[7px] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
         "icon-sm":
-          "size-7 rounded-[9px] in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-9",
+          "size-7 min-w-11 min-h-11 rounded-[9px] in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-9 min-w-11 min-h-11",
       },
     },
     defaultVariants: {

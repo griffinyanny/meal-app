@@ -311,20 +311,87 @@ of 1E.7's mechanical sweep rather than bundled into one unreviewable diff.*
       marker or something else" cannot be answered from the string. ⚠️ It initially failed all three cases
       **against itself** — the file names every literal it forbids — so the walk now skips it.
 
-### B2 — Spec §12 item **04**: collapse the double bottom bar *(the half that remains)*
+### B2 — Spec §12 item **04**: collapse the double bottom bar ✅ **CLOSED S54** *(the half that remained)*
 
 The floating-primary half **already landed in 1E.5** (pulled forward S43, because the `Add to this week`
 verb needed the Recipes screen's single floating primary and the 1D toolbar occupied that exact pixel).
 
-- [ ] **Square the nav's top corners** — the explicitly-deferred remainder.
-- [ ] Confirm on a phone that S28's density complaint is actually resolved, since the fix arrived in two
-      pieces a phase apart and nobody has seen them together.
+- [x] **Square the nav's top corners.** `rounded-t-[18px]` deleted from `tab-bar.tsx`. The spec's §07 Fix 1
+      argument is that a full-bleed bar pinned to the device bottom **is** system chrome, and rounding its
+      top makes it read as a sheet that got stuck halfway up. `.spec-chrome` already carried the hairline
+      `border-top` the spec names as what should do the separating, so this was a deletion, not a swap.
+      *(The spec says the bar carries 22px; 1E.7 had already regularised it to 18px. Rounded either way —
+      the defect was real and in the form described, just at a different number.)*
+- [x] **New spec `SH1`**, in a new `tests/e2e/specs/shell.spec.ts`. Asserts computed
+      `border-top-left/right-radius === 0px` — measured, never a class-name match (RC11's precedent). ⚠️ **It
+      asserts in BOTH directions**: it also requires the hairline `border-top` to survive, because a build
+      that squared the corners by dropping `.spec-chrome` entirely would satisfy the radius half while
+      deleting the thing meant to replace it. **Verified failing first** — the code was still pre-fix when
+      the spec was written, so its first run *was* the force-failure: `Received: "18px"`.
+- [ ] ⚠️ **STILL GRIFFIN'S, and it is a phone check, not a capture.** Confirm S28's density complaint is
+      actually resolved. The fix arrived in two pieces a phase apart (the floating toolbar deleted in 1E.5,
+      the corners now) and **nobody has seen them together on a device.**
 
-### B3 — Spec §12 item **05**: 44px hit targets on every icon-only control
+### B3 — Spec §12 item **05**: 44px hit targets on every icon-only control ✅ **CLOSED S54** — *the sweep was blind to four of the six sites*
 
-- [ ] Audit and fix. Overlaps Workstream D's a11y pass; do it here, verify it there.
+- [x] **`SH2` is the audit and the assertion in one.** It walks the rendered tree for controls whose whole
+      visible content is a glyph (`innerText` empty + an `<svg>` inside) and measures the real box, so
+      "icon-only" is derived from the DOM rather than from a class-name list somebody has to remember to
+      update. It also asserts the sweep found *something*, because a broken selector would otherwise read as
+      a clean app.
+- [x] **Found by the sweep:** the Plan tab's `Settings` link at **32×32**, and the recipe-card favourite
+      heart at **36×36** (×5 cards). ⚠️ The spec describes the heart as *"a bare 19px SVG with no padded
+      target"* — it is 36px, already padded partway, presumably by 1E.7's radius sweep. **The defect was
+      real but not in the filed form**, the phase's lesson at its mildest.
+- [x] ⚠️ **Found only by the SOURCE-side cross-check, and this is the finding.** Four more sites live inside
+      a dialog or a sheet the tab sweep never opens: three `icon-sm` buttons in the recipe detail and the
+      shared dialog close, all **28×28**. Worse, they are not per-site defects at all — `ui/button.tsx`'s
+      icon variants are **24 / 28 / 32 / 36px**, i.e. *every rung of the shared primitive is below the
+      floor*, so the next `size="icon"` anyone writes is wrong by default. **Asking what the sweep could not
+      see is what turned six call sites into one root cause.**
+- [x] **Fixed at the primitive:** all four `icon*` variants carry `min-w-11 min-h-11`. A `min-*` rather than
+      a new size, so the declared rung still states the painted intent — and since every consumer is
+      `variant="ghost"`, which paints nothing at rest, the floor buys tap area and changes nothing on
+      screen. The heart (`size-9` → `size-11`) and `Settings` (`p-1.5` → `size-11`) are bare glyphs with no
+      fill, so they are invisible too.
+- [x] **The two that DO paint, stated rather than buried:** the cream send circle in the Plan composer and
+      the chef sheet went **36 → 44px**. That is a visible change. It is not a redesign — spec §11 bands
+      icon buttons at **40–46px**, so 36 was off-system in two ways at once — but it is the one part of B3
+      Griffin will see. Both composers' `pr-12` → `pr-14`, or the text would run under the enlarged circle.
+- [x] **`SH2` extended to open the recipe detail**, so the layer that missed those three can see them now.
 
-### B4 — Spec §12 item **07**: promote faked subsection headings to real Group/Row title levels
+### B4 — Spec §12 item **07**: promote faked subsection headings to real Group/Row title levels ✅ **CLOSED S54** — *the item was smaller than filed, and its other half was free*
+
+**Griffin's call at the top: do both halves** — the type adoption *and* the element promotion.
+
+- [x] **The two levels did not exist.** `.spec-group-title` (19px/650/1.28/-.2px) and `.spec-row-title`
+      (15.5px/600/1.25) added to `globals.css`. The spec added these two rungs precisely because *"the build
+      had a 32px screen title and an 11px section label and nothing between them,"* so subsections were
+      built out of body text at random weights. Naming them is the fix for that scatter.
+- [x] ⚠️ **The type half is TWO sites, not a sweep — measured, not assumed.** Searching for the pattern the
+      spec actually describes (a label paired with a 12.5px meta line) returns exactly one genuine fake:
+      `household-composer.tsx`'s band label at 16px, off the ladder in both directions. `plan-review.tsx`'s
+      grocery row was already at 15.5/600/1.25 by hand and simply adopts the utility. **The ~13 uppercase
+      labels that *look* faked are not** — 11px Section label is a real, existing level in the spec's ladder
+      doing its real job, and item 07's words are "a 15px semibold paragraph."
+- [x] **The element half — 9 sites, `<p>` → `<h2>`, exact classes preserved, zero pixels moved.** The spec
+      names the levels **"Group title · H4"** and **"Row title · H5"**, so the element is half the ask, and a
+      subsection headed by a paragraph is the faked heading in its purest form. The app had **no `<h4>` or
+      `<h5>` anywhere** and no document outline below `<h2>`. Doing it here means Workstream D's a11y pass
+      **verifies** rather than builds.
+- [x] ⚠️ **Two candidates deliberately NOT promoted, and getting this wrong would have been worse than doing
+      nothing.** Groceries' `Groceries · This week` and You's `Your chef` sit directly above an `<h1>` —
+      they are **kickers in a title block**, and promoting them would put an `h2` *before* the `h1`. Two more
+      (`got-it-zone`, `plan-drafts-shelf`) are labels **inside a `<button>`**, where the text is already the
+      control's accessible name and `plan-drafts-shelf` additionally carries `<section aria-label>`. **A sweep
+      of "every uppercase label" would have broken all four.**
+- [x] **New spec `SH3`**, asserting by **role**, not by text — `getByText` passed happily against the
+      paragraphs these used to be, so only the role can fail on a regression. **Verified failing against
+      pre-fix markup** via a physical file backup + `git checkout` revert and a full rebuild: red at
+      `heading("Produce")` → *element(s) not found*, the predicted cause exactly.
+- [x] ⚠️ **A stale-build near-miss worth recording.** The first re-run after the B3 fixes used
+      `E2E_REUSE_BUILD=1` and reported the *old* numbers — a false red that looked exactly like a failed fix.
+      **S52's lesson through a new door: the run has to be against the code you think it is.**
 
 ### B5 — The two semantic calls S42 deliberately did not make ✅ **CLOSED S52** — `/visual-qa` 0 blockers / 0 high
 
@@ -565,6 +632,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-07-31 (S54) | **B2 + B3 + B4 CLOSED as one batch; Workstream B at 6 of 9.** New `tests/e2e/specs/shell.spec.ts` (SH1/SH2/SH3), each verified failing against pre-fix code. **BUG-042 CLOSED as won't-do** on Griffin's call and moved to the tracker's Resolved log, so the retracted instruction cannot be re-derived from an open row. **Two new type levels added** (`.spec-group-title`, `.spec-row-title`) — they did not exist, which is why subsections were built at random weights. Bundled deliberately, per S52's B1+B5 precedent: three five-surface capture passes for a 4px corner, a padding sweep and an `<h2>` promotion would be ceremony rather than discipline. | **The sweep written to BE B3's audit was blind to two thirds of its subject.** It found 2 undersized controls; a source-side cross-check found 4 more inside a dialog it never opens — and then the real finding: `ui/button.tsx`'s icon variants are 24/28/32/36px, so **every rung of the shared primitive was under the 44px floor** and the next `size="icon"` was wrong by default. Fourth instance of *ask what the layer cannot see*, and the first where the blind spot was in apparatus written that same session. **B4 ran the lesson in the other direction:** the item was *smaller* than filed (type half = 2 sites, not a sweep), and 4 promotion candidates had to be excluded — 2 kickers above an `<h1>`, 2 labels inside a `<button>` — where a pattern-matched sweep would have broken all four |
 | 2026-07-31 (S53) | **B9 CLOSED** (BUG-037 + BUG-038); Workstream B at 3 of 9. **BUG-046 🟡 opened** (the recipe detail body wears cream, the action hue, on three non-pressable elements — B1's finding one surface over) and routed to B6/B8. **BUG-042's toggle RETRACTED, not deferred** — disabling the Supabase Email provider would red all 123 specs, because the harness's only sign-in is `signInWithPassword`; it bundles into the non-prod Supabase project decision, collapsing Griffin's two owed items into one. | The filed bugs were the smaller half. `seed.ts` hard-coded `ingredients: []` / `steps: []` for every recipe, so BUG-038 was **100% of seeded recipes** and the tab's only detail capture had **never once shown a populated recipe body** — the gate was grading the degenerate state as canonical, and fixing the bug alone would have made it blinder. A second, older blindness came with it: the capture *waited out* BUG-037 rather than photographing it. Third instance of *ask what the layer cannot see*, and the first where the state existed but was silently the wrong one |
 | 2026-07-31 (S52) | **B1 + B5 CLOSED** (`/visual-qa` 0 blockers / 0 high). **Order B → C → D reaffirmed and its rationale rewritten** after Claude proposed pulling D forward and Griffin overruled it. **PostHog session replay added to D**, with a masking posture that inverts the vendor default. **A design pass is now RECOMMENDED for C** (reversing the blanket "skip" that still applies to B). **BUG-045 opened.** | Two of Griffin's arguments beat Claude's: validate the artifact you actually ship (the PWA is how he will use it, so a browser-tab validation spends the two uncompressible weeks on the wrong configuration), and observability is the *debugging substrate for the validation weeks*, not just the source of the DoD metric. C also turned out to carry genuinely new design surface — icon, splash, install prompt, offline state — which exists in no spec, unlike B's already-designed screens |
 | 2026-07-30 (S51) | **Workstream A CLOSED at 6 of 6.** A4 (BUG-013), A5 (BUG-042 measured + BUG-043 confirmed), A6 (BUG-018). **BUG-044 🟡 opened** (interviewStateSchema's `dietaryFramework` is a bounded string where the persist path enforces an enum) and routed to Workstream D's security review. The separate non-prod Supabase project moved out of this doc into `open-questions.md` as a decision with a recommendation (V1.5), since it is a call rather than a defect. | Two of the three items had a tracker recommendation that was wrong in a way only building it surfaced — BUG-013's recompute would have doubled the injection, BUG-018's named guard would have failed open. Recording that in the scope doc, not just the changelog, because it is the second phase running where the parked recommendation was the thing to distrust |
