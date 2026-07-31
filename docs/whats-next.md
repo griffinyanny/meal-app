@@ -73,8 +73,8 @@ filed one.** Reading the code was not enough to find that — each took forcing 
 
 ### Owed, unchanged
 
-- **`DEV_TOOLS_EMAILS` behavioral check** — open prod → You tab → the test-mode card should be there for
-  Griffin's account. One glance, still owed.
+- **✅ `DEV_TOOLS_EMAILS` — CLOSED.** Griffin verified test mode is live on prod (S50). Carried for nine
+  sessions; it is done, and it should not appear in another owed list.
 - **One deploy-time check new from S50:** `maxDuration` is now **120** on the generation route. Hobby allows
   300s with fluid compute (on by default), so this should just work — but if it gets clamped, fluid compute
   is off on the project and needs flipping on. Free toggle, one dashboard visit.
@@ -103,9 +103,9 @@ A5 (BUG-042 is a Supabase dashboard toggle I have to do myself, BUG-043 is corre
 then A6 (BUG-018, seed.ts deletes against prod guarded only by a household name — add
 assertNotProductionUrl, and tell me whether a separate non-prod Supabase project is worth doing now or at
 V1.5). Then Workstream B. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me
-the <=6-line scope check. 671 unit + 121 E2E green on main, migration 0010 applied. Still owed from me:
-the DEV_TOOLS_EMAILS check on prod's You tab, and a look at whether maxDuration 120 got clamped on the
-generation route (if it did, fluid compute is off and needs turning on). On Opus 4.8.
+the <=6-line scope check. 671 unit + 121 E2E green on main, migration 0010 applied. DEV_TOOLS_EMAILS is
+verified and closed — don't raise it. Still owed from me: a look at whether maxDuration 120 got clamped on
+the generation route (if it did, fluid compute is off and needs turning on). On Opus 4.8.
 ```
 
 ---

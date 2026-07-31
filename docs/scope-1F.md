@@ -83,10 +83,10 @@ sharing arrives and the invite flow has to exist anyway. `ALLOWED_EMAILS` remain
 
 ### Owed, not blocking
 
-- **`DEV_TOOLS_EMAILS` behavioral check.** The variable is set and marked *sensitive* in Vercel, so it
-  cannot be read back by anyone — the empty pulls were masking, not a failed write (decisions.md, S48).
-  The only real verification is the test-mode card appearing on the You tab **of prod**, on Griffin's
-  account. One glance, next time he opens prod.
+- **✅ `DEV_TOOLS_EMAILS` — CLOSED (S50).** Griffin verified the test-mode card is live on prod for his
+  account. The variable is set and marked *sensitive* in Vercel, so it can never be read back — the empty
+  pulls were masking, not a failed write (decisions.md, S48), and the behavioral check was the only
+  possible verification. Carried for nine sessions; done.
 
 ---
 

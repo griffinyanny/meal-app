@@ -47,9 +47,11 @@ code** (stash the source, re-run, confirm red). And where a race was the bug, th
 with a **gate the test releases** rather than a timer — a spec that only reproduces on a slow machine is
 worse than none.
 
-**Owed by Griffin:** the `DEV_TOOLS_EMAILS` check on prod's You tab (ninth session), and a look at whether
-`maxDuration: 120` got clamped on the generation route (if so, fluid compute is off on the project — a free
-toggle). **BUG-042 is a Supabase dashboard toggle only he can do.**
+**✅ `DEV_TOOLS_EMAILS` is CLOSED (Griffin verified test mode on prod, S50).** Carried for nine sessions;
+do not raise it again.
+
+**Owed by Griffin:** a look at whether `maxDuration: 120` got clamped on the generation route (if so, fluid
+compute is off on the project — a free toggle). **BUG-042 is a Supabase dashboard toggle only he can do.**
 
 ### Prior sessions (retained for context)
 

@@ -155,6 +155,13 @@ everything we'd ever do; flex it when the reason is stated.
 
 ## 2026-07-30 (S48) — `DEV_TOOLS_EMAILS` set in Vercel Production (with a verification caveat)
 
+> **✅ RESOLVED S50.** Griffin verified test mode is live on prod for his account and asked that it stop
+> being raised. The item ran for **nine sessions**, which is the real lesson here: a "one glance next time
+> you open prod" check that rides in an owed list is a check nobody does. A `sensitive` env var cannot be
+> verified any other way — so when one gates a visible feature again, the verification belongs in a
+> behavioral test or a startup assertion, not in a doc asking a human to look.
+
+
 **Decision.** The eighth-session nag ends: the variable existed but appeared **empty** on every read.
 Resolved same-session — it is marked **sensitive** in Vercel, so its value cannot be read back by anyone
 (dashboard eye icon or CLI); the empty pulls were masking, not a failed write. Claude set it via CLI,
