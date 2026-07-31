@@ -1,5 +1,24 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S56) — surfaced building spec §09's one control (1F/B7)
+
+- **[V1.5] Wire the mic — speech-to-text — and it is now a ONE-COMPONENT change.** R1 is text-only by
+  Griffin's S35 call, and S56 reaffirmed it by shipping the mic **unwired on all six surfaces** (literal §09
+  conformance). ⚠️ **What changed is the cost, not the decision:** before B7 there were six different
+  freeform controls, so dictation meant six integrations; now `shared/freeform-field.tsx` is the only place
+  a mic exists, and wiring it closes every surface at once. The Web Speech API (`webkitSpeechRecognition`)
+  is free and supported in Chrome and iOS Safari, so the real work is permissions, the listening state
+  (§09 already draws it: the mic fills cream and a line appears beneath the field) and a graceful refusal
+  where the API is absent. **Revisit at V1.5, or sooner if the validation weeks show Griffin or his wife
+  tapping the mic** — six dead mics in weekly use is the honest cost of the S56 call, and that tap is the
+  signal.
+- **[B8] The `bg-primary` audit should ask what the hue CLAIMS, not just how many carry it.** Two sessions
+  produced two filled-cream findings and both were **states wearing the primary rung** — S55's Recipes
+  filter chip, S56's Groceries organize toggle. Neither was an action. The 32 `bg-primary` call sites should
+  be sorted by *what they mean* (a primary action / a selected state / a list marker / a badge) before
+  anything is repainted. Start with the You tab's `Talk to the chef`: a filled cream button wearing a **mic
+  glyph** that opens a field.
+
 ## Incoming (S55) — surfaced closing the S48 critic slate
 
 - **[V1.5] A `Favorites` door in the picker.** The critic's vocabulary finding carried a second clause —

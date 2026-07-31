@@ -93,7 +93,22 @@ these freely — they are the shipped system now, not a known gap.**
   states exactly two rungs — **Section eyebrow** (11px / 600 / 2px / `#A79A8C`, "names a shelf of content")
   and **Label** (10.5px / 700 / 1.3px / `#A29484`, "names a field or a slot inside a card"). Neither exists
   as a class yet, so the next caps label written is improvised by default. Routed to **B8** with the rest of
-  the type scale (Griffin's call, S55) rather than fixed in isolation.
+  the type scale (Griffin's call, S55) rather than fixed in isolation;
+- **one hit-target survivor**: the constraint chip's remove `×` at 20×20 against the 44px floor, tracked as
+  **BUG-048** → B8. Exempt rather than fixed because the chip is 36px tall, so a 44px target inside it is a
+  chip redesign rather than a sweep's decision (Griffin's call, S56). Every other icon-only control in the
+  app meets the floor.
+
+**✅ Spec §09 CLOSED (S56, B7) — there is exactly ONE freeform control.** `shared/freeform-field.tsx`:
+mic, growing field (three lines then scrolls), cream send, **all three visible at rest**, in a 56px `L3
+Control` container at r16. It is used by onboarding, the chef sheet (Plan + Groceries + You), Groceries
+quick-add, the Plan intent screen, recipe modify and the generate dialog — **six sites, not the four §09's
+prose names**, because that list was written in S39 and 1E.5 rebuilt Plan afterwards. `ui/textarea.tsx` was
+deleted with it. Two things to design against rather than around: **the mic is real but unwired** (R1 is
+text-only; it answers "Voice is coming soon"), and **search is deliberately not this control** — §09 keeps
+it in header pattern B with a muted magnifier leading and no mic. ⚠️ The control's mic and send are **44px,
+not the 40 §09's anatomy draws** — §12 item 05's floor beats the drawing and §11 bands icon buttons at
+40–46 — which is why the container is 56 rather than 52.
 
 **✅ Item 03 and the amber merge markers CLOSED (S52).** The cooked/complete checks are
 `--spec-success` `#9CB86F` via the new `.spec-success-soft` utility — Griffin's call was that the check

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
+import { FreeformField } from "@/components/shared/freeform-field";
 import { LibraryDoor } from "./sheet/sheet-parts";
 
 export interface NoPlanStateProps {
@@ -126,31 +124,24 @@ export function NoPlanState({
         </div>
       )}
 
-      <div className="relative">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Or just start talking. What sounds good?"
-          rows={3}
-          disabled={isGenerating}
-          className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-14 text-base"
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSubmit) {
-              onGenerate(text.trim());
-            }
-          }}
-        />
-        <Button
-          type="button"
-          size="icon"
-          onClick={() => onGenerate(text.trim())}
-          disabled={!canSubmit}
-          aria-label="Send to chef"
-          className="absolute bottom-2.5 right-2.5 size-11 rounded-full"
-        >
-          <ArrowUp className="size-4" />
-        </Button>
-      </div>
+      {/* Spec §09's one control. The suggestion chips above are shortcuts INTO
+          this field, which is what §09 says they are — not a second input.
+          ⚠️ Submit moved from Cmd/Ctrl+Enter to plain Enter (Shift+Enter for a
+          newline), matching the chef sheet and onboarding: this app is used on
+          a phone, where there is no Cmd key and Enter is the only key there
+          is. */}
+      <FreeformField
+        value={text}
+        onChange={setText}
+        onSubmit={() => {
+          if (canSubmit) onGenerate(text.trim());
+        }}
+        placeholder="Or just start talking. What sounds good?"
+        inputAriaLabel="Tell the chef what you want this week"
+        disabled={isGenerating}
+        inputTestId="plan-intent-input"
+        sendTestId="plan-intent-send"
+      />
 
       {/* What is already chosen. Shown ABOVE the door rather than inside it,
           because a door that changes its own label as you use it stops reading

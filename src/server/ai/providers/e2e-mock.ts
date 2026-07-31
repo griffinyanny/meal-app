@@ -23,6 +23,7 @@ import {
   buildNormalizeFixture,
   buildPreferencesTalkFixture,
   buildRecipeFixture,
+  buildRecipeModifyFixture,
   parseMockDirectives,
 } from "./e2e-mock-fixtures";
 
@@ -94,6 +95,8 @@ async function mockGenerate(task: AITask, options: LanguageModelV3CallOptions) {
       ? buildModificationFixture(text)
       : task === "recipe-generate"
         ? buildRecipeFixture(text)
+        : task === "recipe-modify"
+          ? buildRecipeModifyFixture(text)
         : task === "ingredient-normalize"
           ? buildNormalizeFixture(text)
           : task === "grocery-talk"

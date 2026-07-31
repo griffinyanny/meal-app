@@ -48,12 +48,16 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
         <p className="min-w-0 flex-1 text-[0.9rem] leading-snug text-foreground [text-wrap:pretty]">
           {memory.content}
         </p>
-        <div className="flex flex-none gap-0.5">
+        {/* 28 -> 44px, spec §12 item 05. These two PAINT (fill + line), so
+            unlike the drag handle this is a visible change — the same trade B3
+            stated for the send circle. Radius follows the box up a rung (9 ->
+            12) to stay on the eight-rung scale at the larger size. */}
+        <div className="flex flex-none gap-1">
           <button
             type="button"
             onClick={onEdit}
             aria-label="Tell the chef what changed"
-            className="flex size-7 items-center justify-center rounded-[9px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
+            className="flex size-11 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
           >
             <Pencil className="size-3.5" strokeWidth={1.9} />
           </button>
@@ -61,7 +65,7 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
             type="button"
             onClick={() => onRemove(memory)}
             aria-label="Remove this memory"
-            className="flex size-7 items-center justify-center rounded-[9px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
+            className="flex size-11 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.05)] text-[var(--spec-text-body)] transition-colors hover:bg-[rgba(240,222,190,0.1)]"
           >
             <X className="size-3.5" strokeWidth={1.9} />
           </button>

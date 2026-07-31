@@ -23,6 +23,7 @@ interface Target {
   tag: string;
   width: number;
   height: number;
+  exempt: string | null;
 }
 
 /**
@@ -57,6 +58,7 @@ async function iconOnlyTargets(page: Page, where: string): Promise<Target[]> {
           tag: node.tagName.toLowerCase(),
           width: Math.round(r.width * 10) / 10,
           height: Math.round(r.height * 10) / 10,
+          exempt: node.getAttribute("data-hit-target-exempt"),
         };
       });
   }, where);
@@ -125,21 +127,51 @@ test("SH2 - every icon-only control is at least 44x44 on every tab", async ({ pa
   await expect(page.getByTestId("add-to-week")).toBeVisible();
   found.push(...(await iconOnlyTargets(page, "recipe-detail")));
 
+  // ⚠️ These two legs waited on `nav` when this sweep was written (S54), and
+  // `nav` is the tab bar — it renders instantly on every route, including while
+  // the tab's own tRPC query is still in flight. Both tabs render a loading body
+  // until their data lands, so the sweep was measuring a SKELETON on two of its
+  // five legs and reporting a clean app. The Plan and Recipes legs above always
+  // waited on real content, which is why they were the ones finding things.
+  //
+  // S54's finding, a second time, in the same file: "the sweep written to BE the
+  // audit was blind to two thirds of its own subject." Writing the instrument
+  // does not exempt it from the question — and neither does fixing it once.
   await seedGroceryState("GROCERY_READY");
   await page.goto("/groceries");
-  await expect(nav(page)).toBeVisible();
+  await expect(page.getByTestId("grocery-list")).toBeVisible();
   found.push(...(await iconOnlyTargets(page, "groceries")));
 
   await seedYouState("YOU_RETURNING");
   await page.goto("/you");
-  await expect(nav(page)).toBeVisible();
+  await expect(page.getByTestId("you-safety-card")).toBeVisible();
   found.push(...(await iconOnlyTargets(page, "you")));
 
   // The sweep finding nothing at all would mean the selector broke, not that
   // the app is clean — the apparatus has to be able to fail.
   expect(found.length, "the sweep found no icon-only controls at all").toBeGreaterThan(0);
 
-  const violations = undersized(found);
+  // ⚠️ The exemption is an ALLOW-LIST carried by the ELEMENT, not a rule in this
+  // file: `data-hit-target-exempt="<bug id>"` at the call site. One entry today
+  // (BUG-048, the constraint chip's 20px remove ×, exempt because 44px inside a
+  // 36px chip is a chip redesign rather than a sweep's decision). Anything
+  // without the attribute still fails, so a new undersized control cannot hide
+  // behind it.
+  const exempt = found.filter((t) => t.exempt !== null);
+  expect(exempt.length, "the BUG-048 exemption vanished — was the attribute removed?")
+    .toBeGreaterThan(0);
+
+  // And the permission cannot outlive its reason: every exempt control must
+  // still BE undersized. Fixing the chip without deleting the attribute reds
+  // this (S52 — a stale exception is worse than no exception).
+  const exemptButFine = exempt.filter((t) => !undersized([t]).length);
+  expect(
+    exemptButFine,
+    `these carry a hit-target exemption but now MEET the floor — delete the ` +
+      `attribute and close the bug:\n${describeTargets(exemptButFine)}`
+  ).toEqual([]);
+
+  const violations = undersized(found).filter((t) => t.exempt === null);
   expect(
     violations,
     `icon-only controls under ${MIN_TARGET}px:\n${describeTargets(violations)}`

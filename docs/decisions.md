@@ -4,6 +4,48 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-07-31 (S56) — One control everywhere, mic and all; and B7 covers six sites, not three
+
+**Three calls: two Griffin's, one stated by Claude and open to reversal.**
+
+**1. The mic ships on every freeform control, unwired.** Spec §09's rule is *"never mic-only, never
+text-only — both affordances are visible at rest"*, and R1 has no speech-to-text (Griffin, S35). The
+recommendation was to render the mic only where a dead one was already ratified (onboarding, seen once per
+account) and leave it off Groceries and the chef sheet, which are used weekly — three fewer affordances that
+refuse when tapped, two weeks before a cold user runs the app. **Griffin overruled it for literal
+conformance**, and the better argument is his: the entire item exists to end *four different answers to one
+question*, so a control that behaves differently depending on which screen you are on reproduces the defect
+at a smaller scale. **Consistency of the control beats the count of dead affordances.**
+
+*Consequence, so it is not rediscovered:* every §09 surface now carries a mic that answers
+*"Voice is coming soon. For now, type it and I'll catch it."* Onboarding says it in the flow's own toast (it
+has one, and a graded capture state for it); the others say it inline beneath the field, which is the slot
+§09 already draws for the mic's own state. **Wiring STT would close all six at once** — the control is one
+component.
+
+**2. B7 covers all six freeform sites, not the three that were filed.** §09 names four controls; the list
+was written in S39 and **1E.5 rebuilt Plan afterwards**, so it never counted the Plan intent screen, recipe
+modify, or the generate dialog. The three unfiled ones were the same one-line route. The argument for
+stopping at three was scope discipline; the argument for six is 1E.7's own — *a half-migrated state is worse
+than either end* — and it lands harder here because the biggest omission is the **front door of the
+north-star flow**. **Future impact:** the spec's §09 prose still says "four"; treat the code's six as the
+count, and re-measure any spec sentence that enumerates the build before scoping from it.
+
+**3. The §09 control's mic and send are 44px, not the 40 the spec draws — Claude's call, stated.** §12 item
+05 sets a 44px floor for icon-only controls and calls what it fixes *"a real tap failure, not a style nit"*;
+§11 bands icon buttons at 40–46, so 44 is inside the spec's own band; §09's anatomy table says 40. **A floor
+beats a drawing.** The container grows 52 → 56 to carry it, and onboarding's shipped field moves with it.
+Reversible in one line if Griffin prefers the drawing.
+
+**Also settled, and it is a deferral rather than a fix: BUG-048.** Fixing `SH2`'s blind spot found the
+constraint chip's remove `×` at 20×20. It is exempt rather than fixed because the chip is **36px tall** — a
+44px target inside it is a chip redesign, which is Griffin's call and not a sweep's. → **B8**. ⚠️ The
+exemption is carried by the element (`data-hit-target-exempt="BUG-048"`) and `SH2` **fails if an exempt
+control is not undersized**, so closing the bug reds the suite until the attribute is deleted with it — the
+same shape as BUG-045's allow-listed line in `palette.test.ts`.
+
+---
+
 ## 2026-07-31 (S55) — Recipes' words win, and the caps labels go with the type scale
 
 **Two calls, both Griffin's, both taken as recommended.**

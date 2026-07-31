@@ -120,6 +120,15 @@ export function PickerContent({
 
   const libraryEmpty = !listQuery.isLoading && tiles.every((t) => t.count === 0);
 
+  // BUG-047. The placeholder counts the ROOM, not the library — search is
+  // scoped to the pushed tile (see `visible`), so advertising the whole library
+  // from inside `Cooked` promised to search 5 and searched 2. On the opening
+  // tier there is no pushed door and search really does reach `everything`, so
+  // the library count is the honest number there. Derived from the same tile
+  // list the doors are drawn from, so the two can never disagree.
+  const searchScopeCount =
+    tiles.find((t) => t.key === (tile ?? "everything"))?.count ?? 0;
+
   // §B's answer to too many picks is a CONVERSATION (frame `3m`) — a
   // recommendation and its alternative, in the chef's voice. That is a separate
   // screen and is deferred, so this is the honest interim: the ceiling holds,
@@ -217,8 +226,8 @@ export function PickerContent({
                 // while the query is still loading, where a literal `Search 0
                 // recipes` would be §A's forbidden apology wearing a number.
                 placeholder={
-                  (tiles.find((t) => t.key === "everything")?.count ?? 0) > 0
-                    ? `Search ${tiles.find((t) => t.key === "everything")?.count} recipes`
+                  searchScopeCount > 0
+                    ? `Search ${searchScopeCount} recipes`
                     : "Search your recipes"
                 }
                 aria-label="Search your recipes"

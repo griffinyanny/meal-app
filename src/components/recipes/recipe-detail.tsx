@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { FreeformField } from "@/components/shared/freeform-field";
 import { cn } from "@/lib/utils";
 import { RecipeView } from "./recipe-view";
 import { AddToWeek } from "./add-to-week";
@@ -160,32 +160,31 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
             <DialogTitle>Modify recipe</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <Textarea
-              placeholder='e.g. "Make it dairy-free" or "Double the servings" or "Add more spice"'
+            {/* Spec §09's one control; its send is the commit, so the
+                full-width `Modify recipe` button is gone rather than sitting
+                beside a second filled cream button (§08 law 06). */}
+            <FreeformField
               value={modification}
-              onChange={(e) => setModification(e.target.value)}
-              className="min-h-[80px] bg-[rgba(240,222,190,0.05)] border-[rgba(240,222,190,0.08)] resize-none"
-              disabled={modifyMutation.isPending}
+              onChange={setModification}
+              onSubmit={() => {
+                if (!modification.trim() || modifyMutation.isPending) return;
+                modifyMutation.mutate({
+                  recipeId: recipe.id,
+                  modification: modification.trim(),
+                });
+              }}
+              placeholder='e.g. "Make it dairy-free" or "Double the servings"'
+              inputAriaLabel="Tell the chef how to modify this recipe"
+              isSubmitting={modifyMutation.isPending}
+              submittingLabel="MODIFYING…"
+              inputTestId="modify-recipe-input"
+              sendTestId="modify-recipe-send"
             />
             {modifyMutation.error && (
               <p className="text-xs text-destructive">
                 {modifyMutation.error.message}
               </p>
             )}
-            <Button
-              className="w-full"
-              disabled={!modification.trim() || modifyMutation.isPending}
-              onClick={() =>
-                modifyMutation.mutate({
-                  recipeId: recipe.id,
-                  modification: modification.trim(),
-                })
-              }
-            >
-              {modifyMutation.isPending
-                ? "Your chef is modifying..."
-                : "Modify recipe"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

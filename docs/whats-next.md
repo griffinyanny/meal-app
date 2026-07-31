@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-31 (Session 55; 1F/B6 closed — Workstream B at 7 of 9)
+Last updated: 2026-07-31 (Session 56; 1F/B7 closed — Workstream B at 8 of 9)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,161 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B6 is CLOSED. Workstream B is 7 of 9; B7 and B8 remain.**
+## ▶ NEXT SESSION — **B7 is CLOSED. Workstream B is 8 of 9; only B8 remains.**
+
+**S56 built spec §09's one freeform control.** **697 unit + 130 E2E green**, lint + typecheck clean,
+`/visual-qa` Layer A across all five surfaces with **54/54 capture states `ok`**, nothing on a branch.
+
+### ✅ You answered two, and both were the harder option
+
+1. **The mic ships everywhere, unwired.** Literal §09 conformance. My recommendation was the narrower one
+   (mic only in onboarding, where a dead one was already ratified); **your argument is better and I'm
+   recording it as the reason**: the whole item exists to end *four answers to one question*, so a control
+   that behaves differently per screen reproduces the defect at a smaller scale. Wiring STT later closes all
+   six at once — it is one component now.
+2. **B7 covers all six sites, not the three that were filed.**
+
+### ⚠️ The finding: §09's own list was a snapshot of a build that had changed underneath it
+
+The spec names **four** freeform controls. **It was written in S39, and 1E.5 rebuilt Plan afterwards.**
+Nobody re-measured the sentence, so B7 was scoped straight off it. The build carried **six** — and the three
+that were missing include **`no-plan-state.tsx`, the Plan intent screen: the front door of the north-star
+flow**, plus recipe modify and the generate dialog.
+
+**S54's lesson inverted.** That session found a parked item *smaller* than filed. This one is bigger, and
+the reason is worth keeping: **the spec is not exempt from "verify it still describes the build."** A spec
+sentence ages exactly like a bug's repro does.
+
+### ⚠️ B3 was not actually closed, and the sweep that closed it is why
+
+`SH2` — the sweep B3 wrote in S54 to *be* the 44px audit — **waited on `nav` for its Groceries and You legs**
+while its Plan and Recipes legs waited on real content. `nav` is the tab bar; it renders instantly on every
+route, and both those tabs render a loading body until their query lands. **It had been measuring a skeleton
+on two of its five legs and reporting a clean app.**
+
+Fixed waits, then measured: **17 undersized controls across 3 components**, none reachable from B3's
+`ui/button.tsx` fix because all three are raw `<button>`s — the Groceries aisle drag handle at **15×15**
+(the spec's own example of a real tap failure, and you grab it standing in a shop), the You memory-card
+actions at **28×28**, the constraint chip's `×` at **20×20**.
+
+Per your call: the first two are fixed, the third is **BUG-048 → B8** (44px inside a 36px chip is a chip
+redesign). ⚠️ **Its exemption lives on the element** as `data-hit-target-exempt="BUG-048"`, and `SH2` fails
+if an exempt control is *not* undersized — so **closing it reds the suite until the attribute goes too.**
+
+**Sixth instance of *ask what the layer cannot see*, and the second inside this one sweep.** S54: writing the
+instrument does not exempt it from the question. **S56 adds: neither does fixing it once.**
+
+### The visual gate earned its keep again, on a law it had cleared many times
+
+`/visual-qa` found the Groceries **organize toggle** painting its selected segment as a **filled cream
+button**. §11 draws this component and states the rule in one sentence — *"Segmented. Two or three options,
+mutually exclusive, no colour — the selected segment lifts instead."* That is **S55's Recipes filter chip,
+one surface over**, and it mattered here because the §09 control sits directly beneath it: once you type, its
+send goes cream and the viewport carries two. Fixed to the spec's own values. Groceries now carries **zero**
+filled cream buttons at rest.
+
+### Three things the verification itself found
+
+1. ⚠️ **A false GREEN again, in a new shape.** The suite ran as `npm run test:e2e > log; echo "EXIT=$?"`, and
+   the harness reported **exit 0 while the summary said "1 failed"** — it read the `echo`'s status. S55
+   learned "never let a pipe swallow the exit code"; **a trailing command in a compound does the same
+   thing.** Read the summary line.
+2. ⚠️ **L19 failed twice, and neither failure was the bug.** The picker renders its doors — `All · 0 recipes`
+   — while `recipe.list` is still in flight, and the placeholder deliberately drops the number rather than
+   say `Search 0 recipes`. **Waiting on the doors is not waiting on the data.** Diagnosed by dumping the real
+   DOM rather than by a third guess.
+3. **Both Recipes dialogs had zero E2E coverage, and the modify one could not have had any** — the E2E mock
+   throws on a task it has no fixture for, and `recipe-modify` had none. **The gap was in the seam, not in
+   the specs.** Fixture added (it echoes both the original title and your request, so it cannot go green on a
+   build that drops the text), plus RC16/RC17.
+
+### ⚠️ Three visible changes, stated rather than buried
+
+- **The Plan intent field submits on plain Enter**, not Cmd+Enter. There is no Cmd key on a phone.
+- **Groceries' chef launcher moved out of the quick-add field** and is always visible. It used to hold the
+  trailing slot when empty and swap to send once you typed — the one thing §09 forbids by name.
+- **The generate and modify dialogs lost their full-width commit buttons.** The control's send is the commit;
+  keeping both was two filled cream buttons in one viewport.
+
+*Also: `ui/textarea.tsx` is deleted (my changes made it unused, and an unused primitive is the rung the next
+call site reaches for), and the control's mic/send are 44px against §09's drawn 40 — §12 item 05's floor
+beats a drawing, and §11 bands icon buttons at 40–46. Say the word and it goes back to 40.*
+
+### ⚠️ Still yours, unchanged since S54 and still the only thing
+
+**B2's phone check.** The 1E.5 toolbar deletion and S54's squared nav corners have still never been seen on a
+device together, and S28's density complaint was made on a phone. Open Recipes and Groceries on your phone
+and tell me whether the bottom edge reads calm. **Nothing else is owed.**
+
+### ⭐ Next up — B8, the last B item
+
+Type scale (including the **two caps rungs**: ~46 sites on eight tracking values against the spec's two —
+add the classes first, then classify), motion, component-library consolidation, **BUG-045** (⚠️
+`palette.test.ts` allow-lists its exact line, so closing it reds the test until the exception goes too),
+**BUG-048** (same shape: the exemption is on the element), and the **`bg-primary` audit**. ⚠️ **S56 sharpens
+that audit's brief:** the two filled-cream findings in two sessions were both *states* wearing the primary
+rung (a filter chip, a view toggle), so the question is what the hue **claims**, not only how many carry it.
+Start with the You tab's `Talk to the chef` — a filled cream button wearing a **mic** that opens a field.
+
+**🎨 Design pass — offered, recommendation is still skip for B8.** It is a locked spec applied to designed
+surfaces. ⚠️ **The one thing that would flip it:** BUG-048's chip geometry, if you want the 44px target — that
+is a component redesign rather than a token swap, and it is the same test B5 and B7 were held to.
+
+**⭐ Model recommendation: Opus 4.8.** B8 is classification against a locked spec — reading captures, grading
+against the six laws with the gold line as tie-breaker, applying small type/colour changes at ~46 sites. Same
+work 4.8 did across S40/S42/S45/S47/S48/S52/S53/S54/S55/S56. **Go higher only if you take Workstream D
+first** — the security review is the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S56 closed 1F/B7, spec §09's one freeform control. 697 unit + 130 E2E green on main
+(127 + L19/RC16/RC17), lint + typecheck clean, visual-qa 54/54 capture states ok. I made two calls: the mic
+ships on every surface unwired (literal §09 conformance — the item exists to end four answers to one
+question, so a control that behaves differently per screen reproduces the defect), and B7 covers all SIX
+sites rather than the three that were filed. That's the thing worth carrying: §09 names four controls, it
+was written in S39, and 1E.5 rebuilt Plan afterwards — so the list missed the Plan intent screen, the front
+door of the north-star flow, plus recipe modify and the generate dialog. S54's lesson inverted: a parked item
+can be BIGGER than filed, and a spec sentence ages exactly like a bug's repro. Second thing: B3 was NOT
+actually closed. SH2, the sweep B3 wrote to BE the 44px audit, waited on nav (the tab bar, which renders
+instantly) for its Groceries and You legs while Plan and Recipes waited on real content — so it had been
+measuring a loading skeleton on two of five legs. Fixed waits found 17 undersized controls across 3 raw-button
+components; I fixed the Groceries drag handle (15x15) and the You memory-card actions (28x28), and filed
+BUG-048 for the constraint chip's 20x20 x on your call, since 44px inside a 36px chip is a chip redesign.
+Its exemption lives on the ELEMENT and SH2 fails if an exempt control is not undersized, so closing it reds
+the suite until the attribute goes too. Also: visual-qa caught the Groceries organize toggle painting its
+selected segment as a filled cream button where §11 says segmented selections LIFT with no colour — S55's
+Recipes filter chip one surface over — fixed. And a false GREEN again, new shape: `npm run test:e2e > log;
+echo "EXIT=$?"` reported exit 0 while the summary said 1 failed. Next: B8, the last B item — type scale
+incl. the 2 caps rungs (~46 sites on 8 tracking values; add the classes FIRST then classify), motion,
+component library, BUG-045 and BUG-048 (both allow-listed, both red their guard when closed), and the
+bg-primary audit — note S56 sharpens its brief: both filled-cream findings were STATES wearing the primary
+rung, so the question is what the hue claims, not how many carry it. Read docs/whats-next.md,
+docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check. maxDuration is CLOSED,
+BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO — don't reopen any of them. Don't run
+the E2E suite while I'm using the app. The only thing owed by me is still B2's phone check: whether the
+bottom edge reads calm now the toolbar deletion and the squared nav corners are on screen together.
+On Opus 4.8.
+```
+
+**Design-independent alternative** (B8's one design question is BUG-048's chip geometry, so this skips to
+the workstream where a design pass is already decided):
+```
+Resume meal app — S56 closed 1F/B7 (697 unit + 130 E2E green on main, visual-qa 54/54 ok). Skip B8 this
+session and take Workstream C, the PWA, instead: web app manifest + the full home-screen icon set iOS and
+Android actually ask for, a service worker whose offline scope is honestly bounded (offline READ of the
+current grocery list — standing in a store with bad signal — not offline generation), the install prompt,
+and full-screen launch without browser chrome. It has to be verified on my phone and my wife's, not a
+desktop emulator, so tell me exactly what to tap and what to look for. Offer me the design pass FIRST — S52
+decided C gets one (icon/splash/install prompt/offline state are net-new surface in no spec), unlike B.
+Order is B -> C -> D -> validate and I already overruled pulling D forward, so don't propose it. BUG-042 is
+closed as won't-do and the non-prod Supabase project closed NO; don't reopen either. Read docs/whats-next.md,
+docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check, keep 697 unit + 130 E2E
+green. Don't run the E2E suite while I'm using the app. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S55 (superseded by S56 above — B7 is closed)
 
 **S55 closed B6, the S48 critic's four deferred findings.** Three were built; the fourth was measured, found
 to be a different item than the one filed, and moved to **B8** on your call. **BUG-046 closed with them.**
