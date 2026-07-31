@@ -7,11 +7,17 @@ export type YouState =
   | "YOU_RETURNING" // a populated audit surface: hard constraints + a 5-item ledger
   | "YOU_NEW"; // no prefs row, no memory → "We've just met" + "Still learning"
 
+import type { HouseholdComposition } from "@/lib/household";
+
 export interface SeedPreferences {
   dietaryFramework: string;
   restrictions: string[];
   dislikes: string[];
   householdSize: number;
+  // BUG-010/011/012 · seeded together, always. The pair is a derivation, and a
+  // seed carrying a size with no composition is a state the app can no longer
+  // produce for a user who answered the interview.
+  householdComposition: HouseholdComposition;
   maxCookTimeWeeknight: number;
   maxCookTimeWeekend: number;
   cuisinePreferences: string[];
@@ -39,7 +45,16 @@ export function buildYouSpec(state: YouState): SeedYouSpec {
           // sub-label and one without.
           restrictions: ["shellfish (allergy)", "no pork"],
           dislikes: ["cilantro", "blue cheese"],
-          householdSize: 2,
+          // 2 adults + 1 child = 3 servings. Deliberately a MIXED household:
+          // this is the exact shape BUG-012 printed as "3 adults" on the one
+          // surface whose job is letting you check the chef isn't wrong.
+          householdSize: 3,
+          householdComposition: {
+            adults: 2,
+            children: 1,
+            babies: 0,
+            babyStage: null,
+          },
           maxCookTimeWeeknight: 45,
           maxCookTimeWeekend: 90,
           cuisinePreferences: ["Mediterranean", "Thai", "Mexican"],

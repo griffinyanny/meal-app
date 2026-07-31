@@ -1,4 +1,5 @@
 import type { RouterOutputs } from "@/lib/trpc";
+import type { HouseholdComposition } from "@/lib/household";
 
 export type Preferences = RouterOutputs["user"]["preferences"];
 
@@ -21,6 +22,11 @@ export interface DisplayPreferences {
   restrictions: string[];
   dislikes: string[];
   householdSize: number;
+  // NULL means the household question was never answered (BUG-010 removed the
+  // column default, so a default is no longer indistinguishable from a reply).
+  // Callers must not substitute a shape here — the honest label for "unknown"
+  // is different from the label for "two adults".
+  householdComposition: HouseholdComposition | null;
   maxCookTimeWeeknight: number;
   maxCookTimeWeekend: number;
   cuisinePreferences: string[];
@@ -32,6 +38,8 @@ export function resolvePreferences(prefs: Preferences): DisplayPreferences {
     restrictions: (prefs?.restrictions as string[] | null) ?? [],
     dislikes: (prefs?.dislikes as string[] | null) ?? [],
     householdSize: prefs?.householdSize ?? PREFERENCE_DEFAULTS.householdSize,
+    householdComposition:
+      (prefs?.householdComposition as HouseholdComposition | null) ?? null,
     maxCookTimeWeeknight:
       prefs?.maxCookTimeWeeknight ?? PREFERENCE_DEFAULTS.maxCookTimeWeeknight,
     maxCookTimeWeekend: prefs?.maxCookTimeWeekend ?? PREFERENCE_DEFAULTS.maxCookTimeWeekend,

@@ -1,0 +1,1 @@
+ALTER TABLE "user_preferences" ALTER COLUMN "household_composition" DROP DEFAULT;

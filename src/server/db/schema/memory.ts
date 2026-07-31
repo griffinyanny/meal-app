@@ -34,10 +34,7 @@ export const cuisinePreferencesSchema = z.array(z.string().max(50)).max(20);
 // import the same shape without pulling drizzle into the client bundle.
 // Relative, not the "@/" alias: drizzle-kit's migration generator resolves this
 // file outside the Next.js/tsconfig path mapping.
-import {
-  DEFAULT_HOUSEHOLD_COMPOSITION,
-  type HouseholdComposition,
-} from "../../../lib/household";
+import type { HouseholdComposition } from "../../../lib/household";
 
 export {
   BABY_STAGES,
@@ -65,9 +62,14 @@ export const userPreferences = pgTable("user_preferences", {
   // number every serving consumer reads (plan generation, recipe scaling); this
   // column carries the composition those servings came from, so the chef can
   // cook age-appropriately. Written together — see deriveHouseholdSize.
-  householdComposition: jsonb("household_composition")
-    .$type<HouseholdComposition>()
-    .default(DEFAULT_HOUSEHOLD_COMPOSITION),
+  // BUG-010 · NO DEFAULT, deliberately. With one, every row created by an
+  // unrelated write carried a composition byte-identical to a real reply, so a
+  // default was indistinguishable from an answer — the same class as the
+  // dietary_framework default that lit "No restrictions" over an unanswered
+  // question (fixed S37). NULL means the household question was never answered.
+  // `DEFAULT_HOUSEHOLD_COMPOSITION` stays as the CLIENT's stepper starting
+  // state, which is a different thing from a stored fact.
+  householdComposition: jsonb("household_composition").$type<HouseholdComposition>(),
   maxCookTimeWeeknight: integer("max_cook_time_weeknight").default(45),
   maxCookTimeWeekend: integer("max_cook_time_weekend").default(90),
   cuisinePreferences: jsonb("cuisine_preferences").$type<string[]>().default([]),

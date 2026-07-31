@@ -1,6 +1,5 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { QuestionOption } from "@/lib/onboarding/types";
 
@@ -87,63 +86,6 @@ export function OptionChips({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-export interface CountRowProps {
-  label: string;
-  sub?: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (n: number) => void;
-  testId?: string;
-}
-
-// One band of the household question. The locked design stacks three of these
-// in a single grouped card with hairline dividers.
-export function CountRow({
-  label,
-  sub,
-  value,
-  min,
-  max,
-  onChange,
-  testId,
-}: CountRowProps) {
-  return (
-    <div className="flex items-center gap-3.5 px-[18px] py-[15px]">
-      <div className="flex-1">
-        <div className="text-[16px] font-semibold text-[var(--spec-text-primary)]">{label}</div>
-        {sub && <div className="mt-0.5 text-[12.5px] text-[var(--spec-text-muted)]">{sub}</div>}
-      </div>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onChange(Math.max(min, value - 1))}
-          disabled={value <= min}
-          aria-label={`One fewer ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
-        >
-          <Minus className="size-4" />
-        </button>
-        <span
-          data-testid={testId}
-          className="min-w-5 text-center text-[19px] font-bold tabular-nums text-[var(--spec-text-primary)]"
-        >
-          {value}
-        </span>
-        <button
-          type="button"
-          onClick={() => onChange(Math.min(max, value + 1))}
-          disabled={value >= max}
-          aria-label={`One more ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
-        >
-          <Plus className="size-4" />
-        </button>
-      </div>
     </div>
   );
 }
