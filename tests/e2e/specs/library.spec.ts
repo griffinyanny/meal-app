@@ -532,3 +532,45 @@ test("L17 - the picker's walls do not move: one pane height across opened, pushe
   expect(mealSheet).toBeGreaterThan(0);
   expect(mealSheet).not.toBe(opened);
 });
+
+// L19 · BUG-047, found by the /visual-qa gate that was grading B6 and filed
+// rather than swept. The placeholder was built from the `everything` tile's
+// count no matter which door was pushed, so inside `Cooked` the field promised
+// to search 5 and searched 2 — contradicting S48's own rule, one control over,
+// that SEARCH STAYS INSIDE THE ROOM IT IS STANDING IN.
+test("L19 - the search field counts the room it is standing in, not the library", async ({
+  page,
+}) => {
+  await openPickerFromMeal(page);
+
+  const search = page.getByTestId("picker-search");
+  const countIn = async () =>
+    Number(/Search (\d+) recipes/.exec((await search.getAttribute("placeholder")) ?? "")?.[1]);
+
+  // ⚠️ Wait for ROWS, not for the field and not for the doors. Measured while
+  // writing this spec: with `recipe.list` still in flight the picker already
+  // renders its door — `All · 0 recipes` — and the placeholder falls back to
+  // `Search your recipes`, because a literal `Search 0 recipes` would be §A's
+  // forbidden apology wearing a number. So the doors appearing is not the data
+  // arriving, and a spec that waits on them reads a placeholder with no number
+  // in it. Rows only exist once the query lands.
+  await expect(page.getByTestId("picker-row").first()).toBeVisible();
+
+  // The opening tier has no pushed door and search really does reach
+  // `everything` (see `visible` in picker-content), so the library count is the
+  // honest number HERE. Captured first so the two can be compared.
+  const library = await countIn();
+  expect(library).toBeGreaterThan(0);
+
+  await page.getByTestId("picker-tile").filter({ hasText: "Cooked" }).click();
+
+  // Both sides read from the rendered DOM: the number the field advertises,
+  // and the number of rows actually behind the door. Hand-feeding either one
+  // would make this assert nothing (S55).
+  const rows = await page.getByTestId("picker-row").count();
+  expect(await countIn()).toBe(rows);
+
+  // And the two numbers genuinely differ, or the assertion above would pass
+  // against the very bug it exists to catch.
+  expect(rows).toBeLessThan(library);
+});

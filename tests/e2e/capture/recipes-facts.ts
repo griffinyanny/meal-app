@@ -83,6 +83,56 @@ export const RECIPE_CAPTURE_STATES: CaptureStateDef[] = [
     },
   },
   {
+    // ⚠️ NEW S56 (1F/B7). Both Recipes dialogs were rebuilt onto the spec §09
+    // control — and neither had EVER been a capture state, so the visual layer
+    // was structurally unable to see the two surfaces this item changed most.
+    // Same class as S47's "Layer A had never captured a sheet state" and S52's
+    // `grocery-complete-banner`: found only by asking what the layer cannot see,
+    // and pointed at the current session's own work rather than a past one's.
+    id: "recipes-generate-dialog",
+    briefRef: "recipes — Ask your chef (generate), spec §09 control",
+    readyText: "Recently cooked",
+    facts: {
+      dialogTitle: "Ask your chef",
+      suggestionChipsAboveTheField: true,
+      freeformField:
+        "spec §09 control: mic + growing field + cream send, all three visible at rest",
+      // The commit lives IN the control. The full-width `Generate recipe`
+      // button was deleted in B7 — it was a second filled cream button in the
+      // same viewport as the send (law 06).
+      noSeparateCommitButton: true,
+    },
+    prepare: () => seedRecipeState("RECIPES_LIBRARY"),
+    navigate: async (page) => {
+      await gotoLibrary(page);
+      await page.getByTestId("recipe-add").click();
+      await page.getByTestId("create-generate").click();
+      await page.getByTestId("generate-recipe-input").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
+    id: "recipes-modify-dialog",
+    briefRef: "recipes — Modify recipe, spec §09 control",
+    readyText: "Ingredients",
+    facts: {
+      dialogTitle: "Modify recipe",
+      freeformField:
+        "spec §09 control: mic + growing field + cream send, all three visible at rest",
+      noSeparateCommitButton: true,
+    },
+    prepare: () => seedRecipeState("RECIPES_LIBRARY"),
+    navigate: async (page) => {
+      await gotoLibrary(page);
+      await page
+        .getByTestId("recipe-card")
+        .filter({ hasText: "Miso-Glazed Salmon" })
+        .click();
+      await page.getByTestId("add-to-week").waitFor({ timeout: 8_000 });
+      await page.getByRole("button", { name: "Modify recipe" }).click();
+      await page.getByTestId("modify-recipe-input").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
     // W10's other half, and the one the library capture cannot show. `3l` puts
     // the verb on the DETAIL screen, so this is the only state where the
     // Recipes tab has a floating object at all.

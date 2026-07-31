@@ -31,7 +31,8 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
     facts: {
       header: "Your list",
       hasProgressBar: true,
-      organizeToggle: ["Grouped", "Ungrouped"],
+      organizeToggle:
+        "segmented, spec §11: the selected segment LIFTS (raised warm surface, no colour) — Grouped / Ungrouped",
       aisleSections: true,
       mergeMarkerOnMultiSourceItem: "garlic → neutral inset chip reading '2 dinners' (NOT an amber dot)",
       hasStaplesRow: true,
@@ -135,7 +136,7 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
     facts: {
       sheetHeadline: "What else do you need?",
       hasSuggestionPills: true,
-      hasTextarea: true,
+      hasFreeformField: "spec §09 control: mic + growing field + cream send, all three visible at rest",
     },
     prepare: () => seedGroceryState("GROCERY_READY"),
     navigate: async (page) => {

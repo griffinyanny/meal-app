@@ -42,10 +42,20 @@ export function ConstraintChip({
           {subLabel}
         </span>
       )}
+      {/* ⚠️ BUG-048 — this is 20×20 against spec §12 item 05's 44px floor, and
+          it is the one violation SH2 is allowed to find. The attribute is the
+          exemption: it lives at the call site rather than in the spec file, it
+          names the row that owns it, and SH2 fails if an exempt control is
+          NOT undersized — so closing the bug reds the suite until the
+          attribute goes with it (S52: a fixed bug cannot leave a stale
+          permission behind). It is exempt rather than fixed because the chip
+          itself is 36px tall: a 44px target inside it is a chip redesign,
+          which is Griffin's call and not a sweep's. */}
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${display}`}
+        data-hit-target-exempt="BUG-048"
         className={cn(
           "-mr-0.5 flex size-5 items-center justify-center rounded-[7px] transition-colors hover:bg-[rgba(240,222,190,0.1)]",
           danger ? "text-[var(--spec-destructive-text)]" : "text-muted-foreground"

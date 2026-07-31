@@ -51,7 +51,7 @@ export const LAYER_A_STATES: CaptureStateDef[] = [
     facts: {
       heroCopy: "What are you thinking this week?",
       hasSuggestionPills: true,
-      hasTextarea: true,
+      hasFreeformField: "spec §09 control: mic + growing field + cream send, all three visible at rest",
       hasLetChefFigureItOut: true,
       slotCount: 0,
     },

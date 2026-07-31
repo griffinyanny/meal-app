@@ -7,8 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { FreeformField } from "@/components/shared/freeform-field";
 import { trpc } from "@/lib/trpc";
 import { Sparkles } from "lucide-react";
 
@@ -53,14 +52,8 @@ export function GenerateRecipeDialog({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          <Textarea
-            placeholder="What are you in the mood for?"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[80px] bg-[rgba(240,222,190,0.05)] border-[rgba(240,222,190,0.08)] resize-none"
-            disabled={generate.isPending}
-          />
-
+          {/* Chips ABOVE the field, which is where §09 puts them: they are
+              shortcuts into it, not a second input. */}
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTION_CHIPS.map((chip) => (
               <button
@@ -74,19 +67,33 @@ export function GenerateRecipeDialog({
             ))}
           </div>
 
+          {/* The §09 control's send IS the commit. The full-width
+              `Generate recipe` button underneath is deleted rather than kept
+              beside it: it was a second filled cream button in the same
+              viewport (§08 law 06 — "if two actions both feel primary, one of
+              them is not"), and every other freeform field in the app already
+              commits from inside the control. */}
+          <FreeformField
+            value={prompt}
+            onChange={setPrompt}
+            onSubmit={() => {
+              if (prompt.trim() && !generate.isPending) {
+                generate.mutate({ prompt: prompt.trim() });
+              }
+            }}
+            placeholder="What are you in the mood for?"
+            inputAriaLabel="Ask your chef for a recipe"
+            isSubmitting={generate.isPending}
+            submittingLabel="BRAINSTORMING…"
+            inputTestId="generate-recipe-input"
+            sendTestId="generate-recipe-send"
+          />
+
           {generate.error && (
             <p className="text-xs text-destructive">
               {generate.error.message}
             </p>
           )}
-
-          <Button
-            className="w-full"
-            disabled={!prompt.trim() || generate.isPending}
-            onClick={() => generate.mutate({ prompt: prompt.trim() })}
-          >
-            {generate.isPending ? "Brainstorming..." : "Generate recipe"}
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

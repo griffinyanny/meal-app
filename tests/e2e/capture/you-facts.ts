@@ -101,7 +101,7 @@ export const YOU_CAPTURE_STATES: CaptureStateDef[] = [
     facts: {
       suggestionPills:
         "I'm not pescatarian anymore / I'm allergic to gluten / Actually I do like cream / Add Japanese and Korean",
-      textarea: "free-text input + send",
+      freeformField: "spec §09 control: mic + growing field + cream send, all three visible at rest",
     },
     prepare: () => seedYouState("YOU_RETURNING"),
     navigate: async (page) => {
