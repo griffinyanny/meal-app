@@ -38,7 +38,9 @@ test("Y1 - the returning-user audit surface renders every getChefContext field",
   // Soft card: dislikes + cuisines + the typed fields.
   await expect(soft(page).getByText("Cilantro")).toBeVisible();
   await expect(soft(page).getByText("Mediterranean")).toBeVisible();
-  await expect(soft(page).getByText("2 adults")).toBeVisible();
+  // BUG-012 · the roster, not a servings count wearing an "adults" label. This
+  // seed is 2 adults + 1 child, which the old code rendered as "3 adults".
+  await expect(soft(page).getByText("2 adults and 1 child")).toBeVisible();
 
   // Ledger + account footer.
   await expect(memoryCard(page, "Switched to pescatarian in July.")).toBeVisible();
@@ -73,15 +75,51 @@ test("Y3 - adding a dislike inline shows the new chip", async ({ page }) => {
   await expect(toast(page)).toContainText("Added mushrooms");
 });
 
-test("Y4 - the household stepper edits directly and persists to the field", async ({ page }) => {
+// BUG-011 · the You tab edits the COMPOSITION now, not a bare servings count.
+// A single "People" stepper could not say which band it was changing, so the
+// scalar and the composition drifted and the chef prompt carried both.
+test("Y4 - the household editor edits bands, and the count follows from them", async ({
+  page,
+}) => {
   await seedYouState("YOU_RETURNING");
   await page.goto("/you");
 
-  await soft(page).getByText("2 adults").click();
-  await page.getByRole("button", { name: "Increase People" }).click();
+  await soft(page).getByText("2 adults and 1 child").click();
+  await page.getByRole("button", { name: "One more children" }).click();
   await page.getByRole("button", { name: "Save" }).click();
 
-  await expect(soft(page).getByText("3 adults")).toBeVisible();
+  await expect(soft(page).getByText("2 adults and 2 children")).toBeVisible();
+
+  // The derivation is the point: the servings count must have followed the
+  // bands without anyone writing it. 2 adults + 2 children = 4.
+  const saved = await readOnboardingResult();
+  expect(saved.householdSize).toBe(4);
+  expect(saved.householdComposition).toMatchObject({ adults: 2, children: 2 });
+});
+
+// The band that deliberately does NOT move the count — a 6-to-12-month-old eats
+// adapted bites, not a portion. Worth pinning because a stepper that changes a
+// number everywhere except here looks broken unless the screen says why.
+test("Y11 - adding a first-foods baby changes the roster without inflating servings", async ({
+  page,
+}) => {
+  await seedYouState("YOU_RETURNING");
+  await page.goto("/you");
+
+  await soft(page).getByText("2 adults and 1 child").click();
+  await page.getByRole("button", { name: "One more babies under 2" }).click();
+  await expect(page.getByTestId("you-baby-stage")).toBeVisible();
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(soft(page).getByText("2 adults, 1 child, and 1 baby")).toBeVisible();
+
+  const saved = await readOnboardingResult();
+  expect(saved.householdComposition).toMatchObject({
+    babies: 1,
+    babyStage: "6_to_12m",
+  });
+  // Unchanged at 3 — the baby is not a serving yet.
+  expect(saved.householdSize).toBe(3);
 });
 
 test("Y5 - removing a memory drops it, confirms, and undo brings it back", async ({ page }) => {
@@ -143,6 +181,54 @@ test("Y8 - Talk-to-Chef captures an allergy end to end and confirms with undo", 
   await expect(glutenChip).toBeVisible({ timeout: 15_000 });
   await expect(toast(page)).toContainText("gluten");
   await expect(toast(page).getByRole("button", { name: "Undo" })).toBeVisible();
+});
+
+// BUG-011 · the THIRD writer. The You-tab editor and the interview both send
+// bands now, but a sentence typed at the chef was the path most likely to be
+// forgotten — and it was the one in the original repro ("we're 4 people now"
+// left household_composition untouched while the scalar moved).
+test("Y12 - telling the chef your household in words writes the bands, not a bare number", async ({
+  page,
+}) => {
+  await seedYouState("YOU_RETURNING");
+  await page.goto("/you");
+
+  await page.getByRole("button", { name: "Talk to the chef" }).click();
+  await page
+    .getByPlaceholder("Tell me anything…")
+    .fill("We're 2 adults and 2 kids now");
+  await page.getByRole("button", { name: "Send to chef" }).click();
+
+  await expect(soft(page).getByText("2 adults and 2 children")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const saved = await readOnboardingResult();
+  // Both, together. The original defect was exactly this pair disagreeing.
+  expect(saved.householdComposition).toMatchObject({ adults: 2, children: 2 });
+  expect(saved.householdSize).toBe(4);
+});
+
+// A bare head count has no bands in it, so it lands on adults and leaves the
+// bands it was never told about alone. A guess, but a stated one — and the
+// alternative is the drift BUG-011 was.
+test("Y13 - a bare head count lands on adults and keeps the children on file", async ({
+  page,
+}) => {
+  await seedYouState("YOU_RETURNING"); // 2 adults + 1 child
+  await page.goto("/you");
+
+  await page.getByRole("button", { name: "Talk to the chef" }).click();
+  await page.getByPlaceholder("Tell me anything…").fill("We're 5 now");
+  await page.getByRole("button", { name: "Send to chef" }).click();
+
+  await expect(soft(page).getByText("4 adults and 1 child")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  const saved = await readOnboardingResult();
+  expect(saved.householdComposition).toMatchObject({ adults: 4, children: 1 });
+  expect(saved.householdSize).toBe(5);
 });
 
 test("Y9 - a brand-new user sees the 'we've just met' + 'still learning' state", async ({

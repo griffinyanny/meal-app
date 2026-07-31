@@ -2,6 +2,7 @@
 
 import { ConstraintChip } from "./constraint-chip";
 import { ChipAdder } from "./chip-adder";
+import { householdRoster } from "@/lib/household";
 import type { DisplayPreferences } from "./build-narrative";
 
 export type EditableField = "dietary" | "household" | "time";
@@ -69,7 +70,20 @@ export function SoftConstraintsCard({
         />
         <FieldButton
           label="Cooking for"
-          value={`${prefs.householdSize} ${prefs.householdSize === 1 ? "adult" : "adults"}`}
+          // BUG-012 · this printed "4 adults" for 2 adults + 2 children.
+          // `householdSize` stopped meaning adults in S36 — it is a derived
+          // SERVINGS count that folds in children and 12-24mo babies — but the
+          // label never followed. On the one surface whose job is letting you
+          // check the chef isn't wrong about you, that was the chef being wrong
+          // about you.
+          //
+          // With no composition on file the roster is unknown, so the count is
+          // named as what it actually is rather than dressed as a roster.
+          value={
+            prefs.householdComposition
+              ? householdRoster(prefs.householdComposition)
+              : `${prefs.householdSize} ${prefs.householdSize === 1 ? "serving" : "servings"}`
+          }
           onClick={() => onEditField("household")}
         />
         <FieldButton

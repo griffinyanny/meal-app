@@ -44,6 +44,22 @@ export const DEFAULT_HOUSEHOLD_COMPOSITION: HouseholdComposition = {
   babyStage: null,
 };
 
+/**
+ * Drops a stage that no longer has a baby attached to it.
+ *
+ * Lives here rather than in the composer component because the SERVER applies
+ * it too (the You-tab talk op builds a composition from a sentence), and a
+ * normalization rule that two callers implement separately is a rule that two
+ * callers will eventually disagree about. A stale `babyStage` on a zero-baby
+ * household is invisible in the UI and changes `deriveHouseholdSize` the moment
+ * a baby comes back.
+ */
+export function normalizeComposition(
+  c: HouseholdComposition
+): HouseholdComposition {
+  return { ...c, babyStage: c.babies > 0 ? c.babyStage ?? null : null };
+}
+
 // The single derivation of householdSize — the servings number every existing
 // consumer already reads (plan generation's defaultServings, recipe scaling).
 // Kids 2-12 eat a real portion and always count. Babies count ONLY at 12-24
@@ -77,6 +93,17 @@ export function describeHousehold(c: HouseholdComposition): string | null {
       : `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}`;
 
   return roster;
+}
+
+// BUG-012 · the same roster, but never suppressed.
+//
+// `describeHousehold` returns null for an adults-only household because the
+// chef PROMPT already says "Default servings: N" and a second sentence there is
+// noise. A UI label has no such companion line, and the You tab's whole job is
+// letting you check the chef isn't wrong about you — so it needs the roster in
+// every case, including the one the prompt drops.
+export function householdRoster(c: HouseholdComposition): string {
+  return describeHousehold(c) ?? plural(c.adults, "adult", "adults");
 }
 
 // The cooking guidance a composition implies, as chef-voiced sentences. This is

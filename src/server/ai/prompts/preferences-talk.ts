@@ -105,7 +105,7 @@ Return an "ops" array. Each op is exactly one of the kinds below. Emit ONLY what
 - add_avoid: a food the user must NOT be cooked with (a restriction). { "kind": "add_avoid", "value": <food>, "flag": <true if this is an allergy/medical avoidance, else false>, ... }
 - remove_avoid: they can eat something again. { "kind": "remove_avoid", "value": <the food, matching one in "Never cook with">, ... }
 - add_dislike / remove_dislike: a taste dislike (NOT medical). { "kind": "add_dislike", "value": <food>, ... }
-- set_household: how many people they cook for. { "kind": "set_household", "amount": <integer 1-20>, ... }
+- set_household: who they cook for. Prefer the BANDS whenever the message names them, and set only the bands it names: { "kind": "set_household", "adults": <integer 1-12>, "children": <integer 0-12, ages 2-12>, "babies": <integer 0-6, under 2>, ... }. Use "amount" ONLY when the message gives a bare head count with no breakdown ("we're four now"): { "kind": "set_household", "amount": <integer 1-20>, ... }. Bands you were not told about are left alone, so never guess one to fill the object.
 - set_weeknight / set_weekend: a cook-time ceiling in minutes. { "kind": "set_weeknight", "amount": <minutes>, ... }
 - add_cuisine / remove_cuisine: a cuisine they lean toward. { "kind": "add_cuisine", "value": <cuisine>, ... }
 - remember: a nuanced, free-form note that isn't a typed constraint ("does Taco Tuesday", "prefers Rao's sauce"). { "kind": "remember", "value": <short note in your words>, "category": <one of: preference, brand, feedback, behavior>, ... }
@@ -137,6 +137,12 @@ export const aiPreferencesTalkOpSchema = z.object({
   amount: z.number(),
   ref: z.number(),
   category: z.string(),
+  // BUG-011 · the household bands. Carried on every op like the rest of this
+  // schema (see the note above), and read only by set_household. `amount` stays
+  // the bare-total fallback for "we're four now", where no band was named.
+  adults: z.number(),
+  children: z.number(),
+  babies: z.number(),
 });
 
 export const aiPreferencesTalkSchema = z.object({

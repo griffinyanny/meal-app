@@ -36,6 +36,9 @@ function prefOp(
     amount?: number;
     ref?: number;
     category?: string;
+    adults?: number;
+    children?: number;
+    babies?: number;
   } = {}
 ) {
   return {
@@ -45,6 +48,13 @@ function prefOp(
     amount: extras.amount ?? 0,
     ref: extras.ref ?? 0,
     category: extras.category ?? "preference",
+    // BUG-011 · every op carries the household bands, matching the real schema
+    // (see the note on aiPreferencesTalkOpSchema). The defaults are OUT OF
+    // RANGE on purpose: they clamp to null in `coercePreferencesTalk`, so an
+    // unrelated op arrives naming no band rather than silently claiming one.
+    adults: extras.adults ?? 0,
+    children: extras.children ?? -1,
+    babies: extras.babies ?? -1,
   };
 }
 
@@ -57,6 +67,9 @@ export function buildPreferencesTalkFixture(promptText: string): {
     amount: number;
     ref: number;
     category: string;
+    adults: number;
+    children: number;
+    babies: number;
   }>;
 } {
   const message = extractBlock(promptText, "message") ?? promptText;
@@ -80,6 +93,38 @@ export function buildPreferencesTalkFixture(promptText: string): {
         ops: [prefOp("remove_avoid", { value: food })],
       };
     }
+  }
+
+  // BUG-011 · the household, in BANDS. The real model is told to prefer bands
+  // and fall back to a bare total only when the message gives no breakdown, so
+  // the mock has to be able to produce both — a fixture that only ever emitted
+  // a total would make the suite green over a chef that can't hear "two adults
+  // and two kids".
+  const adultsMatch = lower.match(/(\d+)\s+adults?/);
+  const childrenMatch = lower.match(/(\d+)\s+(?:children|kids?)/);
+  const babiesMatch = lower.match(/(\d+)\s+(?:bab(?:y|ies))/);
+  if (adultsMatch || childrenMatch || babiesMatch) {
+    return {
+      reply: "Got it, I've updated who I'm cooking for.",
+      ops: [
+        prefOp("set_household", {
+          ...(adultsMatch ? { adults: Number(adultsMatch[1]) } : {}),
+          ...(childrenMatch ? { children: Number(childrenMatch[1]) } : {}),
+          ...(babiesMatch ? { babies: Number(babiesMatch[1]) } : {}),
+        }),
+      ],
+    };
+  }
+
+  // The bare head count, with no bands in it at all.
+  const totalMatch = lower.match(
+    /(?:we(?:'re| are)|there(?:'s| are| is)|family of)\s+(\d+)(?:\s+(?:people|now|of us))?/
+  );
+  if (totalMatch) {
+    return {
+      reply: "Got it, I've updated who I'm cooking for.",
+      ops: [prefOp("set_household", { amount: Number(totalMatch[1]) })],
+    };
   }
 
   // Allergy — highest priority, ALWAYS a flagged avoid (never a dislike).

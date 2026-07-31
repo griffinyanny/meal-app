@@ -134,21 +134,39 @@ export const userRouter = router({
         dietaryFramework: dietaryFrameworkSchema.optional(),
         restrictions: restrictionsSchema.optional(),
         dislikes: dislikesSchema.optional(),
-        householdSize: z.number().int().min(1).max(20).optional(),
-        householdComposition: householdCompositionSchema.optional(),
+        // BUG-011 · householdSize is READ-ONLY. It is a DERIVATION of the
+        // composition, and while it was independently writable it had three
+        // writers that never touched composition — so the chef prompt could
+        // carry "Default servings: 4" beside "Cooking for 2 adults and 1 baby".
+        // Both remaining writers (the You-tab sheet, the set_household talk op)
+        // now send bands, and the server derives the count from them here.
+        // Nullable so an UNDO can put it back to never-answered. Without that,
+        // undoing the first household edit would leave a composition the person
+        // never actually gave — reintroducing BUG-010 through the back door.
+        householdComposition: householdCompositionSchema.nullable().optional(),
         maxCookTimeWeeknight: z.number().int().min(5).max(300).optional(),
         maxCookTimeWeekend: z.number().int().min(5).max(600).optional(),
         cuisinePreferences: cuisinePreferencesSchema.optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Composition is authoritative when present: the servings count is DERIVED
-      // from it server-side, so a client can't post a householdSize that
-      // contradicts the bands it just sent. A bare householdSize (the You tab's
-      // stepper, the free-text set_household op) still writes through untouched.
-      const values = input.householdComposition
-        ? { ...input, householdSize: deriveHouseholdSize(input.householdComposition) }
-        : input;
+      // Composition is authoritative, full stop: the servings count is DERIVED
+      // from it server-side, so nothing can post a householdSize that
+      // contradicts the bands it came from — there is no longer any way to send
+      // one (BUG-011).
+      // The pair moves together or not at all. An explicit null means "we don't
+      // know who they cook for", and a stale servings count next to that is the
+      // same contradiction in a quieter form, so the count goes unknown too —
+      // every consumer already falls back with `?? 2`.
+      const values =
+        input.householdComposition === undefined
+          ? input
+          : {
+              ...input,
+              householdSize: input.householdComposition
+                ? deriveHouseholdSize(input.householdComposition)
+                : null,
+            };
 
       const [result] = await ctx.db
         .insert(userPreferences)

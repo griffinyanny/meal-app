@@ -90,7 +90,9 @@ const CASES: Case[] = [
     message: "We're a family of 4 now",
     safety: false,
     check: (ops) =>
-      has(ops, "set_household").some((o) => o.kind === "set_household" && o.amount === 4),
+      has(ops, "set_household").some(
+        (o) => o.kind === "set_household" && (o.total === 4 || o.adults === 4)
+      ),
   },
   {
     name: "weeknight cook-time ceiling",

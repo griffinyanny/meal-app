@@ -96,51 +96,78 @@ sharing arrives and the invite flow has to exist anyway. `ALLOWED_EMAILS` remain
 an apparatus that was structurally incapable of catching the thing it existed to catch (BUG-030, S40's
 silent prompt test, S46's prompt-blind generation fixture). A fix without a falsifiable test is not a fix.*
 
-### A1 — BUG-035 🟡 **the 90-second generation timeout** ⭐ *first item of the phase*
+### A1 — BUG-035 ✅ **CLOSED S50** — *was filed as a 90-second timeout; both open questions were answered wrong in the tracker*
 
 **1 real generation in 9 timed out server-side**, on the single most important call in the product, and
 **nobody knows what the user sees when it happens.** X1/X2 cover a *modify* failure, not a generation
 timeout.
 
-- [ ] **Question 1: what does that path render?** A named failure with a retry, or a spinner that never
-      resolves? Answer by reading `src/app/api/plan/stream/route.ts` and then forcing it, not by
-      inspection alone.
-- [ ] **Question 2: whose timeout is it** — ours, Vercel's function ceiling, or the provider's?
-- [ ] Close with an E2E spec that drives the timeout deterministically (the fixture layer can stall on
-      demand; a real 90s wait does not belong in the suite).
-- [ ] If the answer to Q1 is "a spinner that never resolves", that is a 🔴 and it is the first thing fixed.
+- [x] **Q1 — what does that path render?** **Nothing.** Not a spinner that never resolves; the screen
+      simply returns to normal as though you never asked. `useObject` only sets `error` for a failed
+      REQUEST, and the route has already returned 200 with an open body by the time a stall happens, so a
+      dead stream arrives as a body that just CLOSES. The failure card existed but was **unreachable on
+      every path** since it was written — not only the `!plan` one. First run dropped you on the intent
+      screen with your typed request erased; regenerate silently reappeared the old plan. **🔴, not the
+      🟡 it was filed as**, and the more likely path in real use.
+- [x] **Q2 — whose timeout?** **Ours.** There is no 90s timeout anywhere in the app: the only `90_000` in
+      the repo is the Playwright `waitFor` ceiling in `plan-live.capture.ts`. S45 recorded the harness's
+      own wall as the server's. The real abort was `AbortSignal.timeout(60_000)`.
+- [x] **A second bug underneath it:** `maxDuration` (60) EQUALLED the AI abort (60), so on Vercel the
+      platform's kill and our timeout land at the same instant and the route never gets to render its own
+      failure. Hobby allows 300s with fluid compute, so the 60 was self-imposed.
+- [x] **X3–X6 shipped. X3 and X4 both failed before the fix.** X6 drives the REAL timeout in 2.5s via an
+      E2E-only per-attempt override production cannot honour, rather than letting an error part stand in
+      for a timeout.
 
 **Why first:** a 1-in-9 stall on "plan my week" is the worst possible first impression, and the two-week
 validation run is about to make it a real user's problem rather than a capture's.
 
-### A2 — the onboarding save-path pair (BUG-020 🟠, BUG-021 🟠)
+### A2 — the onboarding save-path pair ✅ **CLOSED S50** (BUG-020, BUG-021)
 
 Both are the honest-about-saves contract reached through paths BUG-016's fix did not cover. **The
 interview fires exactly once per account**, and Griffin's wife has not run hers yet — so these are fixed
 *before* she does, not after.
 
-- [ ] **BUG-020** — `retryFailed` returns `true` the moment `failedSaves` is empty, but a save still
-      *in flight* is in neither bucket, so "All saved." can be shown over a save that has not landed.
-      Track an in-flight count in `useCoreSaves` and await it before reporting success.
-- [ ] **BUG-021** — `skipAll` routes `onSuccess` and `onError` to the same `leaveToPlan`, so a failed skip
-      leaves `onboardingCompletedAt` NULL and drops the user back into the interview on next load with no
-      explanation. Mirror the finish path: stay put, toast a retry.
+- [x] **BUG-020** — every settled save promise is tracked in an `inFlight` set and `retryFailed` AWAITS
+      those before asking whether anything failed. A second part was needed to make it work: a state
+      update from an awaited callback is **not visible to the closure that awaited it**, so the failures
+      list is mirrored into a ref written synchronously. Without that the fix would await correctly and
+      then read a stale empty array. **OB16** (blip → the answer lands) + **OB18** (gone → stays put).
+- [x] **BUG-021** — mirrors the finish path: stay put, toast a retry. **OB17**.
+- [x] All three verified failing against the pre-fix code. OB16/OB18 hold the in-flight window open with a
+      gate the TEST releases rather than a timer, because a spec that only reproduced this interleaving on
+      a slow machine would be worse than none.
 
-### A3 — the household-composition cluster (BUG-011 🟠, BUG-012 🟠, BUG-010 🟠)
+### A3 — the household-composition cluster ✅ **CLOSED S50** (BUG-011, BUG-012, BUG-010)
 
 One root, three faces, and one of them is visible on the surface whose entire job is letting you verify
 the chef is not wrong about you.
 
-- [ ] **BUG-011** — `householdSize` has three writers that never touch `householdComposition`, so the chef
-      prompt can carry `Default servings: 4` beside "Cooking for 2 adults and 1 baby". Pick one direction
-      and enforce it: either the scalar writers adjust `composition.adults` and let `deriveHouseholdSize`
-      run, or `householdSize` becomes read-only in the input schema. **Recommendation: read-only.** One
-      writer, one derivation, and it matches how the value is already documented.
-- [ ] **BUG-012** — the You tab prints "4 adults" for 2 adults + 2 children. `describeHousehold()` already
-      produces the right string; `soft-constraints-card.tsx` is not calling it. Cheap, same root.
-- [ ] **BUG-010** — `household_composition` ships with a column DEFAULT, so a default is indistinguishable
-      from an answer. Make it nullable with no default, matching `onboarding_completed_at` in the same
-      migration. **Needs a migration.**
+**⚠️ This doc's own recommendation had a hole, and Griffin chose the real fix over the cheap one.**
+"Make `householdSize` read-only" is right in principle, but BOTH non-onboarding writers send a **bare
+count** — the You-tab stepper and the `set_household` talk op — and a count cannot say which band changed
+(2 adults + 2 children stepped 4→5 is either a third adult or a third child). Read-only alone would have
+broken them. Offered a cheaper read-time patch (derive from composition in `getChefContext`, leave the
+writers alone); Griffin declined it — *"I don't see why we wouldn't just make the real fix right now"* —
+and declined a design pass on the new control. Both calls held up: the sheet already WAS a stepper sheet,
+so three steppers is an in-pattern change rather than the new surface this phase forbids.
+
+- [x] **BUG-011** — three parts. **(1)** `HouseholdComposer` extracted from the onboarding screen into
+      `components/shared/` and used by the You-tab sheet, so two surfaces edit one fact through one
+      control; `normalizeComposition` moved to `lib/household.ts` because the server applies it too.
+      **(2)** `set_household` is band-aware — bands when the message names them, and bands it was not told
+      about are preserved ("we've got a baby now" no longer erases the children). A bare total falls back
+      to **landing on adults**: a stated guess rather than drift, since an unspecified extra person is an
+      adult and adults are the only band that always counts toward servings. **(3)** `householdSize` is
+      READ-ONLY in `updatePreferences`. **Y4/Y11** (UI writer), **Y12/Y13** (talk writer), 9 unit tests.
+- [x] **BUG-012** — new `householdRoster()`; `describeHousehold` suppresses the adults-only case because
+      the chef PROMPT has a companion line and a UI label does not. With no composition on file the count
+      is named as what it IS ("2 servings") rather than dressed as a roster. The E2E seed became a MIXED
+      household (2 adults + 1 child) — the exact shape that rendered "3 adults" — so Y1 fails on regress.
+- [x] **BUG-010** — migration `0010` drops the default. **Existing rows deliberately NOT backfilled to
+      NULL**: a genuine "2 adults, no kids" answer is byte-identical to the default, so nulling them would
+      destroy real answers to fix a cosmetic inconsistency. `updatePreferences` accepts an explicit null so
+      an UNDO can restore never-answered, and nulls `householdSize` alongside it.
 
 ### A4 — BUG-013 🟠 `finishOnboarding` trusts client-supplied memory text
 

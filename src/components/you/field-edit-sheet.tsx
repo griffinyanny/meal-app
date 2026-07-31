@@ -11,6 +11,12 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_HOUSEHOLD_COMPOSITION,
+  deriveHouseholdSize,
+  type HouseholdComposition,
+} from "@/lib/household";
+import { HouseholdComposer } from "@/components/shared/household-composer";
 import type { DisplayPreferences } from "./build-narrative";
 import type { EditableField } from "./soft-constraints-card";
 import type { PreferencesPatch } from "./use-you-mutations";
@@ -24,7 +30,7 @@ const DIETARY_OPTIONS = [
 
 const TITLES: Record<EditableField, string> = {
   dietary: "How you eat",
-  household: "How many you're cooking for",
+  household: "Who I'm cooking for",
   time: "How long you'll cook",
 };
 
@@ -39,7 +45,22 @@ export interface FieldEditSheetProps {
 // vocabulary. Edits locally, then Save persists + closes.
 export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheetProps) {
   const [dietary, setDietary] = useState(prefs.dietaryFramework);
-  const [household, setHousehold] = useState(prefs.householdSize);
+  // BUG-011 · THE COMPOSITION IS WHAT GETS EDITED, NOT THE SERVINGS COUNT.
+  //
+  // This used to be a single "People" stepper writing a bare `householdSize`,
+  // which is a number with no way back to the bands it came from: step 2 adults
+  // + 2 children from 4 to 5 and nothing can say whether that is a third adult
+  // or a third child. So the scalar and the composition drifted, and the chef
+  // prompt ended up carrying both — "Default servings: 4" beside "Cooking for
+  // 2 adults and 1 baby". Editing the composition and letting the server derive
+  // the count leaves exactly one writer and one derivation.
+  //
+  // A null composition means the question was never answered; the stepper still
+  // has to start somewhere, and the default is the client's starting state
+  // rather than a stored fact (BUG-010).
+  const [household, setHousehold] = useState<HouseholdComposition>(
+    prefs.householdComposition ?? DEFAULT_HOUSEHOLD_COMPOSITION
+  );
   const [weeknight, setWeeknight] = useState(prefs.maxCookTimeWeeknight);
   const [weekend, setWeekend] = useState(prefs.maxCookTimeWeekend);
   const [prevField, setPrevField] = useState(field);
@@ -49,7 +70,7 @@ export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheet
     setPrevField(field);
     if (field) {
       setDietary(prefs.dietaryFramework);
-      setHousehold(prefs.householdSize);
+      setHousehold(prefs.householdComposition ?? DEFAULT_HOUSEHOLD_COMPOSITION);
       setWeeknight(prefs.maxCookTimeWeeknight);
       setWeekend(prefs.maxCookTimeWeekend);
     }
@@ -94,15 +115,27 @@ export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheet
 
           {field === "household" && (
             <>
-              <Stepper
-                label="People"
+              <HouseholdComposer
                 value={household}
-                min={1}
-                max={20}
-                step={1}
                 onChange={setHousehold}
+                idPrefix="you"
               />
-              <Button className="w-full" onClick={() => save({ householdSize: household })}>
+              {/* Said out loud because adding a 6-to-12-month-old deliberately
+                  does NOT move the count — they eat adapted bites, not a
+                  portion — and a number that refuses to change after a tap
+                  reads as a control that didn't register. Same sentence the
+                  interview closes its household turn with. */}
+              <p className="m-0 text-center text-[12px] text-[var(--spec-text-caption)]">
+                I&apos;ll cook for {deriveHouseholdSize(household)}{" "}
+                {deriveHouseholdSize(household) === 1 ? "serving" : "servings"}
+                {household.babyStage === "6_to_12m"
+                  ? ", plus bites for the little one."
+                  : "."}
+              </p>
+              <Button
+                className="w-full"
+                onClick={() => save({ householdComposition: household })}
+              >
                 Save
               </Button>
             </>

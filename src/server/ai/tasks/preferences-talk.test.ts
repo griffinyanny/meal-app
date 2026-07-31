@@ -23,7 +23,21 @@ const mockGenerateStructured = vi.mocked(aiModule.generateStructured);
 function op(
   over: Partial<AIPreferencesTalkResponse["ops"][number]>
 ): AIPreferencesTalkResponse["ops"][number] {
-  return { kind: "", value: "", flag: false, amount: 0, ref: 0, category: "preference", ...over };
+  return {
+    kind: "",
+    value: "",
+    flag: false,
+    amount: 0,
+    ref: 0,
+    category: "preference",
+    // 0 is out of the 1-12 adults range and clamps to null, so a test that
+    // doesn't mention bands gets an op that names none — which is what an
+    // unrelated op should look like.
+    adults: 0,
+    children: -1,
+    babies: -1,
+    ...over,
+  };
 }
 
 function res(
@@ -48,7 +62,7 @@ describe("preferences-talk system prompt", () => {
       - add_avoid: a food the user must NOT be cooked with (a restriction). { "kind": "add_avoid", "value": <food>, "flag": <true if this is an allergy/medical avoidance, else false>, ... }
       - remove_avoid: they can eat something again. { "kind": "remove_avoid", "value": <the food, matching one in "Never cook with">, ... }
       - add_dislike / remove_dislike: a taste dislike (NOT medical). { "kind": "add_dislike", "value": <food>, ... }
-      - set_household: how many people they cook for. { "kind": "set_household", "amount": <integer 1-20>, ... }
+      - set_household: who they cook for. Prefer the BANDS whenever the message names them, and set only the bands it names: { "kind": "set_household", "adults": <integer 1-12>, "children": <integer 0-12, ages 2-12>, "babies": <integer 0-6, under 2>, ... }. Use "amount" ONLY when the message gives a bare head count with no breakdown ("we're four now"): { "kind": "set_household", "amount": <integer 1-20>, ... }. Bands you were not told about are left alone, so never guess one to fill the object.
       - set_weeknight / set_weekend: a cook-time ceiling in minutes. { "kind": "set_weeknight", "amount": <minutes>, ... }
       - add_cuisine / remove_cuisine: a cuisine they lean toward. { "kind": "add_cuisine", "value": <cuisine>, ... }
       - remember: a nuanced, free-form note that isn't a typed constraint ("does Taco Tuesday", "prefers Rao's sauce"). { "kind": "remember", "value": <short note in your words>, "category": <one of: preference, brand, feedback, behavior>, ... }
@@ -117,15 +131,36 @@ describe("coercePreferencesTalk — constraints", () => {
     ).toEqual([]);
   });
 
-  it("clamps household size to 1-20 and drops out-of-range", () => {
+  it("clamps a bare household total to 1-20 and drops out-of-range", () => {
     expect(
       coercePreferencesTalk(res([op({ kind: "set_household", amount: 4 })])).ops
-    ).toEqual([{ kind: "set_household", amount: 4 }]);
+    ).toEqual([
+      { kind: "set_household", adults: null, children: null, babies: null, total: 4 },
+    ]);
     expect(
       coercePreferencesTalk(res([op({ kind: "set_household", amount: 0 })])).ops
     ).toEqual([]);
     expect(
       coercePreferencesTalk(res([op({ kind: "set_household", amount: 99 })])).ops
+    ).toEqual([]);
+  });
+
+  // BUG-011 · bands beat a bare total, because only the bands say WHICH band.
+  it("keeps the household bands when the message named them", () => {
+    expect(
+      coercePreferencesTalk(
+        res([op({ kind: "set_household", adults: 2, children: 2, amount: 4 })])
+      ).ops
+    ).toEqual([
+      { kind: "set_household", adults: 2, children: 2, babies: null, total: 4 },
+    ]);
+  });
+
+  it("drops a household op that names nothing at all", () => {
+    // `amount: 0` clamps to null and the band defaults are out of range, so the
+    // op carries no instruction — applying it would be inventing one.
+    expect(
+      coercePreferencesTalk(res([op({ kind: "set_household", amount: 0 })])).ops
     ).toEqual([]);
   });
 
@@ -173,11 +208,120 @@ describe("applyPreferencesTalkOps", () => {
     restrictions: ["shellfish (allergy)"],
     dislikes: ["cilantro"],
     householdSize: 2,
+    householdComposition: { adults: 2, children: 0, babies: 0, babyStage: null },
     maxCookTimeWeeknight: 45,
     maxCookTimeWeekend: 90,
     cuisinePreferences: ["Thai"],
   };
   const apply = (ops: PreferencesTalkOp[]) => applyPreferencesTalkOps(base, ops);
+
+  // BUG-011 · the household ops. The invariant under all of these: the count and
+  // the composition move together or not at all, because the whole bug was a
+  // patch carrying one without the other.
+  describe("set_household", () => {
+    const household = (
+      over: Partial<Extract<PreferencesTalkOp, { kind: "set_household" }>> = {}
+    ): PreferencesTalkOp => ({
+      kind: "set_household",
+      adults: null,
+      children: null,
+      babies: null,
+      total: null,
+      ...over,
+    });
+
+    const withComposition = (
+      c: PreferencesState["householdComposition"],
+      size: number
+    ) => ({ ...base, householdComposition: c, householdSize: size });
+
+    it("should take named bands as given and derive the count from them", () => {
+      const { nextPatch } = apply([household({ adults: 2, children: 2 })]);
+      expect(nextPatch.householdComposition).toMatchObject({ adults: 2, children: 2 });
+      expect(nextPatch.householdSize).toBe(4);
+    });
+
+    it("should leave bands the message never mentioned alone", () => {
+      // "We've got a baby now" must not erase the children already on file.
+      const start = withComposition(
+        { adults: 2, children: 2, babies: 0, babyStage: null },
+        4
+      );
+      const { nextPatch } = applyPreferencesTalkOps(start, [household({ babies: 1 })]);
+      expect(nextPatch.householdComposition).toMatchObject({
+        adults: 2,
+        children: 2,
+        babies: 1,
+      });
+    });
+
+    it("should give a newly-mentioned baby the conservative stage, so the guidance is actionable", () => {
+      const { nextPatch } = apply([household({ babies: 1 })]);
+      expect(nextPatch.householdComposition).toMatchObject({ babyStage: "6_to_12m" });
+      // Still 2 servings: a 6-to-12-month-old eats adapted bites, not a portion.
+      expect(nextPatch.householdSize).toBeUndefined();
+    });
+
+    it("should land a BARE TOTAL on adults, preserving the other bands", () => {
+      const start = withComposition(
+        { adults: 2, children: 2, babies: 0, babyStage: null },
+        4
+      );
+      const { nextPatch } = applyPreferencesTalkOps(start, [household({ total: 5 })]);
+      // 5 total - 2 children = 3 adults, and the children survive.
+      expect(nextPatch.householdComposition).toMatchObject({
+        adults: 3,
+        children: 2,
+      });
+      expect(nextPatch.householdSize).toBe(5);
+    });
+
+    it("should not count a non-eating baby when absorbing a bare total", () => {
+      // An under-6m baby contributes nothing to servings, so all 3 are adults.
+      const start = withComposition(
+        { adults: 2, children: 0, babies: 1, babyStage: "under_6m" },
+        2
+      );
+      const { nextPatch } = applyPreferencesTalkOps(start, [household({ total: 3 })]);
+      expect(nextPatch.householdComposition).toMatchObject({ adults: 3, babies: 1 });
+      expect(nextPatch.householdSize).toBe(3);
+    });
+
+    it("should never derive fewer than one adult from an absurd total", () => {
+      const start = withComposition(
+        { adults: 2, children: 4, babies: 0, babyStage: null },
+        6
+      );
+      const { nextPatch } = applyPreferencesTalkOps(start, [household({ total: 1 })]);
+      expect(nextPatch.householdComposition).toMatchObject({ adults: 1 });
+    });
+
+    it("should drop a stale baby stage when the babies go to zero", () => {
+      const start = withComposition(
+        { adults: 2, children: 0, babies: 1, babyStage: "12_to_24m" },
+        3
+      );
+      const { nextPatch } = applyPreferencesTalkOps(start, [household({ babies: 0 })]);
+      expect(nextPatch.householdComposition).toMatchObject({ babyStage: null });
+      expect(nextPatch.householdSize).toBe(2);
+    });
+
+    it("should start from the default when nothing is on file yet", () => {
+      const start = withComposition(null, 2);
+      const { nextPatch, undoPatch } = applyPreferencesTalkOps(start, [
+        household({ children: 1 }),
+      ]);
+      expect(nextPatch.householdComposition).toMatchObject({ adults: 2, children: 1 });
+      // Undo must restore "never answered", not the default it started from.
+      expect(undoPatch.householdComposition).toBeNull();
+    });
+
+    it("should write nothing when the composition is unchanged", () => {
+      const { nextPatch } = apply([household({ adults: 2 })]);
+      expect(nextPatch.householdComposition).toBeUndefined();
+      expect(nextPatch.householdSize).toBeUndefined();
+    });
+  });
 
   it("stores a flagged allergy with the (allergy) marker and records undo", () => {
     const out = apply([{ kind: "add_avoid", value: "gluten", isAllergy: true }]);
