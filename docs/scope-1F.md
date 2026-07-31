@@ -359,6 +359,27 @@ verb needed the Recipes screen's single floating primary and the 1D toolbar occu
       icon buttons at **40–46px**, so 36 was off-system in two ways at once — but it is the one part of B3
       Griffin will see. Both composers' `pr-12` → `pr-14`, or the text would run under the enlarged circle.
 - [x] **`SH2` extended to open the recipe detail**, so the layer that missed those three can see them now.
+- [x] ⚠️ **AMENDED S56 — this item shipped with 17 real violations behind a SECOND blind spot in the same
+      sweep.** `SH2`'s Groceries and You legs waited on `nav`, the tab bar, which renders instantly on every
+      route; its Plan and Recipes legs waited on real content. Both those tabs render a loading body until
+      their tRPC query lands, so **the sweep was measuring a skeleton on two of its five legs** and reporting
+      a clean app. With the waits fixed it found **17 undersized controls across 3 components**, none
+      reachable from B3's `ui/button.tsx` fix because all three are raw `<button>`s: the Groceries aisle drag
+      handle at **15×15** (the spec's own example of a real tap failure, grabbed standing in a shop), the You
+      memory-card actions at **28×28**, and the constraint chip's remove `×` at **20×20**.
+      **Two fixed in S56, on Griffin's call.** The drag handle takes a 44px box centred on the glyph with an
+      equal negative margin, so the target is real and the aisle header keeps its height — growing the row
+      would have added ~28px to every aisle on the list you scroll most, and the glyph paints nothing, so
+      there is nothing to see. The memory-card buttons went 28 → 44 and **do** paint, the same trade B3
+      stated for the send circle.
+      **One deliberately not fixed → BUG-048**, because the chip is 36px tall and a 44px target inside it is
+      a chip redesign rather than a sweep's decision. ⚠️ **Its exemption lives at the call site** as
+      `data-hit-target-exempt="BUG-048"`, and `SH2` fails if an exempt control is **not** undersized — so
+      closing the bug reds the suite until the attribute goes with it (S52: a fixed bug cannot leave a stale
+      permission behind).
+      **This is the sixth instance of *ask what the layer cannot see*, and the second inside this one sweep.**
+      S54's version was "writing the instrument does not exempt it from the question." S56 adds the clause:
+      **neither does fixing it once.**
 
 ### B4 — Spec §12 item **07**: promote faked subsection headings to real Group/Row title levels ✅ **CLOSED S54** — *the item was smaller than filed, and its other half was free*
 
@@ -527,9 +548,65 @@ filed at**, in opposite directions.
       tweak, it is the caps half of B8's type scale; doing it here would mean classifying 46 type sites now
       and opening the same files again one item later.
 
-### B7 — Consolidate the four freeform-input controls into the single spec §09 control
+### B7 — Consolidate the freeform-input controls into the single spec §09 control ✅ **CLOSED S56** — *filed as three sites, measured at six*
 
-Onboarding was done in S39. **You, Groceries, and the chef sheet remain.**
+**Griffin's call at the top, twice.** The mic ships on every surface, **unwired**, with the same honest "not
+yet" it has carried in onboarding since S35 — literal §09 conformance, because §09 admits no text-only
+version of this control. And B7 covers **all six** sites rather than the three that were filed.
+
+- [x] **The item was filed as three and is six, because §09's own list went stale.** §09 names four controls
+      *"a mic-only row in Onboarding, a text-only sheet in You, a bare text input with a round send button in
+      Groceries, and a textarea in the chef sheet"* — written in **S39**. **1E.5 rebuilt Plan after that**, and
+      nobody re-measured the sentence. The build actually carried: onboarding (done S39), the shared chef
+      sheet, Groceries quick-add, **the Plan intent screen** (`no-plan-state.tsx` — the front door of the
+      north-star flow), **recipe modify**, and **the generate dialog**. The phase's lesson in its S54 shape,
+      inverted: a parked item can be **bigger** than filed, and here the reason was that the spec's list was
+      a snapshot of a build that had since changed underneath it.
+- [x] **`shared/freeform-field.tsx` is the control**, extracted from `onboarding/tell-me-field.tsx` rather
+      than written fresh — that file already *was* §09's worked example, so the item is a route, not a
+      rebuild. Mic, growing field (three lines then scrolls, measured from the element rather than
+      `field-sizing: content`, which iOS Safari does not support), cream send, all three visible at rest.
+      Callers own the draft, because the three surfaces disagree about what happens after a submit
+      (onboarding clears only on success, the chef sheet never clears, Groceries clears immediately).
+- [x] ⚠️ **The mic and send are 44px, not the 40 §09 draws — a stated deviation, not drift.** §12 item 05
+      sets a 44px floor and calls what it fixes *"a real tap failure, not a style nit"*; §11 bands icon
+      buttons at 40–46, so 44 is inside the spec's own band. **A floor beats a drawing.** The container grows
+      to 56 to carry it, and onboarding's shipped field moves 40 → 44 with it.
+- [x] **Three visible consequences, stated rather than buried.** (1) The Plan intent field submits on plain
+      **Enter** now, not Cmd/Ctrl+Enter — there is no Cmd key on a phone, and the chef sheet and onboarding
+      were already plain-Enter. (2) Groceries' chef launcher moved **out** of the quick-add field and is
+      always visible; it used to hold the trailing slot when empty and swap to send once you typed, which is
+      the one thing §09 forbids by name (*"the mic does not move or disappear"*). (3) The generate and modify
+      dialogs **lost their full-width commit buttons** — the control's send is the commit, and keeping both
+      would have put two filled cream buttons in one viewport, B6's finding one screen over.
+- [x] **`ui/textarea.tsx` deleted.** B7's changes made it unused, and an unused primitive is not neutral: it
+      is the rung the next call site reaches for, which is B3's `ui/button.tsx` finding in a different
+      primitive and is how six of these got written in the first place.
+- [x] **`freeform-field.test.ts`, a source-scraping guard, verified failing against pre-fix code.** It
+      allow-lists every raw `<input>` in the app with a stated reason (search is header pattern B and
+      explicitly not this control; a grocery row's in-place edit; the chip adder; the URL field) and names
+      the six importers, so the **seventh** control cannot be written by accident. ⚠️ Its first run caught
+      two sites and a wrong line number **in my own expectation** — the guard working before it ever shipped.
+- [x] **BUG-047 closed with it, and it was NOT a §09 site.** The S55 handoff called it "a fourth site for
+      B7"; §09 says in as many words that *"Search is not this control. Searching is not talking."* So it
+      rode along as a one-line correctness fix (count the room, not the library) rather than a control to
+      rebuild. **New `L19`, verified failing** — `Expected: 2 / Received: 5`.
+- [x] **Both Recipes dialogs had ZERO E2E coverage, and the modify one could not have had any** — the E2E
+      mock throws on a task it has no fixture for, and there was no `recipe-modify` fixture. So the gap was a
+      hole in the **seam**, not a missing spec. Added the fixture (it echoes both the original title and the
+      user's request, so it cannot go green on a build that drops the text) plus **RC16** and **RC17**.
+- [x] **Gate: `/visual-qa` Layer A, 0 blockers / 0 high across all five surfaces, 56/56 capture states
+      `ok`.** Critique in `tests/e2e/captures/A-recipes-2026-07-31T22-39-14-112Z/critique.md`.
+      ⚠️ **The gate found one HIGH and it is the same law two sessions running:** the Groceries **organize
+      toggle** painted its selected segment as a filled cream button, where §11's gallery states
+      *"Segmented… no colour — the selected segment lifts instead."* That is S55's Recipes filter chip one
+      surface over — a **state** wearing the primary rung — and it mattered here because B7 puts the §09
+      control directly beneath it, so the moment you type, the send fills and the viewport carries two.
+      Fixed to the spec's own values; Groceries now carries **zero** filled cream buttons at rest.
+      ⚠️ **And the two surfaces B7 changed most had never been capture states at all** — the generate and
+      modify dialogs, which is exactly where the commit buttons were deleted. Same class as S47's sheet
+      states and S52's `grocery-complete-banner`, with the difference that **the blind spot was pointed at
+      this session's own work.** Both added and clean.
 
 ### B8 — Type scale, motion, and component-library consolidation
 
@@ -544,9 +621,18 @@ The remaining design-system work the spec calls for beyond §12's enumerated ite
       colour as well as tracking, and which rung a label belongs to is a question about what it names.
 - [ ] **BUG-045 🟡** — the last `#FF9F0A`, the quick-add dedupe notice. ⚠️ `palette.test.ts` allow-lists that
       exact line, so **closing it reds the test until the exception is deleted too**.
+- [ ] **BUG-048 🟡 (new, S56)** — the constraint chip's remove `×` at 20×20, the last hit-target violation in
+      the app and the one `SH2` is allowed to find. It sits here rather than in B3 because the fix is **chip
+      geometry**, not one button: the chip is 36px tall, so a 44px target inside it changes every chip on the
+      You tab. ⚠️ Its exemption is carried by the element (`data-hit-target-exempt="BUG-048"`) and `SH2`
+      fails if an exempt control is **not** undersized, so **closing it reds the suite until the attribute is
+      deleted too** — the same shape as BUG-045's allow-listed line in `palette.test.ts`.
 - [ ] **A `bg-primary` audit is likely owed here.** 32 call sites carry it today, spanning genuine primaries,
       list markers and badges. §08 allows one filled cream button per viewport; nothing enforces it, and S55
-      found two on the Recipes library that three `/visual-qa` passes had cleared.
+      found two on the Recipes library that three `/visual-qa` passes had cleared. ⚠️ **S56 adds a second
+      reason and a starting point:** the You tab's `Talk to the chef` launcher is a filled `bg-primary`
+      button wearing a **mic glyph** that opens a field, and the Groceries chef launcher is `bg-primary/15`
+      — so the audit is about what the hue *claims*, not only how many of them there are.
 
 ### B9 — Recipe-detail empty states ✅ **CLOSED S53** (BUG-038 🟡, BUG-037 🟠) — *the filed bugs were the smaller half*
 

@@ -8,9 +8,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { ArrowUp } from "lucide-react";
+import { FreeformField } from "@/components/shared/freeform-field";
 
 export interface TalkToChefSheetProps {
   open: boolean;
@@ -96,39 +94,20 @@ export function TalkToChefSheet({
             </div>
           )}
 
-          <div className="relative">
-            <Textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={placeholder ?? "Tell me what you're thinking this week…"}
-              rows={3}
-              autoFocus
-              disabled={isSubmitting}
-              className="min-h-24 resize-none bg-[rgba(240,222,190,0.05)] pr-14 text-base"
-              onKeyDown={(e) => {
-                // Enter submits; Shift+Enter inserts a newline. Ignore Enter
-                // while an IME composition is active (don't submit mid-compose).
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !e.nativeEvent.isComposing
-                ) {
-                  e.preventDefault();
-                  handleSubmit();
-                }
-              }}
-            />
-            <Button
-              type="button"
-              size="icon"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              aria-label="Send to chef"
-              className="absolute bottom-2.5 right-2.5 size-11 rounded-full"
-            >
-              <ArrowUp className="size-4" />
-            </Button>
-          </div>
+          {/* Spec §09: one control, speak or type, and inside a sheet it sits
+              at the bottom of the sheet. The suggestion chips above are
+              shortcuts INTO this field, not a second input. */}
+          <FreeformField
+            value={text}
+            onChange={setText}
+            onSubmit={handleSubmit}
+            placeholder={placeholder ?? "Tell me what you're thinking this week…"}
+            inputAriaLabel="Tell the chef in your own words"
+            isSubmitting={isSubmitting}
+            autoFocus
+            inputTestId="chef-sheet-input"
+            sendTestId="chef-sheet-send"
+          />
 
           {/* Pending stays IN the open sheet (closes on success, not on submit)
               so a request never feels like it did nothing. */}

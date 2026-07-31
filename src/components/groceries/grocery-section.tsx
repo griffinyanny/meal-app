@@ -51,10 +51,18 @@ export function GrocerySection({
     >
       <div className="mb-2.5 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
+          {/* Spec §12 item 05's 44px floor. A bare 15px grip is the item's own
+              example of "a real tap failure, not a style nit" — and this one is
+              grabbed standing in a shop. The 44px box is centred on the glyph
+              with an equal negative margin, so the target is real while the
+              aisle header keeps the height it had: the glyph paints nothing
+              outside itself, exactly like B3's heart and Settings link, so
+              there is nothing to see. Growing the row instead would have added
+              ~28px to every aisle on the list you scroll most. */}
           <button
             type="button"
             aria-label={`Drag ${CATEGORY_LABELS[category]} section`}
-            className="touch-none text-muted-foreground"
+            className="-m-3.5 flex size-11 touch-none items-center justify-center text-muted-foreground"
             {...attributes}
             {...listeners}
           >

@@ -28,7 +28,11 @@ export {
   buildModificationFixture,
 } from "./e2e-fixtures/plan";
 
-export { HYDRATED_RECIPE_STEP, buildRecipeFixture } from "./e2e-fixtures/recipe";
+export {
+  HYDRATED_RECIPE_STEP,
+  buildRecipeFixture,
+  buildRecipeModifyFixture,
+} from "./e2e-fixtures/recipe";
 
 export { buildNormalizeFixture } from "./e2e-fixtures/normalize";
 

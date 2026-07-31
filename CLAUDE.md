@@ -21,11 +21,41 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54) and B6 (S55) closed — 7 of 9, 2
-items remain.** **693 unit + 127 E2E green, migration `0010` applied.** Next: **B7 → B8.**
+**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55) and B7 (S56) closed — 8 of
+9, one item remains.** **697 unit + 130 E2E green, migration `0010` applied.** Next: **B8**, then C, then D.
+⚠️ **B3 is closed but was AMENDED in S56** — it had shipped with 17 real hit-target violations behind a
+blind spot in its own sweep. See the S56 lesson below.
 ⚠️ **Do NOT write "no taste calls are pending" without checking.** S55's handoff said exactly that about B6
 and it was false: the vocabulary finding contained one, and it only became visible on asking *which word
 wins* rather than restating the finding. **A finding that names a problem has not yet named its fix.**
+
+**⚠️ S56 · THE SPEC IS NOT EXEMPT FROM "VERIFY IT STILL DESCRIBES THE BUILD."** B7 was scoped off spec
+§09's sentence naming **four** freeform controls. That sentence was written in **S39**, and **1E.5 rebuilt
+Plan afterwards** — the build carried **six**, and the three the spec had never counted include
+`no-plan-state.tsx`, **the Plan intent screen: the front door of the north-star flow**. S54 found a parked
+item smaller than filed; this is the same lesson inverted. **A spec sentence ages exactly like a bug's
+repro does** — measure the build before scoping from either.
+
+**⚠️ S56 · FIXING A BLIND SPOT ONCE DOES NOT EXEMPT THE INSTRUMENT.** `SH2` — the sweep B3 wrote in S54 to
+*be* the 44px audit, after S54's own finding that it was blind to a dialog — **waited on `nav` for its
+Groceries and You legs** while its Plan and Recipes legs waited on real content. `nav` is the tab bar and
+renders instantly; both tabs render a loading body until their query lands. **It had been measuring a
+skeleton on two of its five legs and reporting a clean app**, so **B3 shipped "closed" with 17 real
+violations** across three raw-`<button>` components the primitive fix could never have reached. Two fixed in
+S56; the constraint chip's 20×20 `×` is **BUG-048** → B8, exempt via `data-hit-target-exempt` **on the
+element**, with `SH2` failing if an exempt control is *not* undersized. **Sixth instance of *ask what the
+layer cannot see*, and the second inside this one sweep.**
+
+**⚠️ S56 · A FALSE GREEN, AGAIN, IN A NEW SHAPE.** `npm run test:e2e > log 2>&1; echo "EXIT=$?"` reported
+**exit code 0 while the summary line said "1 failed"** — the status came from the trailing `echo`. S55
+learned "never let a pipe swallow the exit code"; **a trailing command in a compound does the same thing.**
+**Read the summary line, never the status.**
+
+**⚠️ S56 · WAITING ON A SURFACE IS NOT WAITING ON ITS DATA.** `L19` failed twice for reasons that were not
+the bug: the picker renders its doors (`All · 0 recipes`) while `recipe.list` is still in flight, and the
+placeholder deliberately drops the number rather than say `Search 0 recipes`. The second guess (wait for the
+tiles) was still wrong. **Dumping the real DOM ended it in one run** — when two guesses have failed, stop
+guessing and measure.
 
 **⚠️ THE LESSON, now five sessions deep, and it has changed shape every time. S50: the tracker was WRONG
 about what three of the six bugs WERE. S51: right about the bug, WRONG ABOUT THE FIX, twice. S52: the bug

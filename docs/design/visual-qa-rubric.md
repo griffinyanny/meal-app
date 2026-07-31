@@ -44,13 +44,30 @@ when they collide, ask who is talking. The chef's voice keeps gold; a list of de
 used to exempt the Recipes double bottom bar, icon-only controls under 44px, and faked subsection headings.
 All three shipped in S54 and the exemption outlived them by a session — **the exact failure the two ⚠️
 blocks below describe, missed in the session that re-recorded it.** They are now findings:
-- **Any icon-only control under 44px is reportable.** `ui/button.tsx`'s icon variants were 24/28/32/36px —
-  every rung of the shared primitive below the floor — and are now ≥44px, so a small target means a call
-  site overrode the primitive.
+- **Any icon-only control under 44px is reportable — with exactly one named exception.** `ui/button.tsx`'s
+  icon variants were 24/28/32/36px and are now ≥44px. ⚠️ **S56 corrects the reasoning this line shipped
+  with:** "a small target means a call site overrode the primitive" was wrong, because the three worst
+  offenders were **raw `<button>`s that never touched the primitive at all** — found only when `SH2`'s own
+  Groceries and You legs stopped measuring a loading skeleton. Those are fixed. **The one live exception is
+  the constraint chip's remove `×` (20×20, `BUG-048`)** — deferred to B8 because a 44px target inside a 36px
+  chip is a chip redesign. Report any other undersized control; do not re-report that one.
 - **A squared-off nav top edge and a single bottom bar are the shipped state.** A floating toolbar above the
   tab bar is a regression, not a known gap.
 - **A subsection heading built out of body text at a random weight is reportable.** `.spec-group-title` and
   `.spec-row-title` exist now, so there is a rung to reach for.
+
+⚠️ **Spec §09 is CLOSED (S56, B7). One freeform control, and any second answer is reportable.** Every place
+the user says something in their own words — onboarding, the chef sheet, Groceries quick-add, the Plan
+intent screen, recipe modify, the generate dialog — is now `shared/freeform-field.tsx`: **mic, field and
+cream send, all three visible at rest**, in a 56px container at r16. So:
+- **A freeform field with no mic, or with a trailing control that swaps as you type, is reportable.** §09:
+  *"never mic-only, never text-only… the mic does not move or disappear."*
+- **A field with a labelled commit button beside its own send is reportable** — that is two filled cream
+  buttons in one viewport (law 06), and it is why the generate/modify dialogs lost theirs.
+- **NOT reportable: the mic saying "Voice is coming soon."** R1 is text-only by decision (Griffin, S35,
+  reaffirmed S56); the honest refusal is the shipped state, not a gap.
+- **NOT this control: search.** §09 says so in as many words — a search field keeps header pattern B, with a
+  muted magnifier leading and no mic. Do not report a search field for lacking one.
 
 ⚠️ **Two former exceptions are now CLOSED (S52) and have flipped from excused to reportable.** The list
 above is a licence to ignore a real defect, so a stale entry is worse than no entry — it is the same failure

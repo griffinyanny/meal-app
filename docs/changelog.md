@@ -4,6 +4,74 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 56 — 2026-07-31 (1F/B7 closed; Workstream B at 8 of 9)
+
+**Spec §09's "one way to talk to the chef", built — and the item was twice the size it was filed at.**
+**697 unit + 130 E2E green**, lint + typecheck clean, `/visual-qa` at 0 blockers / 0 high.
+
+### Griffin's two calls
+
+1. **The mic ships everywhere, unwired.** Literal §09 conformance: the spec admits no text-only version of
+   this control, so all six surfaces carry the mic with the same honest "not yet" onboarding has had since
+   S35. The alternative — mic only where a dead one was already ratified — was the recommendation and was
+   overruled, correctly: the argument for consistency of one control beats the argument for fewer dead
+   affordances when the whole item exists to end four answers to one question.
+2. **B7 covers all six sites, not the three that were filed.**
+
+### The finding: §09's own list of four was a snapshot of a build that had changed underneath it
+
+The spec names four freeform controls. **It was written in S39, and 1E.5 rebuilt Plan afterwards.** Nobody
+re-measured the sentence, so B7 was scoped from it. The build actually carried **six**, and the three that
+were missing include **`no-plan-state.tsx`, the Plan intent screen — the front door of the north-star flow**
+— plus recipe modify and the generate dialog.
+
+**S54's lesson inverted.** That session found a parked item SMALLER than filed. This one is bigger, and for
+a reason worth keeping: *the spec is not exempt from "verify the defect still exists, in the form
+described."* A spec sentence ages exactly like a bug's repro does.
+
+### The sweep written to be the audit was blind again — same file, one session later
+
+`SH2` (B3, S54) walks the rendered tree measuring icon-only controls. **Its Groceries and You legs waited on
+`nav`** — the tab bar, which renders instantly on every route — **while its Plan and Recipes legs waited on
+real content.** Both those tabs render a loading body until their query lands, so the sweep had been
+measuring a **skeleton on two of its five legs** and reporting a clean app.
+
+With the waits fixed: **17 undersized controls across 3 components**, none of them reachable from B3's
+`ui/button.tsx` fix because all three are raw `<button>`s — the Groceries aisle drag handle at **15×15**, the
+You memory-card actions at **28×28**, the constraint chip's `×` at **20×20**. **So B3 shipped "closed" with
+17 real violations in it.**
+
+Two fixed (Griffin's call); the chip's `×` is **BUG-048**, exempt because a 44px target inside a 36px chip is
+a chip redesign. ⚠️ **The exemption is carried by the element** and `SH2` fails if an exempt control is *not*
+undersized, so closing the bug reds the suite until the attribute goes too.
+
+**Sixth instance of *ask what the layer cannot see*, and the second inside this one sweep.** S54: writing the
+instrument does not exempt it from the question. S56 adds: **neither does fixing it once.**
+
+### Three smaller things the verification found
+
+1. ⚠️ **A false GREEN again, in a new shape.** The suite ran as `npm run test:e2e > log; echo "EXIT=$?"` in
+   the background, and the harness reported **exit code 0 while the summary line said "1 failed"** — it read
+   the `echo`'s status, not the suite's. S55 learned "never let a pipe swallow the exit code"; S56 adds that
+   a trailing command in a compound does the same thing. **Read the summary line.**
+2. ⚠️ **L19 failed twice for a reason worth keeping, and neither was the bug.** The picker renders its doors
+   — `All · 0 recipes` — while `recipe.list` is still in flight, and the placeholder deliberately drops the
+   number rather than say `Search 0 recipes`. So **waiting on the doors is not waiting on the data**, and the
+   first fix (wait for tiles) was still wrong. Diagnosed by dumping the real DOM rather than by a third
+   guess; the spec waits on rows.
+3. **Both Recipes dialogs had zero E2E coverage and the modify one could not have had any** — the E2E mock
+   throws on a task it has no fixture for, and `recipe-modify` had none. The gap was in the seam, not in the
+   specs.
+
+### BUG-047 was not a §09 site
+
+The S55 handoff filed it as "a fourth site for B7." §09 says in as many words: *"Search is not this control.
+Searching is not talking — it stays in header pattern B."* So it shipped as a one-line correctness fix
+(count the room, not the library), not as a control to rebuild. **`L19` verified failing: `Expected: 2 /
+Received: 5`.**
+
+---
+
 ## Session 55 — 2026-07-31 (1F/B6 closed; Workstream B at 7 of 9)
 
 **The S48 critic's four deferred findings, verified before touched.** Three were built; the fourth was

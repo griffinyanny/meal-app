@@ -285,3 +285,69 @@ test("RC15 - while the week is still loading, the verb names the wait instead of
   await expect(verb).toHaveText("Add to this week");
   await expect(verb).toBeEnabled();
 });
+
+// RC16 + RC17 · spec §09 (Phase 1F Workstream B7). Both dialogs had ZERO E2E
+// coverage before this — the tab's two AI-calling surfaces, and the modify one
+// could not have been covered even if someone had tried, because the E2E mock
+// had no `recipe-modify` fixture and throws on a task it does not know. So the
+// gap was not an oversight in the specs, it was a hole in the seam underneath
+// them. Found by routing both dialogs to the shared control and asking what the
+// suite would catch if the routing were wrong: nothing.
+
+test("RC16 - the generate dialog commits from the control's own send, and the words reach the server", async ({
+  page,
+}) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+  await page.getByTestId("recipe-add").click();
+  await page.getByTestId("create-generate").click();
+  await expect(page.getByText("Ask your chef")).toBeVisible();
+
+  // Both doors open at rest. §09 admits no text-only version of this control,
+  // and this dialog was text-only until B7.
+  await expect(page.getByRole("button", { name: "Answer by voice" })).toBeVisible();
+
+  // The full-width `Generate recipe` button is gone — it was a second filled
+  // cream button in the same viewport as the field's send (§08 law 06). Both
+  // halves asserted, because "the button is gone" alone would also pass against
+  // a dialog that can no longer submit at all.
+  await expect(page.getByRole("button", { name: "Generate recipe" })).toHaveCount(0);
+
+  // ⚠️ Asserted on the REQUEST, not on the response. `buildRecipeFixture` falls
+  // back to a fixed title for a user-initiated generate (it only echoes the
+  // dish name on the plan-hydration path), so asserting the rendered title
+  // would pass just as happily against a build that dropped the typed text on
+  // the floor — S46's prompt-blind fixture exactly.
+  const sent = page.waitForRequest(
+    (r) => r.url().includes("recipe.generate") && r.method() === "POST"
+  );
+  await page.getByTestId("generate-recipe-input").fill("Something with salmon");
+  await page.getByTestId("generate-recipe-send").click();
+  expect((await sent).postData() ?? "").toContain("Something with salmon");
+
+  // And it lands on the new recipe rather than sitting in an open dialog.
+  await expect(page.getByTestId("add-to-week")).toBeVisible();
+});
+
+test("RC17 - the modify dialog commits from the control's own send, carrying the request", async ({
+  page,
+}) => {
+  await seedRecipeState("RECIPES_LIBRARY");
+  await page.goto("/recipes");
+  await card(page, "Miso-Glazed Salmon").click();
+  await expect(page.getByTestId("add-to-week")).toBeVisible();
+
+  await page.getByRole("button", { name: "Modify recipe" }).click();
+  await expect(page.getByRole("heading", { name: "Modify recipe" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Answer by voice" })).toBeVisible();
+
+  await page.getByTestId("modify-recipe-input").fill("Make it dairy-free");
+  await page.getByTestId("modify-recipe-send").click();
+
+  // The fixture echoes BOTH halves of the prompt, so this one assertion proves
+  // the original recipe AND the user's request reached the model. A fixed
+  // fixture title would prove only that something came back.
+  await expect(
+    page.getByRole("heading", { name: "Miso-Glazed Salmon (Make it dairy-free)" })
+  ).toBeVisible();
+});

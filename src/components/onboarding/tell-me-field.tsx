@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUp, Mic } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FreeformField } from "@/components/shared/freeform-field";
 
 export interface TellMeFieldProps {
   example: string;
@@ -20,10 +19,10 @@ export interface TellMeFieldProps {
 // across turns. Whatever is typed here routes through the existing user.talk
 // capture path, the same machinery the You tab uses.
 //
-// R1 is TEXT ONLY. The mic icon is kept because it's the affordance the design
-// locked and because dictation is coming, but it is deliberately not wired —
-// tapping it says so plainly rather than failing silently or pretending to
-// listen (Griffin, S35; STT is out of R1 scope).
+// The control itself is `shared/freeform-field.tsx` (spec §09). This wrapper
+// owns only what is specific to the interview: the draft, the clear-on-success
+// rule, and the flow's own toast for the mic's "not yet" — onboarding has a
+// toast channel and a graded capture state for that message, so it keeps them.
 export function TellMeField({
   example,
   onSubmit,
@@ -45,66 +44,20 @@ export function TellMeField({
   }
 
   return (
-    // Spec §09 anatomy: an L3 control at min-height 52 and r16, padded 6 all
-    // round with 16 on the leading edge. There is no focus ring on purpose —
-    // the caret and the brighter value text ARE the focus state, and a gold ring
-    // here would read as the chef typing rather than the user.
-    <div
-      className={cn(
-        "spec-control mt-3.5 flex min-h-[52px] items-center gap-2.5 rounded-[16px] py-1.5 pl-4 pr-1.5 transition-colors",
-        text.trim() && "border-[rgba(240,222,190,0.32)]"
-      )}
-    >
-      {/* The mic is cream because it is an action, not gold: gold is the chef,
-          and this control belongs to the user's hand (law 02). Never mic-only
-          and never text-only — both affordances stay visible at rest, so nobody
-          has to notice which mode they are in. */}
-      <button
-        type="button"
-        onClick={onMicTap}
-        disabled={disabled}
-        aria-label="Answer by voice"
-        className="flex size-10 flex-none items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-action)] transition-colors hover:bg-[rgba(240,222,190,0.12)] disabled:opacity-50"
-      >
-        <Mic className="size-[19px]" strokeWidth={2} />
-      </button>
-
-      <input
-        type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            submit();
-          }
-        }}
-        disabled={isSubmitting || disabled}
-        placeholder={example}
-        aria-label="Tell the chef in your own words"
-        data-testid="onboarding-tell-me-input"
-        className="min-w-0 flex-1 bg-transparent text-[14.5px] text-[var(--spec-text-primary)] caret-[var(--spec-action)] placeholder:text-[var(--spec-text-muted)] focus:outline-none disabled:opacity-60"
-      />
-
-      {isSubmitting ? (
-        <span className="flex-none pr-2 text-[11px] font-semibold tracking-[0.5px] text-[var(--spec-text-muted)]">
-          CATCHING…
-        </span>
-      ) : (
-        /* Send appears beside the mic rather than replacing it — starting to
-           type must never close the other door (spec §09). */
-        <button
-          type="button"
-          onClick={submit}
-          disabled={!canSubmit}
-          aria-label="Send to chef"
-          data-testid="onboarding-tell-me-send"
-          className="flex size-10 flex-none items-center justify-center rounded-[12px] bg-[var(--spec-action)] text-[var(--spec-action-on)] transition-opacity disabled:opacity-30"
-        >
-          <ArrowUp className="size-[19px]" strokeWidth={2.2} />
-        </button>
-      )}
-    </div>
+    <FreeformField
+      className="mt-3.5"
+      value={text}
+      onChange={setText}
+      onSubmit={submit}
+      placeholder={example}
+      inputAriaLabel="Tell the chef in your own words"
+      disabled={disabled}
+      isSubmitting={isSubmitting}
+      submittingLabel="CATCHING…"
+      onMicTap={onMicTap}
+      inputTestId="onboarding-tell-me-input"
+      sendTestId="onboarding-tell-me-send"
+    />
   );
 }
 
