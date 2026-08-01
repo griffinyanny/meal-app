@@ -23,9 +23,50 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
 **Workstream B is ✅ CLOSED at 9 of 9** — B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56),
 B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.**
-**Workstream C (PWA) is 🔨 OPEN (S59)** — the manifest, the icon pipeline, the iOS meta tags and BUG-049
-are in; the service worker, the offline half and the four design artifacts are not. **714 unit green,
-migration `0010` applied.** Then **D (production readiness)**, then the two validation weeks.
+**Workstream C (PWA) is 🔨 OPEN (S59–S60)** — the manifest, the icon pipeline, the iOS meta tags, BUG-049,
+**the service worker and the whole offline half** are in; **only the four design artifacts remain**
+(install sheet, splash, offline state, queued indicator), and Griffin is running the Claude Design round.
+**739 unit + OF1–OF4 green, migration `0010` applied.** Then **D (production readiness)**, then the two
+validation weeks.
+
+**⚠️ S60 · A SERVICE WORKER DOES NOT CONTROL THE PAGE THAT REGISTERS IT.** That navigation is already in
+flight when `register()` runs, so the **first visit to a route never reaches the fetch handler and never
+gets cached** — and the worker then activates and reports itself perfectly healthy holding **nothing**.
+⚠️ **In a browser tab this is invisible** (tomorrow's visit caches it, nothing ever looks wrong); **in an
+installed PWA it is the whole feature failing on the launch that matters most** — install, open once, walk
+to the shop, dead page. Fixed by warming the four tab routes on `activate` through the same `isCacheable`
+gate, so a worker activating while signed out fetches four redirects and stores none. A second bug rode
+along that would have made the fix look like it had not worked: the fallback needs **`ignoreVary`**, because
+Next sets `Vary` on route responses and a warmed entry is a plain GET while a reload is a **navigation** —
+a Vary-respecting match misses an entry sitting right there. **Caught by running the specs, not by reading
+the code:** S59's "green does not mean deployed-correct" through a different door, where the design was
+right and the *lifecycle* was wrong.
+
+**⚠️ S60 · THE SMALLER HALF OF AN OFFLINE FEATURE CAN BE AN ILLUSION RATHER THAN A LESSER FEATURE.**
+Persisting the query cache without persisting the mutations looks like the safe subset. It is not:
+`onMutate` writes the tick optimistically and the query stays `success`, so **the ticked list persists**.
+Tick five items → iOS evicts the backgrounded PWA over a 45-minute shop → relaunch → **the ticks are still
+there** → signal returns → the server refetch wipes all five, because the mutations died with the process.
+**The user watched their work survive a relaunch and reasonably concluded it was saved.** React Query
+forces the choice either way — `defaultShouldDehydrateMutation` is `(m) => m.state.isPaused`, so paused
+mutations persist **by default**. Doing nothing is never the neutral option.
+
+**⚠️ S60 · A GUARD CAN BE ONE-DIRECTIONAL AND LOOK COMPLETE.** `caps-rungs.test.ts` asserts that everything
+wearing caps tracking routes *through* a rung. It has no way to see the reverse — a site routed *to* a caps
+rung that should never uppercase. B8b moved the Recently-cooked badge onto `.spec-label` by matching size
+and weight (10px/600 → 10.5px/700, dimensionally the nearest rung), and **both caps rungs carry
+`text-transform: uppercase`** — so the change was a **casing** change, which is exactly the property a
+size-and-weight comparison cannot see. `COOKED JUL 29` in the strip against `Cooked Jul 23` in the rows
+below, same string, same pill, on screen together, green across 717 unit + 132 E2E + a full `/visual-qa`.
+**Second instance of S57's rule: a rung is chosen by what the slot HOLDS, not by what its type measures.**
+
+**⚠️ S60 · PERSIST THROUGH SUPERJSON, NEVER JSON.** `grocery.current` returns Drizzle rows whose
+`createdAt`/`updatedAt` are real `Date`s — which is why the tRPC client already transports them through
+superjson. A JSON persister hydrates them back as **strings**, so a cached list is silently a different
+*type* from a fetched one. Nothing throws at write time; it throws later, offline, on a phone, at
+`.getTime()`. And the persisted query set is an **allow-list** (BUG-018's argument): a deny-list fails open,
+and persisting everything would put the chef's memories, the interview's health answers and the children's
+ages into unencrypted on-device storage.
 
 **⚠️ S59 · A WORKSTREAM'S BLAST RADIUS IS NOT ITS BULLET LIST.** The two findings that nearly made the PWA
 a dead icon were both about **auth and access** — subsystems a workstream called "PWA" has no reason to
@@ -625,7 +666,9 @@ There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; deta
 
 **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
 
-⚠️ **It takes ~17 minutes, not the "~1.5 min" this line claimed until S58.** That figure dates from S17, when the harness had ~20 specs; the suite now runs **132 sequentially** at ~8s each, which is exactly 17 minutes of arithmetic. Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured.
+⚠️ **It takes ~18 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Measured at S60: 136 specs, 17.8 minutes** (S58 estimated 17 from arithmetic; the measurement agrees, and the count has since grown by the four OF specs). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+
+⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), **S60 (pipe again, on the offline specs)**. Redirect to a file and **read the summary line**, never the status.
 
 **Run it (without being asked) when:**
 - Your change touches code the suite covers, OR

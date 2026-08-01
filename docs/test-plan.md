@@ -210,6 +210,34 @@ screen together.
 
 ---
 
+## OF — offline / the PWA (Phase 1F Workstream C, Session 60)
+
+*⚠️ **The unit guards in `src/lib/offline/` cannot answer this family's question.** They scrape source and
+assert that the right caching rules are PRESENT; only a real service worker, a real IndexedDB and a real
+browser with the network cut can say whether an offline reload paints a usable list. Both layers exist and
+neither replaces the other.*
+
+*⚠️ **The two mechanisms do not overlap, and OF2 is the spec that proves it.** A service worker caches the
+app SHELL (GET navigations) and **structurally cannot cache the data** — tRPC batches over POST and the
+Cache API rejects `Cache.put` on non-GET. Ship only the worker and OF1 passes while OF2 fails: the app
+opens instantly and shows an **empty list**, failing in exactly the moment the feature exists for.*
+
+| ID | Seed | Action | Expected | Status |
+|----|------|--------|----------|--------|
+| OF1 | GROCERY_READY | Load Groceries, wait for the worker to control the page, go offline, reload | The shell paints from the worker's cache rather than the browser's offline error page — which, in an installed PWA with **no address bar**, is a dead end | 🟢 |
+| OF2 | GROCERY_READY | Same, then assert the rows | **The list itself survives, not just the shell.** A service-worker-only build passes OF1 and fails here. Waits on the cache actually reaching IndexedDB first — persistence is **throttled**, so "on screen" and "would survive a cold launch" are different moments, and asserting the first while claiming the second would pass against a build with no persistence at all | 🟢 |
+| OF3 | GROCERY_READY | Go offline, tick an item | The tick **holds**. React Query pauses the mutation rather than failing it, so `onError` never fires and the optimistic update stays. Held past a delay so a roll-back would have shown. ⚠️ Griffin rejected the alternative by name: a tick that fires and silently reverts is *not less feature, it is an app that looks broken* | 🟢 |
+| OF4 | GROCERY_READY | Tick offline, reconnect, fire `online` | The queued tick **reaches the server**, asserted on the REQUEST rather than the UI — the UI already showed it optimistically, so a UI assertion would pass against a build that never sent anything. Then reloads from the server to prove it persisted | 🟢 |
+
+**⚠️ Known gap, named rather than covered: the app-kill case.** OF3/OF4 exercise a tick that pauses and
+flushes **within one page session**. iOS evicts backgrounded PWAs aggressively, so the real shop scenario
+is a tick, a 45-minute pocket, and a cold start. The code handles it — paused mutations are persisted and
+`registerOfflineMutationDefaults` gives them a `mutationFn` to resume into — but **Playwright cannot
+reproduce an iOS process kill**, so that path is verified by construction and by unit guard, not by this
+suite. It is the first thing to check on a real phone.
+
+---
+
 ## Visual-QA capture coverage (Layer A — `playwright.capture.config.ts`)
 The capture harness (Claude reads the PNGs, critiques vs `docs/design/visual-qa-rubric.md`) now covers three tabs:
 - **Plan** — `plan.capture.ts` (5 states; HUD-verified).

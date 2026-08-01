@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TRPCProvider } from "@/components/shell/trpc-provider";
+import { ServiceWorkerRegistrar } from "@/components/shell/service-worker";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,6 +57,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col">
+        <ServiceWorkerRegistrar />
         <TRPCProvider>{children}</TRPCProvider>
       </body>
     </html>

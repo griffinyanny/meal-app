@@ -31,7 +31,22 @@ export function CookedStrip({ recipes, onOpen }: CookedStripProps) {
                 className="glass-card shrink-0 w-[54%] max-w-[220px] flex flex-col gap-2 p-[14px] text-left cursor-pointer active:scale-[0.99] transition-transform"
               >
                 {cooked && (
-                  <span className="self-start spec-label px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
+                  // The Meta rung, NOT `.spec-label` — and the difference is
+                  // casing, not size. B8b routed this badge off `text-[10px]
+                  // font-semibold` by matching size and weight, which is a
+                  // reasonable way to pick a rung and is blind to the one
+                  // property that actually changed: both caps rungs carry
+                  // `text-transform: uppercase`, so a sentence-case date stamp
+                  // silently became COOKED JUL 29 while the identical badge in
+                  // `recipe-card.tsx` — same string, same green, same pill —
+                  // took `.spec-meta` in the same sweep and stayed quiet.
+                  //
+                  // S57's finding, one component over and one session later:
+                  // "which rung does this take" is answered by what the slot
+                  // HOLDS, not by what its type measures. `.spec-label` names a
+                  // field or a slot; this states a fact about the card, which is
+                  // §05's Meta rung in as many words.
+                  <span className="self-start spec-meta px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
                     Cooked {cooked}
                   </span>
                 )}
