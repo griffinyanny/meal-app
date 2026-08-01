@@ -42,26 +42,34 @@ export function ConstraintChip({
           {subLabel}
         </span>
       )}
-      {/* ⚠️ BUG-048 — this is 20×20 against spec §12 item 05's 44px floor, and
-          it is the one violation SH2 is allowed to find. The attribute is the
-          exemption: it lives at the call site rather than in the spec file, it
-          names the row that owns it, and SH2 fails if an exempt control is
-          NOT undersized — so closing the bug reds the suite until the
-          attribute goes with it (S52: a fixed bug cannot leave a stale
-          permission behind). It is exempt rather than fixed because the chip
-          itself is 36px tall: a 44px target inside it is a chip redesign,
-          which is Griffin's call and not a sweep's. */}
+      {/* BUG-048, closed in 1F/B8a. It was parked as a chip redesign — 44px
+          inside a 36px chip — and measuring it showed it is not one. This is
+          S56's Groceries drag-handle trade: a real 44px target with an equal
+          negative margin, so the box the layout sees is the 20px it always was
+          and the chip stays 36px.
+
+          It survives the wrap because the overflow lands in dead space: the
+          three call sites wrap at gap-2, so the target overhangs 6px into an
+          8px column gap and 4px into an 8px row gap, and a neighbouring chip's
+          BODY is not interactive — there is no target-on-target overlap.
+
+          The paint stays 20px on purpose. Growing the hover fill to 44px would
+          make the target visible on the one platform that does not need it, so
+          the fill sits on the inner span and reacts to the whole button. */}
       <button
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${display}`}
-        data-hit-target-exempt="BUG-048"
-        className={cn(
-          "-mr-0.5 flex size-5 items-center justify-center rounded-[7px] transition-colors hover:bg-[rgba(240,222,190,0.1)]",
-          danger ? "text-[var(--spec-destructive-text)]" : "text-muted-foreground"
-        )}
+        className="group/remove -m-3 -mr-[14px] flex size-11 items-center justify-center"
       >
-        <X className="size-3.5" strokeWidth={2.2} />
+        <span
+          className={cn(
+            "flex size-5 items-center justify-center rounded-[7px] transition-colors group-hover/remove:bg-[rgba(240,222,190,0.1)]",
+            danger ? "text-[var(--spec-destructive-text)]" : "text-muted-foreground"
+          )}
+        >
+          <X className="size-3.5" strokeWidth={2.2} />
+        </span>
       </button>
     </span>
   );

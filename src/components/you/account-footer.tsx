@@ -11,7 +11,7 @@ export interface AccountFooterProps {
 export function AccountFooter({ account, onSignOut }: AccountFooterProps) {
   return (
     <div className="mt-6 rounded-[18px] border border-[rgba(240,222,190,0.07)] bg-[rgba(240,222,190,0.02)] p-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      <h2 className="mb-3 spec-eyebrow">
         Account
       </h2>
       {account?.displayName && (

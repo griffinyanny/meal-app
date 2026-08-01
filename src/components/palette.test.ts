@@ -56,15 +56,17 @@ describe("retired palette literals", () => {
     expect(hits(/#3A86FF|#5E5CE6|rgba\(\s*94,\s*92,\s*230/i)).toEqual([]);
   });
 
-  it("should confine amber #FF9F0A to the sites that are not merge markers", () => {
+  it("should have no amber left — there is no caution hue (spec §01)", () => {
     // Amber is the chef (§01), so it may never mark a mechanical fact about the
-    // list. The merge marker was the reason this rule got written; it is now a
-    // neutral inset carrying the count as type (Griffin's call, 1F/B5).
+    // list. The merge marker was the reason this rule got written; it became a
+    // neutral inset carrying the count as type (Griffin's call, 1F/B5), and the
+    // quick-add dedupe notice — the one allow-listed survivor, tracked as
+    // BUG-045 — went to flat meta type in 1F/B8a.
     //
-    // The one survivor is the quick-add dedupe notice, which is a DIFFERENT
-    // affordance and was deliberately out of B5's scope — tracked as BUG-045.
-    // It is listed rather than excluded so that closing it fails this test and
-    // forces the line to be deleted rather than left as a stale exception.
-    expect(hits(/#FF9F0A/i)).toEqual(["components/groceries/grocery-list.tsx:143"]);
+    // ⚠️ The allow-list is GONE, not emptied. That was the point of listing the
+    // exact file:line rather than excluding the file: closing the bug reddened
+    // this test until the exception was deleted with it, so a fixed bug could
+    // not leave a stale permission behind (S52).
+    expect(hits(/#FF9F0A/i)).toEqual([]);
   });
 });

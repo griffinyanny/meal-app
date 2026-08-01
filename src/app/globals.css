@@ -5,6 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* Spec §11's press rung and standard curve, wired as Tailwind's DEFAULTS so
+     every bare `transition-*` in the app is on-system without touching ~60 call
+     sites. Tailwind's own defaults are 150ms and a curve the spec does not
+     name; overriding them here means the only sites that carry an explicit
+     duration are the ones deliberately moving at a different rung. */
+  --default-transition-duration: var(--spec-motion-press);
+  --default-transition-timing-function: var(--spec-ease);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   /* BUG-005: this read `var(--font-sans)` — a self-reference, so the token was
@@ -110,6 +117,19 @@
      .spec-glass card read as the same rung rather than two materials. */
   --spec-raise-1: #251E17; /* = .spec-glass over the floor */
   --spec-raise-2: #2F261E; /* = .spec-control over the floor */
+
+  /* Motion (spec §11). Four durations and one curve. NONE of them existed:
+     `cubic-bezier(.2,.9,.3,1)` appeared nowhere in `src/`, and the ~60
+     `transition-*` sites all ran on Tailwind's implicit 150ms linear-ish
+     default while the five explicit durations in the build were 100/200/300/500
+     — zero overlap with the spec's four. The press rung is wired as Tailwind's
+     DEFAULT (see `@theme inline` above), so a bare `transition-colors` is
+     already on-system and only a deliberately slower move has to say so. */
+  --spec-motion-press: 120ms;
+  --spec-motion-exit: 180ms;
+  --spec-motion-enter: 260ms;
+  --spec-motion-sheet: 340ms;
+  --spec-ease: cubic-bezier(0.2, 0.9, 0.3, 1);
 
   /* ── shadcn / Tailwind bridge ───────────────────────────────────────────────
      These names are consumed by `@theme inline` above and by every component
@@ -219,28 +239,11 @@
     background: rgba(156, 184, 111, 0.14);
     border: 1px solid rgba(156, 184, 111, 0.3);
   }
-  /* The two type levels spec §10 ADDED, because the build had a 32px screen
-     title and an 11px section label and nothing between them — so any screen
-     with real internal structure had no level to reach for and built its
-     subsections out of body text at random weights (16px here, 15.5px there).
-     Named here rather than retyped at each site: that scatter is the defect
-     §12 item 07 is about. The spec calls them H4 and H5, and the elements
-     should match — these carry type only, never a colour decision beyond the
-     primary text token. */
-  .spec-group-title {
-    font-size: 19px;
-    font-weight: 650;
-    line-height: 1.28;
-    letter-spacing: -0.2px;
-    color: var(--spec-text-primary);
-  }
-  .spec-row-title {
-    /* Always paired with a 12.5px meta line beneath it (spec §10). */
-    font-size: 15.5px;
-    font-weight: 600;
-    line-height: 1.25;
-    color: var(--spec-text-primary);
-  }
+  /* ⚠️ The four TYPE rungs live in `@layer components` below, NOT here. A rung
+     that sets `color` inside `utilities` beats every `text-*` utility written
+     beside it, because within one cascade layer source order decides and these
+     are emitted ~27KB after Tailwind's own colour utilities. See that block. */
+
   /* Lighting (spec §03). One wash per screen, entering once from above, always
      gold, never animated, always beneath the content layer. `hero` is the only
      recipe permitted two stops and is reserved for screens the orb is on. */
@@ -254,6 +257,84 @@
   }
   .spec-light-flat {
     background: radial-gradient(600px 400px at 78% -14%, rgba(233, 179, 72, 0.07), transparent 60%);
+  }
+}
+
+/* ── The type ladder (spec §05) ────────────────────────────────────────────────
+   ⚠️ IN `components`, NOT `utilities`, AND THAT IS THE WHOLE POINT.
+
+   These four rungs set `color`. A class that sets `color` inside `@layer
+   utilities` silently beats every `text-*` utility written beside it — within
+   one cascade layer source order decides, and hand-authored classes here are
+   emitted ~27KB AFTER Tailwind's generated colour utilities. Shipped that way
+   for one round and it killed eight overrides at once: five gold eyebrows the
+   gold line requires, and three SAFETY-weighted red labels including
+   `SAFETY-CRITICAL` on the "I never cook with" card.
+
+   ⚠️ It was invisible in the capture. `--spec-text-muted` (#A29484) is a warm
+   tan, and at 11px against a near-black floor a warm tan reads as "probably
+   gold". The screenshot looked right; only diffing the built CSS proved it was
+   not. A colour regression this small is BELOW the resolution of a judgement
+   call — measure it.
+
+   `components` is declared before `utilities`, so a rung is now a DEFAULT and
+   any `text-*` at the call site overrides it. That is the relationship these
+   were always supposed to have: the rung names size, weight and tracking; the
+   gold line decides colour per site. `shell.spec.ts` SH5 measures it. */
+@layer components {
+  /* The two levels §05 ADDED, because the build had a 32px screen title and an
+     11px section label and nothing between them — so any screen with real
+     internal structure had no level to reach for and built its subsections out
+     of body text at random weights. The spec calls them H4 and H5, and the
+     elements should match. */
+  .spec-group-title {
+    font-size: 19px;
+    font-weight: 650;
+    line-height: 1.28;
+    letter-spacing: -0.2px;
+    color: var(--spec-text-primary);
+  }
+  .spec-row-title {
+    /* Always paired with a 12.5px meta line beneath it (spec §05). */
+    font-size: 15.5px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--spec-text-primary);
+  }
+
+  /* The two caps rungs §05 names. NEITHER existed as a class, so every caps
+     label in the build was improvised: measured at ~47 sites across TWELVE
+     size/weight/tracking combinations against a spec that states exactly two,
+     with only 2 sites already landing on a rung. B3's `ui/button.tsx` finding
+     in a third primitive — an unnamed rung means the next call site is wrong by
+     default.
+
+     Which rung a label takes is a question about WHAT IT NAMES, never about its
+     size today. An eyebrow names a shelf of content and stands alone above it;
+     a label names a field or a slot INSIDE a card. `text-transform` is on the
+     class because a third of these sites shouted in the copy instead.
+
+     ⚠️ Colour is a deliberate deviation from §05, and §01 is the reason. §05's
+     table draws the eyebrow at #A79A8C — a value §01 does not list. §01 states
+     the type ramp as "five steps, descending. Never invent a sixth," and calls
+     a colour used outside its row a bug. #A79A8C is what the SPEC DOCUMENT
+     styles its own section eyebrows with, so the §05 table is transcribing the
+     document's chrome rather than naming a sixth product step. Both rungs take
+     text-muted and separate by size, weight and tracking — which is §05's own
+     "weight carries hierarchy, size confirms it" rule doing the work. */
+  .spec-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--spec-text-muted);
+  }
+  .spec-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--spec-text-muted);
   }
 }
 
@@ -317,6 +398,33 @@
     /* Rung 18 — list cards. Was --radius-xl, which is the 14px icon-button
        rung after item 06 renumbered the scale. */
     border-radius: 18px;
+  }
+
+  /* Loading placeholders. Replaces six `animate-pulse` sites, which ran on
+     Tailwind's own 2s curve and dipped to 50% opacity — a hard, fast throb.
+
+     ⚠️ A STATED DEVIATION, because §11 says "only the chef is allowed to loop"
+     and this loops. The rest of that rule reads "nothing else in the product
+     animates without a user action behind it," and a skeleton always has one —
+     you navigated here. The alternative is a frozen block, which reads as a
+     screen that failed rather than one that is loading, and this app already
+     paid for that lesson in BUG-035 (a stalled generation rendered as nothing
+     and was indistinguishable from never having asked). So it keeps the loop
+     and loses the throb: the spec's curve, and a shallow 0.55 → 0.75 breath
+     that reads as waiting rather than as blinking. Overrule and it goes
+     static. */
+  .spec-skeleton {
+    animation: spec-skeleton-breathe 1.8s var(--spec-ease) infinite;
+  }
+
+  @keyframes spec-skeleton-breathe {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 0.75;
+    }
   }
 
   /* Indeterminate "AI is working" bar — a gold highlight sweeping across a thin
@@ -491,8 +599,15 @@
     .ember-ring,
     .ember-steam,
     .ember-float,
-    .animate-turn-in {
+    .animate-turn-in,
+    .spec-skeleton {
       animation: none !important;
+    }
+    /* The skeleton's breath is the only one of these that carries information
+       ("still working"), so it settles at the top of its range rather than
+       wherever it stopped — a placeholder frozen at 0.55 reads as disabled. */
+    .spec-skeleton {
+      opacity: 0.75;
     }
     .ember-ring,
     .ember-steam {

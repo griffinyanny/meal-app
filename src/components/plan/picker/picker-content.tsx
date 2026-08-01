@@ -178,13 +178,13 @@ export function PickerContent({
               <button
                 type="button"
                 onClick={() => setTile(null)}
-                className="m-0 flex items-center gap-1 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]"
+                className="m-0 flex items-center gap-1 spec-label"
               >
                 <ArrowLeft aria-hidden className="size-2.5" strokeWidth={2.4} />
                 YOUR RECIPES
               </button>
             ) : (
-              <p className="m-0 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+              <p className="m-0 spec-eyebrow">
                 YOUR RECIPES
               </p>
             )}

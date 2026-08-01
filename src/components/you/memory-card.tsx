@@ -35,6 +35,15 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
           className={cn("size-3.5", prov.accent ? "text-primary" : "text-muted-foreground")}
           strokeWidth={1.9}
         />
+        {/* ⚠️ NOT one of §05's two caps rungs, and I had it wrong first time.
+            Both rungs are uppercase by definition, and this slot holds a
+            sentence — "You told me when we started" — so routing it to
+            `.spec-label` shouted an attribution across every memory card. A
+            provenance line is a FACT about the card, not the name of a field
+            in it, which is the Meta rung's job (12.5/400) rather than a caps
+            label's. Left on its own type and routed with the rest of the type
+            scale in B8b; listed in `caps-rungs.test.ts` so the guard still
+            fails closed on it. */}
         <span
           className={cn(
             "text-[11px] font-semibold tracking-wide",

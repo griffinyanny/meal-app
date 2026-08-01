@@ -103,13 +103,17 @@ export function GroceryRow({
           onClick={() => onToggleCheck(item.id, !item.isChecked)}
           className={cn(
             "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] border transition-colors",
+            // A CHECKED item is a completion, not an action. B5 ruled the
+            // cooked/complete check keeps a hue and that hue is #9CB86F; this
+            // one had stayed cream, so the same screen said "done" in the
+            // action colour on a row and in the success colour in its header.
             item.isChecked
-              ? "border-primary bg-primary"
+              ? "border-[var(--spec-success)] bg-[var(--spec-success)]"
               : "border-[rgba(240,222,190,0.3)] bg-transparent"
           )}
         >
           {item.isChecked && (
-            <Check className="size-[13px] text-primary-foreground" strokeWidth={3} />
+            <Check className="size-[13px] text-[var(--spec-floor)]" strokeWidth={3} />
           )}
         </button>
 

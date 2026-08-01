@@ -28,7 +28,7 @@ export function GotItZone({ items, onUncheck, onClear }: GotItZoneProps) {
           className="flex items-center gap-2"
           aria-expanded={open}
         >
-          <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-muted-foreground">
+          <span className="spec-eyebrow">
             Got it · {items.length}
           </span>
           <ChevronDown
@@ -57,8 +57,10 @@ export function GotItZone({ items, onUncheck, onClear }: GotItZoneProps) {
                 className="flex w-full items-center gap-3 px-4 py-3 text-left"
                 aria-label={`Uncheck ${item.name}`}
               >
-                <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-primary">
-                  <Check className="size-[13px] text-primary-foreground" strokeWidth={3} />
+                {/* Same completion hue as the row it mirrors (B5) — this zone
+                    is the checked items, so it cannot say "done" differently. */}
+                <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-[var(--spec-success)]">
+                  <Check className="size-[13px] text-[var(--spec-floor)]" strokeWidth={3} />
                 </span>
                 <span className="flex-1 text-[15px] text-muted-foreground line-through">
                   {capitalizeName(item.name)}

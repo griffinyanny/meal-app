@@ -22,7 +22,7 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
       <div className="animate-turn-in">
         <div className="mb-[18px] flex items-center gap-3">
           <ChefPresence />
-          <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[var(--spec-gold-tint)]">
+          <p className="m-0 spec-eyebrow text-[var(--spec-gold-tint)]">
             THAT&apos;S THE ESSENTIALS
           </p>
         </div>

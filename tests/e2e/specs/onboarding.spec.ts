@@ -123,7 +123,16 @@ test("OB4 - the completed interview hands off into a pre-seeded plan intent", as
   // Capitalized: a chip is a label beside "Under 30 min", not a sentence fragment.
   await expect(chips).toContainText("Pescatarian");
   await expect(chips).toContainText("Under 30 min");
-  await expect(page.getByTestId("plan-build-first-week")).toBeVisible();
+  // ⚠️ This asserted `plan-build-first-week` until S57, when that button was
+  // deleted: the field arrives pre-filled, so it and the §09 send fired the
+  // same call with the same argument — one action drawn twice, and two filled
+  // cream buttons in one viewport (§08). Asserting the FIELD instead is the
+  // stronger check anyway: the hand-off's promise is that the interview's
+  // sentence survives the trip into the real intent screen, and a button's
+  // presence never proved that. This can now fail on a hand-off that lands but
+  // carries nothing.
+  await expect(page.getByTestId("plan-intent-input")).toHaveValue(/.+/);
+  await expect(page.getByTestId("plan-intent-send")).toBeVisible();
 });
 
 test("OB5 - skipping from the intro sets the flag and lands in the app", async ({

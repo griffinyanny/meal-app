@@ -55,7 +55,7 @@ export function SheetIdentity({
     // rather than by DOM order (see ui/drawer.tsx).
     <div className="px-4 pb-5 pt-1 pr-12">
       <div className="mb-1.5 flex items-baseline justify-between gap-2.5">
-        <p className="m-0 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+        <p className="m-0 spec-eyebrow">
           {eyebrow}
         </p>
         {meta ? (
@@ -92,7 +92,7 @@ export function SheetGroup({
 }) {
   return (
     <section className="px-4 pb-5">
-      <p className="m-0 mb-2.5 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+      <p className="m-0 mb-2.5 spec-eyebrow">
         {label}
       </p>
       <div className="flex flex-col gap-2">{children}</div>

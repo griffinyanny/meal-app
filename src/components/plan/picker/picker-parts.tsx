@@ -18,7 +18,7 @@ export function BrowseTiles({
 }) {
   return (
     <section className="px-4 pb-5">
-      <p className="m-0 mb-2.5 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+      <p className="m-0 mb-2.5 spec-eyebrow">
         WAYS THROUGH
       </p>
       <div className="grid grid-cols-2 gap-2">
@@ -79,7 +79,7 @@ export function StaleLine({
 
   return (
     <div className="px-4 pb-3">
-      <p className="m-0 mb-2 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+      <p className="m-0 mb-2 spec-eyebrow">
         SAVED, NEVER COOKED
       </p>
       <p

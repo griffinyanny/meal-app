@@ -36,7 +36,7 @@ function DateColumn({
     <>
       <span
         className={cn(
-          "text-[10.5px] font-bold tracking-[1.3px]",
+          "spec-label",
           muted ? "text-[var(--spec-text-caption)]" : "text-[var(--spec-text-muted)]"
         )}
       >
@@ -76,7 +76,7 @@ function DateColumn({
     <div className="flex w-[38px] flex-none flex-col items-center pt-1">
       <span
         className={cn(
-          "text-[10.5px] font-bold tracking-[1.3px]",
+          "spec-label",
           muted
             ? "text-[var(--spec-text-caption)]"
             : "text-[var(--spec-text-muted)]"

@@ -139,8 +139,17 @@ export function GroceryList({ list }: { list: GroceryData }) {
         onOpenChef={() => setChefOpen(true)}
         data-testid="grocery-add-top"
       />
+      {/* BUG-045. Amber is the chef (§01 has no caution hue precisely because of
+          that), and "milk is already on your list" is a mechanical fact about
+          the list, not the chef speaking — the same miscast B5 removed from the
+          merge marker one affordance over. Law 03 also forbids colouring
+          anything you simply read. Flat meta type, which is what it is: a fact
+          about the row above. 12 → 12.5 is the meta rung. */}
       {dedupeNotice && (
-        <p className="px-1 text-[12px] text-[#FF9F0A]" data-testid="grocery-dedupe">
+        <p
+          className="px-1 text-[12.5px] text-[var(--spec-text-muted)]"
+          data-testid="grocery-dedupe"
+        >
           {dedupeNotice}
         </p>
       )}

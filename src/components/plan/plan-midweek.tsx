@@ -87,7 +87,7 @@ export function PlanMidweek({
 
       {past.length > 0 && (
         <section className="mt-7">
-          <p className="m-0 mb-2.5 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+          <p className="m-0 mb-2.5 spec-eyebrow">
             EARLIER THIS WEEK
           </p>
           <div className="flex flex-col gap-2">

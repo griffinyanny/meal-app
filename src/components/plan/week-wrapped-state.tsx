@@ -57,7 +57,7 @@ export function WeekWrappedState({
 
       {isConfirmed && cooked.length > 0 && (
         <section>
-          <p className="m-0 mb-2.5 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+          <p className="m-0 mb-2.5 spec-eyebrow">
             HOW&apos;D IT GO
           </p>
           <div className="flex flex-col gap-2">
