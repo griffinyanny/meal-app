@@ -10,6 +10,50 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 > an observation he has to make himself:** B2's phone check, whether S28's density complaint reads resolved
 > now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on screen together.
 
+### ⏳ OPEN (S59) — Do the Recipes and Groceries titles read right at 32px on a phone?
+
+**Griffin's look, and it is the only thing owed by him.** Both titles are on §05's H1 (32px) on
+`session-59-1f-workstream-c`. Plan's `<h1>` is deliberately untouched.
+
+⚠️ **The question was originally framed as a size question and that framing was wrong**, which is the part
+worth keeping. It was posed as *"§05 says a screen title is 32px but Plan/Groceries/Recipes all sit at 26
+by the designs I ran."* §05 defines the 26px rung by **who is speaking** — *"the chef talking at screen
+scale… use when the sentence IS the screen."* Plan's `What are you thinking this week?` genuinely is that
+and should stay. `Recipes` and `Your list` are **static tab labels** that landed on the chef's rung because
+26 was the number the design drew — **B8b's chef-voice finding one rung up** (eight non-chef sites sat on
+the 14.5px rung because 14.5 was a convenient number), and the size framing is exactly what hid it.
+
+**If 32 reads right:** nothing further. §05 was already correct and no amendment is needed, because the two
+rungs were never competing for the same sites.
+**If 26 reads right:** they come back, and §05's H2 row gets amended to say 26 also serves a tab-level
+screen title. The amendment is then based on Griffin's eye rather than Claude's framing — which is the
+whole reason it was not decided silently.
+
+---
+
+### ✅ RESOLVED S59 — Gate 1 (`SITE_ACCESS_CODE`): **RETIRED.**
+
+**Forced by Workstream C, and the mechanism is the reason.** Gate 1 was a **cookie**, and a PWA's cookie
+jar is **isolated from Safari's** — so a freshly installed app opens at `start_url` with an empty jar, hits
+the gate, and gets the deliberately-blank 404 **with no address bar to escape it**. The gate did not
+degrade the PWA; it made the PWA a dead icon.
+
+Removed from Vercel Production (env only, no code diff — exactly the reversibility it was designed for in
+S43). **`ALLOWED_EMAILS` — gate 2, the one that protects the data — is untouched.** Gate 1's job was
+stopping a crawler learning the app exists, which `robots.txt` and the `X-Robots-Tag: noindex` header
+already do. The alternatives were worse: putting the beta code in `start_url` trades a real secret into a
+publicly-served build artifact for a property `robots.txt` already provides, and exempting "navigation
+requests" makes the bypass a request header.
+
+⚠️ **Stated cost:** someone who guesses the URL now sees a login screen they cannot get past. Reversible by
+adding one env var with any new value — the code is arbitrary, so nothing was lost by not preserving it.
+
+**Related, and fixed regardless:** `/manifest.webmanifest` is now gate-exempt. A browser fetches a manifest
+with `credentials: "omit"`, so it 404'd even from a session holding the cookie — and **a failed manifest
+fetch is silent**, producing a plain bookmark with Safari chrome instead of a standalone app.
+
+---
+
 ### ✅ RESOLVED S55 — which vocabulary wins, and a note on how it stayed invisible
 
 **Griffin's call: Recipes' words.** The picker's `Everything` / `Cooked before` become `All` / `Cooked`.

@@ -4,6 +4,67 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-01 (S59) — Gate 1 comes off; offline means read AND tick; the chef's rungs are for the chef
+
+**Four calls, all Griffin's, and the first one is the one with real consequence.**
+
+**1. `SITE_ACCESS_CODE` is OFF. The invite gate is retired; `ALLOWED_EMAILS` stays.** Removed from Vercel
+Production (env only — no code diff, exactly the reversibility the gate was built for in S43).
+
+⚠️ **What forced the question was Workstream C, and the mechanism is worth keeping.** Gate 1 is a
+**cookie**, and an installed PWA's cookie jar is **isolated from Safari's**. So a freshly installed app
+opens at `start_url` with an empty jar, hits gate 1, and gets the deliberately-blank 404 — with **no
+address bar to escape it**, because that is what standalone mode means. The gate did not degrade the PWA;
+it made the PWA a dead icon.
+
+There was a second, quieter half. `/manifest.webmanifest` is not excluded by the proxy matcher (which
+excludes `_next`, `favicon.ico` and image extensions), and **a browser fetches a manifest with
+`credentials: "omit"`** — so the fetch never carries `ma_access` even from a session holding it. The
+manifest 404s, and **a failed manifest fetch is silent**: "Add to Home Screen" simply produces a plain
+bookmark with full Safari chrome. C's *"launches full-screen without browser chrome"* would have been
+impossible on production with nothing in any log to say so. That path is now gate-exempt regardless, since
+the exemption is correct even with the gate off.
+
+**Why off rather than worked around.** Gate 1's job is stopping a crawler learning the app exists.
+`robots.txt` and the `X-Robots-Tag: noindex` header already do that (both tracked as BUG-043 launch-day
+items). **Gate 2 — `ALLOWED_EMAILS` — is what protects the data**, and it is untouched: only Griffin and
+his wife can hold an account, enforced at the auth callback *before* a session exists and again in the
+`(app)` layout. The alternatives were worse: putting the beta code in `start_url` trades a real secret
+into a build artifact for a property `robots.txt` already provides, and exempting "navigation requests"
+makes the bypass a request header. **Cost, stated: someone who guesses the URL now sees a login screen
+they cannot get past.** Reversible with one env var.
+
+**2. Offline is READ PLUS QUEUED CHECK-OFF, not read only.** The scope doc says "offline read of the
+current grocery list," and Griffin widened it after the customer-experience read: the feature exists for
+standing in a shop with bad signal, and **in a shop the verb is *tick*, not *read*.** A list you can see
+and cannot mark is a photograph of a list. The usual objection — two devices diverging on one list — **does
+not apply to R1**, where Griffin and his wife run solo accounts in separate households; sharing is V1.5.
+⚠️ And the third option was explicitly rejected: letting the tick fire and silently roll back is not "less
+feature," it is an app that looks broken at the exact moment the user cannot debug it.
+
+⚠️ **The scope bullet conflated two mechanisms that do not overlap.** The app shell is GET and a service
+worker caches it. The list arrives over `httpBatchLink`, which is a **POST**, and the Cache API rejects
+`Cache.put` on non-GET — **a service worker structurally cannot cache this app's data layer.** Ship the
+obvious version and you get an app that opens instantly and shows an empty list, failing precisely in the
+moment it exists for. The data half is React Query persistence; the queue is `onlineManager` pausing the
+mutation rather than failing it.
+
+**3. The screen-title question was framed as a size question, and that framing was wrong.** It was posed as
+*"§05 says 32, my designs say 26."* But §05 defines the 26px rung by **who is speaking** — *"the chef
+talking at screen scale… use when the sentence IS the screen."* Plan's `What are you thinking this week?`
+genuinely is that. `Recipes` and `Your list` are static tab labels that landed on the chef's rung because
+**26 was the number the design drew** — B8b's chef-voice finding (eight non-chef sites on the 14.5px rung
+because 14.5 was convenient) repeated one rung up, and the size framing is what hid it. Both moved to
+§05's H1; Plan's h1 is untouched. **Pending Griffin's look on a phone**, since a system argument does not
+outrank his eye on what ships. If 26 wins, §05's H2 row gets amended and the reasoning is his rather than
+Claude's.
+
+**4. The app keeps the name `Meal App`, and the icon mark is the chef orb** (recommended, pending the
+design pass). §02 argues its own case: *"a bare glowing sphere is the single most generic form in the
+category; every assistant has one. The toque is the cheapest possible thing that makes this one specific."*
+
+---
+
 ## 2026-08-01 (S58) — The §05 ladder governs content; §08 governs controls; rungs are a default, never a lock
 
 **Four calls, all Claude's, all stated rather than assumed and all open to reversal.**

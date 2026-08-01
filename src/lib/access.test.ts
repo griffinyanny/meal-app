@@ -108,6 +108,25 @@ describe("shouldBlockRequest", () => {
     expect(shouldBlockRequest("/no-access", undefined, "secret")).toBe(false);
   });
 
+  it("should always exempt the manifest, or the app installs as a bookmark", () => {
+    // A browser fetches the manifest with `credentials: "omit"`, so it never
+    // carries `ma_access` even from a session that holds it. Gated, it 404s —
+    // and a failed manifest fetch is SILENT: "Add to Home Screen" just makes a
+    // plain bookmark with Safari chrome instead of a standalone app, which is
+    // C's whole deliverable failing with nothing in any log.
+    expect(shouldBlockRequest("/manifest.webmanifest", undefined, "secret")).toBe(false);
+  });
+
+  it("should keep the gate on everything the PWA reaches AFTER launch", () => {
+    // ⚠️ The exemption above is the manifest and only the manifest. The
+    // installed app's own start_url is still gated, and the PWA's cookie jar
+    // is isolated from Safari's — so a freshly installed app opens on a flat
+    // 404 with no address bar to escape it. That is a live product decision,
+    // not something this file can fix; asserting it here so the exemption is
+    // never widened into "the PWA is exempt" by someone reading it as the fix.
+    expect(shouldBlockRequest("/plan", undefined, "secret")).toBe(true);
+  });
+
   it("should not let an exempt prefix open up unrelated sibling paths", () => {
     expect(shouldBlockRequest("/invite-me", undefined, "secret")).toBe(true);
     expect(shouldBlockRequest("/no-access-x", undefined, "secret")).toBe(true);

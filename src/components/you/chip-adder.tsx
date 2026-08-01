@@ -51,7 +51,7 @@ export function ChipAdder({
         placeholder={placeholder}
         aria-label={label}
         className={cn(
-          "w-36 rounded-[12px] border bg-[rgba(240,222,190,0.06)] px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground",
+          "w-36 rounded-[12px] border bg-[rgba(240,222,190,0.06)] px-3 py-2 spec-input text-foreground outline-none placeholder:text-muted-foreground",
           danger ? "border-[rgba(217,106,91,0.4)]" : "border-[rgba(240,222,190,0.2)]"
         )}
       />

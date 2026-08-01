@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-08-01 (Session 58; 1F/B8b closed — **Workstream B is 9 of 9, the design-system pass is DONE**)
+Last updated: 2026-08-01 (Session 59; **1F/C opened** — manifest + icon pipeline + BUG-049 shipped; gate 1 retired)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,191 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B8b is CLOSED. Workstream B is 9 of 9. The design-system pass is DONE; next is C, the PWA.**
+## ▶ NEXT SESSION — **Workstream C is OPEN. The manifest, the icon pipeline and BUG-049 are in; the service worker, the offline half and the four design artifacts are not.**
+
+**714 unit green**, lint + typecheck + build clean, work on `session-59-1f-workstream-c`.
+**1F has C (part-done) and D (production readiness) left, then the two validation weeks.**
+
+### ⛔ THE ONE TO READ: the access gate did not degrade the PWA, it made the PWA a dead icon
+
+Gate 1 (`SITE_ACCESS_CODE`) was a **cookie**. A PWA's cookie jar is **isolated from Safari's**. So a
+freshly installed app opens at `start_url` with an empty jar, hits the gate, and gets the
+deliberately-blank 404 — **with no address bar to escape it**, because that is what standalone mode means.
+Install it, and the icon on your home screen opens a 404 forever.
+
+Underneath that, a quieter one. `/manifest.webmanifest` is not excluded by the proxy matcher (which
+excludes `_next`, `favicon.ico` and image extensions), and **a browser fetches a manifest with
+`credentials: "omit"`** — so the fetch never carries `ma_access` even from a session that holds it. The
+manifest 404s, and ⚠️ **a failed manifest fetch is silent**: "Add to Home Screen" just produces a plain
+bookmark with full Safari chrome. **C's own "launches full-screen without browser chrome" line would have
+failed on production with nothing in any log**, and the way we would have found out is Griffin installing
+it and saying it looked the same.
+
+⚠️ **Neither of these is in C's filed scope, and neither is about the PWA.** Both are about auth and
+access — the two subsystems a workstream called "PWA" has no reason to name. **The lesson is not "verify
+the parked item" this time; it is that a workstream's blast radius is not its bullet list.**
+
+**Griffin's call: gate 1 is RETIRED** — one env var removed from Vercel Production, no code diff, exactly
+the reversibility it was built for. `robots.txt` + the `X-Robots-Tag` header already do the
+crawler-hiding job, and **`ALLOWED_EMAILS` (gate 2) is untouched** — only Griffin and his wife can hold an
+account. ⚠️ **Stated cost: someone who guesses the URL now sees a login screen they cannot get past.**
+
+### ⚠️ Three more of the phase's own lessons fired, and one is a ratchet that could not ratchet
+
+1. **BUG-049's filed fix was the thing to distrust — sixth session running.** The tracker said *"copy
+   `ui/input.tsx`'s `text-base md:text-sm` to all five"*. Copying a private string to five call sites is
+   **precisely how the bug happened**: the 16px iOS zoom floor existed in exactly one primitive, with no
+   name, so nothing could inherit it. Shipped as **`.spec-input`** instead, with the primitive routed to it
+   too so there is one answer. **Fifth instance of "an unnamed rung is a defect generator."**
+2. ⚠️ **It was SIX sites, not five, and the reason is sharper than an oversight.** `chip-adder.tsx` uses
+   `text-sm`; all five filed sites use `text-[Npx]`. B8b's measurement was hunting **arbitrary-value**
+   sizes, so the one input written with a Tailwind named size was **invisible to the method that found the
+   others**. **A filed list inherits the blind spot of the measurement that produced it.**
+3. ⚠️ **The ratchet B8b shipped to stop the type ladder growing back was set at `71` while the assertion
+   measured `26`.** The 71 counted all of `src/`; the guard excludes three primitive paths and the constant
+   was never re-derived. **Forty-five notches of slack** — forty-five new raw sizes could land before it
+   fired. Now **20**, derived by forcing a failure and reading the count rather than trusting the doc or a
+   grep (BSD grep's `\b` gave a third answer). **A ratchet set above its own subject is not a ratchet** —
+   S55's "present, correct, and unrun" in a numeric shape.
+
+### The manifest's `scope` is the field that decides whether sign-in survives installation
+
+iOS opens out-of-scope URLs in an in-app SafariViewController with storage **isolated from the PWA**,
+returning only when the external site redirects back **into** scope. Google OAuth leaves for
+`accounts.google.com` and returns to `/auth/callback`, where `exchangeCodeForSession` sets the session
+cookie **server-side on the redirect response** — so the cookie lands in whichever container made that
+request. Scope it to `/plan` (the obvious choice, since that is where the app lives) and the exchange
+completes in the in-app browser: the PWA never sees the cookie and bounces to `/login` **forever, with no
+error anywhere**. `manifest.test.ts` reads the auth routes **off disk** and asserts scope covers them —
+verified failing at `scope: "/plan"`, red naming all four.
+
+⚠️ **Expected, not a bug, and worth knowing before validation week: Safari's session does not carry into
+the installed app.** The first launch asks you to sign in again even though the same phone is signed in
+one tab over.
+
+### Two more measurements that changed what got built
+
+- **`statusBarStyle` is `black`, not `black-translucent`.** Translucent extends the web view *under* the
+  status bar and needs `env(safe-area-inset-top)` — and there is **not one `-top` inset anywhere in
+  `src/`**; every inset in the app is `-bottom`, for the tab bar. Translucent today puts every screen
+  title under the clock on a notched phone. It belongs with C's full-screen design artifact.
+- **The offline bullet was two mechanisms that do not overlap.** The app shell is GET and a service worker
+  caches it. The list arrives over `httpBatchLink`, which is a **POST**, and the Cache API rejects
+  `Cache.put` on non-GET — **a service worker structurally cannot cache this app's data layer.** The
+  obvious build gives you an app that opens instantly and shows an empty list, failing in exactly the
+  moment the feature exists for.
+
+### ✅ Griffin answered five
+
+1. **Design pass: TAKEN**, targeted, five artifacts. Brief written: `docs/design/surfaces/pwa/brief.md`.
+2. **Both phones are iPhones** — so there is one install path to build (iOS has no `beforeinstallprompt`;
+   it is a hand-written "tap Share → Add to Home Screen" sheet), not two.
+3. **The name stays `Meal App`.**
+4. **Offline = read PLUS queued check-off**, widening the scope doc's "read only". In a shop the verb is
+   *tick*, not *read*. The sync-conflict objection does not apply to R1 (solo accounts, separate
+   households).
+5. **Gate 1 off** (above).
+
+### ⚠️ Owed by Griffin — one look, on a phone, and it is the only thing
+
+⭐ **The screen titles.** The question was posed as *"§05 says 32, my designs say 26"* — **and that framing
+was wrong.** §05 defines the 26px rung by **who is speaking**: *"the chef talking at screen scale… use when
+the sentence IS the screen."* Plan's `What are you thinking this week?` genuinely is that. **`Recipes` and
+`Your list` are static tab labels that landed on the chef's rung because 26 was the number the design
+drew** — B8b's chef-voice finding (eight non-chef sites on the 14.5px rung because 14.5 was convenient)
+repeated one rung up, and the size framing is what hid it. Both are on §05's H1 (32px) now, Plan untouched.
+**Open Recipes and Groceries on your phone and say whether 32 reads right.** If 26 wins, §05's H2 row gets
+amended and the reasoning is yours rather than Claude's.
+
+*(B2's bottom-edge check and BUG-049's zoom are both still worth a tap in the same pass — BUG-049 is fixed,
+so the six fields should no longer zoom.)*
+
+### ⭐ Next up — the rest of C
+
+**Not built yet:** the service worker + app-shell cache, React Query IndexedDB persistence, the
+`onlineManager` paused-mutation queue, the install sheet, the splash, and the offline/queued design states.
+⚠️ **The icon shipped is a spec-faithful PLACEHOLDER** — `.ember-core`'s exact gradient stops plus the same
+lucide toque `chef-presence.tsx` renders — so the PWA could be installed and tested before the design pass
+lands. Replace `src/assets/app-icon.svg` and run `npm run icons`; every size regenerates from that one
+file.
+
+**⭐ Model recommendation: Opus 4.8.** The rest of C is construction against a known target — a service
+worker, a persister, a paused-mutation queue and four designed surfaces built from a brief. Same work 4.8
+did across S40–S58. **Go higher only for D**, whose security review is still the one remaining item with
+real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S59 opened 1F/C, the PWA. 714 unit green on branch session-59-1f-workstream-c, lint +
+typecheck + build clean. Shipped: the web app manifest, the icon pipeline, the iOS meta tags, and BUG-049.
+NOT shipped: the service worker, the offline half, and the four design artifacts. THE ONE TO READ: the
+access gate didn't degrade the PWA, it made the PWA a DEAD ICON. Gate 1 was a cookie and a PWA's cookie jar
+is isolated from Safari's, so a freshly installed app opens at start_url with an empty jar, hits the gate,
+and gets the deliberately-blank 404 — with NO ADDRESS BAR to escape it, because that's what standalone
+means. Underneath it, /manifest.webmanifest wasn't excluded by the proxy matcher AND a browser fetches a
+manifest with credentials:"omit", so it 404'd even from a session holding the cookie — and a failed
+manifest fetch is SILENT, it just makes a plain bookmark with Safari chrome, so C's own "launches
+full-screen without browser chrome" would have failed on prod with nothing in any log. Neither finding is
+in C's filed scope and neither is about the PWA: both are auth/access. A workstream's blast radius is not
+its bullet list. I retired gate 1 (SITE_ACCESS_CODE removed from Vercel Production, env only, no code
+diff); robots.txt + X-Robots-Tag already hide it from crawlers and ALLOWED_EMAILS still guards the data.
+Also worth carrying: the manifest's SCOPE is the field that decides whether sign-in survives installation
+(iOS opens out-of-scope URLs in an in-app SafariViewController with ISOLATED storage and returns only when
+the redirect lands back IN scope; exchangeCodeForSession sets the cookie server-side on that redirect, so
+scope:"/plan" would put it in the wrong container and bounce you to /login forever with no error) —
+manifest.test.ts reads the auth routes off disk and asserts it. And Safari's session does NOT carry into
+the installed app; signing in again on first launch is expected, not a bug. Three of the phase's own
+lessons fired: BUG-049's filed fix was the thing to distrust for the SIXTH session running (it said "copy
+ui/input.tsx's text-base md:text-sm to all five", and copying a private string is exactly how the bug
+happened — named it .spec-input instead); it was SIX sites not five because chip-adder.tsx uses text-sm
+while all five filed sites use text-[Npx], so B8b's arbitrary-value measurement couldn't see it and a filed
+list inherits its measurement's blind spot; and B8b's ratchet shipped at CEILING=71 while measuring 26,
+forty-five notches of slack, now 20. Next: the rest of C — service worker + app-shell cache, React Query
+IndexedDB persistence (⚠️ a service worker STRUCTURALLY cannot cache the data layer: tRPC batches over POST
+and Cache.put rejects non-GET, so the obvious build gives an app that opens instantly and shows an empty
+list), the onlineManager paused-mutation queue for offline check-off, the iOS install sheet (Safari has no
+beforeinstallprompt; both our phones are iPhones so that's the only path), the splash, and the offline +
+queued-changes design states. The design brief is written at docs/design/surfaces/pwa/brief.md — I'm
+running it in Claude Design; ask me for the URL. ⚠️ The shipped icon is a spec-faithful PLACEHOLDER
+(.ember-core's gradient + lucide's toque); replace src/assets/app-icon.svg and run `npm run icons`.
+statusBarStyle is deliberately `black` not `black-translucent` — translucent needs env(safe-area-inset-top)
+and there ISN'T ONE anywhere in src/, so it'd put every screen title under the clock; going translucent
+belongs with the full-screen design artifact. Read docs/whats-next.md, docs/scope-v1.md and
+docs/scope-1F.md first, give me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is CLOSED as
+won't-do, the non-prod Supabase project closed NO, and gate 1 is now CLOSED as retired — don't reopen any
+of them. ⚠️ The E2E suite takes ~17 MINUTES — tell me before you start it and don't run it while I'm using
+the app. Owed by me: whether 32px reads right for the Recipes and Groceries titles on my phone (they were
+on the chef's 26px SPOKEN-headline rung, which §05 defines by who is speaking, not by size — Plan's h1
+stays at 26 because it genuinely IS the chef asking). On Opus 4.8.
+```
+
+**Design-independent alternative** (take this if you'd rather not wait on the Claude Design round — it
+does the whole non-visual half of C, and the four design artifacts land after):
+```
+Resume meal app — S59 opened 1F/C. 714 unit green on branch session-59-1f-workstream-c, lint + typecheck +
+build clean. The manifest, icon pipeline, iOS meta tags and BUG-049 are in. Skip the design artifacts this
+session (I haven't run the Claude Design round yet) and build C's whole non-visual half instead: the
+service worker + app-shell cache, React Query IndexedDB persistence so the grocery list survives a cold
+launch offline, and the onlineManager paused-mutation queue so check-off holds offline and flushes on
+reconnect. ⚠️ A service worker STRUCTURALLY cannot cache the data layer — tRPC batches over POST and
+Cache.put rejects non-GET — so the obvious build gives an app that opens instantly and shows an EMPTY list,
+failing in exactly the moment the feature exists for. The shell and the data are two different mechanisms.
+Worth carrying from S59: gate 1 (SITE_ACCESS_CODE) is RETIRED because it was a cookie and a PWA's cookie
+jar is isolated from Safari's, so a freshly installed app opened at start_url with an empty jar and got a
+blank 404 with no address bar to escape it; and /manifest.webmanifest 404'd because a browser fetches a
+manifest with credentials:"omit", which silently made Add-to-Home-Screen a plain bookmark instead of a
+standalone app. ALLOWED_EMAILS still guards the data. The manifest's SCOPE decides whether sign-in survives
+installation — manifest.test.ts asserts it, don't loosen it. The install sheet, splash, icon artwork and
+the offline/queued design states stay filed for the design round. Read docs/whats-next.md, docs/scope-v1.md
+and docs/scope-1F.md first, give me the <=6-line scope check, keep 714 unit green. maxDuration is CLOSED,
+BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 is CLOSED as retired — don't
+reopen any of them. ⚠️ The E2E suite takes ~17 MINUTES — tell me before you start it. Owed by me: whether
+32px reads right for the Recipes and Groceries titles on my phone. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S58 (superseded by S59 above — Workstream C is open)
 
 **705 unit + 132 E2E green**, lint + typecheck clean, nothing on a branch once #22 merges. **1F now has two
 workstreams left: C (PWA) and D (production readiness), then the two validation weeks.**

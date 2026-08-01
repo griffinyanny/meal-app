@@ -847,14 +847,51 @@ the splash/launch screen, the install prompt, and the offline grocery-list state
 Griffin sees every time he opens the app from his home screen, and he has said explicitly that he wants it
 to look and feel finished so his validation-week feedback can be about design rather than about gaps.
 
-- [ ] Web app manifest + home-screen icon set (every size iOS and Android actually ask for)
-- [ ] Service worker + offline shell — **scope it honestly**: this app is useless offline except as a
-      *read* of an already-generated list, which is precisely the moment it matters (standing in a store
-      with bad signal). Offline read of the current grocery list is the target; offline generation is not.
-- [ ] Install prompt
-- [ ] Launches full-screen without browser chrome
+- [x] **Web app manifest + home-screen icon set** ✅ **S59.** ⚠️ **`scope` is the load-bearing field and
+      the plausible value breaks sign-in silently.** iOS opens out-of-scope URLs in an in-app
+      SafariViewController with storage **isolated** from the PWA, returning only when the external site
+      redirects back *into* scope. Google OAuth leaves for `accounts.google.com` and returns to
+      `/auth/callback`, where `exchangeCodeForSession` sets the session cookie **server-side on the
+      redirect response** — so the cookie lands in whichever container made that request. Scope it to
+      `/plan` (the obvious choice, since that is where the app lives) and the exchange completes in the
+      in-app browser: the PWA never sees the cookie and bounces to `/login` forever, **with no error
+      anywhere.** `manifest.test.ts` reads the auth routes off disk and asserts scope covers them.
+      Icons generate from **one 1024 artboard** via `npm run icons` — a hand-kept set of ten PNGs drifts,
+      and the one that drifts is the 180 the phone actually renders. iOS reads the `apple-touch-icon`
+      **link tag**, never the manifest's `icons` array.
+- [ ] **Service worker + offline shell.** ⚠️ **S59: this bullet was two mechanisms that do not overlap.**
+      The app shell is GET and a service worker caches it. The list arrives over `httpBatchLink`, which is
+      a **POST**, and the Cache API rejects `Cache.put` on non-GET — **a service worker structurally cannot
+      cache this app's data layer.** Ship the obvious version and you get an app that opens instantly and
+      shows an empty list, failing in exactly the moment the feature exists for. The data half is React
+      Query persistence to IndexedDB.
+- [ ] **Queued check-off** — ⭐ **added S59 on Griffin's call, widening "read only".** In a shop the verb
+      is *tick*, not *read*; a list you cannot mark is a photograph of a list. `onlineManager` **pauses**
+      the mutation rather than failing it, so the tick holds and flushes on reconnect. The
+      two-devices-diverge objection does not apply to R1 (solo accounts, separate households).
+      ⚠️ Letting the optimistic tick fire and silently roll back was explicitly rejected: that is not less
+      feature, it is an app that looks broken.
+- [ ] Install prompt — ⚠️ **iOS Safari has no install API**; `beforeinstallprompt` does not exist there, so
+      this is a hand-written "tap Share → Add to Home Screen" sheet. Both phones are iPhones, so that is
+      the only path that needs building.
+- [ ] Launches full-screen without browser chrome — ⚠️ **`statusBarStyle` is `black`, not
+      `black-translucent`, and that is a measurement.** Translucent extends the web view *under* the status
+      bar and needs `env(safe-area-inset-top)`; there is **not one `-top` inset anywhere in `src/`** (every
+      inset in the app is `-bottom`, for the tab bar). Translucent today puts every screen title under the
+      clock. Going translucent belongs with this workstream's design artifact, not beside a meta tag.
 - [ ] **Verified on Griffin's phone and his wife's**, not in a desktop emulator. This is the item most
       likely to be quietly wrong on a real device.
+
+**⚠️ S59 — the finding that nearly made C a dead icon, and it was not in this list.** Gate 1
+(`SITE_ACCESS_CODE`) was a **cookie**, and a PWA's cookie jar is isolated from Safari's — so a freshly
+installed app opened at `start_url` with an empty jar, hit the gate, and got the deliberately-blank 404
+**with no address bar to escape it.** Underneath that, `/manifest.webmanifest` was not excluded by the
+proxy matcher and **a browser fetches a manifest with `credentials: "omit"`**, so it 404'd regardless — and
+a failed manifest fetch is **silent**, producing a plain bookmark with Safari chrome rather than a
+standalone app. Griffin's call: **gate 1 retired** (`decisions.md`, S59), the manifest exempted anyway
+because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
+
+**⭐ BUG-049 rode in here and closed (S59)** — six sites, not the five filed. See the tracker.
 
 ---
 
@@ -965,6 +1002,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-08-01 (S59) | **Workstream C opened; the manifest, the icon pipeline and BUG-049 landed.** ⭐ **Gate 1 (`SITE_ACCESS_CODE`) RETIRED on Griffin's call** — env only, no code diff. **Queued check-off ADDED to C's scope**, widening "offline read" on Griffin's call. **BUG-049 CLOSED** at six sites, not the five filed. The design pass is **taken** (targeted, five artifacts) and its brief is written at `docs/design/surfaces/pwa/brief.md`. Recipes' and Groceries' titles moved off the chef's 26px rung onto §05's H1, **pending Griffin's look on a phone**. `PROJECT-CONTEXT.md` and `visual-qa-rubric.md` de-staled. **714 unit green**, lint + typecheck + build clean. | ⚠️ **The gate did not degrade the PWA, it made the PWA a dead icon — and nothing in C's filed list mentioned auth.** Gate 1 was a **cookie**, and a PWA's cookie jar is isolated from Safari's, so a freshly installed app opened at `start_url` with an empty jar and got the deliberately-blank 404 **with no address bar to escape it.** Underneath it, `/manifest.webmanifest` was not excluded by the proxy matcher and **a browser fetches a manifest with `credentials: "omit"`** — so it 404'd from a session that held the cookie, and **a failed manifest fetch is silent**: Add to Home Screen just makes a bookmark with Safari chrome. C's own "launches full-screen" line would have failed on production with nothing in any log. ⚠️ **Two more of the phase's own lessons fired.** BUG-049's filed fix (*"copy `ui/input.tsx`'s string to all five"*) was the thing to distrust for the **sixth session running** — copying a private string is how the bug happened, so the floor was NAMED instead; and the filed list was five because the S58 measurement hunted **arbitrary-value** sizes, missing the one input written `text-sm`. **A filed list inherits the blind spot of the measurement that produced it.** And the ratchet B8b shipped to stop the ladder growing back was set at **71 while measuring 26** — forty-five notches of slack, a ratchet that could not ratchet. |
 | 2026-08-01 (S58) | **B8b CLOSED — Workstream B is 9 of 9 and the design-system pass is DONE.** Re-measuring first found the S57 filing already stale (22/53/29 → 27/51/28 in one session, moved by B8a's own edits) and then found the actual shape: **six of §05's ten rungs had no class at all**, which is why 192 of 255 type sites were off a 30-size ladder. All six added, **169 sites routed**, adoption 218 rung call sites vs 71 hand-typed. Two things the sweep could not have found by size: **the chef's voice was drawn at three sizes while eight non-chef sites sat on its rung**, and **`0.9rem` = 14.4px rounds onto that rung** — so the filing's "the rem sites need no judgement" would have put five ordinary labels into gold italic. The four `caps-rungs.test.ts` allow-listed sites all closed and the **allow-list is deleted, not emptied**. New `type-scale.test.ts` (4 assertions), verified failing against pre-fix code. **BUG-049 🟠 filed** (five inputs under 16px zoom the iOS viewport). **705 unit green, lint + typecheck clean.** | ⚠️ **The lesson is the companion to B8a's, and it is new: a fix can be APPLIED correctly and still be overridden by what was already there.** The rungs live in `@layer components` so the call site can own colour — which means every leftover `font-bold` / `leading-tight` / `tracking-tight` beside the class still wins. The first pass left **81 lines where the rung was present, correct, and doing nothing.** No layer could see it: the screenshot shows type that looks like type, the DOM shows the class genuinely on the element, and `SH5` measures colour. Only reading the class string finds it. B8a learned that a layer aimed correctly can lack the precision to answer; this adds that a change can land and be silently outranked by the code it was applied to. Also: **§08 governs controls and §05 does not**, so 84 sites were deliberately left — and the controls' own 13-size scatter is now the obvious next item rather than a silent omission. |
 | 2026-07-31 (S55) | **B6 CLOSED; Workstream B at 7 of 9.** Three of the S48 critic's four findings built, the fourth **moved to B8** (Griffin's call) — the caps-label item measured at ~46 sites across eight tracking values against a spec stating exactly two rungs, making it the caps half of B8's type scale rather than a tracking tweak. **BUG-046 CLOSED.** **Griffin's vocabulary call: Recipes' words win** (`Everything`/`Cooked before` → `All`/`Cooked`). **The Recipes filter chip came off the primary rung** with the `+`. New `L18`, verified failing against pre-fix code by physical backup + full rebuild. `Favorites` as a picker door deliberately NOT built → V1.5. **Two stale rubric/PROJECT-CONTEXT exemptions flipped to reportable.** | **The critic named one object where §08 states a rule.** *"One filled cream button per viewport"* — and that viewport had **two**, because the selected filter chip was `bg-primary`, a filled cream button standing in for a filter state, so softening only the `+` would have handed the primary rung to a filter. ⚠️ **`visual-qa-rubric.md` law 06 has carried that exact sentence since S42 and `/visual-qa` cleared this surface at 0/0 in S52, S53 AND S54 with both objects on screen.** Sixth instance of *ask what the layer cannot see* and a **new shape**: the check was not missing (S47), not stale (S52), not seed-blinded (S53) — it was **present, correct, and unrun**. Two more: the vocabulary rename turned **nothing** red because both surfaces' tests hand-fed or bypassed the copy, and piping the suite through `tail` reported **exit 0 while the summary said "1 failed"** — a false green mirroring S54's false red |
 | 2026-07-31 (S54) | **B2 + B3 + B4 CLOSED as one batch; Workstream B at 6 of 9.** New `tests/e2e/specs/shell.spec.ts` (SH1/SH2/SH3), each verified failing against pre-fix code. **BUG-042 CLOSED as won't-do** on Griffin's call and moved to the tracker's Resolved log, so the retracted instruction cannot be re-derived from an open row. **Two new type levels added** (`.spec-group-title`, `.spec-row-title`) — they did not exist, which is why subsections were built at random weights. Bundled deliberately, per S52's B1+B5 precedent: three five-surface capture passes for a 4px corner, a padding sweep and an `<h2>` promotion would be ceremony rather than discipline. | **The sweep written to BE B3's audit was blind to two thirds of its subject.** It found 2 undersized controls; a source-side cross-check found 4 more inside a dialog it never opens — and then the real finding: `ui/button.tsx`'s icon variants are 24/28/32/36px, so **every rung of the shared primitive was under the 44px floor** and the next `size="icon"` was wrong by default. Fourth instance of *ask what the layer cannot see*, and the first where the blind spot was in apparatus written that same session. **B4 ran the lesson in the other direction:** the item was *smaller* than filed (type half = 2 sites, not a sweep), and 4 promotion candidates had to be excluded — 2 kickers above an `<h1>`, 2 labels inside a `<button>` — where a pattern-matched sweep would have broken all four |

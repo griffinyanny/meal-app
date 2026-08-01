@@ -22,8 +22,54 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
 **Workstream B is ✅ CLOSED at 9 of 9** — B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56),
-B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.** **705 unit green, migration `0010` applied.**
-Next: **C (PWA)**, then **D (production readiness)**, then the two validation weeks.
+B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.**
+**Workstream C (PWA) is 🔨 OPEN (S59)** — the manifest, the icon pipeline, the iOS meta tags and BUG-049
+are in; the service worker, the offline half and the four design artifacts are not. **714 unit green,
+migration `0010` applied.** Then **D (production readiness)**, then the two validation weeks.
+
+**⚠️ S59 · A WORKSTREAM'S BLAST RADIUS IS NOT ITS BULLET LIST.** The two findings that nearly made the PWA
+a dead icon were both about **auth and access** — subsystems a workstream called "PWA" has no reason to
+name, and neither appeared anywhere in C's filed scope. Gate 1 (`SITE_ACCESS_CODE`) was a **cookie**, and a
+PWA's cookie jar is **isolated from Safari's**: a freshly installed app opens at `start_url` with an empty
+jar, hits the gate, and gets the deliberately-blank 404 — **with no address bar to escape it**, because
+that is what standalone mode means. Retired on Griffin's call (env only, no code diff; `ALLOWED_EMAILS`
+untouched). **Before building a workstream, ask which subsystems its artifact TOUCHES, not which ones its
+list names.**
+
+**⚠️ S59 · A FAILED MANIFEST FETCH IS SILENT, AND SO IS THE FEATURE IT KILLS.**
+`/manifest.webmanifest` was not excluded by the proxy matcher, and **a browser fetches a manifest with
+`credentials: "omit"`** — so it 404'd even from a session holding the cookie. Nothing errors: "Add to Home
+Screen" simply produces a plain **bookmark** with full Safari chrome. C's own *"launches full-screen
+without browser chrome"* line would have failed on production with nothing in any log, and the way we would
+have found out is Griffin installing it and saying it looked the same.
+
+**⚠️ S59 · THE MANIFEST'S `scope` DECIDES WHETHER SIGN-IN SURVIVES INSTALLATION.** iOS opens out-of-scope
+URLs in an in-app SafariViewController with storage **isolated from the PWA**, returning only when the
+external site redirects back **into** scope. `exchangeCodeForSession` sets the session cookie **server-side
+on the redirect response**, so it lands in whichever container made that request. `scope: "/plan"` — the
+plausible choice — puts it in the in-app browser's container and bounces the app to `/login` **forever,
+with no error anywhere**. `manifest.test.ts` reads the auth routes off disk and asserts it. Related and
+expected: **Safari's session does not carry into the installed app**; signing in again on first launch is
+correct behaviour, not a bug.
+
+**⚠️ S59 · A FILED LIST INHERITS THE BLIND SPOT OF THE MEASUREMENT THAT PRODUCED IT.** BUG-049 filed
+**five** sub-16px inputs; there were **six**. `chip-adder.tsx` uses `text-sm` while all five filed sites
+use `text-[Npx]`, and B8b's measurement was hunting **arbitrary-value** sizes — so the one input written
+with a Tailwind named size was invisible to the method that found the others. **And the tracker's
+recommended fix was again the thing to distrust, for the sixth session running:** *"copy `ui/input.tsx`'s
+`text-base md:text-sm` to all five"* — copying a private string to five call sites is exactly how the bug
+happened. Named as `.spec-input` instead. **Fifth instance of "an unnamed rung is a defect generator."**
+
+**⚠️ S59 · A RATCHET SET ABOVE ITS OWN SUBJECT IS NOT A RATCHET.** `type-scale.test.ts` shipped in S58 with
+`CEILING = 71` while its own assertion measured **26** — the 71 counted all of `src/`, the guard excludes
+three primitive paths, and the constant was never re-derived. **Forty-five notches of slack.** Now 20,
+derived by forcing a failure and reading the count rather than trusting the doc or a grep (BSD grep's `\b`
+gave a third answer). S55's *"present, correct, and unrun"* in a numeric shape.
+
+**⚠️ S59 · A GUARD THAT STOPS EARLY DOES NOT UNDER-REPORT, IT MIS-REPORTS.** The new input sweep first read
+JSX tags with `[^>]*` and named four **already-fixed** sites as offenders, because `onChange={(e) => …}`
+contains a `>` that ends the match before the className. It reads by **brace depth** now. A failure list
+pointing at correct code is worse than no list — it teaches people to edit the expectation.
 
 **⚠️ S58 · A FIX CAN BE APPLIED CORRECTLY AND STILL BE OVERRIDDEN BY WHAT WAS ALREADY THERE.** The §05 type
 rungs live in `@layer components` — B8a's fix, so a call site can still choose colour. The consequence
