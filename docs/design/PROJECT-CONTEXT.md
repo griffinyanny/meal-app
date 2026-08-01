@@ -60,11 +60,13 @@ Four tabs, four nouns, bottom glass tab bar: **Plan · Recipes · Groceries · Y
 
 Unlike FFOS (near-stock shadcn), **meal-app HAS a bespoke visual language worth protecting** —
 dark liquid-glass, Crouton/Flighty-inspired. It is NOT stock shadcn. **Reuse it exactly; do not
-invent a new palette, radius, or component style.** But note: the *deliberate* design-system
-consolidation (refined type scale, spacing, motion, component library) is still the **1F pass**
-(decision 2026-07-09). So today's system is a real-but-unpolished vocabulary — protect it, don't
-freeze it. If a generated direction introduces new brand colors, a light mode, cartoon graphics,
-or all-caps headers (outside the eyebrow), that's **drift to correct, not a decision**.
+invent a new palette, radius, or component style.** ⚠️ **And as of 2026-08-01 (S58) the design-system
+pass is DONE** — 1F Workstream B closed at 9 of 9, covering the type scale, motion, the component
+library and the caps rungs. This file used to say that consolidation was "still the 1F pass" and that
+the system was "real-but-unpolished"; **both sentences are now false.** The vocabulary is settled and
+named, so a generated direction should INHERIT it rather than improve on it. If a direction introduces
+new brand colors, a light mode, cartoon graphics, or all-caps headers (outside the two caps rungs),
+that's **drift to correct, not a decision**.
 
 ## ⚠️ THE PALETTE CHANGED. Read this before generating anything.
 
@@ -87,17 +89,21 @@ variants at 24/28/32/36px, so *every* rung was under the floor); and `.spec-grou
 exist as real H4/H5 rungs, with 9 subsection headings promoted from `<p>` to `<h2>`. **Sample screenshots of
 these freely — they are the shipped system now, not a known gap.**
 
-**What is still deliberately un-migrated — the ONLY places the build knowingly disagrees with the spec:**
-- one amber survivor: the **quick-add dedupe notice** in `grocery-list.tsx`, tracked as **BUG-045** → B8;
-- the **caps-label rungs**: ~46 small-caps labels sit on eight different letter-spacings where the spec
-  states exactly two rungs — **Section eyebrow** (11px / 600 / 2px / `#A79A8C`, "names a shelf of content")
-  and **Label** (10.5px / 700 / 1.3px / `#A29484`, "names a field or a slot inside a card"). Neither exists
-  as a class yet, so the next caps label written is improvised by default. Routed to **B8** with the rest of
-  the type scale (Griffin's call, S55) rather than fixed in isolation;
-- **one hit-target survivor**: the constraint chip's remove `×` at 20×20 against the 44px floor, tracked as
-  **BUG-048** → B8. Exempt rather than fixed because the chip is 36px tall, so a 44px target inside it is a
-  chip redesign rather than a sweep's decision (Griffin's call, S56). Every other icon-only control in the
-  app meets the floor.
+**✅ Spec §05 CLOSED (S57 + S58, B8a + B8b) — the type ladder is named end to end.** Six of the ten rungs
+had **no class at all**, which is why the build carried 30 distinct type sizes and 192 of 255 sites sat off
+the ladder. All ten exist now, in `@layer components` so a call site can still choose colour; 169 sites were
+routed and adoption is 218 rung call sites against 71 hand-typed raw sizes. The full list is under
+"Type scale" below — **use those class names, never a raw `text-[Npx]`.**
+
+**⚠️ Nothing is deliberately un-migrated any more.** This block used to list three survivors — the amber
+quick-add dedupe notice (`BUG-045`), the un-named caps rungs, and the constraint chip's 20×20 remove `×`
+(`BUG-048`). **All three closed in S57 and their allow-lists were deleted rather than emptied.** Do not
+treat any of them as a known gap; if a generated direction reproduces one, that is drift.
+
+*(Why this paragraph exists at all: a stale exemption is a licence to ignore a real defect and it outlives
+the reason for it. S42 caught it in the rubric's palette check, S52 in B1/B5's entries, S55 in B2/B3/B4's —
+and S59 caught this file still describing the pre-B8b app one session after B closed. **When an item closes,
+grep this file and the rubric for its name in the same commit.**)*
 
 **✅ Spec §09 CLOSED (S56, B7) — there is exactly ONE freeform control.** `shared/freeform-field.tsx`:
 mic, growing field (three lines then scrolls), cream send, **all three visible at rest**, in a 56px `L3
@@ -169,10 +175,31 @@ reintroduction.
 88 / 40 / 34 / 20 and no others; ring + steam only at 64px+). **One orb per screen, never two. The orb is
 not a button.**
 
-**Type scale (from shipped components):** hero 26/bold · section 20/bold · card title 17/semibold ·
-chef rationale 13 *italic* in gold-voice with trailing → · body 14 · meta 12 muted · **eyebrow 11
-medium tracking-widest muted ALL-CAPS** (the one sanctioned all-caps use — day/section labels).
-A refined type scale, motion, and component-library consolidation are still the **1F** pass.
+**Type scale — §05's TEN rungs, all of them real classes as of S58. Use the class, never a raw size.**
+
+| Class | Size / weight | What it names |
+|---|---|---|
+| `.spec-screen-title` | 32 / 700 / -.5px | H1. One per screen, left-aligned, never centred, max two lines |
+| `.spec-spoken-headline` | 26 / 650 / -.4px | H2. **The chef talking at screen scale** — use when the sentence IS the screen |
+| `.spec-feature-line` | 22 / 650 / -.3px | H3. Hero sentences. Centring is allowed here and only here |
+| `.spec-group-title` | 19 / 650 / -.2px | H4. A group of rows — "Tuesday", "Ingredients" |
+| `.spec-row-title` | 15.5 / 600 | H5. A row's own name. Always paired with a meta line beneath |
+| `.spec-chef-voice` | 14.5 / 400 *italic* gold | The chef explaining a decision. **The only coloured running text in the product** |
+| `.spec-body` | 13.5 / 400 | Running copy |
+| `.spec-meta` | 12.5 / 400 muted | Facts about the row above, separated by ` · ` — never commas, never pills |
+| `.spec-eyebrow` | 11 / 600 / 2px CAPS | Names a shelf of content, standing alone above it |
+| `.spec-label` | 10.5 / 700 / 1.3px CAPS | Names a field or a slot INSIDE a card |
+
+⚠️ **Two rungs are assigned by WHO IS SPEAKING, never by size, and this is the trap.** `.spec-chef-voice`
+and `.spec-spoken-headline` both belong to the chef. B8b found the chef drawn at three different sizes
+while **eight sites that were not the chef** sat on 14.5px because it was a convenient number — and
+S59 found the same thing one rung up, with the Recipes and Groceries tab titles wearing the 26px
+*spoken* headline because 26 was the number the design drew. **A near-miss of a rung is not evidence of
+belonging to it.** Ask who is talking.
+
+⚠️ **The ladder governs CONTENT, not controls.** §08 draws buttons at 15 / 14.5 / 13.5px and **15px is
+deliberately not a §05 rung**. Text inputs hold **16px** because iOS Safari zooms the viewport on focus
+below that. Asking "which rung does this take" of a button or an input has a third answer: neither.
 
 **Motion:** `.shimmer-bar` (AI-working) and `.animate-highlight-ring` (one-shot on change-landed).
 **Icons:** lucide-react. Anti-pattern list: `Guidelines.md` (colour values there are superseded).

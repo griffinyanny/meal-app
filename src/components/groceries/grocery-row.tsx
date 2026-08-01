@@ -126,7 +126,7 @@ export function GroceryRow({
               onBlur={commitEdit}
               autoFocus
               aria-label="Edit item name"
-              className="w-full rounded-md bg-primary/15 px-1.5 py-0.5 text-[15px] font-medium outline-none"
+              className="w-full rounded-md bg-primary/15 px-1.5 py-0.5 spec-input font-medium outline-none"
             />
           ) : (
             <button
@@ -181,7 +181,7 @@ export function GroceryRow({
             autoFocus
             placeholder="qty"
             aria-label="Edit quantity"
-            className="w-[72px] shrink-0 rounded-md bg-primary/15 px-1.5 py-0.5 text-right text-[13px] outline-none"
+            className="w-[72px] shrink-0 rounded-md bg-primary/15 px-1.5 py-0.5 text-right spec-input outline-none"
           />
         ) : (
           <button

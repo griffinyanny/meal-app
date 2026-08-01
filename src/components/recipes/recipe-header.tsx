@@ -45,7 +45,7 @@ export function RecipeHeader({
           placeholder="Search recipes"
           aria-label="Search recipes"
           data-testid="recipe-search"
-          className="w-full bg-transparent text-[14px] text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
+          className="w-full bg-transparent spec-input text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
         />
       </label>
 

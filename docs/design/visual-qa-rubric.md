@@ -48,9 +48,12 @@ blocks below describe, missed in the session that re-recorded it.** They are now
   icon variants were 24/28/32/36px and are now ≥44px. ⚠️ **S56 corrects the reasoning this line shipped
   with:** "a small target means a call site overrode the primitive" was wrong, because the three worst
   offenders were **raw `<button>`s that never touched the primitive at all** — found only when `SH2`'s own
-  Groceries and You legs stopped measuring a loading skeleton. Those are fixed. **The one live exception is
-  the constraint chip's remove `×` (20×20, `BUG-048`)** — deferred to B8 because a 44px target inside a 36px
-  chip is a chip redesign. Report any other undersized control; do not re-report that one.
+  Groceries and You legs stopped measuring a loading skeleton. Those are fixed. ⚠️ **S59: there is now NO
+  exception.** This line used to excuse the constraint chip's remove `×` (20×20, `BUG-048`) as deferred to
+  B8 — **BUG-048 closed in S57**, measured rather than redesigned (a 44px target overhangs 6px into an 8px
+  column gap with no target-on-target overlap, so the chip stays 36px and nothing is visible), and its
+  `data-hit-target-exempt` attribute went with it. **Every icon-only control in the app is reportable
+  under the 44px floor.**
 - **A squared-off nav top edge and a single bottom bar are the shipped state.** A floating toolbar above the
   tab bar is a regression, not a known gap.
 - **A subsection heading built out of body text at a random weight is reportable.** `.spec-group-title` and
@@ -78,9 +81,11 @@ one. Both were closed by B1 + B5:
 - **The amber `#FF9F0A` Groceries merge markers → a neutral inset carrying the count as type** (Griffin's
   call). Amber on a merge marker is now a **law 02 finding**: amber is the chef, and a merge is a mechanical
   fact about the list, so amber there says the chef is speaking when the chef is not.
-- **One amber survivor is still excused, and only this one:** the quick-add dedupe notice
-  (`grocery-list.tsx`, tracked as **BUG-045**). It is the same miscast one affordance over and is deliberately
-  out of B5's scope, not overlooked. `src/components/palette.test.ts` allow-lists that exact line.
+- ⚠️ **S59: the amber survivor is GONE too, so there is no excused amber left anywhere.** This line used to
+  exempt the quick-add dedupe notice (`grocery-list.tsx`, **BUG-045**). It **closed in S57** — flat meta
+  type, which is what it always was: a fact about the row above. `palette.test.ts` now asserts **zero**
+  `#FF9F0A` in the build, and its allow-list was deleted rather than emptied. **Any amber outside the
+  chef's own voice is a law 02 finding.**
 
 ⚠️ **TRACKED, NOT EXEMPT — the distinction matters (S53).** The two entries below are known. **Flag them if
 you find them**; they are recorded here so a judge knows they are already filed, not so a judge stays quiet

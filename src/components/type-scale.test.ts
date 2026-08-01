@@ -150,7 +150,19 @@ describe("type scale (spec §05)", () => {
     // which are §05 rungs), text inputs (16px, below which iOS Safari zooms the
     // viewport on focus), and two stepper numerals. Lowering this number is a
     // real improvement; raising it needs a reason in the diff.
-    const CEILING = 71;
+    // ⚠️ S59 CORRECTION: this shipped at 71 while the assertion below measured
+    // 26. The 71 was B8b's count of hand-typed sizes across the WHOLE of src/;
+    // the guard excludes the three primitive paths, and the constant was never
+    // re-derived after that exclusion went in. So the ratchet had FORTY-FIVE
+    // notches of slack — forty-five new raw sizes could land before it fired.
+    // A ratchet set above its own subject is not a ratchet, which is S55's
+    // "present, correct, and unrun" in a numeric shape.
+    //
+    // Re-derived by setting this to -1 and reading the count off the failure,
+    // rather than by trusting either the doc or a grep (BSD grep's \b gave a
+    // third answer again). 26 -> 20 in this session: BUG-049's six inputs took
+    // `.spec-input` instead of a size.
+    const CEILING = 20;
     const PRIMITIVES = [
       "components/ui/", // shadcn — B3's precedent: change a primitive deliberately
       "components/debug/", // dev-only HUD, never shipped
@@ -167,6 +179,79 @@ describe("type scale (spec §05)", () => {
         `went 255 -> ${CEILING} in B8b and must not climb. If a new site needs ` +
         `a size, it almost certainly needs a §05 rung instead. Count: `
     ).toBeLessThanOrEqual(CEILING);
+  });
+
+  it("should never ship a text input that can zoom the iOS viewport (BUG-049)", () => {
+    // iOS Safari zooms the viewport when a focused input renders below 16px and
+    // does not zoom back. Five fields were under it, including BOTH grocery
+    // inline edits — the ones used standing in a shop.
+    //
+    // ⚠️ This asserts the CLASS, not a size, and that is the point. The pattern
+    // existed before the bug did: `ui/input.tsx` carried shadcn's `text-base
+    // md:text-sm` privately, and nothing inherited it because nothing else used
+    // that primitive. The tracker's filed fix was "copy that string to all
+    // five" — which is how a sixth site gets it wrong. Naming the floor is what
+    // makes it inheritable, so the assertion is "did you reach for the name."
+    // ⚠️ Read the tag by BRACE DEPTH, not by `[^>]*`. The first attempt used
+    // the latter and reported four already-fixed sites as offenders, because
+    // JSX attributes contain `>` — `onChange={(e) => …}` ends the match long
+    // before the className. A guard that stops early does not under-report, it
+    // MIS-reports, which is worse: the failure list points at fixed code.
+    const openTag = (src: string, from: number) => {
+      let depth = 0;
+      for (let i = from; i < src.length; i++) {
+        const c = src[i];
+        if (c === "{") depth++;
+        else if (c === "}") depth--;
+        else if (c === ">" && depth === 0) return src.slice(from, i + 1);
+      }
+      return src.slice(from);
+    };
+
+    const offenders = walk(SRC)
+      .sort()
+      .filter(
+        (f) =>
+          !f.includes("/ui/") && // the shared primitive — asserted directly below
+          !f.includes("/debug/") && // dev-only HUD, never shipped
+          !/\.test\.tsx?$/.test(f) // a tag quoted inside a test is not a rendered input
+      )
+      .flatMap((file) => {
+        const src = readFileSync(file, "utf8");
+        return [...src.matchAll(/<(input|textarea)\b/g)].flatMap((m) => {
+          const tag = openTag(src, m.index);
+          if (/\bspec-input\b/.test(tag)) return [];
+          // A control with no text caret gives iOS nothing to zoom for.
+          if (/type=["'](?:checkbox|radio|file|hidden|range|submit|button)["']/.test(tag)) return [];
+          return [`${file.slice(SRC.length + 1)}:${src.slice(0, m.index).split("\n").length}`];
+        });
+      });
+
+    expect(
+      offenders,
+      "A text input below 16px zooms the iOS viewport on focus and never zooms " +
+        "back. Take `.spec-input` — it is the named floor, not a size to retype. " +
+        "Offenders: "
+    ).toEqual([]);
+  });
+
+  it("should keep the input floor on the shared primitive too", () => {
+    // The primitive is excluded from the sweep above (it renders `<InputPrimitive`,
+    // not a lowercase tag), so it gets its own assertion rather than a silent pass.
+    // It is also the site that OWNED the pattern privately before it had a name.
+    const src = readFileSync(join(SRC, "components/ui/input.tsx"), "utf8");
+    expect(src).toMatch(/\bspec-input\b/);
+    // ⚠️ Strip comments first. The primitive's own comment NAMES the string
+    // being forbidden, so the first version of this failed against prose that
+    // was documenting the fix. Fourth instance — `palette.test.ts` and
+    // `caps-rungs.test.ts` both learned it the same way, and this file's header
+    // already says a guard has to skip itself. Skipping ITSELF is not enough:
+    // it also has to skip the code's explanation of it.
+    const code = src.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(
+      code,
+      "shadcn's `md:` step-down is a second answer to one question"
+    ).not.toMatch(/\bmd:text-sm\b/);
   });
 
   it("should not let a rung's own metrics be retyped as utilities", () => {

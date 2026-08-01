@@ -135,7 +135,7 @@ export function FreeformField({
           aria-label={inputAriaLabel}
           autoFocus={autoFocus}
           data-testid={inputTestId}
-          className="min-w-0 flex-1 resize-none bg-transparent py-1 text-[14.5px] leading-[1.4] text-[var(--spec-text-primary)] caret-[var(--spec-action)] placeholder:text-[var(--spec-text-muted)] focus:outline-none disabled:opacity-60"
+          className="min-w-0 flex-1 resize-none bg-transparent py-1 spec-input leading-[1.4] text-[var(--spec-text-primary)] caret-[var(--spec-action)] placeholder:text-[var(--spec-text-muted)] focus:outline-none disabled:opacity-60"
         />
 
         {isSubmitting && submittingLabel ? (
