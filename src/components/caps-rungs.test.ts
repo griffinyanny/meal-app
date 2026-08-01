@@ -82,6 +82,45 @@ describe("caps rungs (spec §05)", () => {
     expect(hits(/\bspec-group-title\b/).length).toBeGreaterThan(0);
   });
 
+  // ⚠️ Every guard above is ONE-DIRECTIONAL: they assert that things wearing
+  // caps tracking route THROUGH a rung. None of them can see the reverse — a
+  // site routed TO a caps rung that should never have been uppercased. Both
+  // rungs carry `text-transform: uppercase`, so applying one is a CASING change
+  // that no size-or-weight comparison reveals, and the source still reads
+  // "Cooked {cooked}" either way.
+  //
+  // B8b routed the Recipes cooked badge off `text-[10px] font-semibold` to
+  // `.spec-label` — dimensionally the nearest rung, and a reasonable way to pick
+  // one — which silently rendered COOKED JUL 29, while the IDENTICAL badge in
+  // `recipe-card.tsx` (same string, same green, same pill) took `.spec-meta` in
+  // the same sweep and stayed sentence case. One object, two answers, and
+  // nothing in 717 unit tests compared them; it took looking at a screenshot in
+  // S60. S57's rule is the fix: a rung is chosen by what the slot HOLDS.
+  it("should render the cooked badge on ONE rung wherever it appears", () => {
+    const MARKER = "Cooked {cooked}";
+    const files = walk(SRC).filter((f) => readFileSync(f, "utf8").includes(MARKER));
+    expect(
+      files.map((f) => f.slice(SRC.length + 1)).sort(),
+      "expected the badge in exactly the strip and the card — if a third call " +
+        "site appeared, it is the moment to extract one component instead"
+    ).toEqual(["components/recipes/cooked-strip.tsx", "components/recipes/recipe-card.tsx"]);
+
+    for (const file of files) {
+      const src = readFileSync(file, "utf8");
+      const at = src.indexOf(MARKER);
+      // The opening tag of the element that holds the string.
+      const opening = src.slice(src.lastIndexOf("<span", at), at);
+      const where = file.slice(SRC.length + 1);
+      expect(opening, `${where}: a cooked date is a fact about the card — §05's Meta rung`).toContain(
+        "spec-meta"
+      );
+      expect(
+        opening,
+        `${where}: a caps rung UPPERCASES. This badge is a date stamp, not a field name`
+      ).not.toMatch(/spec-label|spec-eyebrow/);
+    }
+  });
+
   it("should not let a caps rung be hand-retyped beside the class", () => {
     // The two rungs' exact metrics, typed out. If these reappear as utilities
     // the class has been forked rather than used, which is how twelve
