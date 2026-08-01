@@ -1,5 +1,32 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S60) — surfaced building the offline half (1F/C)
+
+- **Offline `addItem` — V1.5, and it is blocked on a product answer, not on plumbing.** The queued
+  check-off persists and replays exactly one mutation (`grocery.checkItem`), because that is the scope
+  Griffin widened to in S59: *in a shop the verb is tick*. Adding an item offline is one line in
+  `OFFLINE_MUTATION_PATHS` plus one `mutationFn` default — **except that `addItem` runs an AI categorize
+  pass (`tidyItem`) that cannot work without a network.** So the real question is what an offline-added
+  item *looks like* before the chef has seen it: does it sit uncategorised at the bottom, does it guess a
+  category locally and correct itself on reconnect, or does the quick-add field simply say it needs
+  signal? **That is a design question, and it is exactly the kind that should not be answered by whoever
+  happens to be adding a line to an array.** Worth pairing with C's offline design artifacts if the answer
+  turns out to be cheap.
+
+- **Verify the cold-start mutation replay on a real phone — do this during validation week 1.** ⚠️ **The
+  one path in the offline feature that no automated layer can reach.** OF3/OF4 cover a tick that pauses
+  and flushes within one page session; the case that actually happens in a shop is a tick, a 45-minute
+  pocket, and iOS evicting the backgrounded PWA. The code handles it (paused mutations are persisted and
+  `registerOfflineMutationDefaults` gives them a `mutationFn` to resume into) but **Playwright cannot
+  reproduce a process kill**, so it is verified by construction and unit guard only. Concretely: tick two
+  items in airplane mode, force-quit the app from the app switcher, relaunch still offline, confirm the
+  ticks are there, then re-enable signal and confirm they reach the server.
+
+- **Extract a shared `CookedBadge` if a third call site ever appears.** BUG-050 was two hand-rolled copies
+  of one badge drifting apart, and the repo's rule is extract at 3+ repetitions — so the guard in
+  `caps-rungs.test.ts` asserts the call-site list is **exactly two** and says so in its failure message.
+  The third one is the moment to stop asserting and start extracting.
+
 ## Incoming (S59) — surfaced opening the PWA (1F/C)
 
 - **Full-screen under the status bar (`black-translucent` + `env(safe-area-inset-top)`)** — 1F/C, with the
