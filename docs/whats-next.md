@@ -60,6 +60,29 @@ the reversibility it was built for. `robots.txt` + the `X-Robots-Tag` header alr
 crawler-hiding job, and **`ALLOWED_EMAILS` (gate 2) is untouched** — only Griffin and his wife can hold an
 account. ⚠️ **Stated cost: someone who guesses the URL now sees a login screen they cannot get past.**
 
+### ⛔ AND THE FIX WAS ONLY HALF A FIX — caught by curling the live URL, not by any test
+
+Gate 1 came off, the manifest was exempted from gate 1, 714 unit + 132 E2E went green, and it merged.
+**Production still served `/manifest.webmanifest` as a `307`.**
+
+There are **two** gates in that proxy, and exempting a path from one does not exempt it from the other.
+Below gate 1 sits the session check — no auth cookie and not an auth page ⇒ redirect to `/login` — and the
+manifest was not on its list. ⚠️ **This one bites harder than gate 1 did, because a browser fetches a
+manifest with `credentials: "omit"`: the request always looks signed-out, so the redirect fires for a
+signed-in user on their own phone.** Safari then parses the `/login` HTML as the manifest, fails, and
+quietly installs a **bookmark** with full Safari chrome. Nothing errors.
+
+⚠️ **`/robots.txt` is on that same list, put there for the identical reason, and the comment above it says
+it was "caught in live verification."** Second instance, same file, same cause, same discovery method —
+and the first one's note was sitting right there while the second was written. The list is now a pure
+`isSignedOutReachable()` in `access.ts` with tests, because **a list that has been wrong twice and was both
+times found by curling a URL should not be an inline boolean.**
+
+**The transferable part: green does not mean deployed-correct.** Both halves of this were invisible to 717
+unit tests and 132 E2E specs, because the E2E harness runs with a session and the unit tests asserted the
+gate function rather than the middleware. **Curl the actual production URL for anything that only a browser
+or a crawler fetches** — manifests, `robots.txt`, well-known paths, webhooks.
+
 ### ⚠️ Three more of the phase's own lessons fired, and one is a ratchet that could not ratchet
 
 1. **BUG-049's filed fix was the thing to distrust — sixth session running.** The tracker said *"copy

@@ -1,5 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ACCESS_COOKIE, shouldBlockRequest, siteAccessCode } from "@/lib/access";
+import {
+  ACCESS_COOKIE,
+  isSignedOutReachable,
+  shouldBlockRequest,
+  siteAccessCode,
+} from "@/lib/access";
 
 // A flat 404 rather than a branded "you need an invite" page: a gate page tells
 // a crawler there is something here worth coming back for, a 404 tells it there
@@ -31,23 +36,11 @@ export async function updateSession(request: NextRequest) {
     return notFound();
   }
 
-  // Signed-out-reachable paths. /invite and /no-access join /login and /auth
-  // here because both are reached WITHOUT a session by design — /invite is the
-  // step before signing in, and /no-access is shown immediately after being
-  // signed out. Omitting them would bounce both to /login and strand the user.
-  //
-  // /robots.txt is here for the same reason and was caught in live verification:
-  // the proxy matcher excludes _next/* and image extensions but NOT .txt, so a
-  // crawler asking for robots.txt was being 307'd to /login and never read the
-  // Disallow. Kept INSIDE the matcher rather than excluded from it, so that
-  // Gate 1 still 404s it when the gate is on — when nothing is visible, robots
-  // .txt should not be either.
-  const isAuthPage =
-    request.nextUrl.pathname === "/login" ||
-    request.nextUrl.pathname === "/invite" ||
-    request.nextUrl.pathname === "/no-access" ||
-    request.nextUrl.pathname === "/robots.txt" ||
-    request.nextUrl.pathname.startsWith("/auth");
+  // Signed-out-reachable paths — now a pure, tested function in access.ts,
+  // because this list has been wrong twice and both times it was found by
+  // hitting the live URL rather than by any test. Kept INSIDE the matcher
+  // rather than excluded from it, so gate 1 can still 404 these when it is on.
+  const isAuthPage = isSignedOutReachable(request.nextUrl.pathname);
 
   // Large sessions (e.g. Google OAuth) get chunked by @supabase/ssr into
   // sb-<ref>-auth-token.0 / .1 — match those too. Deliberately NOT matching

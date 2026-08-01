@@ -4,6 +4,7 @@ import {
   codesMatch,
   isEmailAllowed,
   parseEmailList,
+  isSignedOutReachable,
   shouldBlockRequest,
   siteAccessCode,
 } from "./access";
@@ -108,7 +109,39 @@ describe("shouldBlockRequest", () => {
     expect(shouldBlockRequest("/no-access", undefined, "secret")).toBe(false);
   });
 
-  it("should always exempt the manifest, or the app installs as a bookmark", () => {
+  it("should reach the manifest without a session, or the app installs as a bookmark", () => {
+    // ⚠️ TWO gates, and exempting a path from one does not exempt it from the
+    // other. S59 shipped the manifest exempt from gate 1 and it was STILL
+    // broken in production, 307'd to /login by the session check below it —
+    // found by curling the live URL, not by any test.
+    //
+    // This one bites hardest because **a browser fetches a manifest with
+    // `credentials: "omit"`**: the request always looks signed-out, so the
+    // redirect fires even for a signed-in user on their own phone. Safari then
+    // parses the /login HTML as the manifest, fails, and quietly installs a
+    // BOOKMARK with full Safari chrome instead of a standalone app. Nothing
+    // errors anywhere.
+    expect(isSignedOutReachable("/manifest.webmanifest")).toBe(true);
+  });
+
+  it("should reach robots.txt without a session — the first instance of the same bug", () => {
+    // Caught in live verification too: a crawler was 307'd to /login and never
+    // read the Disallow. Same cause, same discovery method, one file apart.
+    expect(isSignedOutReachable("/robots.txt")).toBe(true);
+  });
+
+  it("should still require a session for the app itself", () => {
+    // The exemptions above are two static files. Widening this into "the PWA is
+    // exempt" would hand every app route to anyone.
+    expect(isSignedOutReachable("/plan")).toBe(false);
+    expect(isSignedOutReachable("/groceries")).toBe(false);
+    expect(isSignedOutReachable("/api/trpc/grocery.current")).toBe(false);
+    // Prefix-adjacent siblings must not ride along on the exact matches.
+    expect(isSignedOutReachable("/manifest.webmanifest.map")).toBe(false);
+    expect(isSignedOutReachable("/robots.txt.bak")).toBe(false);
+  });
+
+  it("should always exempt the manifest from gate 1 too, or the app installs as a bookmark", () => {
     // A browser fetches the manifest with `credentials: "omit"`, so it never
     // carries `ma_access` even from a session that holds it. Gated, it 404s —
     // and a failed manifest fetch is SILENT: "Add to Home Screen" just makes a
