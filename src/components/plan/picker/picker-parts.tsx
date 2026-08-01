@@ -30,10 +30,10 @@ export function BrowseTiles({
             onClick={() => onOpen(t.key)}
             className="spec-inset rounded-[18px] px-[14px] py-3 text-left"
           >
-            <span className="block text-[14px] font-medium text-[var(--spec-text-primary)]">
+            <span className="block spec-row-title text-[var(--spec-text-primary)]">
               {t.label}
             </span>
-            <span className="mt-0.5 block text-[12px] text-[var(--spec-text-caption)]">
+            <span className="mt-0.5 block spec-meta text-[var(--spec-text-caption)]">
               {t.count} {t.count === 1 ? "recipe" : "recipes"}
             </span>
           </button>
@@ -83,7 +83,7 @@ export function StaleLine({
         SAVED, NEVER COOKED
       </p>
       <p
-        className="m-0 text-[13.5px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
+        className="m-0 spec-chef-voice text-[var(--spec-gold-voice)]"
         style={{ textWrap: "pretty" }}
       >
         {count === 1
@@ -148,10 +148,10 @@ export function PickerRow({
         ) : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[14.5px] font-medium leading-[1.3] text-[var(--spec-text-primary)]">
+        <span className="block spec-row-title text-[var(--spec-text-primary)]">
           {title}
         </span>
-        <span className="mt-0.5 block text-[12px] text-[var(--spec-text-caption)]">
+        <span className="mt-0.5 block spec-meta text-[var(--spec-text-caption)]">
           {meta}
         </span>
       </span>
@@ -188,11 +188,11 @@ export function PickerRow({
 export function EmptyLibrary() {
   return (
     <div className="px-4 pb-5">
-      <p className="m-0 mb-1.5 text-[16px] font-semibold text-[var(--spec-text-primary)]">
+      <p className="m-0 mb-1.5 spec-row-title text-[var(--spec-text-primary)]">
         Nothing in here yet.
       </p>
       <p
-        className="m-0 mb-4 text-[13.5px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
+        className="m-0 mb-4 spec-chef-voice text-[var(--spec-gold-voice)]"
         style={{ textWrap: "pretty" }}
       >
         This is where recipes land once you keep them. I&apos;ll write you a week

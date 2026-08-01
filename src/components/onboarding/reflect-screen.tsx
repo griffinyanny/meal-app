@@ -76,12 +76,12 @@ export function ReflectScreen({
             </div>
             <p
               data-testid="onboarding-reflect-hook"
-              className="m-0 text-[25px] font-[650] leading-[1.26] tracking-[-0.5px] text-[var(--spec-text-feature)] text-pretty"
+              className="m-0 spec-spoken-headline text-[var(--spec-text-feature)] text-pretty"
             >
               {reflectHook(state)}
             </p>
             {subline && (
-              <p className="m-0 mt-3.5 text-[16px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
+              <p className="m-0 mt-3.5 spec-body text-[var(--spec-text-body)]">
                 {subline}
               </p>
             )}
@@ -97,7 +97,7 @@ export function ReflectScreen({
                 strokeWidth={2}
               />
               <div>
-                <p className="m-0 mb-1.5 text-[16px] font-semibold leading-[1.45] text-[var(--spec-text-muted)] text-pretty">
+                <p className="m-0 mb-1.5 spec-row-title text-[var(--spec-text-muted)] text-pretty">
                   &ldquo;{state.quotedLine}&rdquo;
                 </p>
                 <p className="m-0 spec-eyebrow">
@@ -125,7 +125,7 @@ export function ReflectScreen({
                     {group.facts.map((fact) => (
                       <p
                         key={fact.lead}
-                        className="m-0 mb-[5px] text-[15px] leading-[1.5] text-[var(--spec-text-body)] last:mb-0 text-pretty"
+                        className="m-0 mb-[5px] spec-body text-[var(--spec-text-body)] last:mb-0"
                       >
                         <span className="font-semibold text-[var(--spec-text-primary)]">
                           {fact.lead}
@@ -156,7 +156,7 @@ export function ReflectScreen({
                   className="size-3.5 text-[var(--spec-destructive)]"
                   strokeWidth={2}
                 />
-                <span className="text-[12.5px] font-bold text-[var(--spec-destructive-text)]">
+                <span className="spec-meta font-bold text-[var(--spec-destructive-text)]">
                   I&apos;ll never cook with
                 </span>
               </div>
@@ -168,7 +168,7 @@ export function ReflectScreen({
                   >
                     {restrictionLabel(r)}
                     {isAllergyRestriction(r) && (
-                      <span className="text-[10.5px] font-semibold text-[rgba(240,216,211,0.7)]">
+                      <span className="spec-label text-[rgba(240,216,211,0.7)]">
                         allergy
                       </span>
                     )}
@@ -208,7 +208,7 @@ export function ReflectScreen({
                         strokeWidth={1.9}
                       />
                     )}
-                    <p className="m-0 text-[14.5px] leading-[1.45] text-[var(--spec-text-body)] text-pretty">
+                    <p className="m-0 spec-body text-[var(--spec-text-body)]">
                       {guess}
                     </p>
                   </div>
@@ -236,7 +236,7 @@ export function ReflectScreen({
                     className="mt-1 size-[15px] flex-none text-[var(--spec-text-muted)]"
                     strokeWidth={2.2}
                   />
-                  <p className="m-0 text-[15px] leading-[1.45] text-[var(--spec-text-primary)] text-pretty">
+                  <p className="m-0 spec-body text-[var(--spec-text-primary)]">
                     {decision}
                   </p>
                 </div>
@@ -248,13 +248,13 @@ export function ReflectScreen({
           {unsaved.length > 0 ? (
             <p
               data-testid="onboarding-unsaved-note"
-              className="m-0 px-0.5 text-[13px] leading-[1.5] text-[var(--spec-gold-voice)] text-pretty"
+              className="m-0 px-0.5 spec-chef-voice text-[var(--spec-gold-voice)] text-pretty"
             >
               One thing: {joinAnswers(unsaved)} didn&apos;t save. I&apos;ll try again when
               you build your week.
             </p>
           ) : (
-            <p className="m-0 px-0.5 text-[13px] leading-[1.5] text-[var(--spec-text-caption)] text-pretty">
+            <p className="m-0 px-0.5 spec-body text-[var(--spec-text-caption)]">
               All saved. Change any of it anytime in{" "}
               <span className="font-semibold text-[var(--spec-action)]">You</span>.
             </p>

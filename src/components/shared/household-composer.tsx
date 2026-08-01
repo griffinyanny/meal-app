@@ -74,7 +74,7 @@ export function CountRow({
             12.5px meta beneath. Was 16px, which is off the ladder in both
             directions — §12 item 07's exact complaint. */}
         <div className="spec-row-title">{label}</div>
-        {sub && <div className="mt-0.5 text-[12.5px] text-[var(--spec-text-muted)]">{sub}</div>}
+        {sub && <div className="mt-0.5 spec-meta text-[var(--spec-text-muted)]">{sub}</div>}
       </div>
       <div className="flex items-center gap-3">
         <button
@@ -182,7 +182,7 @@ export function HouseholdComposer({
               className="mt-px size-[15px] flex-none text-[var(--spec-gold-tint)]"
               strokeWidth={1.9}
             />
-            <p className="m-0 text-[12.5px] leading-[1.45] text-[var(--spec-text-body)]">
+            <p className="m-0 spec-meta text-[var(--spec-text-body)]">
               {babyNote(stage)}
             </p>
           </div>

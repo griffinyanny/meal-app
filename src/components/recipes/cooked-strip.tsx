@@ -14,7 +14,7 @@ export function CookedStrip({ recipes, onOpen }: CookedStripProps) {
     <section aria-label="Recently cooked">
       <Eyebrow>Recently cooked</Eyebrow>
       {recipes.length === 0 ? (
-        <p className="text-xs text-muted-foreground mt-2">Nothing cooked yet.</p>
+        <p className="spec-meta text-muted-foreground mt-2">Nothing cooked yet.</p>
       ) : (
         <div
           className="mt-2 flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -31,14 +31,14 @@ export function CookedStrip({ recipes, onOpen }: CookedStripProps) {
                 className="glass-card shrink-0 w-[54%] max-w-[220px] flex flex-col gap-2 p-[14px] text-left cursor-pointer active:scale-[0.99] transition-transform"
               >
                 {cooked && (
-                  <span className="self-start text-[10px] font-semibold px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
+                  <span className="self-start spec-label px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
                     Cooked {cooked}
                   </span>
                 )}
-                <span className="font-semibold text-sm leading-tight line-clamp-2">
+                <span className="spec-row-title line-clamp-2">
                   {r.title}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="spec-meta text-muted-foreground">
                   {recipeMeta(r)}
                 </span>
               </button>

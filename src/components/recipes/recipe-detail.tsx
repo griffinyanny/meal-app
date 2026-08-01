@@ -181,7 +181,7 @@ export function RecipeDetail({ id }: RecipeDetailProps) {
               sendTestId="modify-recipe-send"
             />
             {modifyMutation.error && (
-              <p className="text-xs text-destructive">
+              <p className="spec-meta text-destructive">
                 {modifyMutation.error.message}
               </p>
             )}

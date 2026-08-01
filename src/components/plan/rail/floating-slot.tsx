@@ -57,7 +57,7 @@ export function PrimarySlot({
 }) {
   return (
     <div className={SLOT}>
-      <p className="m-0 mb-[9px] text-center text-[12px] text-[var(--spec-text-caption)]">
+      <p className="m-0 mb-[9px] text-center spec-meta text-[var(--spec-text-caption)]">
         {consequence}
       </p>
       <button
@@ -87,7 +87,7 @@ export function CountSlot({ written, total }: { written: number; total: number }
   return (
     <div className={SLOT}>
       <p
-        className="m-0 text-center text-[13px] text-[var(--spec-text-caption)]"
+        className="m-0 text-center spec-body text-[var(--spec-text-caption)]"
         aria-live="polite"
       >
         {written} of {total} written
@@ -109,7 +109,7 @@ export function WaitingSlot({ message }: { message: string }) {
     <div className={SLOT}>
       <p
         data-testid="plan-waiting"
-        className="m-0 text-center text-[13px] text-[var(--spec-text-caption)]"
+        className="m-0 text-center spec-body text-[var(--spec-text-caption)]"
         aria-live="polite"
       >
         {message}
@@ -143,11 +143,14 @@ export function ToastSlot({ message, tone = "chef", action }: SlotToast) {
       >
         {isError ? null : <ChefPresence size="toast" />}
         <p
+          // Two rungs, not one rung in two colours: an error is the product
+          // talking and takes Body, the other branch is the chef and takes the
+          // chef rung, which carries italic and gold itself.
           className={cn(
-            "m-0 min-w-0 flex-1 truncate text-[13.5px] leading-[1.35]",
+            "m-0 min-w-0 flex-1 truncate",
             isError
-              ? "text-[var(--spec-destructive-text)]"
-              : "italic text-[var(--spec-gold-voice)]"
+              ? "spec-body text-[var(--spec-destructive-text)]"
+              : "spec-chef-voice"
           )}
         >
           {message}

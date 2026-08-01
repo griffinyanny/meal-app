@@ -133,7 +133,7 @@ export function GroceryRow({
               type="button"
               onClick={() => beginEdit("name")}
               aria-label={`Edit ${capitalizeName(item.name)}`}
-              className="block w-full cursor-text text-left text-[15px] font-medium leading-snug"
+              className="block w-full cursor-text text-left spec-row-title"
             >
               {capitalizeName(item.name)}
             </button>
@@ -168,7 +168,7 @@ export function GroceryRow({
                 />
               </button>
             ) : (
-              <p className="mt-0.5 text-[11.5px] text-muted-foreground">{meta}</p>
+              <p className="mt-0.5 spec-meta text-muted-foreground">{meta}</p>
             ))}
         </div>
 
@@ -216,10 +216,10 @@ export function GroceryRow({
               key={`${source.recipeId}-${i}`}
               className="flex items-center justify-between py-1"
             >
-              <span className="text-[12.5px] text-foreground/80">
+              <span className="spec-meta text-foreground/80">
                 {source.recipeTitle}
               </span>
-              <span className="text-[12px] text-muted-foreground">
+              <span className="spec-meta text-muted-foreground">
                 {[source.qty, source.unit].filter(Boolean).join(" ")}
               </span>
             </div>

@@ -72,7 +72,7 @@ function Eyebrow({
         {trailingSegments.length > 0 ? ` · ${trailingSegments.join(" · ")}` : null}
       </p>
       {trailing ? (
-        <span className="text-[11.5px] text-[var(--spec-text-caption)]">
+        <span className="spec-meta text-[var(--spec-text-caption)]">
           {trailing}
         </span>
       ) : null}
@@ -121,16 +121,14 @@ export function MealRowFeature({
           !solo && meal.estTimeMinutes ? formatDuration(meal.estTimeMinutes) : null
         }
       />
-      <p
-        className={cn(
-          "m-0 font-semibold leading-[1.25] text-[var(--spec-text-primary)]",
-          solo ? "text-[16px]" : "text-[15.5px]"
-        )}
-      >
+      {/* The solo variant used to draw this a size larger (16 vs 15.5). Both are
+          the same thing — the name of a meal in a list — so both take the Row
+          title rung and the ternary goes with them. */}
+      <p className="m-0 spec-row-title text-[var(--spec-text-primary)]">
         {meal.title}
       </p>
       {showMetaLine ? (
-        <p className="m-0 mt-1 text-[12.5px] text-[var(--spec-text-caption)]">
+        <p className="m-0 mt-1 spec-meta text-[var(--spec-text-caption)]">
           {meta}
         </p>
       ) : null}
@@ -144,20 +142,16 @@ export function MealRowFeature({
       {meal.pickedRecipeId != null && solo ? (
         <p
           data-testid="picked-boundary"
-          className="m-0 mt-1 text-[12px] text-[var(--spec-text-caption)]"
+          className="m-0 mt-1 spec-meta text-[var(--spec-text-caption)]"
         >
           Your recipe — the chef won&apos;t rewrite it.
         </p>
       ) : null}
+      {/* The chef's rationale — the most-read chef-voice site in the app, and it
+          was drawn at 13.5/13px with italic and gold hand-written beside it.
+          The rung carries all three now; only the spacing varies. */}
       {rationale ? (
-        <p
-          className={cn(
-            "m-0 italic text-[var(--spec-gold-voice)]",
-            solo
-              ? "mt-1.5 text-[13.5px] leading-[1.45]"
-              : "mt-1 text-[13px] leading-[1.4]"
-          )}
-        >
+        <p className={cn("m-0 spec-chef-voice", solo ? "mt-1.5" : "mt-1")}>
           {meal.rationale} →
         </p>
       ) : null}
@@ -190,14 +184,22 @@ export function MealRowCompact({
         working && "shadow-[0_0_0_1.5px_rgba(233,179,72,0.42)]"
       )}
     >
-      <span className="w-[62px] flex-none spec-label">
+      {/* ⚠️ 62 → 74px. The column was sized for the type this label wore before
+          B8a gave it `.spec-label`, whose 1.3px tracking pushes BREAKFAST — the
+          longest meal type — past 62px, so it collided with the title beside it
+          with no gap at all. Found by LOOKING at the dense capture in S58; the
+          S57 pass cleared the same frame at 0 blockers / 0 high.
+          Fixed by widening the column rather than by touching the rung: forking
+          `.spec-label`'s tracking here is exactly what `type-scale.test.ts`
+          forbids, and the column is the thing that was wrong. */}
+      <span className="w-[74px] flex-none spec-label">
         {meal.mealType.toUpperCase()}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[14px] text-[var(--spec-text-body)]">
+      <span className="min-w-0 flex-1 truncate spec-body text-[var(--spec-text-body)]">
         {meal.title}
       </span>
       {meal.estTimeMinutes ? (
-        <span className="text-[11.5px] text-[#7A6C5D]">
+        <span className="spec-meta text-[#7A6C5D]">
           {formatDuration(meal.estTimeMinutes)}
         </span>
       ) : null}
@@ -228,10 +230,13 @@ export function ProvisionalRow({
   if (density === "nested" && !onDecide) {
     return (
       <div className="spec-provisional flex min-h-10 items-center gap-[9px] rounded-[14px] px-3 py-[9px]">
-        <span className="w-[62px] flex-none spec-label">
+        {/* Same 62 → 74px as the compact row above, and for the same reason —
+            these two columns have to agree or a provisional row sits out of
+            line with the real rows stacked beside it. */}
+        <span className="w-[74px] flex-none spec-label">
           {meal.mealType.toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1 text-[14px] text-[var(--spec-text-muted)]">
+        <span className="min-w-0 flex-1 spec-body text-[var(--spec-text-muted)]">
           {sentence}
         </span>
       </div>
@@ -258,7 +263,7 @@ export function ProvisionalRow({
         ) : null}
         <p
           className={cn(
-            "m-0 text-[14px] leading-[1.4] text-[var(--spec-text-muted)]",
+            "m-0 spec-body text-[var(--spec-text-muted)]",
             onDecide && "mb-2.5"
           )}
         >

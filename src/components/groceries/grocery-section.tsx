@@ -72,7 +72,7 @@ export function GrocerySection({
             {CATEGORY_LABELS[category]}
           </h2>
         </div>
-        <span className="text-[11px] text-muted-foreground/60">{items.length}</span>
+        <span className="spec-eyebrow text-muted-foreground/60">{items.length}</span>
       </div>
 
       <div className="glass-card overflow-hidden">

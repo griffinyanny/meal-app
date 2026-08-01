@@ -55,13 +55,13 @@ export function ImportRecipeDialog({
             disabled={importRecipe.isPending}
           />
 
-          <p className="text-xs text-muted-foreground">
+          <p className="spec-meta text-muted-foreground">
             Works with most recipe sites. Your chef will extract the recipe and
             save it to your library.
           </p>
 
           {importRecipe.error && (
-            <p className="text-xs text-destructive">
+            <p className="spec-meta text-destructive">
               {importRecipe.error.message}
             </p>
           )}

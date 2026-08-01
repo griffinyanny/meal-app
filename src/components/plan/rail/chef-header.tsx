@@ -40,7 +40,7 @@ export function ChefHeader({
         <p className="m-0 flex-1 spec-eyebrow text-[var(--spec-gold-tint)]">
           YOUR CHEF
         </p>
-        <span className="text-[11.5px] font-medium text-[var(--spec-text-caption)]">
+        <span className="spec-meta text-[var(--spec-text-caption)]">
           {status}
         </span>
       </div>
@@ -52,7 +52,7 @@ export function ChefHeader({
       {summary ? (
         <h2
           className={cn(
-            "m-0 text-[22px] font-[650] leading-[1.32] tracking-[-0.3px] text-[var(--spec-text-feature)]",
+            "m-0 spec-feature-line text-[var(--spec-text-feature)]",
             rationale ? "mb-2" : "mb-4"
           )}
           style={{ textWrap: "pretty" }}
@@ -63,7 +63,7 @@ export function ChefHeader({
 
       {rationale ? (
         <p
-          className="m-0 mb-3.5 text-[14.5px] italic leading-[1.5] text-[var(--spec-gold-voice)]"
+          className="m-0 mb-3.5 spec-chef-voice text-[var(--spec-gold-voice)]"
           style={{ textWrap: "pretty" }}
         >
           {rationale}

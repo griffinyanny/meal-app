@@ -45,10 +45,10 @@ export function RecipeCard({
       aria-label={`View recipe: ${title}`}
     >
       <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+        <h3 className="spec-row-title line-clamp-2">
           {title}
         </h3>
-        <p className="text-xs text-muted-foreground mt-1">{recipeMeta(recipe)}</p>
+        <p className="spec-meta text-muted-foreground mt-1">{recipeMeta(recipe)}</p>
 
         {(badge === "draft" || (badge === "cooked" && cooked)) && (
           <div className="mt-2">
@@ -56,11 +56,11 @@ export function RecipeCard({
               // Neutral inset, not the cream action hue. "Plan draft" is a state
               // you read, and cream is what you press (§01) — painting a label
               // in it says "tap me" about a word that does nothing.
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.07)] text-muted-foreground">
+              <span className="inline-block spec-label px-2 py-0.5 rounded-md border border-[rgba(240,222,190,0.14)] bg-[rgba(240,222,190,0.07)] text-muted-foreground">
                 Plan draft
               </span>
             ) : (
-              <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
+              <span className="inline-block spec-meta px-2 py-0.5 rounded-md spec-success-soft text-[var(--spec-success)]">
                 Cooked {cooked}
               </span>
             )}

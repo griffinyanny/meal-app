@@ -199,11 +199,11 @@ export function PickerContent({
             ) : null}
           </div>
 
-          <DrawerTitle className="m-0 text-[22px] font-[650] leading-[1.28] tracking-[-0.3px] text-[var(--spec-text-feature)]">
+          <DrawerTitle className="m-0 spec-feature-line text-[var(--spec-text-feature)]">
             {heading}
           </DrawerTitle>
           {invocation.subline ? (
-            <DrawerDescription className="m-0 mt-1 text-[13px] text-[var(--spec-text-caption)]">
+            <DrawerDescription className="m-0 mt-1 spec-body text-[var(--spec-text-caption)]">
               {invocation.subline}
             </DrawerDescription>
           ) : null}
@@ -254,7 +254,7 @@ export function PickerContent({
 
             <div className="flex flex-col gap-2 px-4 pb-5" data-testid="picker-list">
               {rows.length === 0 ? (
-                <p className="m-0 text-[13.5px] text-[var(--spec-text-muted)]">
+                <p className="m-0 spec-body text-[var(--spec-text-muted)]">
                   {term
                     ? "Nothing here by that name."
                     : "Nothing in this one yet."}
@@ -326,7 +326,7 @@ export function PickerContent({
         </div>
       ) : selected.length > 0 ? (
         <div className="flex-none px-4 pb-[22px] pt-2">
-          <p className="m-0 mb-2 text-center text-[12.5px] text-[var(--spec-text-caption)]">
+          <p className="m-0 mb-2 text-center spec-meta text-[var(--spec-text-caption)]">
             {atLimit
               ? "That's as many as I can build a week around."
               : invocation.dayName && selected.length === 1

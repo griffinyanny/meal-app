@@ -34,7 +34,7 @@ export function OnboardingToast({ message, onDismiss }: OnboardingToastProps) {
           L5, full alpha; the border and shadow still come from .spec-floating. */}
       <div
         style={{ background: "#160F0B" }}
-        className="spec-floating pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 text-[0.9rem] text-[var(--spec-text-primary)]"
+        className="spec-floating pointer-events-auto max-w-[382px] rounded-[14px] px-4 py-3 spec-body text-[var(--spec-text-primary)]"
       >
         {message}
       </div>

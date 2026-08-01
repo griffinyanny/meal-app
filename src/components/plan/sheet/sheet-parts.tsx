@@ -59,12 +59,12 @@ export function SheetIdentity({
           {eyebrow}
         </p>
         {meta ? (
-          <span className="text-[11.5px] text-[var(--spec-text-caption)]">
+          <span className="spec-meta text-[var(--spec-text-caption)]">
             {meta}
           </span>
         ) : null}
       </div>
-      <DrawerTitle className="m-0 text-[22px] font-[650] leading-[1.28] tracking-[-0.3px] text-[var(--spec-text-feature)]">
+      <DrawerTitle className="m-0 spec-feature-line text-[var(--spec-text-feature)]">
         {title}
       </DrawerTitle>
       {/* The chef's line doubles as the sheet's accessible description — it is
@@ -72,7 +72,7 @@ export function SheetIdentity({
           second, worse sentence written only for screen readers. */}
       {rationale ? (
         <DrawerDescription
-          className="m-0 mt-2.5 text-[15px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
+          className="m-0 mt-2.5 spec-chef-voice text-[var(--spec-gold-voice)]"
           style={{ textWrap: "pretty" }}
         >
           {rationale}
@@ -139,11 +139,11 @@ export function SheetRow({
   const body = (
     <>
       <span className="min-w-0 flex-1">
-        <span className="block text-[14.5px] font-medium leading-[1.3] text-[var(--spec-text-primary)]">
+        <span className="block spec-row-title text-[var(--spec-text-primary)]">
           {label}
         </span>
         {sublabel ? (
-          <span className="mt-0.5 block text-[12px] text-[var(--spec-text-caption)]">
+          <span className="mt-0.5 block spec-meta text-[var(--spec-text-caption)]">
             {sublabel}
           </span>
         ) : null}
@@ -209,10 +209,10 @@ export function LibraryDoor({
       className="spec-inset flex min-h-[62px] w-full items-center gap-3 rounded-[18px] px-[14px] py-3 text-left"
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-[14.5px] font-medium leading-[1.3] text-[var(--spec-text-primary)]">
+        <span className="block spec-row-title text-[var(--spec-text-primary)]">
           Cook something I&apos;ve saved
         </span>
-        <span className="mt-0.5 block text-[12px] text-[var(--spec-text-caption)]">
+        <span className="mt-0.5 block spec-meta text-[var(--spec-text-caption)]">
           {sublabel}
         </span>
       </span>
@@ -243,7 +243,7 @@ export function SheetStatus({
   if (working) {
     return (
       <div className="px-4 pb-6" aria-live="polite">
-        <p className="m-0 text-[13.5px] italic text-[var(--spec-gold-voice)]">
+        <p className="m-0 spec-chef-voice text-[var(--spec-gold-voice)]">
           {working}
         </p>
         <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
@@ -254,7 +254,7 @@ export function SheetStatus({
     return (
       <div className="px-4 pb-6">
         <p
-          className="m-0 text-[13.5px] text-[var(--spec-destructive-text)]"
+          className="m-0 spec-body text-[var(--spec-destructive-text)]"
           role="alert"
         >
           {error}

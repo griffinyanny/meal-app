@@ -62,10 +62,10 @@ export function GotItZone({ items, onUncheck, onClear }: GotItZoneProps) {
                 <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-[var(--spec-success)]">
                   <Check className="size-[13px] text-[var(--spec-floor)]" strokeWidth={3} />
                 </span>
-                <span className="flex-1 text-[15px] text-muted-foreground line-through">
+                <span className="flex-1 spec-row-title text-muted-foreground line-through">
                   {capitalizeName(item.name)}
                 </span>
-                <span className="shrink-0 text-[13px] text-muted-foreground/60">
+                <span className="shrink-0 spec-body text-muted-foreground/60">
                   {formatQty(item.quantity, item.unit)}
                 </span>
               </button>

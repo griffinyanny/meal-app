@@ -302,6 +302,84 @@
     color: var(--spec-text-primary);
   }
 
+  /* The six rungs §05 states that had no class, added in B8b. B8a routed 45
+     caps sites onto two rungs and could only do it because the classes existed
+     first; the other six levels were still improvised at every call site, which
+     is why the build carried THIRTY distinct type sizes against a ten-rung
+     ladder. `ui/button.tsx`'s icon variants (B3) and the missing caps rungs
+     (B8a) are the same finding in a third place: an unnamed rung means the next
+     call site is wrong by default, and 192 of 255 type sites were off-ladder.
+
+     ⚠️ The ladder governs CONTENT. It does not govern control labels — §08
+     draws its own buttons at 15 / 14.5 / 13.5px, and 15px is deliberately not a
+     §05 rung. Nor does it govern text inputs, which hold 16px because iOS
+     Safari zooms the viewport on focus below that (see `ui/input.tsx`'s
+     `text-base md:text-sm`). Asking "which rung does this take" of a button or
+     an input is B8a's third answer: neither.
+
+     Colour is a DEFAULT here, not a fixed property — same reason as the caps
+     rungs above. These live in `components`, which is declared before
+     `utilities`, so any `text-[…]` at the call site wins. The rung names size,
+     weight, tracking and leading; the gold line decides colour per site. */
+  .spec-screen-title {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.08;
+    letter-spacing: -0.5px;
+    color: var(--spec-text-primary);
+  }
+  .spec-spoken-headline {
+    /* The chef talking at screen scale — a question that IS the screen. §05
+       added this rung because onboarding and reflect showed the 22px feature
+       line was not enough, so onboarding's 25/27/28px headlines are what it was
+       drawn for rather than exceptions to it. */
+    font-size: 26px;
+    font-weight: 650;
+    line-height: 1.22;
+    letter-spacing: -0.4px;
+    color: var(--spec-text-feature);
+  }
+  .spec-feature-line {
+    font-size: 22px;
+    font-weight: 650;
+    line-height: 1.32;
+    letter-spacing: -0.3px;
+    color: var(--spec-text-feature);
+  }
+  .spec-body {
+    /* Running copy. §05 also asks for text-wrap:pretty and ~46 characters per
+       line on phone; the wrap is on the class, the measure stays at the call
+       site because it depends on the container. */
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--spec-text-body);
+    text-wrap: pretty;
+  }
+  .spec-chef-voice {
+    /* ⚠️ The one rung that cannot be assigned by size. It is the only coloured
+       running text in the product — always italic, always first person, always
+       explaining a decision the chef just made — so a site takes it because of
+       WHO IS SPEAKING, never because it measures 14.5px. Routing by nearest
+       size would have put five ordinary 0.9rem labels (an answer chip, a toast,
+       a field label, a memory body, a retry button) into the chef's voice,
+       because 14.4px rounds to this rung and nothing about the number knows
+       that. B8a's memory-card provenance, one rung over. */
+    font-size: 14.5px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.5;
+    color: var(--spec-gold-voice);
+  }
+  .spec-meta {
+    /* Facts about the row above. §05: separated by · with a space either side,
+       never commas, never pills. */
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.35;
+    color: var(--spec-text-muted);
+  }
+
   /* The two caps rungs §05 names. NEITHER existed as a class, so every caps
      label in the build was improvised: measured at ~47 sites across TWELVE
      size/weight/tracking combinations against a spec that states exactly two,

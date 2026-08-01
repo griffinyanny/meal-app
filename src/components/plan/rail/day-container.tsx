@@ -32,6 +32,15 @@ function DateColumn({
   onOpen?: () => void;
   label?: string;
 }) {
+  // ⚠️ THE DAY MARKER IS ONE HEADING DRAWN IN TWO PARTS, and B8b routed it as
+  // one: the caps day name is the eyebrow (it names the shelf), and the numeral
+  // carries the Group title rung because it is the heading's dominant half.
+  //
+  // §05's worked example for that rung is the word "Tuesday", which is NOT a
+  // straight endorsement of putting it on a figure — S54 flagged a 19px stepper
+  // numeral as exactly the wrong tenant. The difference is what the slot HOLDS:
+  // a stepper numeral is a value you are editing, this is the name of the day
+  // the meals below belong to. Stated because it is a judgement, not a lookup.
   const content = (
     <>
       <span
@@ -44,7 +53,7 @@ function DateColumn({
       </span>
       <span
         className={cn(
-          "text-[16px] font-semibold leading-[1.2]",
+          "spec-group-title",
           muted ? "text-[var(--spec-text-muted)]" : "text-[var(--spec-text-primary)]"
         )}
       >
@@ -86,7 +95,7 @@ function DateColumn({
       </span>
       <span
         className={cn(
-          "text-[16px] font-semibold leading-[1.2]",
+          "spec-group-title",
           muted
             ? "text-[var(--spec-text-muted)]"
             : "text-[var(--spec-text-primary)]"
@@ -129,7 +138,7 @@ export function AbsentDayRow({
     >
       <DateColumn date={date} muted connector={false} />
       <div className="flex min-w-0 flex-1 items-center gap-2.5">
-        <span className="text-[14px] text-[var(--spec-text-muted)]">{label}</span>
+        <span className="spec-body text-[var(--spec-text-muted)]">{label}</span>
         <span className="h-px flex-1 bg-[rgba(240,222,190,0.09)]" />
         {action ? (
           <button

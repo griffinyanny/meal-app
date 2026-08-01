@@ -90,7 +90,7 @@ export function GenerateRecipeDialog({
           />
 
           {generate.error && (
-            <p className="text-xs text-destructive">
+            <p className="spec-meta text-destructive">
               {generate.error.message}
             </p>
           )}

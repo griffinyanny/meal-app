@@ -37,11 +37,11 @@ export function PlanDraftsShelf({
           From your plans
         </span>
         {drafts.length > 0 && (
-          <span className="text-[10.5px] font-bold text-muted-foreground/60">
+          <span className="spec-label text-muted-foreground/60">
             {drafts.length}
           </span>
         )}
-        <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="ml-auto flex items-center gap-1 spec-meta text-muted-foreground">
           {collapsed ? "Show" : "Hide"}
           <ChevronDown
             className={cn(
@@ -54,11 +54,11 @@ export function PlanDraftsShelf({
 
       {collapsed ? (
         drafts.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
+          <p className="spec-meta text-muted-foreground">
             {drafts.length} tucked away · favorite one to keep it in Your recipes
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
+          <p className="spec-meta text-muted-foreground">
             No plan drafts right now — they appear as your meal plan fills in.
           </p>
         )
@@ -76,7 +76,7 @@ export function PlanDraftsShelf({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">
+        <p className="spec-meta text-muted-foreground">
           No plan drafts right now — they appear as your meal plan fills in.
         </p>
       )}

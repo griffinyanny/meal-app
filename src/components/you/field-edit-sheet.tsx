@@ -85,7 +85,7 @@ export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheet
     <Drawer open={field !== null} onOpenChange={(o) => !o && onClose()} modal={false} noBodyStyles>
       <DrawerContent className="glass-sheet">
         <DrawerHeader className="text-left pr-12">
-          <DrawerTitle className="text-lg">{field ? TITLES[field] : ""}</DrawerTitle>
+          <DrawerTitle className="spec-feature-line">{field ? TITLES[field] : ""}</DrawerTitle>
           <DrawerDescription className="sr-only">
             Adjust this preference directly.
           </DrawerDescription>
@@ -125,7 +125,7 @@ export function FieldEditSheet({ field, prefs, onClose, onSave }: FieldEditSheet
                   portion — and a number that refuses to change after a tap
                   reads as a control that didn't register. Same sentence the
                   interview closes its household turn with. */}
-              <p className="m-0 text-center text-[12px] text-[var(--spec-text-caption)]">
+              <p className="m-0 text-center spec-meta text-[var(--spec-text-caption)]">
                 I&apos;ll cook for {deriveHouseholdSize(household)}{" "}
                 {deriveHouseholdSize(household) === 1 ? "serving" : "servings"}
                 {household.babyStage === "6_to_12m"
@@ -194,7 +194,7 @@ function Stepper({
   const inc = () => onChange(Math.min(max, value + step));
   return (
     <div className="flex items-center justify-between rounded-[18px] border border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.04)] px-4 py-3">
-      <span className="text-[0.9rem] text-foreground">{label}</span>
+      <span className="spec-body text-foreground">{label}</span>
       <div className="flex items-center gap-3">
         <button
           type="button"

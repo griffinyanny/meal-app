@@ -103,7 +103,7 @@ export function PlanMidweek({
       )}
 
       <div className="mt-6">
-        <span className="text-[13.5px] text-[var(--spec-text-caption)]">
+        <span className="spec-body text-[var(--spec-text-caption)]">
           Starting fresh?{" "}
         </span>
         <button
