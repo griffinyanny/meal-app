@@ -130,6 +130,44 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
     },
   },
   {
+    // Added S60. BUG-049 raised six inputs to the 16px iOS zoom floor, and TWO
+    // of them live in this row — the name and the quantity. Neither had ever
+    // been photographed, because `grocery-row.tsx` renders each slot twice: a
+    // display <button> at rest and the <input> only while `editing` is set. The
+    // capture drove the row to its resting state every time, so the layer was
+    // structurally unable to see either input, and a 0/0 on this surface would
+    // have implied a coverage it did not have.
+    //
+    // The quantity is the one worth a frame rather than the name: it went
+    // 13px → 16px (the largest jump of the six) INSIDE a hard `w-[72px]`, which
+    // is the shape that bit S58 — a fixed column sized for the type it carried
+    // before. The name editor is `w-full` and cannot overflow by construction.
+    //
+    // Same lesson as `grocery-complete` above, one session later: the hole is
+    // only ever found by asking what the layer CANNOT see.
+    id: "grocery-row-editing-qty",
+    briefRef: "groceries — inline quantity edit (BUG-049's 16px floor, in a fixed 72px column)",
+    readyText: "Your list",
+    facts: {
+      qtyEditorOpen: true,
+      qtyEditorFontSize: "16px via .spec-input — below it iOS Safari zooms the viewport on focus",
+      qtyEditorWidth: "hard w-[72px]; check a real quantity still reads inside it at the larger size",
+      restOfRowUnchanged: true,
+    },
+    prepare: () => seedGroceryState("GROCERY_READY"),
+    navigate: async (page) => {
+      await gotoReady(page);
+      // Garlic carries "6 clove" — a real two-token quantity rather than a bare
+      // numeral, so the shot exercises the width rather than flattering it.
+      await page
+        .getByTestId("grocery-row")
+        .first()
+        .getByRole("button", { name: /^6 clove$|^qty$/ })
+        .click();
+      await page.getByLabel("Edit quantity").waitFor({ timeout: 8_000 });
+    },
+  },
+  {
     id: "grocery-chef-sheet",
     briefRef: "groceries — Talk-to-the-Chef sheet (secondary NL add/query)",
     readyText: "Your list",
