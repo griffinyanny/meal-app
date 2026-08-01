@@ -1,5 +1,31 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S59) — surfaced opening the PWA (1F/C)
+
+- **Full-screen under the status bar (`black-translucent` + `env(safe-area-inset-top)`)** — 1F/C, with the
+  design artifact. `statusBarStyle` ships as opaque `black` because translucent extends the web view *under*
+  the status bar and **there is not one `safe-area-inset-top` anywhere in `src/`** — every inset in the app
+  is `-bottom`, for the tab bar. Translucent today puts every screen title under the clock on a notched
+  phone. Going translucent is the better look and it is a real, contained piece of work: one top inset in
+  the app shell, then verify on a device. It belongs with C's full-screen design artifact rather than
+  smuggled in beside a meta tag.
+- **Re-derive every ratchet constant against its own assertion, once** — 1F/D or sooner. `type-scale.test.ts`
+  shipped at `CEILING = 71` while measuring **26**. The other source-scraping guards (`palette.test.ts`,
+  `globals.test.ts`, `config.test.ts`, `shell.spec.ts`'s hit-target allow-list) were never checked the same
+  way. ⚠️ **A ratchet set above its own subject is not a ratchet**, and the failure is invisible precisely
+  because the test passes. Cheap: set each to an impossible value, read the real count off the failure,
+  set it back tight.
+- **A "workstream blast radius" step in Phase 0** — process, not code. C's two most consequential findings
+  (gate 1 killing the installed app, the manifest 404 making it a bookmark) were both **auth and access**,
+  and neither appeared anywhere in C's filed bullet list. The existing Phase 0 discipline measures *the
+  items*; nothing asks **which subsystems the artifact touches that the list does not name.** Worth one
+  explicit question at the top of each workstream.
+- **Icon artwork beyond the placeholder** — 1F/C, the design pass. The shipped mark is spec-faithful
+  (`.ember-core`'s gradient + lucide's toque) but it is not designed. Replace `src/assets/app-icon.svg`
+  and run `npm run icons`.
+
+---
+
 ## Incoming (S58) — surfaced closing the type scale (1F/B8b)
 
 - **[1F/D or V1.5] The CONTROL scale needs the same treatment the type scale just got: 13 sizes against

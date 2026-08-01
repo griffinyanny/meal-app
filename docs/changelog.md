@@ -4,6 +4,118 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 59 — 2026-08-01 (1F/C opened — the PWA; gate 1 retired; BUG-049 closed)
+
+**Workstream C's manifest half shipped, and Phase 0 found that the two things standing between this app
+and a working home-screen icon were both about auth.** **714 unit green** (+9), lint + typecheck + build
+clean. Work on `session-59-1f-workstream-c`.
+
+### ⛔ The finding: the access gate did not degrade the PWA, it made the PWA a dead icon
+
+Gate 1 (`SITE_ACCESS_CODE`) is a **cookie**. A PWA's cookie jar is **isolated from Safari's**. So a freshly
+installed app opens at `start_url` with an empty jar, hits the gate, and gets the deliberately-blank 404 —
+**with no address bar to escape it**, because that is what standalone mode means. `/invite` is exempt, but
+the 404 is blank by design and points nowhere.
+
+Underneath it, a quieter one with the same shape. `/manifest.webmanifest` is not excluded by the proxy
+matcher (which excludes `_next`, `favicon.ico` and image extensions), and **a browser fetches a manifest
+with `credentials: "omit"`** — so the fetch never carries `ma_access` even from a session holding it. It
+404s, and ⚠️ **a failed manifest fetch is silent**: "Add to Home Screen" produces a plain **bookmark** with
+full Safari chrome. **C's own "launches full-screen without browser chrome" line would have failed on
+production with nothing in any log.**
+
+⚠️ **Neither finding is in C's filed scope, and neither is about the PWA.** Both are auth and access — the
+subsystems a workstream called "PWA" has no reason to name. **A workstream's blast radius is not its
+bullet list.**
+
+**Griffin's call: gate 1 retired.** One env var removed from Vercel Production; no code diff, exactly the
+reversibility it was built for in S43. `robots.txt` + the `X-Robots-Tag` header already do the
+crawler-hiding job (both tracked as BUG-043 launch-day items), and **`ALLOWED_EMAILS` is untouched** — only
+Griffin and his wife can hold an account, enforced at the auth callback before a session exists. The
+manifest was exempted from gate 1 anyway, since the exemption is correct with the gate off too. ⚠️ Stated
+cost: someone who guesses the URL now sees a login screen they cannot get past.
+
+### `scope` is the manifest field that decides whether sign-in survives installation
+
+iOS opens out-of-scope URLs in an in-app SafariViewController with storage **isolated from the PWA**,
+returning only when the external site redirects back **into** scope. Google OAuth leaves for
+`accounts.google.com` and returns to `/auth/callback`, where `exchangeCodeForSession` sets the session
+cookie **server-side on the redirect response** — so it lands in whichever container made that request.
+`scope: "/plan"` (the obvious choice, since that is where the app lives) puts it in the in-app browser's
+container: the PWA never sees it and bounces to `/login` **forever, with no error anywhere**.
+`manifest.test.ts` reads the auth routes **off disk** (`config.test.ts`'s idiom) and first asserts they
+exist — S55's *a test that supplies the value it checks is checking nothing*. Verified failing at
+`scope: "/plan"`, red naming all four routes.
+
+⚠️ Expected rather than broken: **Safari's session does not carry into the installed app.** Signing in
+again on first launch is correct.
+
+### BUG-049 CLOSED, and it was six sites rather than the five filed
+
+⚠️ **The tracker's recommended fix was the thing to distrust — sixth session running.** It said *"copy
+`ui/input.tsx`'s `text-base md:text-sm` to all five."* Copying a private string to five call sites is
+**precisely how the bug happened**: the 16px iOS zoom floor existed in exactly one primitive, unnamed, so
+nothing could inherit it. Shipped as **`.spec-input`** — font-size only, no `md:` step-down (a phone app
+whose desktop rendering is incidental does not need two answers), with `ui/input.tsx` routed to it so there
+is one answer. **Fifth instance of "an unnamed rung is a defect generator"** after `ui/button.tsx` (B3),
+`ui/textarea.tsx` (B7), the caps rungs (B8a) and six of §05's ten (B8b).
+
+⚠️ **The sixth site is the sharper half.** `chip-adder.tsx` uses `text-sm`; all five filed sites use
+`text-[Npx]`. B8b's measurement was hunting **arbitrary-value** sizes, so the one input written with a
+Tailwind named size was **invisible to the method that found the others**. **A filed list inherits the
+blind spot of the measurement that produced it.**
+
+### Three things the verification itself found
+
+1. ⚠️ **The ratchet B8b shipped to stop the type ladder growing back was set at `71` while its own
+   assertion measured `26`.** The 71 counted all of `src/`; the guard excludes three primitive paths and
+   the constant was never re-derived. **Forty-five notches of slack** — a ratchet that could not ratchet.
+   Now **20**, derived by setting it to `-1` and reading the count off the failure rather than trusting
+   the doc or a grep (BSD grep's `\b` gave a third answer again). S55's *present, correct, and unrun* in
+   a numeric shape.
+2. ⚠️ **The new input sweep mis-reported before it under-reported.** Reading JSX tags with `[^>]*` named
+   four **already-fixed** sites as offenders, because `onChange={(e) => …}` contains a `>` that ends the
+   match before the className. It reads by brace depth now. **A failure list pointing at correct code is
+   worse than no list** — it teaches people to edit the expectation.
+3. **It failed against its own comment**, fourth instance after `palette.test.ts` and `caps-rungs.test.ts`:
+   the primitive's comment names the string the assertion forbids. It strips comments before asserting.
+   A guard skipping *itself* is not enough; it also has to skip the code's explanation of it.
+
+### Griffin's screen-title question was framed wrong, and the framing is the finding
+
+Posed as *"§05 says 32, my designs say 26."* But §05 defines the 26px rung by **who is speaking** — *"the
+chef talking at screen scale… use when the sentence IS the screen."* Plan's `What are you thinking this
+week?` genuinely is that. **`Recipes` and `Your list` are static tab labels that landed on the chef's rung
+because 26 was the number the design drew** — B8b's chef-voice finding (eight non-chef sites on the 14.5px
+rung because 14.5 was convenient) repeated one rung up, and the **size** framing is what hid it. Both moved
+to §05's H1; Plan untouched. **Pending Griffin's look on a phone**, because a system argument does not
+outrank his eye on what ships.
+
+### Also
+
+- **Design pass TAKEN** (targeted, five artifacts). Brief: `docs/design/surfaces/pwa/brief.md`. It carries
+  one constraint worth repeating: **"you're offline" is neither gold nor amber** — gold is the chef
+  speaking and §01 has no caution hue *because* amber is the chef, so colouring a network fact either way
+  says the chef is talking when the chef is not. BUG-045 one surface over.
+- **Offline scope widened to read PLUS queued check-off** on Griffin's call. ⚠️ And the scope bullet was
+  two mechanisms: a service worker **structurally cannot** cache this app's data layer, because tRPC
+  batches over **POST** and `Cache.put` rejects non-GET.
+- ⚠️ **`statusBarStyle` is `black`, not `black-translucent`** — translucent needs
+  `env(safe-area-inset-top)` and there is not one `-top` inset anywhere in `src/`.
+- **Both design docs de-staled**, one session after Workstream B closed: `PROJECT-CONTEXT.md` still told
+  Claude Design the type scale was "still the 1F pass" and handed it the pre-B8b ladder, and the rubric
+  still carried live do-not-report exemptions for BUG-045 and BUG-048. **Fourth instance** (S42, S52, S55).
+- ⚠️ **A self-inflicted one worth recording:** the E2E run was issued as `npm run test:e2e | tail -40`,
+  which is S55's exact lesson — the pipe swallows the exit code **and** buffers all output, so there was no
+  progress for ten minutes and the status was `tail`'s. The run stays usable by reading the summary line,
+  which is the rule the project already wrote down: **read the count, never the status.**
+- **The shipped icon is a spec-faithful PLACEHOLDER** pending the design round — `.ember-core`'s exact
+  gradient stops plus the same lucide toque `chef-presence.tsx` renders. First render put the toque at 26%
+  of the sphere against §02's 41%, because lucide's path fills only ~15.2 of its 24 viewBox units: **scale
+  against the ink, not the container.**
+
+---
+
 ## Session 58 — 2026-08-01 (1F/B8b closed — Workstream B is 9 of 9, the design-system pass is DONE)
 
 **The last B item, and six of the ten rungs turned out to have no name.** **705 unit green** (+5), lint +
