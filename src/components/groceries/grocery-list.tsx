@@ -147,7 +147,7 @@ export function GroceryList({ list }: { list: GroceryData }) {
           about the row above. 12 → 12.5 is the meta rung. */}
       {dedupeNotice && (
         <p
-          className="px-1 text-[12.5px] text-[var(--spec-text-muted)]"
+          className="px-1 spec-meta text-[var(--spec-text-muted)]"
           data-testid="grocery-dedupe"
         >
           {dedupeNotice}
@@ -157,7 +157,7 @@ export function GroceryList({ list }: { list: GroceryData }) {
       <StaplesRow onList={onList} onAdd={handleAddStaple} />
 
       {empty ? (
-        <p className="px-1 pt-2 text-sm text-muted-foreground">
+        <p className="px-1 pt-2 spec-body text-muted-foreground">
           Your list is empty. Add an item above, or confirm a plan to fill it.
         </p>
       ) : list.organizeMode === "grouped" ? (

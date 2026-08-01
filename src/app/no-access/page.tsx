@@ -7,13 +7,13 @@ export default function NoAccessPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-[430px] space-y-6 text-center">
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Not on the list yet</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="spec-screen-title">Not on the list yet</h1>
+          <p className="text-muted-foreground spec-body">
             Meal App is in a closed beta. The account you signed in with isn&apos;t on
             the invite list.
           </p>
         </div>
-        <p className="text-muted-foreground/60 text-xs">
+        <p className="text-muted-foreground/60 spec-meta">
           If you were invited, try signing in again with the Google account the
           invite was sent to.
         </p>

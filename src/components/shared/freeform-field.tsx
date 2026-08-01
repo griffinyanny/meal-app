@@ -139,7 +139,7 @@ export function FreeformField({
         />
 
         {isSubmitting && submittingLabel ? (
-          <span className="flex-none pr-2 text-[11px] font-semibold tracking-[0.5px] text-[var(--spec-text-muted)]">
+          <span className="flex-none pr-2 spec-label text-[var(--spec-text-muted)]">
             {submittingLabel}
           </span>
         ) : (
@@ -165,7 +165,7 @@ export function FreeformField({
         <p
           aria-live="polite"
           data-testid="freeform-mic-notice"
-          className="mx-0.5 mt-2.5 text-[12.5px] text-[var(--spec-text-muted)]"
+          className="mx-0.5 mt-2.5 spec-meta text-[var(--spec-text-muted)]"
         >
           {MIC_NOT_YET}
         </p>

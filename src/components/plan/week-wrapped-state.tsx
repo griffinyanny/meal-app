@@ -69,7 +69,7 @@ export function WeekWrappedState({
               />
             ))}
           </div>
-          <p className="m-0 mt-2.5 text-[12.5px] text-[var(--spec-text-caption)]">
+          <p className="m-0 mt-2.5 spec-meta text-[var(--spec-text-caption)]">
             Tap what you&apos;d cook again. I learn from it.
           </p>
         </section>

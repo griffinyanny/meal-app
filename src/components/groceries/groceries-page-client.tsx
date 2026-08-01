@@ -89,7 +89,7 @@ function Body({ list, isLoading, isError, errorMessage, onRetry }: BodyProps) {
   if (!list) {
     return (
       <div className="glass-card p-6 flex flex-col items-center justify-center min-h-[200px] text-center">
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground spec-body">
           Your grocery list will appear here after you confirm a meal plan.
         </p>
       </div>
@@ -99,11 +99,11 @@ function Body({ list, isLoading, isError, errorMessage, onRetry }: BodyProps) {
   if (list.generationStatus === "error" || isError) {
     return (
       <div className="glass-card flex flex-col items-center space-y-3 p-8 text-center">
-        <p className="text-sm text-muted-foreground">
+        <p className="spec-body text-muted-foreground">
           The chef got stuck building your list.
         </p>
         {errorMessage ? (
-          <p className="text-xs text-destructive/80">{errorMessage}</p>
+          <p className="spec-meta text-destructive/80">{errorMessage}</p>
         ) : null}
         <Button size="sm" onClick={onRetry}>
           Try again
@@ -135,7 +135,7 @@ function generatingLabel(list: GroceryListData): string {
 function GeneratingState({ label }: { label: string }) {
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground" data-testid="grocery-generating">
+      <p className="spec-body text-muted-foreground" data-testid="grocery-generating">
         {label}
       </p>
       <div className="glass-card p-4 space-y-4">

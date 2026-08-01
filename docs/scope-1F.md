@@ -687,39 +687,90 @@ every tracked row closes rather than waiting behind a 300-site sweep.
 - [x] **Gate: `/visual-qa` Layer A across all five surfaces, 0 blockers / 0 high, 56/56 states `ok`.**
       Critique in `tests/e2e/captures/A-2026-08-01T00-32-37-100Z/critique.md`.
 
-### B8b — The rest of the type scale
+### B8b — The rest of the type scale ✅ **CLOSED S58** — *six of the ten rungs had no name*
 
-⚠️ **Split out of B8 in S57 on measurement, not on feel.** The type scale is **~303 sites across ~35
-distinct sizes** against §05's **10-rung** ladder — six times the caps half, and the largest single item
-left in 1F.
+**Re-measured before scoping, and the numbers had already moved.** S57 filed 22 rem sites / 53 `text-sm` /
+29 `text-xs`; S58 measured **27 / 51 / 28** — B8a's own edits had shifted the field it was scoped against, in
+one session. Every number in the filing was treated as a hypothesis after that.
 
-- [ ] **`text-sm` is 14px and 14px is not a rung** (the ladder has 13.5 body / 14.5 chef voice / 15.5 row
-      title). That one class is **53 off-ladder sites**, the most-used size in the app. `text-xs` (12px, vs
-      the 12.5 Meta rung) is another 29. `globals.css` does not remap them — checked, not assumed.
-- [ ] **The 22 rem sites are pure pre-spec residue and need no judgement** — they are near-misses of rungs
-      that already exist (`0.95rem` = 15.2 where the rung is 15.5, `0.9rem` = 14.4 where it is 14.5,
-      `0.8rem` = 12.8 where it is 12.5). Start here; it is the cheapest real progress in the item.
-- [ ] **The four sites `caps-rungs.test.ts` allow-lists**, each off the ladder in size rather than tracking:
-      the memory-card provenance (→ the **Meta** rung, 12.5/400 — it is a fact about the card, not the name
-      of a field in it), `recipe-card.tsx`'s `Plan draft` chip, `freeform-field.tsx`'s submitting label, and
-      `safety-constraints-card.tsx`'s card title.
-- [ ] ⚠️ **Scope this the way B8a was scoped: measure first.** A 303-site sweep is not the deliverable —
-      Griffin's S57 call was the trimmed version (the rem residue plus `text-sm`/`text-xs` where they stand
-      in for a rung), leaving deliberate off-ladder sizes alone. Re-measure before assuming that still holds.
-- [ ] **BUG-045 🟡** — the last `#FF9F0A`, the quick-add dedupe notice. ⚠️ `palette.test.ts` allow-lists that
-      exact line, so **closing it reds the test until the exception is deleted too**.
-- [ ] **BUG-048 🟡 (new, S56)** — the constraint chip's remove `×` at 20×20, the last hit-target violation in
-      the app and the one `SH2` is allowed to find. It sits here rather than in B3 because the fix is **chip
-      geometry**, not one button: the chip is 36px tall, so a 44px target inside it changes every chip on the
-      You tab. ⚠️ Its exemption is carried by the element (`data-hit-target-exempt="BUG-048"`) and `SH2`
-      fails if an exempt control is **not** undersized, so **closing it reds the suite until the attribute is
-      deleted too** — the same shape as BUG-045's allow-listed line in `palette.test.ts`.
-- [ ] **A `bg-primary` audit is likely owed here.** 32 call sites carry it today, spanning genuine primaries,
-      list markers and badges. §08 allows one filled cream button per viewport; nothing enforces it, and S55
-      found two on the Recipes library that three `/visual-qa` passes had cleared. ⚠️ **S56 adds a second
-      reason and a starting point:** the You tab's `Talk to the chef` launcher is a filled `bg-primary`
-      button wearing a **mic glyph** that opens a field, and the Groceries chef launcher is `bg-primary/15`
-      — so the audit is about what the hue *claims*, not only how many of them there are.
+**The real shape: 255 type sites, 30 distinct sizes, 192 of them off the ladder.** The `~303` counted test
+files too.
+
+- [x] ⚠️ **THE FINDING — six of §05's ten rungs did not exist as classes.** B8a named two; B4 had named two
+      more. The other six — H1/32, H2/26, H3/22, Body/13.5, Chef voice/14.5, Meta/12.5 — had **no name at
+      all**, which is why 192 sites were improvised. B3 found this in `ui/button.tsx` (every icon rung under
+      the 44px floor), B7 in `ui/textarea.tsx`, B8a in the caps rungs. **Fourth instance: an unnamed rung is
+      a defect generator, and this time it was most of the ladder.** All six added; **169 sites routed** onto
+      all ten; adoption is now 218 rung call sites against 71 hand-typed sizes (from 255).
+- [x] ⚠️ **THE ONE TO READ — the fix applied correctly and was overridden by what was already there.** The
+      rungs live in `@layer components` (B8a's fix, so a call site still owns colour). That means **any**
+      leftover utility beside the class beats it. The first routing pass left **81 lines** where the rung was
+      applied and a `font-bold` / `leading-tight` / `tracking-tight` / `italic` next to it was still deciding
+      the property — **the class present, correct, and doing nothing.** Invisible to the screenshot (type
+      looks like type), to the DOM (the class *is* on the element) and to `SH5` (it measures colour). Only
+      reading the class string shows it. `type-scale.test.ts` asserts it; **81 → 0**.
+- [x] ⚠️ **The chef's voice was drawn at three sizes, and eight non-chef sites sat on its rung.** §05 reserves
+      14.5/400 italic gold as *"the only coloured running text in the product."* The build had the chef at
+      **13.5px (×4), 14.5px (×1) and 15px (×1)** with `italic` and `--spec-gold-voice` hand-typed beside each,
+      while **eight sites that are not the chef** sat on 14.5px because it was a convenient size. ⚠️ **The
+      filing's claim that the rem sites "need no judgement at all" was false here:** `0.9rem` = 14.4px, whose
+      nearest rung by pure distance **is** the chef rung, so distance-matching would have put five ordinary
+      labels (an answer chip, a toast, a field label, a memory body, a retry button) into gold italic. Routed
+      by **who is speaking**, never by size. B8a's memory-card provenance, one rung over.
+- [x] **§08 governs controls, and the ladder does not.** The spec's own gallery draws buttons at
+      **15 / 14.5 / 13.5px**, and **15px is deliberately not a §05 rung** — so button-label type was never
+      B8b's to sweep. Same for text inputs (16px, the iOS zoom floor) and the two stepper numerals. **84
+      sites left alone on purpose**, plus `ui/` (B3's precedent: change a primitive deliberately), `debug/`
+      and the tab bar's 10px chrome label.
+- [x] **The four `caps-rungs.test.ts` allow-listed sites all closed, and the allow-list is DELETED rather than
+      emptied** (BUG-045's precedent). Three took `.spec-label` after all — the stray tracking was the only
+      thing that had made them look like something else — and the memory-card provenance took `.spec-meta`,
+      which is the answer B8a wrote down and could not act on until the Meta rung existed.
+- [x] **`type-scale.test.ts` (4 assertions), verified failing against pre-fix code** by physical backup +
+      `git show main:` revert: it went red on `meal-row.tsx:155`, the hand-written gold italic, the predicted
+      site. ⚠️ It also **caught a site the sweep missed** before it ever ran — `floating-slot.tsx:150`, a
+      toast whose ternary switches between an error and the chef, which is two rungs rather than one rung in
+      two colours. ⚠️ **And it failed against its own comment**, because `memory-card.tsx` quoted the class
+      string the regex forbids — `palette.test.ts`'s lesson, third time.
+- [x] ⚠️ **The guard's honest limit is written into it.** It cannot tell a content site with no rung from a
+      control that is allowed a raw size — that is a question about what the text *does*, and the string does
+      not say. So it does not pretend to: it **ratchets** at 71, because thirty sizes accumulated one
+      reasonable-looking `text-[13px]` at a time.
+- [x] **Built-CSS proof, not a screenshot.** All ten rungs sit at bytes 10618–11619 inside `@layer components`
+      (10600–11739); every call-site colour utility sits at 37345+ inside `@layer utilities` (11740–67336).
+      Overrides now win **by layer rather than by source order** — strictly stronger than what B8a restored,
+      since source position can no longer decide it.
+- [x] **BUG-049 🟠 filed, not swept** — five text inputs under 16px zoom the iOS viewport on focus, including
+      both grocery inline edits. **The fix goes UP to 16px, which is not a rung**, so it cannot ride inside a
+      type item → 1F/C.
+- [x] ⚠️ **The visual pass found one thing, and it is the honest headline: `BREAKFAST` collided with the meal
+      title on every compact row at multi-meal density.** The label column is a hard `w-[62px]`, sized for the
+      type that label wore **before B8a gave it `.spec-label`** — the rung's 1.3px tracking pushes the longest
+      meal type past it, so the two strings met with **no gap at all**. **Pre-existing, and S57's `/visual-qa`
+      cleared the identical frame at 0/0** (confirmed by diffing the two `dense.png` captures).
+      ⚠️ **This is NOT B8a's precision problem and the difference matters.** That was a warm tan against gold
+      at 11px, genuinely below the resolution of a judgement call. **This is two words touching** — visible at
+      a glance, in a frame the gate captured, kept and passed. The layer was neither blind nor imprecise; it
+      **was not read carefully enough.** S55 found a rule present, correct and unrun; this is a *frame*
+      present, correct and unlooked-at. Fixed by widening the column to 74px at both call sites, **never by
+      forking the rung's tracking** — which is what `type-scale.test.ts` exists to forbid. Re-captured.
+- [x] **Gate: 705 unit (+5) green, lint + typecheck clean, `/visual-qa` Layer A across all five surfaces at
+      0 blockers / 0 high, 56/56 capture states `ok`.** Critique in
+      `tests/e2e/captures/A-2026-08-01T14-46-03-312Z/critique.md`.
+
+**⚠️ Three visible changes, stated rather than buried.** The Plan rail's **date numeral** goes **16 → 19px**
+(the day marker is one heading in two parts — the caps day name stays the eyebrow, the numeral takes the Group
+title rung as its dominant half; ⚠️ a judgement, not a lookup, since S54 flagged a 19px stepper numeral as the
+wrong tenant for that rung and the difference is what the slot HOLDS); the solo meal row's title goes 16 → 15.5
+and loses its size ternary (both densities are the same object); and **body copy that previously inherited
+`--foreground` now takes the Body rung's `#CAC4BC`** — visible on the recipe detail's ingredient and step
+lines, `past-meal-row`, and the Recipes toast. That last one is the spec correcting sites that were
+over-bright, but it is a real change and `/visual-qa` should be read with it in mind.
+
+**⚠️ Deliberately NOT done, and it is the obvious next item.** Controls run at **13 distinct sizes** against
+§08's three. That is the same defect this item just fixed, one section over, and it is the reason 71 raw
+sizes survive. It is not §05's, so B8b did not take it — but it should be a tracked row rather than a number
+in a test file.
 
 ### B9 — Recipe-detail empty states ✅ **CLOSED S53** (BUG-038 🟡, BUG-037 🟠) — *the filed bugs were the smaller half*
 
@@ -914,6 +965,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-08-01 (S58) | **B8b CLOSED — Workstream B is 9 of 9 and the design-system pass is DONE.** Re-measuring first found the S57 filing already stale (22/53/29 → 27/51/28 in one session, moved by B8a's own edits) and then found the actual shape: **six of §05's ten rungs had no class at all**, which is why 192 of 255 type sites were off a 30-size ladder. All six added, **169 sites routed**, adoption 218 rung call sites vs 71 hand-typed. Two things the sweep could not have found by size: **the chef's voice was drawn at three sizes while eight non-chef sites sat on its rung**, and **`0.9rem` = 14.4px rounds onto that rung** — so the filing's "the rem sites need no judgement" would have put five ordinary labels into gold italic. The four `caps-rungs.test.ts` allow-listed sites all closed and the **allow-list is deleted, not emptied**. New `type-scale.test.ts` (4 assertions), verified failing against pre-fix code. **BUG-049 🟠 filed** (five inputs under 16px zoom the iOS viewport). **705 unit green, lint + typecheck clean.** | ⚠️ **The lesson is the companion to B8a's, and it is new: a fix can be APPLIED correctly and still be overridden by what was already there.** The rungs live in `@layer components` so the call site can own colour — which means every leftover `font-bold` / `leading-tight` / `tracking-tight` beside the class still wins. The first pass left **81 lines where the rung was present, correct, and doing nothing.** No layer could see it: the screenshot shows type that looks like type, the DOM shows the class genuinely on the element, and `SH5` measures colour. Only reading the class string finds it. B8a learned that a layer aimed correctly can lack the precision to answer; this adds that a change can land and be silently outranked by the code it was applied to. Also: **§08 governs controls and §05 does not**, so 84 sites were deliberately left — and the controls' own 13-size scatter is now the obvious next item rather than a silent omission. |
 | 2026-07-31 (S55) | **B6 CLOSED; Workstream B at 7 of 9.** Three of the S48 critic's four findings built, the fourth **moved to B8** (Griffin's call) — the caps-label item measured at ~46 sites across eight tracking values against a spec stating exactly two rungs, making it the caps half of B8's type scale rather than a tracking tweak. **BUG-046 CLOSED.** **Griffin's vocabulary call: Recipes' words win** (`Everything`/`Cooked before` → `All`/`Cooked`). **The Recipes filter chip came off the primary rung** with the `+`. New `L18`, verified failing against pre-fix code by physical backup + full rebuild. `Favorites` as a picker door deliberately NOT built → V1.5. **Two stale rubric/PROJECT-CONTEXT exemptions flipped to reportable.** | **The critic named one object where §08 states a rule.** *"One filled cream button per viewport"* — and that viewport had **two**, because the selected filter chip was `bg-primary`, a filled cream button standing in for a filter state, so softening only the `+` would have handed the primary rung to a filter. ⚠️ **`visual-qa-rubric.md` law 06 has carried that exact sentence since S42 and `/visual-qa` cleared this surface at 0/0 in S52, S53 AND S54 with both objects on screen.** Sixth instance of *ask what the layer cannot see* and a **new shape**: the check was not missing (S47), not stale (S52), not seed-blinded (S53) — it was **present, correct, and unrun**. Two more: the vocabulary rename turned **nothing** red because both surfaces' tests hand-fed or bypassed the copy, and piping the suite through `tail` reported **exit 0 while the summary said "1 failed"** — a false green mirroring S54's false red |
 | 2026-07-31 (S54) | **B2 + B3 + B4 CLOSED as one batch; Workstream B at 6 of 9.** New `tests/e2e/specs/shell.spec.ts` (SH1/SH2/SH3), each verified failing against pre-fix code. **BUG-042 CLOSED as won't-do** on Griffin's call and moved to the tracker's Resolved log, so the retracted instruction cannot be re-derived from an open row. **Two new type levels added** (`.spec-group-title`, `.spec-row-title`) — they did not exist, which is why subsections were built at random weights. Bundled deliberately, per S52's B1+B5 precedent: three five-surface capture passes for a 4px corner, a padding sweep and an `<h2>` promotion would be ceremony rather than discipline. | **The sweep written to BE B3's audit was blind to two thirds of its subject.** It found 2 undersized controls; a source-side cross-check found 4 more inside a dialog it never opens — and then the real finding: `ui/button.tsx`'s icon variants are 24/28/32/36px, so **every rung of the shared primitive was under the 44px floor** and the next `size="icon"` was wrong by default. Fourth instance of *ask what the layer cannot see*, and the first where the blind spot was in apparatus written that same session. **B4 ran the lesson in the other direction:** the item was *smaller* than filed (type half = 2 sites, not a sweep), and 4 promotion candidates had to be excluded — 2 kickers above an `<h1>`, 2 labels inside a `<button>` — where a pattern-matched sweep would have broken all four |
 | 2026-07-31 (S53) | **B9 CLOSED** (BUG-037 + BUG-038); Workstream B at 3 of 9. **BUG-046 🟡 opened** (the recipe detail body wears cream, the action hue, on three non-pressable elements — B1's finding one surface over) and routed to B6/B8. **BUG-042's toggle RETRACTED, not deferred** — disabling the Supabase Email provider would red all 123 specs, because the harness's only sign-in is `signInWithPassword`; it bundles into the non-prod Supabase project decision, collapsing Griffin's two owed items into one. | The filed bugs were the smaller half. `seed.ts` hard-coded `ingredients: []` / `steps: []` for every recipe, so BUG-038 was **100% of seeded recipes** and the tab's only detail capture had **never once shown a populated recipe body** — the gate was grading the degenerate state as canonical, and fixing the bug alone would have made it blinder. A second, older blindness came with it: the capture *waited out* BUG-037 rather than photographing it. Third instance of *ask what the layer cannot see*, and the first where the state existed but was silently the wrong one |

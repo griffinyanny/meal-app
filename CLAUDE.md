@@ -21,11 +21,47 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56) and B8a (S57)
-closed — 8.5 of 9.** **700 unit + 132 E2E green, migration `0010` applied.** Next: **B8b**, then C, then D.
-⚠️ **B8 was SPLIT in S57 on measurement, not on feel** — the type scale measured at ~303 sites across ~35
-distinct sizes against a 10-rung ladder, six times the rest of the item put together, so B8a took everything
-else (closing BUG-045 and BUG-048) and B8b carries the type work alone.
+**Workstream B is ✅ CLOSED at 9 of 9** — B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56),
+B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.** **705 unit green, migration `0010` applied.**
+Next: **C (PWA)**, then **D (production readiness)**, then the two validation weeks.
+
+**⚠️ S58 · A FIX CAN BE APPLIED CORRECTLY AND STILL BE OVERRIDDEN BY WHAT WAS ALREADY THERE.** The §05 type
+rungs live in `@layer components` — B8a's fix, so a call site can still choose colour. The consequence
+nobody had stated: **every leftover utility beside the class outranks it.** B8b's first routing pass left
+**81 lines** where the rung had been applied and a `font-bold` / `leading-tight` / `tracking-tight` /
+`italic` next to it was still deciding the property — **the class present, correct, and doing nothing.** No
+layer this project owns can see that: the screenshot shows type that looks like type, the DOM shows the
+class genuinely on the element, and `SH5` measures colour. **Only reading the class string finds it**, which
+is what `type-scale.test.ts` now does. B8a learned that a layer aimed correctly can lack the precision to
+answer; **this is the companion — a change can land and be silently outranked by the code it was applied
+to.**
+
+**⚠️ S58 · AN UNNAMED RUNG IS A DEFECT GENERATOR — FOURTH INSTANCE, AND IT WAS MOST OF THE LADDER.** Six of
+§05's ten rungs (H1/32, H2/26, H3/22, Body/13.5, Chef voice/14.5, Meta/12.5) **had no class at all**, which
+is the whole reason 192 of 255 type sites sat off a 30-size ladder. B3 found this in `ui/button.tsx`, B7 in
+`ui/textarea.tsx`, B8a in the caps rungs. **Name the rung before classifying anything.**
+
+**⚠️ S58 · THE CHEF'S VOICE IS ASSIGNED BY WHO SPEAKS, NEVER BY SIZE.** §05 reserves 14.5/400 italic gold as
+the only coloured running text in the product. The build drew the chef at **three sizes** (13.5 ×4, 14.5 ×1,
+15 ×1) while **eight sites that are not the chef** sat on 14.5px because it was convenient. And `0.9rem` =
+**14.4px**, which rounds onto that rung — so the filing's *"the rem sites need no judgement at all"* would
+have dropped five ordinary labels (an answer chip, a toast, a field label, a memory body, a retry button)
+into gold italic. **A near-miss of a rung is not evidence of belonging to it.**
+
+**⚠️ S58 · §08 GOVERNS CONTROLS; §05 DOES NOT.** The spec's own gallery draws buttons at 15 / 14.5 / 13.5px
+and **15px is deliberately not a §05 rung**, so button labels, text inputs (16px is the iOS zoom floor, not
+a taste call) and stepper numerals are outside the ladder. 84 sites left alone on purpose. ⚠️ **Stated
+rather than buried: controls run at 13 distinct sizes against §08's three** — the same defect one section
+over, and the obvious next item.
+
+**⚠️ S58 · A GUARD SHOULD STATE ITS OWN LIMIT RATHER THAN PRETEND.** `type-scale.test.ts` cannot tell a
+content site with no rung from a control allowed a raw size — that is a question about what the text *does*
+and the string does not say. So it **ratchets** at 71 hand-typed sizes instead of faking a rule, because
+thirty sizes accumulated one reasonable-looking `text-[13px]` at a time.
+
+⚠️ **B8 was SPLIT in S57 on measurement, not on feel**, and S58 re-measured before scoping B8b — finding the
+S57 filing **already stale after one session** (22/53/29 → 27/51/28, moved by B8a's own edits). **Re-measure
+even a filing written last session.**
 
 **⚠️ S57 · A LAYER CAN BE POINTED AT THE RIGHT THING AND STILL LACK THE PRECISION TO ANSWER.** B8a's caps
 rungs shipped as classes setting `color` inside `@layer utilities` — emitted ~27KB after Tailwind's own
@@ -529,7 +565,9 @@ These apply to ALL code. Hooks enforce the critical ones deterministically.
 
 There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; details in `docs/plans/spike-e2e-testing-harness.md` and `tests/e2e/harness/README.md`). It self-verifies real UI mechanics in a browser — the layer unit tests can't reach.
 
-**Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend; ~1.5 min. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
+**Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
+
+⚠️ **It takes ~17 minutes, not the "~1.5 min" this line claimed until S58.** That figure dates from S17, when the harness had ~20 specs; the suite now runs **132 sequentially** at ~8s each, which is exactly 17 minutes of arithmetic. Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured.
 
 **Run it (without being asked) when:**
 - Your change touches code the suite covers, OR

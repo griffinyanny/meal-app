@@ -4,6 +4,127 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 58 — 2026-08-01 (1F/B8b closed — Workstream B is 9 of 9, the design-system pass is DONE)
+
+**The last B item, and six of the ten rungs turned out to have no name.** **705 unit green** (+5), lint +
+typecheck clean.
+
+### The measurement, before anything was written
+
+S57's filing said 22 rem sites / 53 `text-sm` / 29 `text-xs`. Measured at S58's start: **27 / 51 / 28**.
+B8a's own edits had moved the field it was scoped against, **inside one session** — so every number in the
+filing was treated as a hypothesis, which is what the "measure first" instruction is actually for.
+
+The real shape: **255 type sites across 30 distinct sizes, 192 of them off §05's ten-rung ladder.** (The
+`~303` in the filing counted test files.)
+
+**The cause was not scatter, it was absence.** B8a named two rungs, B4 named two. The other **six — H1/32,
+H2/26, H3/22, Body/13.5, Chef voice/14.5, Meta/12.5 — had no class at all.** B3 found this condition in
+`ui/button.tsx`, B7 in `ui/textarea.tsx`, B8a in the caps rungs; this is the fourth instance and the largest:
+**an unnamed rung is a defect generator**, and most of the ladder was unnamed. All six added; **169 sites
+routed**; adoption is **218 rung call sites against 71 hand-typed sizes**, down from 255.
+
+### ⛔ THE ONE TO READ: the fix was applied correctly and was overridden by what was already there
+
+The rungs live in `@layer components` — B8a's fix, so a call site can still choose colour per the gold line.
+The consequence nobody had stated: **any leftover utility beside the class beats it.** The first routing pass
+left **81 lines** where the rung had been applied and a `font-bold` / `leading-tight` / `tracking-tight` /
+`italic` next to it was still deciding the property. The class was **present, correct, and doing nothing.**
+
+⚠️ **No layer this project owns could have caught it.** The screenshot shows type that looks like type. The
+DOM shows the class genuinely on the element. `SH5` measures colour, and colour was fine. It is only visible
+by reading the class string, which is what `type-scale.test.ts` now does — **81 → 0**.
+
+**B8a's lesson was that a layer can be aimed correctly and still lack the precision to answer. This is the
+companion and it is a different failure: a change can land correctly and be silently outranked by the code it
+was applied to.**
+
+### The chef's voice was drawn at three sizes, and eight impostors sat on its rung
+
+§05 reserves 14.5/400 italic gold as *"the only coloured running text in the product."* The build drew the
+chef at **13.5px (×4), 14.5px (×1) and 15px (×1)**, with `italic` and `--spec-gold-voice` hand-typed beside
+each — while **eight sites that are not the chef** sat on 14.5px because it was a convenient number.
+
+⚠️ **And the filing's own "these need no judgement at all" was false, in the one place it mattered.**
+`0.9rem` = 14.4px, and its nearest rung by pure distance **is** the chef rung. Distance-matching those five
+sites — an answer chip, a toast, a field label, a memory body, a retry button — would have put ordinary
+labels into the chef's gold italic. Routed by **who is speaking**, never by size. B8a's memory-card
+provenance, one rung over, in the opposite direction.
+
+### §08 governs controls; the ladder does not
+
+The spec's own gallery draws buttons at **15 / 14.5 / 13.5px**, and **15px is deliberately not a §05 rung**.
+So button-label type was never B8b's, nor were text inputs (16px, the iOS zoom floor), the two stepper
+numerals, `ui/` (B3's precedent), `debug/`, or the tab bar's 10px chrome. **84 sites left alone on purpose.**
+
+⚠️ **Stated rather than buried: controls run at 13 distinct sizes against §08's three.** That is this exact
+defect one section over, it is why 71 raw sizes survive, and it is the obvious next item.
+
+### The verification found three things
+
+1. **`type-scale.test.ts` caught a site the sweep missed, before it ever ran green** — `floating-slot.tsx:150`,
+   a toast whose ternary switches between an error and the chef. That is **two rungs, not one rung in two
+   colours**, and the ternary now switches the rung.
+2. **It failed against its own comment.** `memory-card.tsx` quoted the class string `caps-rungs.test.ts`
+   forbids, so the guard flagged prose. `palette.test.ts` learned this the same way — **third instance.**
+3. **Verified failing against pre-fix code** by physical backup + `git show main:` revert (never chained
+   `stash && test && pop`): red on `meal-row.tsx:155`, the hand-written gold italic, the predicted site.
+
+⚠️ **The guard's limit is written into the guard.** It cannot tell a content site with no rung from a control
+that is allowed a raw size — that is a question about what the text *does* and the string does not say. So it
+ratchets at 71 instead of pretending, because thirty sizes accumulated one reasonable-looking `text-[13px]`
+at a time.
+
+### ⚠️ The visual pass found one thing, and it is a different failure from B8a's
+
+**`BREAKFAST` collided with the meal title on every compact row at multi-meal density** —
+`BREAKFASTSeeded Saturday Brea…`, no gap. The label column is a hard `w-[62px]`, sized for the type that
+label wore **before B8a gave it `.spec-label`**; the rung's 1.3px tracking pushes the longest meal type past
+it. **Pre-existing, and S57's `/visual-qa` cleared the identical frame at 0 blockers / 0 high** — confirmed
+by diffing the two `dense.png` captures rather than assuming.
+
+⚠️ **This is NOT the precision problem B8a hit, and the distinction is the point.** That regression was a
+warm tan against gold at 11px on a near-black floor — genuinely below the resolution of a judgement call,
+which is why diffing the built CSS was the only thing that could settle it. **This is two words touching.**
+It is visible at a glance, in a frame the gate captured, kept and passed. The layer was not blind and was not
+imprecise — **it was not read carefully enough.** S55 found a rule that was present, correct and *unrun*;
+this is a frame that was present, correct and *unlooked-at*.
+
+Fixed by widening the column to 74px at both call sites (the compact row and the provisional row stack in the
+same day container and have to align), **never by forking the rung's tracking** — which is precisely what
+`type-scale.test.ts` exists to forbid. Re-captured and verified.
+
+### Proved in the built CSS, not in a screenshot
+
+All ten rungs sit at bytes **10618–11619 inside `@layer components`** (10600–11739); every call-site colour
+utility sits at **37345+ inside `@layer utilities`** (11740–67336). Overrides now win **by layer rather than
+by source order** — strictly stronger than what B8a restored, because source position can no longer decide
+it.
+
+### BUG-049 🟠 filed, not swept
+
+**Five text inputs sit under 16px and zoom the iOS viewport on focus** — the recipe search, the picker
+search, the §09 control's textarea (on-ladder at 14.5 and still wrong, which is the point), and **both
+grocery inline edits, which you use standing in a shop.** `ui/input.tsx` already ships the right pattern
+(`text-base md:text-sm`) and nothing else inherited it. ⚠️ **The fix goes UP to 16px, which is not a rung**,
+so it cannot ride inside a type item → 1F/C.
+
+### ⚠️ Three visible changes
+
+- **The Plan rail's date numeral goes 16 → 19px.** ⚠️ The day marker is **one heading drawn in two parts** —
+  the caps day name stays the eyebrow that names the shelf, and the numeral takes the Group title rung as the
+  heading's dominant half. **Stated as a judgement rather than a lookup:** §05's example for that rung is the
+  word *"Tuesday"*, and S54 flagged a 19px stepper numeral as exactly the wrong tenant. The difference is
+  what the slot HOLDS — a stepper numeral is a value you are editing; this is the name of the day the meals
+  below belong to.
+- **The solo meal row's title goes 16 → 15.5 and loses its size ternary** — both densities are the same
+  object, the name of a meal in a list.
+- **Body copy that previously inherited `--foreground` now takes the Body rung's `#CAC4BC`** — visible on the
+  recipe detail's ingredient and step lines, `past-meal-row`, and the Recipes toast. The spec correcting
+  sites that were over-bright, but real, and `/visual-qa` should be read with it in mind.
+
+---
+
 ## Session 57 — 2026-08-01 (1F/B8a closed; B8 split, B8b filed)
 
 **B8's first half, and the item was two jobs wearing one name.** **700 unit + 132 E2E green**, lint +

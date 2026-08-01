@@ -17,16 +17,16 @@ export function ChefNarrativeCard({ narrative, isNew, onOpenChef }: ChefNarrativ
       <p className="mb-2.5 spec-eyebrow text-[var(--spec-gold-tint)]">
         Your chef
       </p>
-      <h1 className="mb-4 text-[1.75rem] font-bold leading-[1.12] tracking-[-0.5px] text-foreground">
+      <h1 className="mb-4 spec-spoken-headline text-foreground">
         {isNew ? "We've just met." : "Here's what I know about you."}
       </h1>
 
       <div className="glass-surface rounded-[22px] px-[18px] pb-4 pt-[18px]">
-        <p className="text-[0.97rem] leading-[1.55] text-foreground [text-wrap:pretty]">
+        <p className="spec-body text-foreground">
           {narrative}
         </p>
         {!isNew && (
-          <p className="mt-3 text-[0.8rem] leading-normal text-muted-foreground">
+          <p className="mt-3 spec-meta text-muted-foreground">
             All of this is editable. The fastest way to fix it is to just tell me.
           </p>
         )}
@@ -40,7 +40,7 @@ export function ChefNarrativeCard({ narrative, isNew, onOpenChef }: ChefNarrativ
         <Mic className="size-[18px]" strokeWidth={2} />
         Talk to the chef
       </button>
-      <p className="mx-1.5 mt-2 text-center text-[0.8rem] leading-snug text-muted-foreground [text-wrap:pretty]">
+      <p className="mx-1.5 mt-2 text-center spec-meta text-muted-foreground [text-wrap:pretty]">
         {isNew
           ? "The more you tell me now, the better your first week. Or just start cooking and I'll pick it up."
           : "“I'm not pescatarian anymore, and I'm allergic to gluten” — I'll update everything at once."}

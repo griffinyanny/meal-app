@@ -4,6 +4,39 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-01 (S58) — The §05 ladder governs content; §08 governs controls; rungs are a default, never a lock
+
+**Four calls, all Claude's, all stated rather than assumed and all open to reversal.**
+
+**1. The type ladder does not govern control labels.** §08's own gallery draws buttons at **15 / 14.5 /
+13.5px**, and **15px is deliberately not a §05 rung** — the two sections describe different things, and a
+button label is not content. So B8b routed **169 content sites** and deliberately left **84**: control
+labels, text inputs (16px is the iOS zoom floor, not a design choice), two stepper numerals, `ui/`
+primitives (B3's precedent — a primitive changes deliberately, never by sweep), `debug/`, and the tab bar's
+10px chrome label. ⚠️ **The cost is visible and stated: controls run at 13 distinct sizes against §08's
+three.** That is the same defect one section over. It is filed as the next item rather than folded in,
+because sweeping it would restyle every button in the product under a type-scale heading.
+
+**2. A rung sets colour as a DEFAULT, and the call site still wins.** Carried forward from B8a and now
+proved structurally rather than by inspection: all ten rungs live in `@layer components`, every colour
+utility in `@layer utilities`, so an override wins **by layer rather than by source order**. B8a's
+regression is not merely fixed, it is no longer expressible — source position cannot decide it any more.
+
+**3. The chef-voice rung is assigned by who is speaking, never by size.** The only rung in the ladder that
+cannot be routed mechanically. Eight non-chef sites sat on its 14.5px measurement and the chef himself was
+drawn at three different sizes; `0.9rem` (14.4px) rounds onto it, so five ordinary labels would have been
+dropped into gold italic by pure distance. **`type-scale.test.ts` asserts nobody re-litigates it by hand.**
+
+**4. Screen titles: standalone pages take the 32px H1; the tab titles stay at 26.** Login and the no-access
+page were on shadcn defaults (30 / 24px) and took the real rung. But **Plan's and Groceries' `<h1>`s are
+drawn at 26px** — the Spoken headline — by the designs Griffin ran, and Recipes' was a bare `text-2xl`
+scaffold heading above its designed header. All three tab titles now sit at 26 together. ⚠️ **That is a
+spec divergence left visible on purpose:** §05 says a screen title is 32px, and three of the app's four
+screen titles are not. Routing them to 32 would have been a design change to two surfaces Griffin designed,
+made silently inside a mechanical item. **His call, not mine.**
+
+---
+
 ## 2026-07-31 (S56) — One control everywhere, mic and all; and B7 covers six sites, not three
 
 **Three calls: two Griffin's, one stated by Claude and open to reversal.**

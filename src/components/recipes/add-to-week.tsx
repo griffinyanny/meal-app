@@ -64,14 +64,14 @@ export function AddToWeek({ recipeId, title }: { recipeId: string; title: string
           className="spec-glass rounded-2xl px-[14px] py-3 shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
         >
           <p
-            className="m-0 text-[13.5px] italic leading-[1.45] text-[var(--spec-gold-voice)]"
+            className="m-0 spec-chef-voice text-[var(--spec-gold-voice)]"
             style={{ textWrap: "pretty" }}
           >
             {answer}
           </p>
           <Link
             href="/plan"
-            className="mt-1.5 inline-block text-[13px] font-semibold text-[var(--spec-action)]"
+            className="mt-1.5 inline-block spec-body text-[var(--spec-action)]"
           >
             See the week →
           </Link>
@@ -99,7 +99,7 @@ export function AddToWeek({ recipeId, title }: { recipeId: string; title: string
       {pickMutation.error && !answer ? (
         <p
           role="alert"
-          className="mt-2 text-center text-[12.5px] text-[var(--spec-destructive-text)]"
+          className="mt-2 text-center spec-meta text-[var(--spec-destructive-text)]"
         >
           That didn&apos;t take — try again?
         </p>

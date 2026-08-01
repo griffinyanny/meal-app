@@ -44,7 +44,7 @@ export function HouseholdScreen({
     <div className="animate-turn-in flex flex-1 flex-col">
       <ChefStatus label="GETTING TO KNOW YOU" />
 
-      <h2 className="m-0 mb-4 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-[var(--spec-text-primary)]">
+      <h2 className="m-0 mb-4 mt-4 spec-spoken-headline text-[var(--spec-text-primary)]">
         Who am I cooking for?
       </h2>
 
@@ -78,7 +78,7 @@ export function HouseholdScreen({
           (they eat adapted bites, not a portion). Said plainly, because a
           number that refuses to change after a tap reads as a control that
           didn't register. */}
-      <p className="mt-2.5 text-center text-[12px] text-[var(--spec-text-caption)]">
+      <p className="mt-2.5 text-center spec-meta text-[var(--spec-text-caption)]">
         I&apos;ll cook for {servings} {servings === 1 ? "serving" : "servings"}
         {stage === "6_to_12m" ? ", plus bites for the little one." : "."}
       </p>

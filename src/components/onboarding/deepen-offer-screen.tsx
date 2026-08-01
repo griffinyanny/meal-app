@@ -26,10 +26,10 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
             THAT&apos;S THE ESSENTIALS
           </p>
         </div>
-        <h2 className="m-0 mb-2.5 text-[27px] font-bold leading-[1.16] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
+        <h2 className="m-0 mb-2.5 spec-spoken-headline text-[var(--spec-text-primary)] text-pretty">
           Want to go a little deeper?
         </h2>
-        <p className="m-0 max-w-[335px] text-[15.5px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
+        <p className="m-0 max-w-[335px] spec-row-title text-[var(--spec-text-body)] text-pretty">
           I can plan a good week right now. A few more minutes and I&apos;ll cook to
           your spice, your timing, the flavors you actually reach for.
         </p>

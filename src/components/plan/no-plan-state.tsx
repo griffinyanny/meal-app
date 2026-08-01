@@ -75,10 +75,10 @@ export function NoPlanState({
       )}
 
       <div className="space-y-2">
-        <h1 className="text-[26px] font-bold leading-tight tracking-tight">
+        <h1 className="spec-spoken-headline">
           {seed ? "Here's what I'll cook around." : "What are you thinking this week?"}
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="spec-body text-muted-foreground">
           {seed
             ? "Change anything, or let me get started."
             : "Tell me what you're in the mood for, or I'll figure it out."}
@@ -101,7 +101,7 @@ export function NoPlanState({
       )}
 
       {replaceWarning && (
-        <p className="text-xs text-muted-foreground">
+        <p className="spec-meta text-muted-foreground">
           Generating a new plan will replace this week&apos;s meals.
         </p>
       )}
@@ -158,7 +158,7 @@ export function NoPlanState({
               data-testid="plan-pick"
               className="spec-inset flex min-h-[52px] items-center gap-3 rounded-[14px] px-[14px] py-3"
             >
-              <span className="min-w-0 flex-1 text-[14.5px] font-medium text-[var(--spec-text-primary)]">
+              <span className="min-w-0 flex-1 spec-row-title text-[var(--spec-text-primary)]">
                 {pick.title}
               </span>
               {onRemovePick && (
@@ -193,7 +193,7 @@ export function NoPlanState({
       {/* §B's guarantee, STATED BEFORE THE ASK — the button below replaces the
           week, and this is the one sentence that says what it does not replace. */}
       {carriedPickCount > 0 && (
-        <p className="text-xs text-muted-foreground" data-testid="picks-survive-note">
+        <p className="spec-meta text-muted-foreground" data-testid="picks-survive-note">
           {carriedPickCount === 1
             ? "Your pick stays — I'll build the new week around it."
             : `Your ${carriedPickCount} picks stay — I'll build the new week around them.`}
