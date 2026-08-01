@@ -153,6 +153,18 @@ amended and the reasoning is yours rather than Claude's.
 *(B2's bottom-edge check and BUG-049's zoom are both still worth a tap in the same pass — BUG-049 is fixed,
 so the six fields should no longer zoom.)*
 
+### ⚠️ NOT RUN THIS SESSION, and it is owed before C closes: `/visual-qa`
+
+Two visible type changes shipped on covered surfaces — the Recipes and Groceries titles at 32px, and six
+input fields going from 13–15px to 16px — and **the capture pass was not run.** The `.claude/rules/visual-qa.md`
+rule asks for it before wrapping a feature on Plan / Groceries / Recipes / You / onboarding, and this
+session wrapped without it.
+
+Griffin's phone look covers the titles better than a capture would, but it does not cover the rest of those
+surfaces, and the input change only renders **while a field is focused** — a state the capture states may
+not exercise at all. **Run `/visual-qa` Layer A at the top of the next session**, before adding the service
+worker on top of an ungraded change.
+
 ### ⭐ Next up — the rest of C
 
 **Not built yet:** the service worker + app-shell cache, React Query IndexedDB persistence, the
@@ -203,9 +215,11 @@ running it in Claude Design; ask me for the URL. ⚠️ The shipped icon is a sp
 (.ember-core's gradient + lucide's toque); replace src/assets/app-icon.svg and run `npm run icons`.
 statusBarStyle is deliberately `black` not `black-translucent` — translucent needs env(safe-area-inset-top)
 and there ISN'T ONE anywhere in src/, so it'd put every screen title under the clock; going translucent
-belongs with the full-screen design artifact. Read docs/whats-next.md, docs/scope-v1.md and
-docs/scope-1F.md first, give me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is CLOSED as
-won't-do, the non-prod Supabase project closed NO, and gate 1 is now CLOSED as retired — don't reopen any
+belongs with the full-screen design artifact. ⚠️ RUN /visual-qa Layer A FIRST — S59 shipped two visible type changes (the 32px titles, six inputs to 16px)
+and did NOT run the capture pass, so don't stack a service worker on an ungraded change. Read
+docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check.
+maxDuration is CLOSED, BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO, and gate 1
+is now CLOSED as retired — don't reopen any
 of them. ⚠️ The E2E suite takes ~17 MINUTES — tell me before you start it and don't run it while I'm using
 the app. Owed by me: whether 32px reads right for the Recipes and Groceries titles on my phone (they were
 on the chef's 26px SPOKEN-headline rung, which §05 defines by who is speaking, not by size — Plan's h1
