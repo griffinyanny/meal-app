@@ -232,7 +232,7 @@ export function PickerContent({
                 }
                 aria-label="Search your recipes"
                 data-testid="picker-search"
-                className="w-full bg-transparent text-[14px] text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
+                className="w-full bg-transparent spec-input text-[var(--spec-text-body)] placeholder:text-[var(--spec-text-muted)] focus:outline-none"
               />
             </label>
           ) : null}

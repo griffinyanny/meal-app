@@ -31,6 +31,22 @@ export const ACCESS_COOKIE = "ma_access";
 const GATE_EXEMPT = [
   "/invite", // how you obtain the cookie in the first place
   "/no-access", // the "not on the invite list" explainer
+  // ⚠️ The manifest must be readable WITHOUT the cookie, and this is not a
+  // convenience (1F/C). Per the manifest spec a browser fetches it with
+  // `credentials: "omit"` unless the link tag says otherwise, so the fetch
+  // never carries `ma_access` even from a browser that holds it. Gated, it
+  // 404s — and a failed manifest fetch does not error visibly, it just means
+  // "Add to Home Screen" quietly produces a plain BOOKMARK with full Safari
+  // chrome instead of a standalone app. C's "launches full-screen without
+  // browser chrome" would be silently impossible while gate 1 is on.
+  //
+  // Safe to expose: the manifest holds the app name, colours and icon paths.
+  // The flat-404 design exists to stop a crawler learning there is something
+  // here — a crawler that guesses this exact path learns the name of an app it
+  // still cannot enter, and gate 2 (ALLOWED_EMAILS) is what protects the data.
+  // The icons need no entry: the proxy matcher excludes `.png` before the gate
+  // ever runs.
+  "/manifest.webmanifest",
 ];
 
 /** Comma-separated env list -> lowercased, trimmed, non-empty entries. */

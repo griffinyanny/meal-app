@@ -414,6 +414,31 @@
     text-transform: uppercase;
     color: var(--spec-text-muted);
   }
+
+  /* ⚠️ NOT a §05 rung — §08 governs controls and 16px is not on the ladder.
+     This is the iOS zoom floor, named (1F/C, BUG-049).
+
+     iOS Safari zooms the viewport whenever a focused input renders below 16px,
+     and does not zoom back out. Five fields were under it — the recipe search,
+     the picker search, the §09 control's textarea, and BOTH grocery inline
+     edits, which are the ones you use standing in a shop.
+
+     THE REASON THIS IS A CLASS AND NOT FIVE PATCHED CALL SITES: the pattern
+     already existed, in exactly one place (`ui/input.tsx` shipped shadcn's
+     `text-base md:text-sm`), and nothing inherited it because nothing else used
+     that primitive. The tracker's filed fix was "copy that string to all five",
+     which is precisely how the sixth site gets it wrong. Fifth instance of an
+     unnamed rung being a defect generator, after `ui/button.tsx` (B3),
+     `ui/textarea.tsx` (B7), the caps rungs (B8a) and six of §05's ten (B8b).
+
+     No `md:` step-down, deliberately, unlike the shadcn default it replaces.
+     This is a phone app whose desktop rendering is incidental — two sizes
+     behind a breakpoint is two answers to one question, and a 14px input on a
+     laptop buys nothing worth a second answer. Font-size only: weight, colour
+     and background stay with the call site, same contract as the rungs. */
+  .spec-input {
+    font-size: 16px;
+  }
 }
 
 @layer base {

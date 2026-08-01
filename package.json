@@ -18,7 +18,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "test:capture": "playwright test -c playwright.capture.config.ts",
-    "test:capture:live": "E2E_LIVE_CAPTURE=1 playwright test -c playwright.capture-live.config.ts"
+    "test:capture:live": "E2E_LIVE_CAPTURE=1 playwright test -c playwright.capture-live.config.ts",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.79",

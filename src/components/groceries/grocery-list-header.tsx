@@ -30,7 +30,8 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
         Groceries · This week
       </p>
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="spec-spoken-headline">Your list</h1>
+        {/* §05's H1 — see the note on the Recipes title. Not the chef's rung. */}
+        <h1 className="spec-screen-title">Your list</h1>
         <div className="flex shrink-0 items-center gap-3">
           <span className="spec-body text-muted-foreground" data-testid="grocery-progress-count">
             {checkedCount} / {total}
