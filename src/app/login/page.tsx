@@ -24,8 +24,8 @@ export default function LoginPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center p-6 bg-background">
       <div className="w-full max-w-[430px] space-y-8 text-center">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Meal App</h1>
-          <p className="text-muted-foreground text-sm">
+          <h1 className="spec-screen-title">Meal App</h1>
+          <p className="text-muted-foreground spec-body">
             Your personal chef, powered by AI.
           </p>
         </div>
@@ -40,11 +40,11 @@ export default function LoginPage() {
             Continue with Google
           </button>
           {error && (
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="spec-body text-destructive">{error}</p>
           )}
         </div>
 
-        <p className="text-xs text-muted-foreground/60">
+        <p className="spec-meta text-muted-foreground/60">
           By continuing, you agree to our Terms of Service.
         </p>
       </div>

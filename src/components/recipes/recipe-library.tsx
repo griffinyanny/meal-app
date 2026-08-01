@@ -162,7 +162,7 @@ export function RecipeLibrary() {
         <div
           role="status"
           data-testid="recipe-toast"
-          className="fixed left-1/2 -translate-x-1/2 z-50 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] glass-sheet rounded-full px-4 py-2 text-xs font-medium shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
+          className="fixed left-1/2 -translate-x-1/2 z-50 bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] glass-sheet rounded-full px-4 py-2 spec-meta shadow-[0_18px_46px_-14px_rgba(0,0,0,0.75)]"
         >
           {toast}
         </div>
@@ -248,7 +248,7 @@ function TieredView({
       />
 
       {shown.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="spec-meta text-muted-foreground">
           {filter === "fav"
             ? "No favorites yet — tap the heart on a recipe to keep it here."
             : "Nothing cooked yet."}
@@ -317,7 +317,7 @@ function SearchResults({
       ) : isError ? (
         <ErrorCard onRetry={onRetry} />
       ) : results.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No recipes found</p>
+        <p className="spec-body text-muted-foreground">No recipes found</p>
       ) : (
         results.map((r) => (
           <RecipeCard
@@ -346,7 +346,7 @@ function LoadingSkeleton() {
 function ErrorCard({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="glass-card p-8 flex flex-col items-center text-center space-y-3">
-      <p className="text-sm text-muted-foreground">Couldn&apos;t load your recipes</p>
+      <p className="spec-body text-muted-foreground">Couldn&apos;t load your recipes</p>
       <Button size="sm" variant="outline" onClick={onRetry}>
         Try again
       </Button>
@@ -363,8 +363,8 @@ function EmptyLibrary({
 }) {
   return (
     <div className="glass-card p-8 flex flex-col items-center text-center space-y-4">
-      <p className="text-sm text-muted-foreground">Your recipe library is empty</p>
-      <p className="text-xs text-muted-foreground/60">
+      <p className="spec-body text-muted-foreground">Your recipe library is empty</p>
+      <p className="spec-meta text-muted-foreground/60">
         Ask your chef to generate something, or import a recipe from the web.
       </p>
       <div className="flex gap-2">

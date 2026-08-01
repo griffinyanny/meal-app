@@ -1,5 +1,27 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S58) — surfaced closing the type scale (1F/B8b)
+
+- **[1F/D or V1.5] The CONTROL scale needs the same treatment the type scale just got: 13 sizes against
+  §08's three.** B8b routed 169 content sites onto §05's ten-rung ladder and deliberately left **84 control
+  sites alone**, because §08 governs button type and §05 does not — the spec's own gallery draws controls at
+  **15 / 14.5 / 13.5px**, and 15px is pointedly *not* a §05 rung. That boundary is right. ⚠️ **But the
+  controls behind it are exactly as scattered as the content was:** 13 distinct sizes, including 21 sites on
+  Tailwind's `text-sm`, 12 on `text-[13px]`, and one-offs at `0.9rem`, `0.95rem`, `0.8rem`, `16.8px`. It is
+  the same defect one section over — **no control rung exists as a class, so every button label is
+  improvised** — and it is why 71 hand-typed sizes survive B8b's ratchet. **The work is the same shape and
+  already proven:** name §08's three rungs as classes, route by control height (48 → 15, 44 → 14.5, 36 →
+  13.5), and let `type-scale.test.ts`'s ratchet fall. ⚠️ **Why it was not done in B8b:** it restyles every
+  button in the product under a heading that says "type scale," and button type interacts with hit targets
+  (B3/BUG-048) and with §08's one-filled-cream-button rule (`SH4`) in ways the content ladder does not.
+  It deserves its own item and its own `/visual-qa` pass.
+- **[V1.5] `.spec-screen-title` (32px) has two call sites and neither is a tab.** §05 states a screen title
+  is 32/700, but Plan's and Groceries' `<h1>`s are **26** by the designs Griffin ran, Recipes' was a bare
+  shadcn `text-2xl`, and the recipe detail's is **22**. B8b put all three tab titles on 26 together and left
+  32 for the standalone login / no-access pages, **deliberately not resolving the divergence** — promoting
+  designed surfaces to 32 is a design change, not a mechanical one. **Griffin's call**, and the natural
+  moment is the C design pass, when a home-screen app's header hierarchy is on the table anyway.
+
 ## Incoming (S56) — surfaced building spec §09's one control (1F/B7)
 
 - **[V1.5] Wire the mic — speech-to-text — and it is now a ONE-COMPONENT change.** R1 is text-only by

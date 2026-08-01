@@ -131,7 +131,7 @@ export function PlanReview({
                 : "Your grocery list"}
             </span>
             {estimate ? (
-              <span className="mt-0.5 block text-[12.5px] text-[var(--spec-text-caption)]">
+              <span className="mt-0.5 block spec-meta text-[var(--spec-text-caption)]">
                 {estimate} estimated
               </span>
             ) : null}
@@ -176,7 +176,7 @@ export function PlanReview({
           (S45): foot link, gap tightened. */}
       {isConfirmed ? null : (
         <div className="mt-[13px]">
-          <span className="text-[13.5px] text-[var(--spec-text-caption)]">
+          <span className="spec-body text-[var(--spec-text-caption)]">
             Not the week you asked for?{" "}
           </span>
           <button

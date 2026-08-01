@@ -30,9 +30,9 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
         Groceries · This week
       </p>
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-[26px] font-bold leading-tight">Your list</h1>
+        <h1 className="spec-spoken-headline">Your list</h1>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="text-[13px] text-muted-foreground" data-testid="grocery-progress-count">
+          <span className="spec-body text-muted-foreground" data-testid="grocery-progress-count">
             {checkedCount} / {total}
           </span>
           <button
@@ -68,7 +68,7 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
           data-testid="grocery-complete-banner"
         >
           <Check className="size-5 text-[var(--spec-success)]" strokeWidth={2.4} />
-          <span className="text-[13.5px] font-semibold">
+          <span className="spec-body">
             List complete — everything&apos;s covered.
           </span>
         </div>

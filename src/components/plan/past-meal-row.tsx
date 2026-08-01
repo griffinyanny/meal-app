@@ -20,7 +20,7 @@ export function PastMealRow({ meal, onFeedback }: PastMealRowProps) {
         <p className="spec-label">
           {meal.dayName}
         </p>
-        <p className="truncate text-sm">{meal.title}</p>
+        <p className="truncate spec-body">{meal.title}</p>
       </div>
       <div className="flex items-center gap-1.5">
         <button

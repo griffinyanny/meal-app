@@ -115,7 +115,7 @@ export function PlanRail({
           {/* Empty rail gutter: the closing line is about the week, not a day. */}
           <div className="w-[38px] flex-none" />
           <div className="flex min-w-0 flex-1 items-center gap-2.5">
-            <span className="text-[13.5px] text-[var(--spec-text-caption)]">
+            <span className="spec-body text-[var(--spec-text-caption)]">
               {missing} not planned
             </span>
             <span className="h-px flex-1 bg-[rgba(240,222,190,0.09)]" />

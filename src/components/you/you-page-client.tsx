@@ -158,8 +158,8 @@ export function YouPageClient() {
   if (preferencesQuery.isError || memoriesQuery.isError || accountQuery.isError) {
     return (
       <div className="px-[22px] pt-16 text-center">
-        <p className="text-[0.95rem] text-foreground">The chef couldn&apos;t load your profile.</p>
-        <p className="mt-1 text-sm text-muted-foreground">Check your connection and try again.</p>
+        <p className="spec-body text-foreground">The chef couldn&apos;t load your profile.</p>
+        <p className="mt-1 spec-body text-muted-foreground">Check your connection and try again.</p>
         <button
           type="button"
           onClick={() => {

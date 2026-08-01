@@ -39,7 +39,7 @@ export function SoftConstraintsCard({
   return (
     <div data-testid="you-soft-card" className="glass-card flex flex-col gap-3.5 rounded-[18px] p-4">
       <div>
-        <p className="mb-2 text-[0.78rem] text-muted-foreground">You&apos;re not a fan of</p>
+        <p className="mb-2 spec-meta text-muted-foreground">You&apos;re not a fan of</p>
         <div className="flex flex-wrap gap-2">
           {prefs.dislikes.map((d) => (
             <ConstraintChip key={d} label={d} onRemove={() => onRemoveDislike(d)} />
@@ -51,7 +51,7 @@ export function SoftConstraintsCard({
       <Divider />
 
       <div>
-        <p className="mb-2 text-[0.78rem] text-muted-foreground">You lean toward</p>
+        <p className="mb-2 spec-meta text-muted-foreground">You lean toward</p>
         <div className="flex flex-wrap gap-2">
           {prefs.cuisinePreferences.map((c) => (
             <ConstraintChip key={c} label={c} onRemove={() => onRemoveCuisine(c)} />
@@ -107,8 +107,8 @@ function FieldButton({
 }) {
   return (
     <button type="button" onClick={onClick} className="flex-1 text-left">
-      <p className="mb-0.5 text-[0.78rem] text-muted-foreground">{label}</p>
-      <p className="text-[0.95rem] font-semibold text-foreground">{value}</p>
+      <p className="mb-0.5 spec-meta text-muted-foreground">{label}</p>
+      <p className="spec-row-title text-foreground">{value}</p>
     </button>
   );
 }

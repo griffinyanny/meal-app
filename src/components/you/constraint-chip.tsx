@@ -35,7 +35,7 @@ export function ConstraintChip({
       {subLabel && (
         <span
           className={cn(
-            "text-[11px] font-semibold",
+            "spec-eyebrow",
             danger ? "text-[rgba(240,216,211,0.7)]" : "text-muted-foreground"
           )}
         >

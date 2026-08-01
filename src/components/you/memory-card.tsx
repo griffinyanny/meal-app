@@ -35,18 +35,18 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
           className={cn("size-3.5", prov.accent ? "text-primary" : "text-muted-foreground")}
           strokeWidth={1.9}
         />
-        {/* ⚠️ NOT one of §05's two caps rungs, and I had it wrong first time.
+        {/* ⚠️ NOT one of §05's two caps rungs, and B8a had it wrong first time.
             Both rungs are uppercase by definition, and this slot holds a
             sentence — "You told me when we started" — so routing it to
             `.spec-label` shouted an attribution across every memory card. A
             provenance line is a FACT about the card, not the name of a field
             in it, which is the Meta rung's job (12.5/400) rather than a caps
-            label's. Left on its own type and routed with the rest of the type
-            scale in B8b; listed in `caps-rungs.test.ts` so the guard still
-            fails closed on it. */}
+            label's. B8b lands it there, and the widened letter-spacing goes
+            with it: the Meta rung carries none, and that spacing was only ever
+            here because the slot was pretending to be a caps label. */}
         <span
           className={cn(
-            "text-[11px] font-semibold tracking-wide",
+            "spec-meta",
             prov.accent ? "text-primary/90" : "text-muted-foreground"
           )}
         >
@@ -54,7 +54,7 @@ export function MemoryCard({ memory, onRemove, onEdit }: MemoryCardProps) {
         </span>
       </div>
       <div className="flex items-start gap-2.5">
-        <p className="min-w-0 flex-1 text-[0.9rem] leading-snug text-foreground [text-wrap:pretty]">
+        <p className="min-w-0 flex-1 spec-body text-foreground">
           {memory.content}
         </p>
         {/* 28 -> 44px, spec §12 item 05. These two PAINT (fill + line), so

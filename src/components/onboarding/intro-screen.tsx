@@ -28,10 +28,10 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
         <p className="m-0 mb-3 spec-eyebrow text-[var(--spec-gold-tint)]">
           YOUR CHEF
         </p>
-        <h1 className="m-0 mb-3 text-[28px] font-bold leading-[1.16] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
+        <h1 className="m-0 mb-3 spec-spoken-headline text-[var(--spec-text-primary)] text-pretty">
           Let&apos;s get to know each other. Then I&apos;ll cook your week.
         </h1>
-        <p className="m-0 mb-[22px] max-w-[335px] text-[15.5px] leading-[1.5] text-[var(--spec-text-body)] text-pretty">
+        <p className="m-0 mb-[22px] max-w-[335px] spec-row-title text-[var(--spec-text-body)] text-pretty">
           I learn how you eat, then build a plan around it, not a template. Two minutes,
           and you can skip any of it.
         </p>
@@ -49,7 +49,7 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
                 className="mt-[3px] size-[15px] flex-none text-[var(--spec-text-muted)]"
                 strokeWidth={1.9}
               />
-              <p className="m-0 text-[14.5px] leading-[1.4] text-[var(--spec-text-body)]">{text}</p>
+              <p className="m-0 spec-body text-[var(--spec-text-body)]">{text}</p>
             </div>
           ))}
         </div>

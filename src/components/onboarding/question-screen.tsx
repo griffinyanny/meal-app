@@ -130,7 +130,7 @@ export function QuestionScreen({
             <span className="max-w-[270px] spec-label leading-[1.3]">
               THE MORE YOU TELL ME, THE BETTER YOUR PLANS GET
             </span>
-            <span className="text-[11px] font-semibold text-[var(--spec-gold-tint)]">Optional</span>
+            <span className="spec-eyebrow text-[var(--spec-gold-tint)]">Optional</span>
           </div>
           {/* The testid lives on the TRACK, which is always rendered. The fill
               is legitimately zero-width on the first deep question (the meter
@@ -151,12 +151,12 @@ export function QuestionScreen({
 
       <ChefStatus label={status} safety={safety} />
 
-      <h2 className="m-0 mb-3.5 mt-4 text-[26px] font-bold leading-[1.2] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">
+      <h2 className="m-0 mb-3.5 mt-4 spec-spoken-headline text-[var(--spec-text-primary)] text-pretty">
         {headline}
       </h2>
 
       {why && (
-        <p className="m-0 mb-4 text-[13px] italic leading-[1.45] text-[var(--spec-text-muted)]">
+        <p className="m-0 mb-4 spec-meta italic text-[var(--spec-text-muted)]">
           {why}
         </p>
       )}

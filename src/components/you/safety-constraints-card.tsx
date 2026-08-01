@@ -26,7 +26,7 @@ export function SafetyConstraintsCard({
     >
       <div className="mb-2.5 flex items-center gap-2">
         <AlertTriangle className="size-4 text-destructive" strokeWidth={2} />
-        <span className="text-[0.8rem] font-bold tracking-[0.2px] text-[var(--spec-destructive-text)]">
+        <span className="spec-label font-bold text-[var(--spec-destructive-text)]">
           I never cook with
         </span>
         <span className="ml-auto spec-label text-[rgba(227,155,146,0.75)]">

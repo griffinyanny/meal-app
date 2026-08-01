@@ -423,7 +423,7 @@ export function PlanPageClient() {
     if (generationFailed && !plan) {
       return (
         <div className="glass-card flex flex-col items-center space-y-3 p-8 text-center">
-          <p className="text-sm text-muted-foreground">
+          <p className="spec-body text-muted-foreground">
             The chef got stuck putting your plan together.
           </p>
           <Button size="sm" onClick={retryGeneration}>
@@ -633,7 +633,7 @@ export function PlanPageClient() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">{greeting()}</p>
+        <p className="spec-body text-muted-foreground">{greeting()}</p>
         <Link
           href="/you"
           aria-label="Settings"

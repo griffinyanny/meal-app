@@ -45,7 +45,7 @@ export function TestModeCard({ onError }: TestModeCardProps) {
           Test mode
         </h2>
       </div>
-      <p className="mb-3 text-sm text-muted-foreground">
+      <p className="mb-3 spec-body text-muted-foreground">
         Clears your preferences and the memories the interview wrote, then starts
         the first run again. Memories from real use are kept.
       </p>

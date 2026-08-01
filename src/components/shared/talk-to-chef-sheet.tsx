@@ -71,7 +71,7 @@ export function TalkToChefSheet({
     >
       <DrawerContent className="glass-sheet">
         <DrawerHeader className="text-left pr-12">
-          <DrawerTitle className="text-lg">{headline}</DrawerTitle>
+          <DrawerTitle className="spec-feature-line">{headline}</DrawerTitle>
           <DrawerDescription className="sr-only">
             Tell your chef what you&apos;re thinking.
           </DrawerDescription>
@@ -113,18 +113,18 @@ export function TalkToChefSheet({
               so a request never feels like it did nothing. */}
           {isSubmitting ? (
             <div aria-live="polite">
-              <p className="text-sm text-primary/90">
+              <p className="spec-body text-primary/90">
                 {workingLabel ?? "Reworking your plan…"}
               </p>
               <div className="shimmer-bar mt-2 h-0.5 w-full rounded-full" />
             </div>
           ) : modifyError ? (
-            <p className="text-sm text-destructive/90" role="alert">
+            <p className="spec-body text-destructive/90" role="alert">
               {modifyError}
             </p>
           ) : (
             resultMessage && (
-              <p className="text-sm text-primary/90" aria-live="polite">
+              <p className="spec-body text-primary/90" aria-live="polite">
                 {resultMessage}
               </p>
             )

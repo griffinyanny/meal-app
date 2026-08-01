@@ -15,11 +15,11 @@ export function AccountFooter({ account, onSignOut }: AccountFooterProps) {
         Account
       </h2>
       {account?.displayName && (
-        <p className="text-[0.95rem] font-semibold text-foreground">{account.displayName}</p>
+        <p className="spec-row-title text-foreground">{account.displayName}</p>
       )}
-      {account?.email && <p className="text-sm text-muted-foreground">{account.email}</p>}
+      {account?.email && <p className="spec-body text-muted-foreground">{account.email}</p>}
       {account?.householdName && (
-        <p className="text-sm text-muted-foreground">{account.householdName}</p>
+        <p className="spec-body text-muted-foreground">{account.householdName}</p>
       )}
       <button
         type="button"

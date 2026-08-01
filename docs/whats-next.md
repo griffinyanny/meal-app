@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-08-01 (Session 57; 1F/B8 split, B8a closed — Workstream B at 8.5 of 9)
+Last updated: 2026-08-01 (Session 58; 1F/B8b closed — **Workstream B is 9 of 9, the design-system pass is DONE**)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,128 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B8a is CLOSED. B8 split in two; only B8b remains before Workstream C.**
+## ▶ NEXT SESSION — **B8b is CLOSED. Workstream B is 9 of 9. The design-system pass is DONE; next is C, the PWA.**
+
+**705 unit + 132 E2E green**, lint + typecheck clean, nothing on a branch once #22 merges. **1F now has two
+workstreams left: C (PWA) and D (production readiness), then the two validation weeks.**
+
+### ⚠️ The thing worth carrying: a fix can be APPLIED correctly and still be overridden by what was already there
+
+The §05 rungs live in `@layer components` — B8a's fix, so a call site can still choose colour per the gold
+line. Nobody had stated the consequence: **every leftover utility beside the class outranks it.** The first
+routing pass left **81 lines** where the rung had been applied and a `font-bold` / `leading-tight` /
+`tracking-tight` / `italic` next to it was still deciding the property. **The class present, correct, and
+doing nothing.**
+
+⚠️ **No layer this project owns could have caught that.** The screenshot shows type that looks like type. The
+DOM shows the class genuinely on the element. `SH5` measures colour, and colour was fine. It is visible only
+by reading the class string, which is what the new `type-scale.test.ts` does — **81 → 0.**
+
+**B8a's lesson was that a layer can be aimed correctly and still lack the precision to answer. This is its
+companion and a different failure: a change can land correctly and be silently outranked by the code it was
+applied to.**
+
+### The item was not scatter, it was absence — and re-measuring is what showed it
+
+⚠️ **The S57 filing was already stale after one session.** It said 22 rem / 53 `text-sm` / 29 `text-xs`;
+measured at S58's start, **27 / 51 / 28** — B8a's own edits had moved the field it was scoped against.
+
+The real shape: **255 type sites, 30 distinct sizes, 192 off the ladder.** And the cause was that **six of
+§05's ten rungs had no class at all** — H1/32, H2/26, H3/22, Body/13.5, Chef voice/14.5, Meta/12.5. B3 found
+this in `ui/button.tsx`, B7 in `ui/textarea.tsx`, B8a in the caps rungs. **Fourth instance, and this time it
+was most of the ladder.** All six added, **169 sites routed**, adoption now **218 rung call sites against 71
+hand-typed**.
+
+### ⚠️ Two things size alone would have got wrong
+
+1. **The chef's voice was drawn at three sizes, and eight impostors sat on its rung.** §05 reserves 14.5/400
+   italic gold as *"the only coloured running text in the product."* The build had the chef at **13.5px (×4),
+   14.5px (×1), 15px (×1)** with `italic` and `--spec-gold-voice` hand-typed beside each — while **eight
+   sites that are not the chef** sat on 14.5px because it was a convenient number.
+2. ⚠️ **The filing's "the rem sites need no judgement at all" was false.** `0.9rem` = **14.4px**, whose
+   nearest rung by pure distance **is** the chef rung — so distance-matching would have dropped five ordinary
+   labels (an answer chip, a toast, a field label, a memory body, a retry button) **into gold italic**.
+   Routed by **who is speaking**, never by size. B8a's memory-card provenance, in the opposite direction.
+
+### §08 governs controls; §05 does not
+
+The spec's own gallery draws buttons at **15 / 14.5 / 13.5px** and **15px is deliberately not a §05 rung**.
+So button labels, text inputs (16px is the iOS zoom floor, not a taste call), the two stepper numerals,
+`ui/` (B3's precedent), `debug/` and the tab bar's 10px chrome were **left alone on purpose — 84 sites.**
+
+⚠️ **Stated rather than buried: controls run at 13 distinct sizes against §08's three.** Same defect one
+section over, it is why 71 raw sizes survive, and it is the obvious next type item.
+
+### ⚠️ Three visible changes
+
+- **The Plan rail's date numeral 16 → 19px.** ⚠️ The day marker is one heading in two parts: the caps day
+  name stays the eyebrow, the numeral takes the Group title rung as its dominant half. **A judgement, not a
+  lookup** — S54 flagged a 19px stepper numeral as the wrong tenant for that rung, and the difference is what
+  the slot holds.
+- **The solo meal row title 16 → 15.5**, and its size ternary is gone — both densities are the same object.
+- **Body copy that inherited `--foreground` now takes the Body rung's `#CAC4BC`** — recipe detail ingredients
+  and steps, `past-meal-row`, the Recipes toast. The spec correcting over-bright sites, but real.
+
+### The verification found four things
+
+1. **`type-scale.test.ts` caught a site the sweep missed before it ever ran green** — `floating-slot.tsx:150`,
+   a toast whose ternary switches between an error and the chef. **Two rungs, not one rung in two colours.**
+2. **It failed against its own comment** — `memory-card.tsx` quoted the class string `caps-rungs.test.ts`
+   forbids. `palette.test.ts` learned this the same way; **third instance.**
+3. **Verified failing against pre-fix code** by physical backup + `git show main:` revert: red on
+   `meal-row.tsx:155`, the hand-written gold italic, the predicted site.
+4. ⚠️ **The E2E suite takes 17 minutes, not the "~1.5 min" `CLAUDE.md` claimed.** That figure is from S17 when
+   the harness had ~20 specs; 132 sequential specs at ~8s is exactly 17 minutes. **Nothing was hung.**
+   Corrected in `CLAUDE.md`. Same stale-figure class as §09's four-controls sentence and BUG-042's premise.
+
+### ⚠️ The visual pass found one thing, and it is a DIFFERENT failure from B8a's
+
+**`BREAKFAST` collided with the meal title on every compact row at multi-meal density** — no gap at all. The
+label column is a hard `w-[62px]`, sized for the type that label wore **before B8a gave it `.spec-label`**;
+the rung's 1.3px tracking pushes the longest meal type past it. **Pre-existing — S57's `/visual-qa` cleared
+the identical frame at 0/0**, confirmed by diffing the two `dense.png` captures.
+
+⚠️ **Not B8a's precision problem, and the difference is the lesson.** That was a warm tan against gold at
+11px, genuinely below the resolution of a judgement call. **This is two words touching** — visible at a
+glance, in a frame the gate captured, kept and passed. The layer was neither blind nor imprecise; it **was
+not read carefully enough.** S55 found a rule present, correct and *unrun*; this is a frame present, correct
+and *unlooked-at*. Fixed by widening the column to 74px, **never by forking the rung's tracking.**
+
+### Proved in the built CSS, not in a screenshot
+
+All ten rungs sit at bytes **10618–11619 in `@layer components`** (10600–11739); every call-site colour
+utility at **37345+ in `@layer utilities`** (11740–67336). Overrides now win **by layer rather than by source
+order** — strictly stronger than what B8a restored, because source position can no longer decide it.
+
+### ⚠️ Owed by you — now TWO things, and the new one is about your phone
+
+1. **B2's phone check, unchanged since S54.** Open Recipes and Groceries on your phone and tell me whether
+   the bottom edge reads calm now the 1E.5 toolbar deletion and S54's squared nav corners are on screen
+   together.
+2. ⭐ **NEW — BUG-049 🟠 is worth a tap while you are in there.** **Five text inputs sit under 16px, so iOS
+   Safari zooms the viewport when you focus them** — the recipe search, the picker search, the §09 control's
+   textarea, and **both grocery inline edits, the ones you use standing in a shop.** `ui/input.tsx` already
+   ships the right pattern (`text-base md:text-sm`) and nothing else inherited it. ⚠️ **The fix goes UP to
+   16px, which is not a rung**, so it could not ride inside a type item → filed to **1F/C**. Tell me if it
+   bothers you and it moves to the front of C.
+3. **One divergence I deliberately did NOT resolve, because it is a design call.** §05 says a screen title is
+   **32px**. Plan's and Groceries' `<h1>`s are **26** by the designs you ran; Recipes' was a bare shadcn
+   `text-2xl` scaffold heading above its designed header; the recipe detail's is **22**. I put all three tab
+   titles on 26 together and left 32 for the standalone login / no-access pages. **Promoting your designed
+   surfaces to 32 would be a design change made silently inside a mechanical item.** Say the word either way.
+
+### ⭐ Next up — Workstream C, the PWA
+
+The last two workstreams are **C (PWA)** then **D (production readiness)**, then the two validation weeks.
+
+**🎨 Design pass — offered, and the recommendation is TAKE IT.** S52 already decided C gets one, and the
+reason still holds: the icon set, splash, install prompt and offline state are **net-new surface described in
+no spec**, unlike B which applied a locked one. This is the first workstream since 1E.5 where that is true.
+
+**⭐ Model recommendation: Opus 4.8.** C is manifest + icons + a service worker with an honestly bounded
+offline scope, verified on two real phones — construction against a known target, the same work 4.8 did
+across S40–S58. **Go higher only if you take D first**; the security review is still the one remaining item
+with real reasoning in it.
 
 **S57 measured B8 before scoping it, and the measurement split the item.** **700 unit + E2E green**,
 lint + typecheck clean, `/visual-qa` Layer A across all five surfaces at **0 blockers / 0 high**,
@@ -155,6 +276,65 @@ allow-lists, chiefly the memory-card provenance → the Meta rung.
 **🎨 Design pass — offered, recommendation is skip.** B8b is a locked spec applied to designed surfaces, and
 B8a's one design question (BUG-048's chip geometry) measured out as *not* a redesign. Nothing in B8b is
 net-new surface. **C is where the design pass is already decided.**
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S58 closed 1F/B8b, so Workstream B is 9 of 9 and THE DESIGN-SYSTEM PASS IS DONE. 705 unit
++ 132 E2E green on main, lint + typecheck clean, visual-qa 0 blockers/0 high. Two things worth carrying.
+First, the NEW lesson and it's the companion to B8a's: a fix can be APPLIED correctly and still be overridden
+by what was already there. The §05 rungs live in @layer components so a call site can still choose colour —
+which means every leftover font-bold/leading-tight/tracking-tight/italic beside the class outranks it, and my
+first routing pass left EIGHTY-ONE lines where the rung was present, correct, and doing nothing. No layer we
+own can see that: the screenshot shows type that looks like type, the DOM shows the class genuinely on the
+element, SH5 measures colour and colour was fine. Only reading the class string finds it, which is what the
+new type-scale.test.ts does. Second, the item wasn't scatter, it was absence: SIX of §05's ten rungs had no
+class at all (H1/32, H2/26, H3/22, Body/13.5, Chef/14.5, Meta/12.5), which is why 192 of 255 type sites were
+off a 30-size ladder — fourth instance of "an unnamed rung is a defect generator" after ui/button.tsx,
+ui/textarea.tsx and the caps rungs. 169 sites routed, adoption now 218 rung call sites vs 71 hand-typed. Also
+worth knowing: re-measuring found the S57 filing ALREADY STALE after one session (22/53/29 -> 27/51/28), the
+chef's voice was being drawn at THREE sizes while eight non-chef sites sat on its rung, and 0.9rem = 14.4px
+rounds onto that rung so "the rem sites need no judgement" would have dropped five ordinary labels into gold
+italic. §08 governs controls and §05 doesn't, so 84 sites were left alone on purpose — and controls run at 13
+distinct sizes against §08's three, which is the obvious next type item. Next: Workstream C, the PWA —
+manifest + the full home-screen icon set iOS and Android actually ask for, a service worker whose offline
+scope is honestly bounded (offline READ of the current grocery list, not offline generation), the install
+prompt, and full-screen launch without browser chrome. OFFER ME THE DESIGN PASS FIRST and recommend taking
+it: S52 decided C gets one because icon/splash/install-prompt/offline-state are net-new surface in no spec.
+It has to be verified on my phone and my wife's, not a desktop emulator, so tell me exactly what to tap.
+Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check.
+maxDuration is CLOSED, BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO — don't reopen
+any of them. ⚠️ The E2E suite takes ~17 MINUTES (not the 1.5 the docs used to claim) — tell me before you
+start it and don't run it while I'm using the app. Owed by me: B2's phone check (does the bottom edge read
+calm now the toolbar deletion and squared nav corners are on screen together), plus a look at BUG-049 while
+I'm in there — five text inputs under 16px zoom the iOS viewport on focus, including both grocery inline
+edits. And one design call is still mine: §05 says a screen title is 32px but Plan/Groceries/Recipes all sit
+at 26 by the designs I ran, and Claude deliberately did not promote them. On Opus 4.8.
+```
+
+**Design-independent alternative** (take this only if you'd rather not run the design pass yet — it moves D
+ahead of C, which reverses the A→B→C→D order but breaks nothing, since C and D are independent):
+```
+Resume meal app — S58 closed 1F/B8b; Workstream B is 9 of 9 and the design-system pass is DONE. 705 unit +
+132 E2E green on main, visual-qa 0/0. Skip C this session and take Workstream D, production readiness,
+instead — it's the one remaining item with real reasoning in it and it needs no design pass at all. Four
+parts: (1) the security review of the full surface + a rate-limiting audit, which is the reason to consider a
+higher model; (2) the migration-safety discipline agreed in S54 — expand/contract written into the drizzle
+rule as the standing default, a migrations.test.ts destructive-SQL guard in this repo's source-scraping
+idiom, and a pg_dump before any acknowledged-destructive migration, because drizzle-kit generate cannot tell
+a rename from a drop-plus-add and all 11 migrations have been purely additive by luck, not control; ⚠️ a
+staging DB was EXPLICITLY REJECTED so don't propose one; (3) observability — PostHog with the S9 event
+taxonomy, plus Sentry; (4) BUG-044 (the dietaryFramework enum mismatch) rides with the security review.
+C (PWA) stays filed in scope-1F.md and still gets its design pass when we take it. BUG-042 is closed as
+won't-do, the non-prod Supabase project closed NO, maxDuration is CLOSED — don't reopen any of them. Read
+docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check, keep 705
+unit + 132 E2E green. ⚠️ The E2E suite takes ~17 MINUTES — tell me before you start it and don't run it while
+I'm using the app. Owed by me: B2's phone check, and a look at BUG-049 (five inputs under 16px zoom the iOS
+viewport) while I'm in there. Consider Opus 4.9+ for the security half.
+```
+
+---
+
+## ⚠️ S57 (superseded by S58 above — B8b is closed and Workstream B is done)
 
 **⭐ Model recommendation: Opus 4.8.** B8b is classification against a locked spec at ~300 sites — the same
 work 4.8 did across S40/S42/S45/S47/S48/S52–S57. **Go higher only if you take Workstream D first** — the

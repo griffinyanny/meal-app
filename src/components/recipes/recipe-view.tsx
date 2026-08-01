@@ -42,13 +42,13 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
     <div className="space-y-4">
       {showHeader && (
         <div>
-          <h1 className="text-xl font-bold tracking-tight">{recipe.title}</h1>
+          <h1 className="spec-feature-line">{recipe.title}</h1>
           {recipe.description && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="spec-body text-muted-foreground mt-1">
               {recipe.description}
             </p>
           )}
-          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 mt-3 spec-meta text-muted-foreground">
             {recipe.totalTimeMinutes && (
               <span className="flex items-center gap-1">
                 <Clock className="size-3" />
@@ -78,7 +78,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
               href={recipe.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-primary mt-1 inline-block hover:underline"
+              className="spec-meta text-primary mt-1 inline-block hover:underline"
             >
               View original source
             </a>
@@ -98,7 +98,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
           </h2>
           <ul className="space-y-2">
             {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
+              <li key={i} className="flex items-start gap-2 spec-body">
                 {/* BUG-046: a list marker is structure, not an affordance. */}
                 <span className="shrink-0 size-1.5 rounded-full bg-[var(--spec-text-muted)] mt-1.5" />
                 <span>
@@ -128,7 +128,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
           </h2>
           <ol className="space-y-4">
             {recipe.steps.map((step) => (
-              <li key={step.number} className="flex gap-3 text-sm">
+              <li key={step.number} className="flex gap-3 spec-body">
                 <span className="shrink-0 size-6 rounded-full bg-[rgba(240,222,190,0.05)] flex items-center justify-center text-xs font-medium text-muted-foreground">
                   {step.number}
                 </span>
@@ -137,7 +137,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
                   {/* BUG-046: the step's duration is a fact about the step,
                       and reads beside a step number already drawn in muted. */}
                   {step.durationMinutes && (
-                    <span className="text-xs text-muted-foreground mt-1 inline-flex items-center gap-1">
+                    <span className="spec-meta text-muted-foreground mt-1 inline-flex items-center gap-1">
                       <Clock className="size-3" />
                       {step.durationMinutes} min
                     </span>
@@ -166,7 +166,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
         <div className="flex justify-center py-12">
           <p
             data-testid="recipe-body-empty"
-            className="text-sm text-muted-foreground"
+            className="spec-body text-muted-foreground"
           >
             No ingredients or steps on this one yet.
           </p>
@@ -179,7 +179,7 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
           {recipe.tags.map((tag) => (
             <span
               key={tag}
-              className="text-xs px-2 py-0.5 rounded-full bg-[rgba(240,222,190,0.05)] text-muted-foreground"
+              className="spec-meta px-2 py-0.5 rounded-full bg-[rgba(240,222,190,0.05)] text-muted-foreground"
             >
               {tag}
             </span>

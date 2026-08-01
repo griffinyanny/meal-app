@@ -23,7 +23,7 @@ export function YouToast({ toast, onUndo }: YouToastProps) {
       className="glass-sheet fixed left-1/2 z-50 flex max-w-[86%] -translate-x-1/2 items-center gap-3 rounded-[14px] px-4 py-2.5 shadow-[0_12px_40px_-10px_rgba(0,0,0,0.8)]"
       style={{ bottom: "calc(6rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      <span className="text-[0.8rem] font-medium leading-snug text-foreground">
+      <span className="spec-meta text-foreground">
         {toast.message}
       </span>
       {toast.onUndo && (

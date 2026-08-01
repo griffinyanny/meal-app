@@ -30,11 +30,11 @@ export function OptionCards({ options, selected, onToggle }: OptionCardsProps) {
                 : "border-[rgba(240,222,190,0.10)] bg-[rgba(240,222,190,0.04)] hover:bg-[rgba(240,222,190,0.07)]"
             )}
           >
-            <span className="text-[16px] font-semibold leading-[1.15] text-[var(--spec-text-primary)]">
+            <span className="spec-row-title text-[var(--spec-text-primary)]">
               {o.label}
             </span>
             {o.sub && (
-              <span className="mt-1 text-[12px] text-[var(--spec-text-muted)]">{o.sub}</span>
+              <span className="mt-1 spec-meta text-[var(--spec-text-muted)]">{o.sub}</span>
             )}
           </button>
         );

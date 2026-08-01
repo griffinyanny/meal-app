@@ -17,9 +17,14 @@ import { join } from "node:path";
 // nothing goes red: type scatter renders fine, looks deliberate, and survives
 // every DOM assertion in the suite. Same argument as `palette.test.ts`.
 //
-// This is an ALLOW-LIST, not a block-list. "Is this positive tracking a caps
-// label or something else" cannot be answered from the string, so the survivors
-// are enumerated with a reason and anything new fails closed.
+// This was an ALLOW-LIST of four survivors while B8a shipped, because "is this
+// positive tracking a caps label or something else" cannot be answered from the
+// string. ⚠️ B8b closed all four and the list is DELETED rather than emptied —
+// BUG-045's precedent in `palette.test.ts`, where an emptied exception is still
+// an invitation. Three took `.spec-label` after all (the tracking was the only
+// thing that had made them look like something else) and the memory-card
+// provenance took `.spec-meta`, which is the answer B8a wrote down and could
+// not act on until the Meta rung existed as a class.
 
 const SRC = join(__dirname, "..");
 // This file quotes the class strings it forbids, so it must skip itself —
@@ -55,44 +60,17 @@ function hits(pattern: RegExp): string[] {
 // business carrying tracking at all. Both are findings.
 const POSITIVE_TRACKING = /tracking-(\[\s*0?\.?\d|wide\b|wider\b|widest\b)/;
 
-// The survivors, each with the reason it is NOT one of the two caps rungs.
-// ⚠️ Every one of these is off the §05 type ladder in some OTHER way and is
-// tracked as 1F/B8b (the ~250-site type-scale item). They are listed here so
-// this guard fails closed today, not because they are correct.
-const ALLOWED = [
-  // The "Plan draft" marker is a CHIP, governed by §08 and by §06's Dinner-vs-
-  // Swap rule, not by the caps rungs — §05 says a Label never gets a pill, and
-  // this one has a fill and a line because §12 item 03 asked for exactly that.
-  // Its 10px/600/tracking-wider type is still off the ladder → B8b.
-  "components/recipes/recipe-card.tsx:59",
-  // A transient sentence-case status inside the §09 control ("Sending…"), not a
-  // caps label. Its 0.5px tracking is off the ladder → B8b.
-  "components/shared/freeform-field.tsx:142",
-  // A sentence-case card title at 0.8rem/700 carrying 0.2px. Off the ladder in
-  // size AND tracking, and it is a title rather than a label → B8b.
-  "components/you/safety-constraints-card.tsx:29",
-  // ⚠️ The classification error worth keeping, because it is the one the rule
-  // is designed to prevent. This slot holds "You told me when we started" — a
-  // provenance SENTENCE. Both caps rungs are uppercase by definition, so
-  // routing it to `.spec-label` shouted an attribution across every memory
-  // card. A provenance line is a fact about the card, not the name of a field
-  // inside it: that is the Meta rung's job, and Meta is B8b. "Which rung does
-  // this take" has a third answer — NEITHER — and the only way to see it is to
-  // read what the slot actually holds rather than what its type looks like.
-  "components/you/memory-card.tsx:49",
-].sort();
-
 describe("caps rungs (spec §05)", () => {
   it("should route every caps label through .spec-eyebrow or .spec-label", () => {
     expect(
       hits(POSITIVE_TRACKING),
-      "Spec §05 states exactly TWO caps rungs and both are classes now. Which " +
-        "one a label takes is a question about WHAT IT NAMES, never about its " +
-        "size today: `.spec-eyebrow` names a shelf of content and stands alone " +
+      "Spec §05 states exactly TWO caps rungs and both are classes. Which one " +
+        "a label takes is a question about WHAT IT NAMES, never about its size " +
+        "today: `.spec-eyebrow` names a shelf of content and stands alone " +
         "above it; `.spec-label` names a field or a slot inside a card. If a " +
-        "site is genuinely neither, add it to ALLOWED with the reason. " +
+        "site is genuinely neither, it is Meta — read what the slot HOLDS. " +
         "Offenders: "
-    ).toEqual(ALLOWED);
+    ).toEqual([]);
   });
 
   it("should keep both rungs reachable — a named rung with no call sites is B4's dead class", () => {

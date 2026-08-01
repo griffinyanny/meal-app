@@ -31,8 +31,8 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
           <div className="mx-auto mb-3.5 flex size-[46px] items-center justify-center rounded-[14px] bg-primary/10">
             <Eye className="size-[22px] text-primary" strokeWidth={1.7} />
           </div>
-          <p className="mb-1.5 text-[0.95rem] font-semibold text-foreground">Nothing here yet.</p>
-          <p className="mx-auto max-w-[280px] text-[0.82rem] leading-snug text-muted-foreground [text-wrap:pretty]">
+          <p className="mb-1.5 spec-row-title text-foreground">Nothing here yet.</p>
+          <p className="mx-auto max-w-[280px] spec-body text-muted-foreground">
             Thumb a meal up or down, or just tell me something, and I&apos;ll start remembering
             what makes dinner yours.
           </p>
@@ -70,7 +70,7 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
         </button>
       )}
 
-      <p className="mx-0.5 mt-3.5 text-[0.8rem] leading-snug text-muted-foreground">
+      <p className="mx-0.5 mt-3.5 spec-meta text-muted-foreground">
         Remove anything and I&apos;ll stop cooking around it.
       </p>
     </section>
