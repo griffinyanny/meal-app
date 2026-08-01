@@ -16,6 +16,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Meal App",
   description: "Your personal chef. AI-powered meal planning.",
+  manifest: "/manifest.webmanifest",
+  // ⚠️ iOS does NOT read the manifest's `icons` array for the home screen — it
+  // reads this link tag. A PWA with a perfect manifest and no apple-touch-icon
+  // installs with a screenshot of the page as its icon.
+  icons: { apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: {
+    capable: true,
+    // The label under the icon. iOS truncates around 12 characters.
+    title: "Meal App",
+    // ⚠️ `black`, not `black-translucent`, and this is a measurement not a
+    // taste call: translucent extends the web view UNDER the status bar, which
+    // needs `env(safe-area-inset-top)` at the top of every screen — and there
+    // is not one `safe-area-inset-top` anywhere in `src/` (every inset in the
+    // app is `-bottom`, for the tab bar). Shipping translucent today would put
+    // every screen title under the clock on a notched phone. `black` is opaque
+    // white-on-black, which is correct for a dark app and needs no layout work.
+    // Going translucent is a real improvement and belongs with C's full-screen
+    // design artifact, not smuggled in beside a meta tag.
+    statusBarStyle: "black",
+  },
 };
 
 export const viewport: Viewport = {
