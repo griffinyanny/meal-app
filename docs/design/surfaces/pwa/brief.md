@@ -4,6 +4,87 @@
 > mock. Griffin runs this in the meal-app Claude Design project; Claude Code builds the result in real
 > components. Loop + round-trip mechanics: `../../design-workflow.md`.
 
+## ⬇️ Paste this into the meal-app Claude Design project
+
+The project is GitHub-connected, so it *can* reach every file below — but it will not read the right ones
+unless they are named. That is what this prompt is for.
+
+```
+Read these three files from the connected repo before generating anything:
+
+  docs/design/PROJECT-CONTEXT.md            — the system. Tokens, the elevation ladder, the wash
+                                              recipes, and §05's TEN type rungs by class name.
+  docs/design/surfaces/pwa/brief.md         — this brief. The five artifacts and their constraints.
+  docs/design/system/design-spec.dc.html    — Design Specification v1.0, the visual source of truth.
+                                              §01 palette, §02 the chef orb, §05 type, §08 controls,
+                                              §11 geometry and motion.
+
+The design-system pass is DONE (1F Workstream B closed 2026-08-01). INHERIT the system; do not evolve
+it. A new colour, radius, type size or component family is drift to correct, not a decision.
+
+Design five artifacts for turning this app into an installed iOS home-screen app. Both target phones
+are iPhones, so design only the iOS path.
+
+1. THE APP ICON — 1024x1024, one artboard. Every raster size is generated from it, so produce one
+   image, not a set. Start from the chef orb: spec §02 argues the case itself ("a bare glowing sphere
+   is the single most generic form in the category; every assistant has one. The toque is the cheapest
+   possible thing that makes this one specific"). The orb at rest — no ring, no steam, both of which
+   §02 gates at 64px+ and which turn to noise at the 120px a home screen renders. The toque IS in.
+   Full-bleed warm floor: iOS applies its own rounded-rect mask and does not composite transparency,
+   so a transparent orb arrives as a black box. Keep the outer 10% clear of anything meaningful.
+
+2. THE LAUNCH SCREEN — floor colour plus the mark, centred, nothing else. No spinner, no progress, no
+   tagline; a splash showing a spinner claims to be doing work it is not doing. It should feel like
+   the app is already open, which means the same light.ambient wash the content screens carry rather
+   than a flat fill.
+
+3. THE INSTALL PROMPT — iOS Safari has NO install API, so this is a hand-written instruction sheet,
+   not a system dialog. It teaches one gesture: tap Share, then Add to Home Screen. Reuse the existing
+   bottom-sheet vocabulary (L4 chrome); this is not a new component family. Design for the awkward
+   truth rather than around it: the action is something the USER must do in Safari's own chrome, which
+   the sheet cannot perform — so a cream button labelled "Add to Home Screen" that does not add to the
+   home screen is a lie. The sheet's own button dismisses. Draw the dismissed state's re-entry point.
+
+4. THE OFFLINE GROCERY LIST — standing in a shop with bad signal. The list IS there and correct (it is
+   served from a persisted cache) and the app has to say so without alarming anyone.
+   ⚠️ NOT gold and NOT amber. Gold marks the chef speaking, and §01 has deliberately no caution hue
+   BECAUSE amber is the chef — so colouring a network fact either way says the chef is talking when
+   the chef is not. Muted, structural, quiet. Being offline is not an error state: no retry button, no
+   failure iconography. The one thing that genuinely does not work offline is generating a NEW list;
+   draw what that refusal looks like when someone reaches for it.
+
+5. THE QUEUED-CHANGES INDICATOR — ticking items offline. Each tick HOLDS rather than failing, and
+   flushes on reconnect. Draw three moments: holding (N changes queued), flushing (reconnected,
+   syncing), and the resolution — which should be a DISAPPEARANCE, not a success banner. The tick
+   itself must look identical to an online tick; the whole point is that the shop does not feel
+   different. The indicator is ambient, not per-row.
+
+Constraints that apply to all five:
+- Dark only. Warm near-black floor (#0F0B08). 430px phone.
+- Nothing here is the chef talking. Two type rungs are assigned by WHO IS SPEAKING and neither applies
+  to any of this: .spec-chef-voice (14.5 italic gold) and .spec-spoken-headline (26). An install
+  instruction and an offline notice are the app, not the character.
+- One filled cream button per viewport (§08 law 06).
+- Radii on the eight-rung scale: 7/9/12/14/16/18/22/46.
+- Text inputs hold 16px — that is the iOS zoom floor, not a taste call.
+
+Three things I want your opinion on, with where I currently land:
+- Is the mark the orb, or something food-derived? I lean orb: it is the product's one existing brand
+  object, and a food mark is the category's other cliché that says nothing about what this app is (a
+  chef who knows you, not a recipe box).
+- When does the install prompt appear — automatically on the 2nd or 3rd visit, or a quiet entry in the
+  You tab? I lean automatic, once, dismissible forever. With two users a prompt nobody sees is worse
+  than one shown at a slightly wrong moment.
+- How loud is "offline" — a persistent bar for the whole trip, or a one-shot line that settles into
+  the queued-changes indicator? I lean one-shot then ambient: a bar that sits there for the length of
+  a shopping trip becomes furniture and stops being read.
+
+Give me directions I can compare, not one answer.
+```
+
+**Then:** hand the chosen design's `claude.ai/design` URL back to Claude Code. It parses the `projectId`
+out and fetches with `DesignSync.get_file` — `import-claude-design-from-url` rejects the pasted app URL.
+
 ## Why this surface gets a design pass at all
 
 Workstream B applied a locked spec to screens that were already designed, so a design round there would

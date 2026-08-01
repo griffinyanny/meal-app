@@ -85,14 +85,23 @@ any design via `get_file` anytime. Per surface, in `docs/design/surfaces/<surfac
 
 ## Relationship to the 1F design-system pass (answers "is the system baked?")
 
-**No — and deliberately.** meal-app HAS a real bespoke vocabulary today (dark glass, the token pin,
-component anatomy — see PROJECT-CONTEXT), which is MORE than FFOS's near-stock shadcn. But the
-*deliberate* design system (refined type scale, spacing, motion, consolidated component library) is
-still the dedicated **1F pass** (decision 2026-07-09). Until then:
-- Prototype in the current clean-but-plain vocabulary; **protect it, don't polish ahead of the app.**
-- The Claude Design loop is a **live venue to evolve the system**: as each new surface sharpens the
-  vocabulary, sharpen the PROJECT-CONTEXT token pin. **1F consolidates it IN Claude Design**, then
-  we re-sync. The system is evolving, not frozen — treat PROJECT-CONTEXT as the living pin.
+**YES, as of 2026-08-01 (S58).** ⚠️ **This section used to say "No — and deliberately," and told you to
+prototype in a "clean-but-plain vocabulary" and "protect it, don't polish ahead of the app." Both
+sentences are now false.** 1F Workstream B closed at 9 of 9: the type scale (all ten §05 rungs named as
+real classes), motion, the component library and the caps rungs are done.
+
+What that changes for a pass:
+- **Inherit the system, do not evolve it.** A generated direction that introduces a new colour, radius,
+  type size or component family is **drift to correct, not a decision.** That is the opposite of the
+  instruction this section carried while B was open.
+- `PROJECT-CONTEXT.md` is still the living pin and is current as of S59 — it carries the ten type rungs
+  by class name. **Read it before generating anything.**
+- The one thing still genuinely open is **net-new surface that exists in no spec** — which is precisely
+  why Workstream C (icon, splash, install prompt, offline states) gets a pass and B did not.
+
+*(This section going stale one session after B closed is the third instance in these docs — `PROJECT-CONTEXT.md`
+and `visual-qa-rubric.md` were the other two, both fixed in S59. **When a workstream closes, grep every file
+in `docs/design/` for its name**, not just the two you remember.)*
 
 ## Fallback ladder
 
