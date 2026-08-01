@@ -89,7 +89,11 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
       {/* Ingredients */}
       {hasIngredients && (
         <div className="glass-card p-4 space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          {/* Not a caps label: §05's Group title example is "a recipe step
+              group" verbatim, and these head content rather than chrome. B4
+              added .spec-group-title and routed nothing to it — these are its
+              first call sites, which is the point of naming a rung at all. */}
+          <h2 className="spec-group-title">
             Ingredients
           </h2>
           <ul className="space-y-2">
@@ -115,7 +119,11 @@ export function RecipeView({ recipe, showHeader = false }: RecipeViewProps) {
       {/* Steps */}
       {hasSteps && (
         <div className="glass-card p-4 space-y-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          {/* Not a caps label: §05's Group title example is "a recipe step
+              group" verbatim, and these head content rather than chrome. B4
+              added .spec-group-title and routed nothing to it — these are its
+              first call sites, which is the point of naming a rung at all. */}
+          <h2 className="spec-group-title">
             Steps
           </h2>
           <ol className="space-y-4">

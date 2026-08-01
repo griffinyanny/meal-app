@@ -178,7 +178,7 @@ export function YouPageClient() {
   if (preferencesQuery.isLoading || memoriesQuery.isLoading || accountQuery.isLoading) {
     return (
       <div className="px-[22px] pt-14">
-        <div className="h-64 animate-pulse rounded-[22px] bg-[rgba(240,222,190,0.04)]" />
+        <div className="h-64 spec-skeleton rounded-[22px] bg-[rgba(240,222,190,0.04)]" />
       </div>
     );
   }
@@ -196,7 +196,7 @@ export function YouPageClient() {
         />
 
         <section className="space-y-2.5">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+          <h2 className="spec-eyebrow">
             What I cook around
           </h2>
           <SafetyConstraintsCard

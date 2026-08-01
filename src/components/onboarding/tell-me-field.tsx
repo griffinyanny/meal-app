@@ -76,7 +76,7 @@ export function CaughtTray({ items }: CaughtTrayProps) {
       data-testid="onboarding-caught-tray"
       className="animate-turn-in mt-3.5 rounded-[16px] border border-[rgba(233,179,72,0.26)] bg-[rgba(233,179,72,0.08)] px-[15px] py-[13px]"
     >
-      <p className="m-0 mb-2.5 text-[10.5px] font-semibold tracking-[1.2px] text-[var(--spec-gold-tint)]">
+      <p className="m-0 mb-2.5 spec-eyebrow text-[var(--spec-gold-tint)]">
         WHAT I CAUGHT
       </p>
       <div className="flex flex-wrap gap-2">

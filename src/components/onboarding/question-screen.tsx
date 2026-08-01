@@ -127,7 +127,7 @@ export function QuestionScreen({
       {meter !== undefined && (
         <div className="mb-[18px]">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="max-w-[270px] text-[10.5px] font-semibold leading-[1.3] tracking-[1.2px] text-[var(--spec-text-muted)]">
+            <span className="max-w-[270px] spec-label leading-[1.3]">
               THE MORE YOU TELL ME, THE BETTER YOUR PLANS GET
             </span>
             <span className="text-[11px] font-semibold text-[var(--spec-gold-tint)]">Optional</span>

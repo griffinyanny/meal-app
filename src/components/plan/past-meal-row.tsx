@@ -17,7 +17,7 @@ export function PastMealRow({ meal, onFeedback }: PastMealRowProps) {
   return (
     <div className="glass-card flex items-center gap-3 px-4 py-3 opacity-80">
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-medium tracking-widest text-muted-foreground">
+        <p className="spec-label">
           {meal.dayName}
         </p>
         <p className="truncate text-sm">{meal.title}</p>

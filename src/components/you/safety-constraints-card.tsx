@@ -29,7 +29,7 @@ export function SafetyConstraintsCard({
         <span className="text-[0.8rem] font-bold tracking-[0.2px] text-[var(--spec-destructive-text)]">
           I never cook with
         </span>
-        <span className="ml-auto text-[10.5px] font-semibold tracking-[0.6px] text-[rgba(227,155,146,0.75)]">
+        <span className="ml-auto spec-label text-[rgba(227,155,146,0.75)]">
           SAFETY-CRITICAL
         </span>
       </div>

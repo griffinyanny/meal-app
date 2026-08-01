@@ -52,7 +52,7 @@ export function CookedStrip({ recipes, onOpen }: CookedStripProps) {
 
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75 m-0">
+    <h2 className="spec-eyebrow m-0">
       {children}
     </h2>
   );

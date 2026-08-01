@@ -25,7 +25,7 @@ export function IntroScreen({ onStart, onSkipAll, isSaving }: IntroScreenProps) 
       <div className="animate-turn-in flex flex-1 flex-col justify-center">
         <ChefPresence size="hero" className="mb-5" />
 
-        <p className="m-0 mb-3 text-[11px] font-semibold tracking-[2px] text-[var(--spec-gold-tint)]">
+        <p className="m-0 mb-3 spec-eyebrow text-[var(--spec-gold-tint)]">
           YOUR CHEF
         </p>
         <h1 className="m-0 mb-3 text-[28px] font-bold leading-[1.16] tracking-[-0.5px] text-[var(--spec-text-primary)] text-pretty">

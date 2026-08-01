@@ -70,7 +70,7 @@ export function ReflectScreen({
           <div className="animate-turn-in">
             <div className="mb-4 flex items-center gap-3">
               <ChefPresence />
-              <p className="m-0 text-[11px] font-semibold tracking-[2px] text-[var(--spec-action)]">
+              <p className="m-0 spec-eyebrow text-[var(--spec-gold-tint)]">
                 HERE&apos;S WHAT I&apos;M THINKING
               </p>
             </div>
@@ -100,7 +100,7 @@ export function ReflectScreen({
                 <p className="m-0 mb-1.5 text-[16px] font-semibold leading-[1.45] text-[var(--spec-text-muted)] text-pretty">
                   &ldquo;{state.quotedLine}&rdquo;
                 </p>
-                <p className="m-0 text-[10.5px] font-semibold tracking-[1.8px] text-[rgba(240,222,190,0.65)]">
+                <p className="m-0 spec-eyebrow">
                   YOUR WORDS, SO I WROTE THEM DOWN
                 </p>
               </div>
@@ -113,13 +113,13 @@ export function ReflectScreen({
               data-testid="onboarding-playback"
               className="spec-glass rounded-[18px] px-[18px] pb-5 pt-[18px]"
             >
-              <p className="m-0 mb-4 text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+              <p className="m-0 mb-4 spec-eyebrow">
                 WHAT I&apos;VE GOT
               </p>
               <div className="flex flex-col gap-[15px]">
                 {groups.map((group) => (
                   <div key={group.label}>
-                    <p className="m-0 mb-1.5 text-[10px] font-semibold tracking-[1.8px] text-[var(--spec-text-caption)]">
+                    <p className="m-0 mb-1.5 spec-label">
                       {group.label}
                     </p>
                     {group.facts.map((fact) => (
@@ -186,7 +186,7 @@ export function ReflectScreen({
               data-testid="onboarding-guesses"
               className="rounded-[18px] border border-[rgba(240,222,190,0.12)] bg-[rgba(70,58,46,0.52)] px-[17px] pb-[17px] pt-4"
             >
-              <p className="m-0 mb-3 text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+              <p className="m-0 mb-3 spec-eyebrow">
                 WHAT I&apos;M GUESSING, UNTIL YOU SAY OTHERWISE
               </p>
               <div className="flex flex-col gap-[11px]">
@@ -226,7 +226,7 @@ export function ReflectScreen({
               muted for a second reason: cream is what you press, and a marker
               glyph beside a paragraph is not pressable. */}
           <div data-testid="onboarding-week-decisions">
-            <p className="m-0 mb-[13px] text-[10.5px] font-semibold tracking-[2px] text-[var(--spec-text-caption)]">
+            <p className="m-0 mb-[13px] spec-eyebrow">
               SO HERE&apos;S YOUR WEEK
             </p>
             <div className="flex flex-col gap-3">

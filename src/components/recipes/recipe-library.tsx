@@ -309,7 +309,7 @@ function SearchResults({
 }: SearchResultsProps) {
   return (
     <div className="space-y-3 pb-8">
-      <h2 className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
+      <h2 className="spec-eyebrow">
         Search results
       </h2>
       {isLoading ? (
@@ -337,7 +337,7 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-3">
       {[1, 2, 3].map((i) => (
-        <div key={i} className="glass-card p-4 h-20 animate-pulse opacity-30" />
+        <div key={i} className="glass-card p-4 h-20 spec-skeleton" />
       ))}
     </div>
   );

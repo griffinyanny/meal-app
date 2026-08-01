@@ -69,7 +69,7 @@ export function NoPlanState({
       )}
 
       {seed && (
-        <p className="text-[11px] font-semibold tracking-[2px] text-primary">
+        <p className="spec-eyebrow">
           YOUR PLAN, PRE-FILLED FROM WHAT YOU TOLD ME
         </p>
       )}
@@ -149,7 +149,7 @@ export function NoPlanState({
           un-choosing is too. */}
       {picks.length > 0 && (
         <div className="space-y-2" data-testid="plan-picks">
-          <p className="m-0 text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-text-caption)]">
+          <p className="m-0 spec-eyebrow">
             YOU&apos;RE COOKING
           </p>
           {picks.map((pick) => (
@@ -200,26 +200,35 @@ export function NoPlanState({
         </p>
       )}
 
-      {seed ? (
-        <button
-          type="button"
-          onClick={() => onGenerate(text.trim() || undefined)}
-          disabled={isGenerating}
-          data-testid="plan-build-first-week"
-          className="w-full rounded-[16px] bg-primary px-4 py-4 text-[16px] font-semibold text-primary-foreground shadow-[0_10px_30px_-8px_rgba(244,235,220,0.45)] disabled:opacity-60"
-        >
-          Build my first week
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => onGenerate(undefined)}
-          disabled={isGenerating}
-          className="text-sm text-primary/90 transition-colors hover:text-primary disabled:opacity-60"
-        >
-          Or let your chef figure it out →
-        </button>
-      )}
+      {/* ⚠️ The seeded branch used to render a full-width `Build my first week`
+          here, and the §09 field above it has a filled cream send — two filled
+          cream buttons in one viewport, on the front door of the north-star
+          flow. §08: "one filled cream button per viewport; if two actions both
+          feel primary, one of them is not." Third session running for this law
+          (S55's filter chip, S56's organize toggle) and the first time it was
+          two actual buttons.
+
+          Deleted rather than softened, on Griffin's call (S57), and the reason
+          is that they were never two competing primaries. The field arrives
+          PRE-FILLED with the seed request, so `send` and `Build my first week`
+          fired the same call with the same argument — one action drawn twice.
+          Softening one copy leaves the duplication and just makes the labelled
+          half quieter than the library door above it. This is B7's precedent
+          exactly: it deleted the generate and modify dialogs' full-width
+          commits for being redundant with the send rather than demoting them.
+
+          The link below is now unconditional, which is what makes the deletion
+          safe: it is the no-typing path in both states, and on the seeded
+          screen it is also the escape hatch for "ignore what I typed". */}
+      <button
+        type="button"
+        onClick={() => onGenerate(undefined)}
+        disabled={isGenerating}
+        data-testid="plan-chef-decides"
+        className="text-sm text-primary/90 transition-colors hover:text-primary disabled:opacity-60"
+      >
+        Or let your chef figure it out →
+      </button>
     </div>
   );
 }

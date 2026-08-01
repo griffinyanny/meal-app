@@ -511,7 +511,7 @@ export function PlanPageClient() {
       return (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="glass-card h-28 animate-pulse opacity-30" />
+            <div key={i} className="glass-card h-28 spec-skeleton" />
           ))}
         </div>
       );

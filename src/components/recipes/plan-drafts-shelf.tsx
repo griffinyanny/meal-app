@@ -33,7 +33,7 @@ export function PlanDraftsShelf({
         data-testid="drafts-toggle"
         className="w-full flex items-center gap-2 cursor-pointer"
       >
-        <span className="text-[10.5px] font-bold uppercase tracking-[1.5px] text-muted-foreground/75">
+        <span className="spec-eyebrow">
           From your plans
         </span>
         {drafts.length > 0 && (
