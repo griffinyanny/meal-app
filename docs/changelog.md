@@ -4,6 +4,108 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 60 — 2026-08-01 (1F/C — the offline half; the visual pass S59 owed)
+
+**Workstream C's whole non-visual half shipped, and both of the session's findings were things a layer
+could not see until it was pointed at them.** **739 unit green** (+22), lint + typecheck clean,
+`/visual-qa` Layer A at **0 blockers / 0 high**, OF1–OF4 green against a real service worker with the
+network cut. Work on `session-60-1f-workstream-c`.
+
+### The `/visual-qa` pass S59 owed, and it found a badge answered twice
+
+S59 shipped two visible type changes (the Recipes and Groceries titles 26 → 32px, six inputs to the 16px
+iOS zoom floor) and wrapped without capturing either. Run at the top of this session: **56/56 states `ok`,
+0 blockers / 0 high.**
+
+⚠️ **The Recently-cooked strip rendered `COOKED JUL 29` while the identical badge in the rows below it
+rendered `Cooked Jul 23`** — same string, same green, same pill, same padding, on screen together
+(**BUG-050**).
+
+**B8b caused it, and the cause is the transferable part.** It routed the badge off `text-[10px]
+font-semibold` to `.spec-label`, which at 10.5px/700 is dimensionally the nearest rung and a perfectly
+reasonable way to pick one. But **both caps rungs carry `text-transform: uppercase`**, so applying one is a
+**casing** change — and casing is precisely the property a size-and-weight comparison cannot see. The
+source still reads `Cooked {cooked}` either way. The same sweep sent the `recipe-card.tsx` instance to
+`.spec-meta`. **One object, two answers, and nothing compared them.**
+
+⚠️ **`caps-rungs.test.ts` could not have caught it: it is one-directional.** It asserts that things wearing
+caps tracking route *through* a rung, and has no way to see something routed *to* a caps rung that should
+never shout. 717 unit, 132 E2E and S58's own full `/visual-qa` all went green with both renderings live.
+**Second instance of S57's rule** — which rung a slot takes is answered by what it HOLDS, not what its type
+measures.
+
+### ⚠️ And the pass could not see half of what it was run to grade
+
+Three of BUG-049's six inputs are **structurally invisible to Layer A**: `grocery-row.tsx` renders each
+slot twice — a display `<button>` at rest, the `<input>` only while `editing` is set — and `chip-adder.tsx`
+does the same. The capture drove the resting state every time, so **a 0/0 on Groceries would have implied
+a coverage it did not have.**
+
+Closed the riskiest third with a new state (`grocery-row-editing-qty`): the quantity had the largest jump
+of the six (13px → 16px) inside a **hard `w-[72px]`** — the shape that bit S58 when `BREAKFAST` collided
+in a fixed `w-[62px]`. Measured: `6 clove` fits with ~5px of headroom. The other two are **named as
+residue rather than covered**, because their risk is structural: a `w-full` input cannot overflow, and an
+`<input>` scrolls rather than clips. Same lesson as S52's `grocery-complete`.
+
+### ⛔ THE ONE TO READ: a service worker does not control the page that registers it
+
+The offline half shipped as two mechanisms that do not overlap — `public/sw.js` for the shell, React Query
+→ IndexedDB for the data, because tRPC batches over **POST** and `Cache.put` rejects non-GET.
+
+**OF1 and OF2 failed `ERR_FAILED` on the first run**, and the reason is not in any of the reasoning that
+produced the design. The navigation that loads a page is **already in flight** when `register()` runs, so
+the **first visit to a route never reaches the fetch handler and never gets cached** — and the worker then
+activates and reports itself perfectly healthy holding **nothing** (**BUG-051**).
+
+⚠️ **In a browser tab this is invisible**: you come back tomorrow, the second visit caches it, nothing ever
+looks wrong. **In an installed PWA it is the whole feature failing on the launch that matters most** —
+install, open once, walk to the shop, and the icon opens a dead page. Fixed by warming the four tab routes
+on `activate`, through the same `isCacheable` gate so a worker activating while signed out fetches four
+redirects to `/login` and stores none of them.
+
+**A second bug rode along that would have made the fix look like it had not worked:** the fallback lookup
+needs **`ignoreVary`**. Next sets `Vary` on route responses, and a warmed entry is fetched as a plain GET
+while a reload is a **navigation** — so a Vary-respecting match misses an entry sitting right there, and
+that miss is indistinguishable from an empty cache.
+
+**The transferable half: this was caught by running the specs, not by reading the code.** It is S59's
+"green does not mean deployed-correct" through a different door — the design was right and the *lifecycle*
+was wrong, and only a real browser with the network cut could say so.
+
+### ⚠️ The queued check-off is not the half it looks like
+
+Persisting the query cache alone is an **illusion of saved work**, not a smaller feature. `onMutate` writes
+the tick optimistically and the query stays `success`, so the ticked list persists. Tick five items → iOS
+evicts the backgrounded PWA over a 45-minute shop → relaunch → **the ticks are still there, because they
+were persisted** → signal returns → the server refetch wipes all five, because the mutations died with the
+process. **The user watched their work survive a relaunch and reasonably concluded it was saved** — Griffin's
+own rejected case with a longer fuse. So paused mutations are persisted too, with `mutationFn` defaults on
+the QueryClient (a restored mutation has no component to get one from).
+
+React Query forces the choice either way: `defaultShouldDehydrateMutation` is `(m) => m.state.isPaused`, so
+paused mutations persist **by default**. Doing nothing was never the neutral option.
+
+### Two more measurements that shaped the build
+
+- **Persistence goes through superjson, not JSON.** `grocery.current` returns Drizzle rows whose
+  `createdAt`/`updatedAt` are real `Date`s. A JSON persister hydrates them back as **strings**, so a cached
+  list is silently a different type from a fetched one — and it throws later, offline, on a phone.
+- **The persisted set is an allow-list** (BUG-018's argument). A deny-list fails open; persisting
+  everything would put the chef's memories, the interview's health answers and the children's ages into
+  unencrypted on-device storage. Sign-out clears both halves.
+
+### Residue, stated rather than buried
+
+- **The app-kill path is verified by construction and unit guard, not by the suite** — Playwright cannot
+  reproduce an iOS process kill. First thing to check on a real phone.
+- **The four design artifacts are not built** (install sheet, splash, offline state, queued indicator);
+  Griffin is running the Claude Design round. `statusBarStyle` stays `black` until the full-screen artifact
+  lands.
+- **The quantity editor has ~5px of headroom** at 16px. Widening it steals width from the item name, which
+  is the thing you read in a shop. Griffin's call.
+
+---
+
 ## Session 59 — 2026-08-01 (1F/C opened — the PWA; gate 1 retired; BUG-049 closed)
 
 **Workstream C's manifest half shipped, and Phase 0 found that the two things standing between this app

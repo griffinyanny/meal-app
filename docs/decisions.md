@@ -4,6 +4,57 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-01 (S60) — How offline is built, and why the smaller version of the queued tick was rejected
+
+**Four technical calls, made by Claude against the stated scope. Griffin's product calls from S59 are
+unchanged; these are the implementation decisions those calls forced.**
+
+**1. A hand-written service worker, not Serwist or `next-pwa`.** ~130 lines in `public/sw.js` doing runtime
+caching: cache-first on `/_next/static/*` (content-hashed, so immutable), network-first on navigations.
+The alternative is a build plugin that wraps `next.config`, adds a config surface, and generates a
+precache manifest of every build asset — heavy machinery for an offline scope that is honestly **one
+screen**. Runtime caching also means there is **no asset list to go stale**, which is the failure mode a
+precache manifest introduces. And a service worker misbehaving on a phone we cannot reach is the worst
+debugging surface in web development, so the version we can fully reason about wins.
+
+**2. Persist through superjson, never JSON.** `grocery.current` returns Drizzle rows whose `createdAt` and
+`updatedAt` are real `Date` objects — which is exactly why the tRPC client already transports them through
+superjson. A JSON persister hydrates them back as **strings**, so a cached list is silently a *different
+type* from a fetched one. Nothing throws at write time; it throws later, offline, on a phone, at
+`.getTime()`.
+
+**3. The persisted query set is an ALLOW-LIST.** BUG-018's argument, one layer over: a deny-list fails
+open, so a router added next month is persisted by default and nobody notices until it holds something it
+should not. Persisting the whole cache is literally one line shorter and writes the chef's memories about
+the household, the onboarding health answers, the children's ages and every recipe to **unencrypted
+on-device storage**. The agreed offline scope is the grocery list; anything past that is data at rest we
+never decided to keep. Sign-out clears both the persisted cache and the worker's shell cache — the shell
+HTML is server-rendered with the household's real content baked in.
+
+**4. ⚠️ Paused mutations are persisted too, and the smaller version was rejected as an ILLUSION rather
+than as a lesser feature.** This is the call worth recording.
+
+Persisting the query cache alone looks like the safe half. It is not. `onMutate` writes the tick
+optimistically and the query stays `status: "success"`, so **the ticked list gets persisted**. The
+sequence that produces is: tick five items in a shop → iOS evicts the backgrounded PWA (which it does
+aggressively, over a 45-minute shop, with the phone in a pocket) → relaunch → **the ticks are still there,
+because they were persisted** → finish shopping → signal returns → the server refetch wipes all five,
+because the mutations that would have saved them died with the process.
+
+The user watched their work survive a relaunch and reasonably concluded it was saved. **That is Griffin's
+own rejected case — "not less feature, an app that looks broken" — with a longer fuse and a worse
+ending.** So the mutation is persisted alongside the optimistic state it produced, with `mutationFn`
+defaults registered on the QueryClient (a restored mutation has no component to get one from, and resumes
+into `undefined` without them).
+
+React Query forces the choice either way: `defaultShouldDehydrateMutation` is `(m) => m.state.isPaused`,
+so paused mutations are persisted **by default**. Doing nothing was never the neutral option.
+
+⚠️ **Stated residue:** the app-kill path is verified by construction and by unit guard, **not** by the
+suite — Playwright cannot reproduce an iOS process kill. It is the first thing to check on a real phone.
+
+---
+
 ## 2026-08-01 (S59) — Gate 1 comes off; offline means read AND tick; the chef's rungs are for the chef
 
 **Four calls, all Griffin's, and the first one is the one with real consequence.**

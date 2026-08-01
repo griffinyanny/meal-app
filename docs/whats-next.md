@@ -31,7 +31,198 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **Workstream C is OPEN. The manifest, the icon pipeline and BUG-049 are in; the service worker, the offline half and the four design artifacts are not.**
+## ▶ NEXT SESSION — **Workstream C is DONE except its four design artifacts. The service worker and the whole offline half shipped.**
+
+**739 unit green** (+22), **OF1–OF4 green against a real service worker with the network cut**, lint +
+typecheck clean, `/visual-qa` Layer A at **0 blockers / 0 high** (56/56 states, 57/57 with the new one).
+Work on `session-60-1f-workstream-c`.
+**1F has C's design half and D (production readiness) left, then the two validation weeks.**
+
+### ⛔ THE ONE TO READ: a service worker does not control the page that registers it
+
+The offline half is two mechanisms that do not overlap — `public/sw.js` for the shell, React Query →
+IndexedDB for the data, because tRPC batches over **POST** and `Cache.put` rejects non-GET. That much S59
+predicted correctly.
+
+**What it could not predict: OF1 and OF2 failed `ERR_FAILED` on the first run.** The navigation that loads
+a page is **already in flight** when `register()` runs, so the **first visit to a route never reaches the
+fetch handler and never gets cached.** The worker then activates and reports itself perfectly healthy,
+holding **nothing**.
+
+⚠️ **In a browser tab this is invisible.** You come back tomorrow, the second visit caches it, and nothing
+ever looks wrong. **In an installed PWA it is the entire feature failing on the launch that matters most:**
+install the app, open it once, walk to the shop, and the icon opens a dead page. Fixed by warming the four
+tab routes on `activate`, through the **same `isCacheable` gate** — so a worker activating while signed out
+fetches four redirects to `/login` and stores none of them.
+
+**A second bug rode along that would have made the fix look like it had not worked.** The fallback lookup
+needs **`ignoreVary`**: Next sets `Vary` on route responses, and a warmed entry is fetched as a plain GET
+while a reload is a **navigation**, so a Vary-respecting match misses an entry sitting right there — and
+that miss is indistinguishable from an empty cache.
+
+**The transferable half: this was caught by running the specs, not by reading the code.** S59's *"green
+does not mean deployed-correct"* through a different door — the design was right and the **lifecycle** was
+wrong, and only a real browser with the network cut could say so.
+
+### ⚠️ The queued check-off's "smaller half" is an ILLUSION, not a lesser feature
+
+Persisting the query cache without persisting the mutations looks like the safe subset to ship first. It is
+the one thing you must not ship. `onMutate` writes the tick optimistically and the query stays `success`,
+so **the ticked list gets persisted**. The sequence:
+
+tick five items in a shop → iOS evicts the backgrounded PWA (aggressively, over a 45-minute shop, phone in
+a pocket) → relaunch → **the ticks are still there, because they were persisted** → finish shopping →
+signal returns → **the server refetch wipes all five**, because the mutations died with the process.
+
+**The user watched their work survive a relaunch and reasonably concluded it was saved.** That is Griffin's
+own rejected case — *"not less feature, an app that looks broken"* — with a longer fuse and a worse ending.
+So paused mutations are persisted too, with `mutationFn` defaults registered on the QueryClient (a restored
+mutation has no component to get one from and resumes into `undefined` otherwise). ⚠️ React Query forces
+the choice either way: `defaultShouldDehydrateMutation` is `(m) => m.state.isPaused`, so paused mutations
+persist **by default**. **Doing nothing was never the neutral option.**
+
+### The `/visual-qa` pass S59 owed found a badge the sweep answered twice
+
+**0 blockers / 0 high, 56/56 states `ok`.** One real defect (**BUG-050**): the Recently-cooked strip
+rendered `COOKED JUL 29` while the identical badge in the rows below rendered `Cooked Jul 23` — same
+string, same green, same pill, same padding, **on screen together**.
+
+B8b routed the badge off `text-[10px] font-semibold` to `.spec-label` by matching size and weight
+(10.5px/700 is dimensionally the nearest rung, and that is a reasonable way to pick one). But **both caps
+rungs carry `text-transform: uppercase`**, so applying one is a **casing** change — precisely the property
+a size-and-weight comparison cannot see. The source still reads `Cooked {cooked}` either way, and the same
+sweep sent the `recipe-card.tsx` instance to `.spec-meta`. **One object, two answers, and nothing compared
+them.**
+
+⚠️ **`caps-rungs.test.ts` could not have caught it — it is ONE-DIRECTIONAL.** It asserts that things
+wearing caps tracking route *through* a rung; it has no way to see something routed *to* a caps rung that
+should never shout. 717 unit, 132 E2E and **S58's own full `/visual-qa`** all went green with both
+renderings live. **Second instance of S57's rule: a rung is chosen by what the slot HOLDS, not by what its
+type measures.**
+
+### ⚠️ And the pass could not see half of what it was run to grade
+
+Three of BUG-049's six inputs are **structurally invisible to Layer A**: `grocery-row.tsx` renders each
+slot twice — a display `<button>` at rest, the `<input>` only while `editing` is set — and `chip-adder.tsx`
+does the same. The capture drove the resting state every time, so **a 0/0 on Groceries would have implied a
+coverage it did not have.**
+
+Closed the riskiest third with a new capture state (`grocery-row-editing-qty`): the quantity had the
+largest jump of the six (13px → 16px) inside a **hard `w-[72px]`**, the shape that bit S58 when `BREAKFAST`
+collided in a fixed `w-[62px]`. Measured — `6 clove` fits with ~5px of headroom. The other two are **named
+as residue rather than covered**, because their risk is structural: a `w-full` input cannot overflow, and an
+`<input>` scrolls rather than clips.
+
+### ⚠️ Owed by Griffin — three, and two are quick
+
+1. ⭐ **The Claude Design URL** for the PWA brief (`docs/design/surfaces/pwa/brief.md`). The four artifacts
+   are the only thing left in C. You were running the round at the end of S60.
+2. ⭐ **The 32px titles on your phone**, still. Open Recipes and Groceries. Layer A's read is that **32 is
+   right** — both land as a confident H1 above quiet chrome — but that is a 390px screenshot, not a device.
+   If 26 wins, §05's H2 row gets amended and the reasoning is yours.
+3. **The quantity editor's ~5px of headroom** (polish, not gating). Widening `w-[72px]` fixes it and steals
+   width from the item name, which is the thing you actually read in a shop. Left alone deliberately.
+
+*(B2's bottom-edge check is still worth a tap in the same pass.)*
+
+### ⚠️ Residue, stated rather than buried
+
+- **The app-kill path is verified by construction and unit guard, NOT by the suite.** Playwright cannot
+  reproduce an iOS process kill, so OF3/OF4 only cover pause-and-flush within one page session. **The
+  cold-start replay is the first thing to check on a real phone.**
+- **`statusBarStyle` stays `black`**, not `black-translucent` — translucent needs `env(safe-area-inset-top)`
+  and there still is not one in `src/`. It belongs with the full-screen design artifact.
+- **The shipped icon is still a spec-faithful PLACEHOLDER.** Replace `src/assets/app-icon.svg` and run
+  `npm run icons`.
+
+### ⭐ Next up — C's design half, then D
+
+**Not built:** the install sheet (iOS has no `beforeinstallprompt`; both phones are iPhones, so the
+hand-written "tap Share → Add to Home Screen" sheet is the only path), the splash, the offline state and
+the queued-changes indicator. All four are drawn in `docs/design/surfaces/pwa/brief.md` and blocked only on
+the Claude Design URL.
+
+**⭐ Model recommendation: Opus 4.8.** Building four designed surfaces from a brief is construction against
+a known target — the same work 4.8 did across S40–S60. **Go higher for D**, whose security review is still
+the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S60 shipped 1F/C's whole non-visual half. 739 unit + OF1-OF4 green on branch
+session-60-1f-workstream-c, lint + typecheck clean, /visual-qa Layer A at 0 blockers/0 high (56/56 states).
+The service worker, the app-shell cache, React Query IndexedDB persistence and the queued offline check-off
+are all in. ONLY THE FOUR DESIGN ARTIFACTS REMAIN in C — install sheet, splash, offline state, queued
+indicator — and the brief is at docs/design/surfaces/pwa/brief.md. Ask me for the Claude Design URL. THE ONE
+TO READ: a service worker DOES NOT CONTROL THE PAGE THAT REGISTERS IT. That navigation is already in flight
+when register() runs, so the FIRST visit to a route never reaches the fetch handler and never gets cached —
+and the worker then activates and reports itself perfectly healthy holding NOTHING. In a browser tab that's
+invisible (tomorrow's visit caches it); in an INSTALLED PWA it's the whole feature failing on the launch
+that matters most — install, open once, walk to the shop, dead page. OF1/OF2 caught it as ERR_FAILED; I
+fixed it by warming the four tab routes on activate through the same isCacheable gate, so a worker
+activating while signed out fetches four redirects and stores none. A second bug rode along that would have
+made the fix look like it hadn't worked: the fallback needs ignoreVary, because Next sets Vary on route
+responses and a warmed entry is a plain GET while a reload is a NAVIGATION, so a Vary-respecting match
+misses an entry sitting right there. Caught by RUNNING THE SPECS, not by reading the code — S59's "green
+does not mean deployed-correct" through a different door, where the design was right and the LIFECYCLE was
+wrong. Second thing: the queued check-off's "smaller half" is an ILLUSION, not a lesser feature. Persisting
+the query cache without the mutations means onMutate's optimistic tick gets persisted (the query stays
+"success"), so you tick five items, iOS evicts the backgrounded PWA over a 45-minute shop, you relaunch and
+THE TICKS ARE STILL THERE — then signal returns and the server refetch wipes all five because the mutations
+died with the process. The user watched their work survive a relaunch and concluded it was saved. React
+Query forces the choice either way: defaultShouldDehydrateMutation is (m) => m.state.isPaused, so paused
+mutations persist BY DEFAULT — doing nothing was never neutral. So mutations are persisted with mutationFn
+defaults on the QueryClient. Also carry: persistence goes through SUPERJSON not JSON (grocery.current
+returns Drizzle rows whose createdAt/updatedAt are real Dates; a JSON persister hydrates them back as
+STRINGS and a cached list is silently a different type from a fetched one), and the persisted query set is
+an ALLOW-LIST per BUG-018's argument, because a deny-list fails open and persisting everything would put
+the chef's memories, the health answers and the kids' ages into unencrypted on-device storage. Third: the
+/visual-qa pass found the Recently-cooked strip rendering COOKED JUL 29 while the identical badge in the
+rows below rendered "Cooked Jul 23" — B8b routed it to .spec-label by matching SIZE AND WEIGHT, and both
+caps rungs carry text-transform:uppercase, so the change was a CASING change, which is exactly what a
+size-and-weight comparison can't see. caps-rungs.test.ts is ONE-DIRECTIONAL and couldn't catch it. Second
+instance of S57's rule: a rung is chosen by what the slot HOLDS. ⚠️ Residue: the app-kill path is verified
+by construction and unit guard, NOT by the suite — Playwright can't reproduce an iOS process kill, so
+cold-start replay is the first thing to check on a real phone. The icon is still a spec-faithful
+PLACEHOLDER (replace src/assets/app-icon.svg, run `npm run icons`), and statusBarStyle stays `black` until
+the full-screen artifact lands. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give
+me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is CLOSED as won't-do, the non-prod Supabase
+project closed NO, gate 1 is CLOSED as retired — don't reopen any of them. ⚠️ The E2E suite is now ~18
+MINUTES (136 specs) — tell me before you start it, don't run it while I'm using the app, and never pipe it
+through tail (it swallows the exit code; read the summary line). Owed by me: the Claude Design URL, whether
+32px reads right for the Recipes and Groceries titles on my phone, and whether the grocery quantity editor's
+~5px of headroom bothers me. On Opus 4.8.
+```
+
+**Design-independent alternative** (take this if the Claude Design round still isn't done — it moves D
+ahead of C's design half, which reverses nothing important since the two are independent):
+```
+Resume meal app — S60 shipped 1F/C's whole non-visual half (service worker, app-shell cache, React Query
+IndexedDB persistence, queued offline check-off). 739 unit + OF1-OF4 green on branch
+session-60-1f-workstream-c, lint + typecheck clean, /visual-qa 0/0. Skip C's four design artifacts this
+session (I haven't finished the Claude Design round) and take Workstream D, production readiness, instead —
+it needs no design pass at all. Four parts: (1) the security review of the full surface + a rate-limiting
+audit, which is the reason to consider a higher model, and ⚠️ it now has a new subject: the service worker
+and the offline cache. The shell HTML is SERVER-RENDERED with the household's real content baked in, and
+the persisted query cache holds the grocery list — both live in unencrypted on-device storage, both are
+cleared on sign-out by clearOfflineState(), and that path deserves a real look rather than my word for it.
+(2) the migration-safety discipline agreed in S54 — expand/contract written into the drizzle rule, a
+migrations.test.ts destructive-SQL guard in this repo's source-scraping idiom, and a pg_dump before any
+acknowledged-destructive migration, because drizzle-kit generate cannot tell a rename from a drop-plus-add
+and all 11 migrations have been additive by luck, not control; ⚠️ a staging DB was EXPLICITLY REJECTED so
+don't propose one; (3) observability — PostHog with the S9 event taxonomy plus Sentry, and ⚠️ the session-
+replay masking posture must INVERT the vendor default (mask everything, then unmask chrome — this app's
+sensitive material is rendered OUTPUT, not typed input); (4) BUG-044 (the dietaryFramework enum mismatch)
+rides with the security review. C's four design artifacts stay filed in scope-1F.md. maxDuration is CLOSED,
+BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 is CLOSED as retired — don't
+reopen any of them. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the
+<=6-line scope check, keep 739 unit green. ⚠️ The E2E suite is ~18 MINUTES (136 specs) — tell me before you
+start it and never pipe it through tail. Owed by me: whether 32px reads right for the Recipes and Groceries
+titles on my phone. Consider Opus 4.9+ for the security half.
+```
+
+---
+
+## ⚠️ S59 (superseded by S60 above — the offline half shipped)
 
 **714 unit green**, lint + typecheck + build clean, work on `session-59-1f-workstream-c`.
 **1F has C (part-done) and D (production readiness) left, then the two validation weeks.**

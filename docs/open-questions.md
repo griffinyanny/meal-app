@@ -10,6 +10,24 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 > an observation he has to make himself:** B2's phone check, whether S28's density complaint reads resolved
 > now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on screen together.
 
+### ⏳ OPEN (S60) — Does the grocery quantity editor's ~5px of headroom bother you? *(polish, non-gating)*
+
+BUG-049 raised the inline quantity editor from 13px to 16px (the iOS zoom floor) inside a **hard
+`w-[72px]`** column that was sized for the smaller type. Measured in the new `grocery-row-editing-qty`
+capture: **`6 clove` fits with about 5px to spare**, no truncation and no collision with the item name. A
+longer quantity (`2 tablespoons`) scrolls horizontally, which is input behaviour rather than data loss.
+
+**Left alone deliberately, because the fix has a real cost:** widening the column takes width from the item
+name, and the name is the thing you actually read standing in a shop. **Recommendation: leave it.** Say the
+word and it goes to ~88px.
+
+⚠️ **Worth knowing about how this was found:** the editor had **never been photographed**. `grocery-row.tsx`
+renders the slot twice — a display `<button>` at rest, the `<input>` only while `editing` is set — so the
+capture layer drove the resting state every time and was structurally unable to see either grocery input.
+Two of the three invisible sites are still uncovered (the name editor and `chip-adder.tsx`), named as
+residue because their risk is structural: a `w-full` input cannot overflow, and an `<input>` scrolls rather
+than clips.
+
 ### ⏳ OPEN (S59) — Do the Recipes and Groceries titles read right at 32px on a phone?
 
 **Griffin's look, and it is the only thing owed by him.** Both titles are on §05's H1 (32px) on
