@@ -43,6 +43,18 @@ Screen" simply produces a plain **bookmark** with full Safari chrome. C's own *"
 without browser chrome"* line would have failed on production with nothing in any log, and the way we would
 have found out is Griffin installing it and saying it looked the same.
 
+**⚠️ S59 · GREEN DOES NOT MEAN DEPLOYED-CORRECT, AND THE PROXY HAS TWO GATES.** Exempting the manifest
+from gate 1 (`SITE_ACCESS_CODE`) shipped with 714 unit + 132 E2E green — and production still served
+`/manifest.webmanifest` as a **307**, because the session check *below* gate 1 has its own list and the
+manifest was not on it. ⚠️ **A browser fetches a manifest with `credentials: "omit"`, so it always looks
+signed-out**: the redirect fires for a signed-in user on their own phone, Safari parses the `/login` HTML
+as the manifest, and installs a bookmark. `/robots.txt` sits on that same list for the identical reason,
+and its comment already said *"caught in live verification"* — **second instance, same file, same cause,
+with the first one's note visible while the second was written.** Both halves were invisible to every test,
+because the E2E harness runs *with* a session and the unit tests asserted the gate function rather than the
+middleware. **Curl the real production URL for anything only a browser or crawler fetches** — manifests,
+`robots.txt`, well-known paths, webhooks. The list is now a pure, tested `isSignedOutReachable()`.
+
 **⚠️ S59 · THE MANIFEST'S `scope` DECIDES WHETHER SIGN-IN SURVIVES INSTALLATION.** iOS opens out-of-scope
 URLs in an in-app SafariViewController with storage **isolated from the PWA**, returning only when the
 external site redirects back **into** scope. `exchangeCodeForSession` sets the session cookie **server-side

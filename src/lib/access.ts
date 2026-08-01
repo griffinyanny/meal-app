@@ -92,6 +92,36 @@ export function shouldBlockRequest(
 }
 
 /**
+ * Reachable WITHOUT a session. Everything else 307s to /login.
+ *
+ * Pure and exported for the same reason `shouldBlockRequest` is: this list has
+ * now been wrong twice, both times found by hitting the live URL rather than by
+ * any test, and both times because a path was assumed to be "outside the app"
+ * when the proxy matcher in fact covers it.
+ *
+ * ⚠️ `/robots.txt` was the first (a crawler was 307'd to /login and never read
+ * the Disallow). `/manifest.webmanifest` is the second, and it is the sharper
+ * one: **a browser fetches a manifest with `credentials: "omit"`, so it always
+ * looks signed-out** — the redirect fires for a signed-in user on their own
+ * phone. Safari then parses the /login HTML as the manifest, fails, and quietly
+ * installs a BOOKMARK instead of a standalone app. Nothing errors.
+ *
+ * Note this is a SECOND gate from `shouldBlockRequest`, and exempting a path
+ * there does not exempt it here — which is exactly how the manifest shipped
+ * still broken after gate 1 was taken off it.
+ */
+export function isSignedOutReachable(pathname: string): boolean {
+  return (
+    pathname === "/login" ||
+    pathname === "/invite" || // the step before signing in
+    pathname === "/no-access" || // shown immediately after being signed out
+    pathname === "/robots.txt" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname.startsWith("/auth")
+  );
+}
+
+/**
  * Gate 2. Unset ALLOWED_EMAILS means open signup, which is the public-launch
  * state. A configured list with no match is a hard no.
  */
