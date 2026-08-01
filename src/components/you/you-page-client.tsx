@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { createClient } from "@/lib/supabase/client";
+import { clearOfflineState } from "@/lib/offline/persister";
 import { TalkToChefSheet } from "@/components/shared/talk-to-chef-sheet";
 import { ChefNarrativeCard } from "./chef-narrative-card";
 import { SafetyConstraintsCard } from "./safety-constraints-card";
@@ -150,6 +151,11 @@ export function YouPageClient() {
 
   async function signOut() {
     await createClient().auth.signOut();
+    // The shell HTML the service worker caches is server-rendered with this
+    // household's real content in it, and the persisted query cache holds the
+    // list itself. Both survive sign-out unless something clears them, which
+    // would leave one account's week readable to whoever signs in next.
+    await clearOfflineState();
     router.push("/login");
   }
 
