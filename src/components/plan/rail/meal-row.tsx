@@ -56,7 +56,7 @@ function Eyebrow({
 
   return (
     <div className="mb-1 flex items-baseline justify-between gap-2.5">
-      <p className="m-0 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+      <p className="m-0 spec-label">
         {leading.join(" · ")}
         {picked ? (
           <>
@@ -190,7 +190,7 @@ export function MealRowCompact({
         working && "shadow-[0_0_0_1.5px_rgba(233,179,72,0.42)]"
       )}
     >
-      <span className="w-[62px] flex-none text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+      <span className="w-[62px] flex-none spec-label">
         {meal.mealType.toUpperCase()}
       </span>
       <span className="min-w-0 flex-1 truncate text-[14px] text-[var(--spec-text-body)]">
@@ -228,7 +228,7 @@ export function ProvisionalRow({
   if (density === "nested" && !onDecide) {
     return (
       <div className="spec-provisional flex min-h-10 items-center gap-[9px] rounded-[14px] px-3 py-[9px]">
-        <span className="w-[62px] flex-none text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+        <span className="w-[62px] flex-none spec-label">
           {meal.mealType.toUpperCase()}
         </span>
         <span className="min-w-0 flex-1 text-[14px] text-[var(--spec-text-muted)]">
@@ -251,7 +251,7 @@ export function ProvisionalRow({
       <div className={solo && !onDecide ? "" : "w-full"}>
         {!solo ? (
           <div className="mb-1 flex items-baseline justify-between gap-2.5">
-            <p className="m-0 text-[9.5px] font-bold tracking-[1.2px] text-[var(--spec-text-caption)]">
+            <p className="m-0 spec-label">
               {meal.mealType.toUpperCase()}
             </p>
           </div>

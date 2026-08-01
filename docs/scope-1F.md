@@ -608,17 +608,104 @@ version of this control. And B7 covers **all six** sites rather than the three t
       states and S52's `grocery-complete-banner`, with the difference that **the blind spot was pointed at
       this session's own work.** Both added and clean.
 
-### B8 — Type scale, motion, and component-library consolidation
+### B8a — Caps rungs, motion, component library, and the two tracked bugs ✅ **CLOSED S57** — *B8 was two jobs wearing one name*
 
-The remaining design-system work the spec calls for beyond §12's enumerated items.
+**Phase 0 measured all seven sub-items against the build before a line was written.** Six came in smaller
+than filed. **One came in six times bigger and split the item** (see B8b): the type scale is **~303 sites
+across ~35 distinct sizes** against a 10-rung ladder. Griffin's call: take everything except that here, so
+every tracked row closes rather than waiting behind a 300-site sweep.
 
-- [ ] **The caps-label rungs (moved here from B6, Griffin's call S55).** ~46 sites on eight tracking values
-      against the spec's two named rungs — **Section eyebrow** (11px / 600 / 2px / `#A79A8C`, names a shelf
-      of content) and **Label** (10.5px / 700 / 1.3px / `#A29484`, names a field or a slot inside a card).
-      ⚠️ **Add them as classes first, then route** — B4 added `.spec-group-title` / `.spec-row-title` and
-      stopped, and B3's finding was that an unnamed rung means the next call site is wrong by default. The
-      per-site work is a **classification**, not a find-and-replace: the two rungs differ in size, weight and
-      colour as well as tracking, and which rung a label belongs to is a question about what it names.
+- [x] **The caps-label rungs (moved here from B6, Griffin's call S55).** `.spec-eyebrow` (11/600/2px) and
+      `.spec-label` (10.5/700/1.3px) added, **45 sites routed**. ⚠️ **Measured at TWELVE distinct
+      size/weight/tracking combinations, not the eight tracking values S55 counted** — size and weight vary
+      independently of tracking. Only **two** sites already sat on a rung. Classification is by what the
+      label NAMES: an eyebrow heads a shelf of content, a label names a field or slot inside a card.
+      ⚠️ **The classification has a third answer, and getting it wrong is the failure this rule prevents.**
+      The memory-card provenance holds *"You told me when we started"* — a sentence. Both rungs are
+      uppercase by definition, so routing it there shouted an attribution across every memory card. It is
+      **neither** rung; it is Meta, and Meta is B8b. Listed in `caps-rungs.test.ts` with the reason.
+      ⚠️ **Colour is a stated deviation from §05.** That section draws the eyebrow at `#A79A8C`, a value
+      **§01 does not list** — and §01 states the ramp as *"five steps, descending. Never invent a sixth,"*
+      calling a colour outside its row a bug. `#A79A8C` is what the **spec document** styles its own
+      eyebrows with, so §05's table is transcribing the document's chrome rather than naming a sixth product
+      step. Both rungs take `text-muted` and separate by size, weight and tracking — §05's own "weight
+      carries hierarchy" rule doing the work.
+- [x] **`Ingredients` / `Steps` → the 19px Group title**, giving B4's orphaned `.spec-group-title` its
+      first call sites (it had **zero** consumers; the app's only `text-[19px]` was a stepper numeral). §05's
+      own example for that rung is *"a recipe step group"* verbatim. Visible: 14px caps → 19px sentence case.
+- [x] ⚠️ **THE FINDING — a class that sets `color` in `@layer utilities` eats every override beside it.**
+      The rungs shipped in `utilities`, where hand-authored CSS is emitted **~27KB after** Tailwind's
+      generated colour utilities; within one cascade layer source order decides, so **eight call-site colour
+      overrides died at once** — five gold eyebrows the gold line requires, and **three safety-weighted red
+      labels** including `SAFETY-CRITICAL`.
+      ⚠️ **The capture could not catch it.** `--spec-text-muted` is `#A29484`, a warm tan, and at 11px on a
+      near-black floor a warm tan reads as "probably gold". The screenshot raised a suspicion and could not
+      settle it; **diffing the built CSS did.** A colour regression that small is **below the resolution of a
+      judgement call** — the visual layer was not the wrong instrument, it was an insufficient one.
+      Fixed by moving all four type rungs to `@layer components`, which is the relationship they should
+      always have had: the rung names size/weight/tracking, the call site decides colour per the gold line.
+- [x] **Motion.** The spec's standard curve `cubic-bezier(.2,.9,.3,1)` appeared **nowhere in `src/`**, and
+      ~60 `transition-*` sites ran on Tailwind's implicit 150ms against a spec naming 120/180/260/340 —
+      **zero overlap**. Four duration tokens + the curve added, and the press rung wired as Tailwind's
+      **default**, so every bare `transition-*` moved on-system without touching a call site. Six looping
+      `animate-pulse` skeletons → `.spec-skeleton`. ⚠️ **Stated deviation:** §11 says only the chef may loop
+      and this loops — a user action *is* behind a skeleton, and a frozen block reads as a screen that
+      failed, which is BUG-035's exact lesson. It keeps the loop and loses the throb.
+- [x] **Component library: `ui/badge.tsx` deleted** — **0 importers**, B7's `ui/textarea.tsx` case in a
+      second primitive, and its default variant was `bg-primary`. No other duplication survives; `shared/`
+      already holds the commons A3 and B7 extracted.
+- [x] **The `bg-primary` audit — and the doc's "32 call sites" was wrong.** Measured: **14** real
+      `bg-primary` sites (two of the sixteen hits are comments). Classified by what the hue *claims*:
+      the **progress-bar fill** was the action hue on a status you cannot press (B1's draft pill one surface
+      over), and the per-item grocery checkbox + got-it check filled **cream** while B1 had routed the
+      completion banner to `#9CB86F` — the same screen saying "done" in two hues. All three → `#9CB86F`
+      (Griffin's call). ⚠️ **The starting point the S56 handoff named turned out to be the weakest of them:**
+      You's `Talk to the chef` is the only filled cream on that tab at rest, so law 06 holds as a ceiling and
+      it stays.
+- [x] **BUG-045 🟡 CLOSED** — the last `#FF9F0A` → flat meta type. ⚠️ Its `palette.test.ts` allow-list is
+      **gone, not emptied**; the test now asserts zero amber anywhere.
+- [x] **BUG-048 🟡 CLOSED, and it was not the chip redesign it was parked as.** Measured: all three call
+      sites wrap at `gap-2`, so a 44px target centred on the glyph overhangs **6px into an 8px column gap**
+      and **4px into an 8px row gap**, with **no target-on-target overlap** (a neighbouring chip's body is
+      not interactive). S56's Groceries drag-handle trade transfers exactly: real 44px box, equal negative
+      margin, chip stays 36px, hover fill stays on a 20px inner span so nothing is visible. Its `SH2`
+      exemption went with it and the allow-list is asserted **empty** — granting a future one is deliberately
+      a two-place change.
+- [x] **`SH4` — law 06 stops being a rule the judge has to remember.** A DOM sweep counting filled-cream
+      controls per viewport across five surfaces. **It found a real break before it ever ran:** the Plan
+      intent screen carried the §09 send AND a full-width `Build my first week` on the seeded onboarding
+      hand-off — the front door of the north-star flow, and the **third consecutive session** this law broke.
+      ⚠️ **The first fix softened the wrong half, and the visual pass caught it.** The field arrives
+      pre-filled, so both controls fired the same call with the same argument — **one action drawn twice**,
+      not two primaries competing. **Griffin's call (S57): delete it**, which is B7's precedent for the two
+      dialogs. The chef-decides link is now unconditional and is the no-typing path in both states. `OB4` now
+      asserts the **field carries a value** rather than the button's presence — the hand-off's promise is
+      that the interview's sentence survives the trip, and a button never proved that.
+- [x] **`SH5` — a type rung must not eat the colour written beside it**, added because it happened. Both new
+      guards verified failing for the predicted reason: `caps-rungs.test.ts` at 50 offenders vs 3 allowed,
+      `SH5` at `Expected rgb(240, 194, 101)` / `Received rgb(162, 148, 132)` — `--spec-text-muted` exactly.
+- [x] **Gate: `/visual-qa` Layer A across all five surfaces, 0 blockers / 0 high, 56/56 states `ok`.**
+      Critique in `tests/e2e/captures/A-2026-08-01T00-32-37-100Z/critique.md`.
+
+### B8b — The rest of the type scale
+
+⚠️ **Split out of B8 in S57 on measurement, not on feel.** The type scale is **~303 sites across ~35
+distinct sizes** against §05's **10-rung** ladder — six times the caps half, and the largest single item
+left in 1F.
+
+- [ ] **`text-sm` is 14px and 14px is not a rung** (the ladder has 13.5 body / 14.5 chef voice / 15.5 row
+      title). That one class is **53 off-ladder sites**, the most-used size in the app. `text-xs` (12px, vs
+      the 12.5 Meta rung) is another 29. `globals.css` does not remap them — checked, not assumed.
+- [ ] **The 22 rem sites are pure pre-spec residue and need no judgement** — they are near-misses of rungs
+      that already exist (`0.95rem` = 15.2 where the rung is 15.5, `0.9rem` = 14.4 where it is 14.5,
+      `0.8rem` = 12.8 where it is 12.5). Start here; it is the cheapest real progress in the item.
+- [ ] **The four sites `caps-rungs.test.ts` allow-lists**, each off the ladder in size rather than tracking:
+      the memory-card provenance (→ the **Meta** rung, 12.5/400 — it is a fact about the card, not the name
+      of a field in it), `recipe-card.tsx`'s `Plan draft` chip, `freeform-field.tsx`'s submitting label, and
+      `safety-constraints-card.tsx`'s card title.
+- [ ] ⚠️ **Scope this the way B8a was scoped: measure first.** A 303-site sweep is not the deliverable —
+      Griffin's S57 call was the trimmed version (the rem residue plus `text-sm`/`text-xs` where they stand
+      in for a rung), leaving deliberate off-ladder sizes alone. Re-measure before assuming that still holds.
 - [ ] **BUG-045 🟡** — the last `#FF9F0A`, the quick-add dedupe notice. ⚠️ `palette.test.ts` allow-lists that
       exact line, so **closing it reds the test until the exception is deleted too**.
 - [ ] **BUG-048 🟡 (new, S56)** — the constraint chip's remove `×` at 20×20, the last hit-target violation in

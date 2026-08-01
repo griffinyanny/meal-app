@@ -37,7 +37,7 @@ export function ChefHeader({
     <header>
       <div className="mb-3.5 flex items-center gap-[11px]">
         <ChefPresence size="header" presenceDot thinking={thinking} />
-        <p className="m-0 flex-1 text-[11px] font-semibold tracking-[2px] text-[var(--spec-gold-tint)]">
+        <p className="m-0 flex-1 spec-eyebrow text-[var(--spec-gold-tint)]">
           YOUR CHEF
         </p>
         <span className="text-[11.5px] font-medium text-[var(--spec-text-caption)]">

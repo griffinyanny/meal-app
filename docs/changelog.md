@@ -4,6 +4,120 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 57 — 2026-08-01 (1F/B8a closed; B8 split, B8b filed)
+
+**B8's first half, and the item was two jobs wearing one name.** **700 unit + 132 E2E green**, lint +
+typecheck clean, `/visual-qa` Layer A across all five surfaces at **0 blockers / 0 high**, 56/56 capture
+states `ok`.
+
+### Phase 0: measure before scoping, and it changed the item
+
+Every one of B8's seven sub-items was measured against the build before a line was written — the phase's
+standing rule that a parked description is a hypothesis. **Six measured smaller than filed. One measured
+six times bigger**, and that one split the item:
+
+- **The type scale is ~303 sites across ~35 distinct sizes** against a 10-rung ladder. `text-sm` is 14px
+  and 14px is not a rung, so that one class is 53 off-ladder sites — the most-used size in the app. Plus
+  eight rem values that are near-misses of rungs that exist (`0.95rem` = 15.2 where the rung is 15.5).
+- Everything else was small: motion is three findings, component-library consolidation is **one dead
+  primitive**, and the `bg-primary` audit's "32 call sites" was actually 14, of which one was a real defect.
+
+**Griffin's call: split.** B8a (this session) took the caps rungs, motion, the component library, the
+`bg-primary` audit, BUG-045 and BUG-048 — closing every tracked row. **B8b** is the ~250 remaining
+non-caps type sites, trimmed to the residue that is genuinely off-ladder.
+
+### The finding: a class that sets `color` in `@layer utilities` eats every override beside it
+
+The two caps rungs shipped in `@layer utilities`. Hand-authored CSS there is emitted **~27KB after**
+Tailwind's generated colour utilities, so within the one cascade layer source order silently won and
+**eight call-site colour overrides died at once**: five gold eyebrows the gold line requires, and **three
+safety-weighted red labels** including `SAFETY-CRITICAL` on the "I never cook with" card.
+
+⚠️ **The capture could not catch it, and that is the lesson.** `--spec-text-muted` is `#A29484`, a warm
+tan; at 11px on a near-black floor a warm tan reads as "probably gold". Grading the screenshot raised a
+suspicion and could not settle it — **diffing the built CSS did** (`.spec-eyebrow` at byte 65553, the gold
+utility at 38331). A colour regression at that size is **below the resolution of a judgement call**. The
+visual layer was not the wrong instrument; it was an insufficient one.
+
+Fixed by moving all four type rungs to `@layer components`, which is the relationship they should always
+have had: the rung names size/weight/tracking, the call site decides colour per the gold line. **`SH5`
+measures it** and was verified failing against the reproduced regression — `Expected rgb(240, 194, 101)` /
+`Received rgb(162, 148, 132)`, which is `--spec-text-muted` exactly.
+
+### The caps rungs: 12 signatures → 2, and the classification had a third answer
+
+`.spec-eyebrow` (11/600/2px) and `.spec-label` (10.5/700/1.3px) added, **45 sites routed**. Measured at
+**twelve** distinct size/weight/tracking combinations, not the eight tracking values S55 counted — size and
+weight varied independently. Only two sites already sat on a rung.
+
+⚠️ **One site was misclassified and caught before the gate saw it.** The memory-card provenance holds
+`"You told me when we started"` — a sentence. Both rungs are uppercase by definition, so `.spec-label`
+shouted an attribution across every memory card. **"Which rung does this take" has a third answer: neither**
+— it is the Meta rung's job, and Meta is B8b. It is listed in the guard with the reason.
+
+Also: `Ingredients` / `Steps` moved from 14px caps to the **19px Group title**, giving B4's orphaned
+`.spec-group-title` its first call sites. §05's own example for that rung is "a recipe step group" verbatim.
+
+⚠️ **Colour is a stated deviation from §05.** That section draws the eyebrow at `#A79A8C`, a value §01 does
+not list — and §01 states the type ramp as *"five steps, descending. Never invent a sixth."* `#A79A8C` is
+what the **spec document** styles its own eyebrows with, so §05's table transcribes the document's chrome
+rather than naming a sixth product step. Both rungs take `text-muted`.
+
+### SH4 found a real law-06 break before it ever ran, and the fix was Griffin's call
+
+The Plan intent screen carried **two filled cream buttons** — the §09 send and a full-width
+`Build my first week` — on the seeded onboarding hand-off, the front door of the north-star flow. **Third
+session running for this law** (S55's filter chip, S56's organize toggle), and the first time it was two
+actual buttons.
+
+The first fix demoted the commit to `action.soft`. The visual pass then found that was the wrong half:
+**the field arrives pre-filled, so both controls fired the same call with the same argument** — one action
+drawn twice, not two primaries competing. Softening one copy left the duplication and made the labelled
+half quieter than the library door above it. **Griffin's call: delete it**, which is B7's own precedent for
+the two dialogs. The chef-decides link is now unconditional and is the no-typing path in both states.
+
+`OB4` asserted that button; it now asserts the **field carries a value**, which is the stronger check — the
+hand-off's promise is that the interview's sentence survives the trip, and a button's presence never proved
+that.
+
+### Motion, the component library, and the two bugs
+
+- **Motion.** The spec's standard curve `cubic-bezier(.2,.9,.3,1)` appeared **nowhere in `src/`**, and ~60
+  `transition-*` sites ran on Tailwind's implicit 150ms against a spec naming 120/180/260/340 — zero
+  overlap. The press rung is now wired as Tailwind's **default**, so every bare `transition-*` moved
+  on-system without touching a call site. Six looping `animate-pulse` skeletons went to `.spec-skeleton`.
+  ⚠️ **A stated deviation:** §11 says only the chef may loop, and this loops. A user action is behind a
+  skeleton, and a frozen block reads as a screen that failed — BUG-035's exact lesson. It keeps the loop and
+  loses the throb.
+- **`ui/badge.tsx` deleted** — 0 importers, B7's `ui/textarea.tsx` case again, and its default variant was
+  `bg-primary`.
+- **BUG-045 closed.** The last `#FF9F0A` → flat meta type. Its `palette.test.ts` allow-list is **gone, not
+  emptied**.
+- **BUG-048 closed, and it was not the chip redesign it was parked as.** Measured: all three call sites wrap
+  at `gap-2`, so a 44px target overhangs 6px into an 8px column gap and 4px into an 8px row gap with **no
+  target-on-target overlap**. The chip stays 36px and nothing is visible. Its `SH2` exemption went with it,
+  and the allow-list is now asserted **empty**.
+
+### Two verification notes
+
+1. **Both new guards were verified failing for the predicted reason.** `caps-rungs.test.ts` against pre-fix
+   source: 50 offenders vs 3 allowed, zero rung adoption, six hand-retyped rungs. `SH4` against the
+   reinstated button: named `"Send to chef"` and `"plan-build-first-week"` by name.
+2. ⚠️ **The false-GREEN trap fired twice more, and the second is a fifth shape: a run that executed
+   nothing.** First `npx playwright test … | tail` reported **exit 0 while one test failed** — S55's pipe
+   lesson and S56's trailing-command lesson. Then a run issued from the **wrong working directory** made
+   `npx` resolve a *different project's* `vitest`; the meal-app suite never started and the harness still
+   reported **exit 0**. Not a pipe and not a compound — the command ran and did nothing. **The tell was the
+   ABSENCE of a summary line**, which is exactly what S53 recorded. Final number is **132 passed / 0
+   failed**, read off the summary line.
+3. **`SH4` carried a race in the scaffolding, fixed by construction rather than by a longer wait.** Its
+   seeded-intent leg planted the onboarding hand-off with `goto` → `evaluate` → `reload` and lost it on
+   about one run in two: the key must exist before first paint, because `takeHandoff` runs in a mount effect
+   and a plant landing after that read never happened. `page.addInitScript` runs before any page script on
+   every navigation, so the ordering is guaranteed. **A wait that passes three times is not a fixed race.**
+
+---
+
 ## Session 56 — 2026-07-31 (1F/B7 closed; Workstream B at 8 of 9)
 
 **Spec §09's "one way to talk to the chef", built — and the item was twice the size it was filed at.**

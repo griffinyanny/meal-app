@@ -14,7 +14,7 @@ export interface ChefNarrativeCardProps {
 export function ChefNarrativeCard({ narrative, isNew, onOpenChef }: ChefNarrativeCardProps) {
   return (
     <div>
-      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      <p className="mb-2.5 spec-eyebrow text-[var(--spec-gold-tint)]">
         Your chef
       </p>
       <h1 className="mb-4 text-[1.75rem] font-bold leading-[1.12] tracking-[-0.5px] text-foreground">

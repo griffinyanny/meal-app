@@ -104,14 +104,14 @@ export function ChefStatus({ label, safety }: ChefStatusProps) {
       <div>
         <p
           className={cn(
-            "m-0 text-[10px] font-semibold tracking-[1.5px]",
+            "m-0 spec-label",
             safety ? "text-[var(--spec-destructive-text)]" : "text-[var(--spec-gold-tint)]"
           )}
         >
           {label}
         </p>
         {safety && (
-          <p className="mt-[3px] text-[10px] font-semibold tracking-[1.5px] text-[var(--spec-destructive-text)]">
+          <p className="mt-[3px] spec-label text-[var(--spec-destructive-text)]">
             THE ONE I HAVE TO GET RIGHT
           </p>
         )}

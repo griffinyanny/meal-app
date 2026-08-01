@@ -21,10 +21,52 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 
 **Workstream A is ✅ CLOSED at 6 of 6 (S50 + S51), all merged to `main`** — A1 (BUG-035), A2 (BUG-020/021),
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
-**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55) and B7 (S56) closed — 8 of
-9, one item remains.** **697 unit + 130 E2E green, migration `0010` applied.** Next: **B8**, then C, then D.
-⚠️ **B3 is closed but was AMENDED in S56** — it had shipped with 17 real hit-target violations behind a
-blind spot in its own sweep. See the S56 lesson below.
+**Workstream B is 🔨 OPEN: B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56) and B8a (S57)
+closed — 8.5 of 9.** **700 unit + 132 E2E green, migration `0010` applied.** Next: **B8b**, then C, then D.
+⚠️ **B8 was SPLIT in S57 on measurement, not on feel** — the type scale measured at ~303 sites across ~35
+distinct sizes against a 10-rung ladder, six times the rest of the item put together, so B8a took everything
+else (closing BUG-045 and BUG-048) and B8b carries the type work alone.
+
+**⚠️ S57 · A LAYER CAN BE POINTED AT THE RIGHT THING AND STILL LACK THE PRECISION TO ANSWER.** B8a's caps
+rungs shipped as classes setting `color` inside `@layer utilities` — emitted ~27KB after Tailwind's own
+colour utilities, so within one cascade layer source order silently won and **eight call-site overrides
+died**: five gold eyebrows the gold line requires and **three SAFETY-weighted red labels**, including
+`SAFETY-CRITICAL`. **`/visual-qa` cleared it**, because `--spec-text-muted` is a warm tan and at 11px on a
+near-black floor a warm tan reads as *"probably gold"*. Diffing the **built CSS** is what proved it. Every
+prior instance of *ask what the layer cannot see* was a layer aimed wrong; this one was aimed correctly and
+was **insufficient**. When a difference is small enough to argue about, stop judging and measure.
+
+**⚠️ S57 · MEASURE EVERY SUB-ITEM BEFORE SCOPING, NOT JUST THE ITEM.** Phase 0 measured all seven of B8's
+parts against the build before any code. Six were smaller than filed; one was **six times bigger** and
+changed what the item was. S54 found a parked item smaller, S56 found one bigger — S57 adds that **a single
+item can be both at once**, and only a per-part measurement shows it.
+
+**⚠️ S57 · "WHICH RUNG DOES THIS TAKE" HAS A THIRD ANSWER: NEITHER.** The memory-card provenance holds
+*"You told me when we started"* — a sentence. Both caps rungs are uppercase by definition, so routing it
+there shouted an attribution across every memory card. Read what the slot **holds**, not what its type looks
+like.
+
+**⚠️ S57 · THE FALSE GREEN HAS A FIFTH SHAPE: A RUN THAT EXECUTED NOTHING.** `npx playwright test` was
+issued from the wrong working directory, so `npx` resolved a **different project's** `vitest`, the meal-app
+suite never started, and the harness reported **exit code 0**. Not a pipe (S55), not a trailing command in a
+compound (S56) — the command ran and did nothing. **The tell was the ABSENCE of a summary line**, which is
+exactly what S53 wrote down: *a red with no pass/fail summary line is usually infrastructure, not tests.*
+Always run the suite via `npm run test:e2e` from the repo root, and **read the count, not the status** —
+"132 passed" is the only evidence that counts.
+
+**⚠️ S57 · FIX A RACE BY CONSTRUCTION, NOT BY LENGTHENING A WAIT.** `SH4`'s seeded-intent leg planted the
+onboarding hand-off with `goto` → `evaluate` → `reload`, and lost it on roughly one run in two: the key has
+to exist before the app's first paint, because `takeHandoff` runs in a mount effect and a plant landing
+after that read never happened. `page.addInitScript` runs before any page script on every navigation, so the
+ordering is guaranteed rather than tuned. **A wait that passes three times is not a fixed race** — it is a
+race with a longer fuse.
+
+**⚠️ S57 · SOFTENING ONE COPY OF A DUPLICATED ACTION LEAVES THE DEFECT.** `SH4` found the Plan intent screen
+carrying two filled cream buttons on the seeded hand-off — the front door of the north-star flow, and the
+third consecutive session law 06 broke. The first fix demoted the commit; the field arrives **pre-filled**,
+so both controls fired the same call with the same argument — **one action drawn twice**. Griffin ruled it
+deleted, which is B7's own precedent for the two dialogs.
+
 ⚠️ **Do NOT write "no taste calls are pending" without checking.** S55's handoff said exactly that about B6
 and it was false: the vocabulary finding contained one, and it only became visible on asking *which word
 wins* rather than restating the finding. **A finding that names a problem has not yet named its fix.**

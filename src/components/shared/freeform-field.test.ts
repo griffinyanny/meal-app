@@ -66,8 +66,8 @@ describe("spec §09 — one freeform control", () => {
     expect(hits(/<input/i)).toEqual([
       // In-place edit of a row that already exists. Renaming "2 lemons" is not
       // telling the chef something; it is correcting a field.
-      "components/groceries/grocery-row.tsx:118",
-      "components/groceries/grocery-row.tsx:172",
+      "components/groceries/grocery-row.tsx:122",
+      "components/groceries/grocery-row.tsx:176",
       // Header pattern B — search, explicitly excluded by §09.
       "components/plan/picker/picker-content.tsx:221",
       // A URL, not a sentence. Nothing is being said to anyone.

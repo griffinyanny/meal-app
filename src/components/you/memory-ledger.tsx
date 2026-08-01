@@ -24,7 +24,7 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
   if (memories.length === 0) {
     return (
       <section data-testid="you-ledger-empty">
-        <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+        <h2 className="mb-2.5 spec-eyebrow">
           Still learning
         </h2>
         <div className="rounded-[18px] border border-dashed border-[rgba(240,222,190,0.13)] bg-[rgba(240,222,190,0.02)] px-[22px] py-7 text-center">
@@ -47,7 +47,7 @@ export function MemoryLedger({ memories, onRemove, onEdit }: MemoryLedgerProps) 
 
   return (
     <section data-testid="you-ledger">
-      <h2 className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+      <h2 className="mb-2.5 spec-eyebrow">
         What I&apos;ve picked up
       </h2>
       <div className="flex flex-col gap-2.5">

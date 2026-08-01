@@ -151,19 +151,26 @@ test("SH2 - every icon-only control is at least 44x44 on every tab", async ({ pa
   // the app is clean — the apparatus has to be able to fail.
   expect(found.length, "the sweep found no icon-only controls at all").toBeGreaterThan(0);
 
-  // ⚠️ The exemption is an ALLOW-LIST carried by the ELEMENT, not a rule in this
-  // file: `data-hit-target-exempt="<bug id>"` at the call site. One entry today
-  // (BUG-048, the constraint chip's 20px remove ×, exempt because 44px inside a
-  // 36px chip is a chip redesign rather than a sweep's decision). Anything
-  // without the attribute still fails, so a new undersized control cannot hide
-  // behind it.
+  // ⚠️ The allow-list is EMPTY as of 1F/B8a, and it is empty rather than
+  // deleted. BUG-048 (the constraint chip's 20px remove ×) was its one entry;
+  // closing the bug reddened this file until the attribute went with it, which
+  // is exactly what listing it here was for (S52 — a fixed bug cannot leave a
+  // stale permission behind).
+  //
+  // Granting a new exemption is deliberately a TWO-place change now: the
+  // `data-hit-target-exempt="<bug id>"` attribute at the call site, and this
+  // expectation. An attribute alone reds the suite, so an exemption cannot be
+  // added quietly by the person who wants one.
   const exempt = found.filter((t) => t.exempt !== null);
-  expect(exempt.length, "the BUG-048 exemption vanished — was the attribute removed?")
-    .toBeGreaterThan(0);
+  expect(
+    exempt,
+    `hit-target exemptions are granted in this file too — if one is genuinely ` +
+      `owed, name the bug here:\n${describeTargets(exempt)}`
+  ).toEqual([]);
 
-  // And the permission cannot outlive its reason: every exempt control must
-  // still BE undersized. Fixing the chip without deleting the attribute reds
-  // this (S52 — a stale exception is worse than no exception).
+  // And whenever the list is non-empty again, the permission still cannot
+  // outlive its reason: an exempt control that MEETS the floor is a fixed bug
+  // wearing a stale exception, and reds this.
   const exemptButFine = exempt.filter((t) => !undersized([t]).length);
   expect(
     exemptButFine,
@@ -206,6 +213,214 @@ test("SH3 - subsection labels are real headings, not paragraphs", async ({ page 
   await seedRecipeState("RECIPES_LIBRARY");
   await page.goto("/recipes");
   await expect(heading("Recently cooked")).toBeVisible();
+});
+
+// SH4 · spec §08's law 06: "One filled cream button per viewport. If two
+// actions both feel primary, one of them is not."
+//
+// ⚠️ THIS RULE HAS BROKEN IN THREE CONSECUTIVE SESSIONS, and every time it was
+// caught by eye on a surface the visual gate had already cleared:
+//   S55 — the Recipes filter chip was `bg-primary`, a filled cream button
+//         standing in for a filter STATE, beside the library's `+`.
+//   S56 — the Groceries organize toggle painted its selected segment the same
+//         way, and B7 was about to put a filled cream send directly beneath it.
+//   S57 — the Plan intent screen carried the §09 send AND a full-width
+//         "Build my first week", on the front door of the north-star flow.
+//
+// `visual-qa-rubric.md` has carried this exact sentence since S42 and the judge
+// cleared all three anyway. S55's own conclusion was that the check "was not
+// missing, not stale, not seed-blinded — it was present, correct, and UNRUN."
+// A rule a judge has to remember is not a rule; this measures it instead.
+//
+// Measured from computed style, never from a class name (RC11's precedent):
+// "filled cream" IS the action fill at full alpha, whatever utility produced it.
+// The tinted rungs (`action.soft`, `bg-primary/10`, a selected chip) are the
+// spec's answer for everything that is not the primary, so they are what the
+// count is meant to leave alone.
+async function filledCreamCount(page: Page, where: string) {
+  return page.evaluate((whereLabel) => {
+    // --spec-action, #F4EBDC.
+    const [AR, AG, AB] = [244, 235, 220];
+    const hits: { where: string; label: string; tag: string }[] = [];
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) continue;
+      const s = getComputedStyle(el);
+      if (s.visibility === "hidden" || s.display === "none") continue;
+      const m = s.backgroundColor.match(
+        /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)/
+      );
+      if (!m) continue;
+      const [red, green, blue] = [Number(m[1]), Number(m[2]), Number(m[3])];
+      const alpha = m[4] === undefined ? 1 : Number(m[4]);
+      // Full-alpha only: a tint is a different rung, not a quieter primary.
+      if (alpha < 0.9) continue;
+      if (
+        Math.abs(red - AR) > 3 ||
+        Math.abs(green - AG) > 3 ||
+        Math.abs(blue - AB) > 3
+      )
+        continue;
+      hits.push({
+        where: whereLabel,
+        label:
+          el.getAttribute("aria-label") ??
+          el.getAttribute("data-testid") ??
+          el.innerText.trim().slice(0, 40) ??
+          el.tagName,
+        tag: el.tagName.toLowerCase(),
+      });
+    }
+    return hits;
+  }, where);
+}
+
+test("SH4 - no viewport carries more than one filled cream button", async ({ page }) => {
+  const surfaces: { where: string; go: () => Promise<void> }[] = [
+    {
+      where: "plan-review",
+      go: async () => {
+        await seedPlanState("DRAFT");
+        await page.goto("/plan");
+        await expect(page.getByTestId("plan-rail")).toBeVisible();
+      },
+    },
+    {
+      where: "groceries",
+      go: async () => {
+        await seedGroceryState("GROCERY_READY");
+        await page.goto("/groceries");
+        await expect(page.getByTestId("grocery-list")).toBeVisible();
+      },
+    },
+    {
+      where: "recipes-library",
+      go: async () => {
+        await seedRecipeState("RECIPES_LIBRARY");
+        await page.goto("/recipes");
+        await expect(page.getByTestId("recipe-card").first()).toBeVisible();
+      },
+    },
+    {
+      where: "you",
+      go: async () => {
+        await seedYouState("YOU_RETURNING");
+        await page.goto("/you");
+        await expect(page.getByTestId("you-safety-card")).toBeVisible();
+      },
+    },
+    {
+      // ⚠️ The SEEDED variant specifically, because that is the one that broke.
+      // The unseeded intent screen pairs the §09 send with a text link and was
+      // always within budget; the onboarding hand-off swaps that link for a
+      // full-width commit, and only then are there two. Sweeping the easy state
+      // and calling the surface covered is the mistake SH2 made.
+      //
+      // Reached by planting the hand-off rather than by walking the interview:
+      // it is read-once sessionStorage (`takeHandoff` clears it), so planting it
+      // is the same door OB4 arrives through, without a second copy of the
+      // onboarding walk that would rot the moment the flow changes.
+      //
+      // ⚠️ `addInitScript`, NOT `goto` → `evaluate` → `reload`. The first
+      // version did the latter and lost the hand-off on one run in two: the key
+      // has to exist before the app's first paint, because `takeHandoff` runs in
+      // a mount effect and a plant that lands after it reads is a plant that
+      // never happened. `addInitScript` runs before any page script on every
+      // navigation, so the ordering is guaranteed by construction rather than by
+      // a wait that happened to be long enough. This leg runs LAST for the same
+      // reason: the init script re-plants on every later navigation, and the
+      // only surface that would read it is this one.
+      where: "plan-intent (seeded — the north-star front door)",
+      go: async () => {
+        await seedPlanState("EMPTY");
+        await page.addInitScript(() =>
+          window.sessionStorage.setItem(
+            "meal-app:onboarding-handoff",
+            JSON.stringify({ request: "leaning Thai, featuring fish" })
+          )
+        );
+        await page.goto("/plan");
+        // The seeded EYEBROW, not a button and not the chips: it renders on
+        // `seed` alone, where the chips additionally need persisted preferences
+        // this seed state does not carry. Waiting on something that depends on
+        // more than the branch under test is how SH2 ended up measuring a
+        // skeleton. (`plan-build-first-week` was the wait until S57 deleted it
+        // — see no-plan-state.tsx.)
+        await expect(
+          page.getByText("YOUR PLAN, PRE-FILLED FROM WHAT YOU TOLD ME")
+        ).toBeVisible();
+      },
+    },
+  ];
+
+  // ⚠️ Each leg waits on that surface's REAL CONTENT, never on `nav`. SH2 shipped
+  // waiting on the tab bar for two of its five legs, and the tab bar renders
+  // instantly on every route — so it measured a loading skeleton and reported a
+  // clean app for two whole sessions (S56). A sweep is only as honest as the
+  // thing it waits for.
+  const over: string[] = [];
+  let totalFound = 0;
+  for (const s of surfaces) {
+    await s.go();
+    const hits = await filledCreamCount(page, s.where);
+    totalFound += hits.length;
+    if (hits.length > 1) {
+      over.push(
+        `  ${s.where} — ${hits.length} filled cream:\n` +
+          hits.map((h) => `      <${h.tag}> "${h.label}"`).join("\n")
+      );
+    }
+  }
+
+  // ⚠️ Law 06 is a CEILING, not a floor (B6's reading — a browse screen whose
+  // primary action lives on the NEXT screen should not manufacture one), so
+  // zero on a given surface is correct. Zero across ALL of them is not: it would
+  // mean the colour match broke and this sweep had quietly become a no-op
+  // reporting a clean app forever. That is SH2's exact failure mode, which is
+  // why this assertion is here rather than looking obviously unnecessary.
+  expect(
+    totalFound,
+    "the sweep found no filled cream anywhere — that is a broken colour match, " +
+      "not a clean app"
+  ).toBeGreaterThan(0);
+
+  expect(
+    over.join("\n"),
+    `§08: one filled cream button per viewport. Over budget:\n${over.join("\n")}`
+  ).toBe("");
+});
+
+// SH5 · a type rung must never eat the colour written beside it.
+//
+// ⚠️ THIS EXISTS BECAUSE IT HAPPENED. B8a named the two caps rungs as classes
+// that set `color`, and put them in `@layer utilities` — where hand-authored
+// CSS is emitted AFTER Tailwind's generated colour utilities, so within the one
+// layer source order silently won. Eight call-site overrides died at once: five
+// gold eyebrows the gold line requires, and three SAFETY-weighted red labels.
+//
+// It cleared the capture gate. `--spec-text-muted` is a warm tan, and at 11px
+// on a near-black floor a warm tan reads as "probably gold" — the screenshot
+// looked correct and only the built CSS proved otherwise. So this asserts the
+// COMPUTED colour on the two that matter most: the eyebrow §01 names by name
+// ("gold.tint — Orb highlight, YOUR CHEF eyebrow"), and a safety label, where
+// losing the red is the one that actually costs something.
+test("SH5 - a type rung does not override the colour written beside it", async ({ page }) => {
+  const colourOf = (sel: string) =>
+    page.locator(sel).first().evaluate((el) => getComputedStyle(el).color);
+
+  await seedPlanState("DRAFT");
+  await page.goto("/plan");
+  await expect(page.getByTestId("plan-rail")).toBeVisible();
+  // #F0C265 — gold.tint. The chef's eyebrow, carrying `.spec-eyebrow` for its
+  // size/weight/tracking and the gold for its meaning.
+  expect(await colourOf('text=YOUR CHEF')).toBe("rgb(240, 194, 101)");
+
+  await seedYouState("YOU_RETURNING");
+  await page.goto("/you");
+  await expect(page.getByTestId("you-safety-card")).toBeVisible();
+  // rgba(227,155,146,.75) on the safety card's weight label. Muted tan here
+  // would mean the rung ate it — which is exactly what shipped for one round.
+  expect(await colourOf('text=SAFETY-CRITICAL')).toBe("rgba(227, 155, 146, 0.75)");
 });
 
 test.afterAll(async () => {

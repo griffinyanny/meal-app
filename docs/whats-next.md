@@ -1,6 +1,6 @@
 # What's Next
 
-Last updated: 2026-07-31 (Session 56; 1F/B7 closed — Workstream B at 8 of 9)
+Last updated: 2026-08-01 (Session 57; 1F/B8 split, B8a closed — Workstream B at 8.5 of 9)
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 
@@ -31,7 +31,186 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **B7 is CLOSED. Workstream B is 8 of 9; only B8 remains.**
+## ▶ NEXT SESSION — **B8a is CLOSED. B8 split in two; only B8b remains before Workstream C.**
+
+**S57 measured B8 before scoping it, and the measurement split the item.** **700 unit + E2E green**,
+lint + typecheck clean, `/visual-qa` Layer A across all five surfaces at **0 blockers / 0 high**,
+**56/56 capture states `ok`**, nothing on a branch.
+
+### ⚠️ The thing worth carrying: B8 was two jobs wearing one name, and only measuring showed it
+
+Phase 0 measured **all seven** of B8's sub-items against the build before a line was written. **Six came in
+smaller than filed.** One came in **six times bigger**:
+
+- **The type scale is ~303 sites across ~35 distinct sizes** against §05's **10-rung** ladder. `text-sm` is
+  14px and 14px is not a rung — that one class is **53 off-ladder sites**, the most-used size in the app.
+- Everything else was small: motion was three findings, "component-library consolidation" was **one dead
+  primitive**, and the `bg-primary` audit's *"32 call sites"* was actually **14**.
+
+**Your call: split.** **B8a** took the caps rungs, motion, the component library, the `bg-primary` audit,
+**BUG-045 and BUG-048** — so every tracked row closed instead of waiting behind a 300-site sweep. **B8b** is
+the rest of the type scale, filed in `scope-1F.md` with the cheapest entry point named (the 22 rem sites are
+near-misses of rungs that already exist and need no judgement at all).
+
+### ⛔ THE ONE TO READ: the visual gate could not have caught what B8a broke
+
+The two caps rungs shipped as classes that set `color` inside **`@layer utilities`**. Hand-authored CSS
+there is emitted **~27KB after** Tailwind's generated colour utilities, and within one cascade layer source
+order decides — so **eight call-site colour overrides died silently**: five gold eyebrows the gold line
+requires, and **three safety-weighted red labels**, including `SAFETY-CRITICAL` on the "I never cook with"
+card.
+
+⚠️ **`/visual-qa` cleared it.** `--spec-text-muted` is `#A29484`, a warm tan; at 11px on a near-black floor
+a warm tan reads as *"probably gold"*. Grading the screenshot raised a suspicion and **could not settle
+it** — diffing the **built CSS** did (`.spec-eyebrow` at byte 65553, the gold utility at 38331).
+
+**A colour regression at that size is below the resolution of a judgement call.** Every prior instance of
+*ask what the layer cannot see* was about a layer pointed at the wrong thing. This one was pointed at
+exactly the right thing and **lacked the precision to answer**. The layer was not wrong; it was
+insufficient — and knowing which is which is the new part.
+
+Fixed by moving all four type rungs to `@layer components`, the relationship they should always have had:
+the rung names size/weight/tracking, the call site decides colour per the gold line. **`SH5` measures it**
+and went red against the reproduced regression at `Expected rgb(240, 194, 101)` / `Received
+rgb(162, 148, 132)` — `--spec-text-muted` exactly.
+
+### ✅ You answered two, and the second one corrected my fix
+
+1. **B8 splits; B8a now, B8b as its own item.**
+2. **The grocery checks take `#9CB86F`**, matching B1's completion banner — the same screen had been saying
+   "done" in two hues, cream on a row and green in its header.
+3. **`Build my first week` is DELETED on the seeded intent screen, not softened.** `SH4` found that screen
+   carrying **two filled cream buttons** — the §09 send and that commit — on the onboarding hand-off, the
+   front door of the north-star flow, and the **third consecutive session** law 06 has broken. My first fix
+   demoted the commit; the visual pass showed that was the wrong half. **The field arrives pre-filled, so
+   both controls fired the same call with the same argument** — one action drawn twice, not two primaries
+   competing. Softening one copy left the duplication and made the labelled half quieter than the library
+   door above it. Your call was B7's own precedent for the two dialogs, and it is the right one.
+
+### The caps rungs: twelve signatures → two, and the classification had a third answer
+
+**45 sites routed.** Measured at **twelve** distinct size/weight/tracking combinations — not the eight
+*tracking values* S55 counted, because size and weight vary independently. Only **two** sites already sat on
+a rung.
+
+⚠️ **One site I classified wrong, caught before the gate saw it.** The memory-card provenance holds
+*"You told me when we started"* — a **sentence**. Both rungs are uppercase by definition, so `.spec-label`
+shouted an attribution across every memory card. **"Which rung does this take" has a third answer:
+neither.** It belongs to the Meta rung, which is B8b. It is listed in the guard with the reason, so the
+mistake is now the documentation.
+
+Also: **`Ingredients` / `Steps` moved from 14px caps to the 19px Group title**, giving B4's orphaned
+`.spec-group-title` its **first** call sites — it had zero, and the app's only `text-[19px]` was a stepper
+numeral. §05's own example for that rung is *"a recipe step group"* verbatim.
+
+⚠️ **Colour on the two rungs is a stated deviation from §05, and §01 is why.** §05 draws the eyebrow at
+`#A79A8C`, a value **§01 does not list** — and §01 states the ramp as *"five steps, descending. Never invent
+a sixth,"* calling a colour used outside its row a bug. `#A79A8C` is what the **spec document** styles its
+own eyebrows with, so §05's table transcribes the document's chrome rather than naming a sixth product step.
+**The spec contradicts itself and §01 wins.**
+
+### The rest, briefly
+
+- **Motion.** The spec's standard curve appeared **nowhere in `src/`**, and ~60 `transition-*` sites ran on
+  Tailwind's implicit 150ms against a spec naming 120/180/260/340 — **zero overlap**. The press rung is now
+  Tailwind's **default**, so every bare `transition-*` went on-system without touching a call site.
+  ⚠️ Stated deviation: the six loading skeletons keep looping (§11 says only the chef may loop) because a
+  user action *is* behind a skeleton and a frozen block reads as a screen that failed — BUG-035's lesson.
+- **`ui/badge.tsx` deleted** — 0 importers, B7's `ui/textarea.tsx` case in a second primitive.
+- **BUG-045 + BUG-048 both CLOSED**, and both allow-lists went with them rather than being emptied.
+  BUG-048 was **not** the chip redesign it was parked as: measured, a 44px target overhangs 6px into an 8px
+  column gap with no target-on-target overlap, so the chip stays 36px and nothing is visible.
+- **`SH4` and `SH5` are new**, both verified failing for the predicted reason. `SH4` turns law 06 from a
+  rule the judge must remember into an assertion that fails.
+
+### ⚠️ Two verification findings, both at the very end
+
+1. **The false-GREEN trap fired twice more, and the second is a NEW shape: a run that executed nothing.**
+   First `npx playwright test … | tail` reported **exit 0 while one test failed** (S55's pipe lesson, S56's
+   trailing-command lesson). Then a run issued from the **wrong working directory** made `npx` resolve a
+   *different project's* `vitest` — the suite never started and the harness still reported **exit 0**. The
+   tell was the **absence of a summary line**, which is precisely what S53 wrote down. **Read the count,
+   never the status.** The real number is 132, confirmed from the summary line.
+2. **`SH4` had a race in my own scaffolding, and I fixed it by construction rather than by waiting longer.**
+   Its seeded-intent leg planted the onboarding hand-off with `goto` → `evaluate` → `reload` and lost it
+   about one run in two: the key must exist before first paint, because `takeHandoff` runs in a mount effect
+   and a plant landing after that read never happened. `addInitScript` runs before any page script, so the
+   ordering is guaranteed. **A wait that passes three times is not a fixed race** — it is a race with a
+   longer fuse.
+
+### ⚠️ Still yours, unchanged since S54 and still the only thing
+
+**B2's phone check.** The 1E.5 toolbar deletion and S54's squared nav corners have still never been seen on
+a device together, and S28's density complaint was made on a phone. Open Recipes and Groceries on your phone
+and tell me whether the bottom edge reads calm. **Nothing else is owed.**
+
+### ⭐ Next up — B8b, the last B item
+
+The rest of the type scale. ⚠️ **Scope it the way B8a was scoped: measure first.** The trimmed version you
+chose is the 22 rem sites (pure pre-spec near-misses of rungs that already exist — the cheapest real
+progress) plus `text-sm`/`text-xs` where they stand in for a rung, leaving deliberate off-ladder sizes
+alone. Re-measure before assuming that still holds. It also picks up the four sites `caps-rungs.test.ts`
+allow-lists, chiefly the memory-card provenance → the Meta rung.
+
+**🎨 Design pass — offered, recommendation is skip.** B8b is a locked spec applied to designed surfaces, and
+B8a's one design question (BUG-048's chip geometry) measured out as *not* a redesign. Nothing in B8b is
+net-new surface. **C is where the design pass is already decided.**
+
+**⭐ Model recommendation: Opus 4.8.** B8b is classification against a locked spec at ~300 sites — the same
+work 4.8 did across S40/S42/S45/S47/S48/S52–S57. **Go higher only if you take Workstream D first** — the
+security review is the one remaining item with real reasoning in it.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S57 split 1F/B8 and closed B8a. 700 unit + 132 E2E green on main, lint + typecheck clean,
+visual-qa 0 blockers/0 high across all five surfaces, 56/56 capture states ok. The thing worth carrying is
+why the split happened: Phase 0 measured all seven of B8's sub-items against the build BEFORE writing
+anything, six came in smaller than filed, and the type scale came in SIX TIMES BIGGER — ~303 sites across
+~35 distinct sizes against a 10-rung ladder, where text-sm alone is 53 off-ladder sites because 14px isn't
+a rung. So B8a took everything else (caps rungs, motion, dead ui/badge.tsx, the bg-primary audit, BUG-045,
+BUG-048) and every tracked row closed instead of waiting behind a 300-site sweep. Second thing, and it's a
+NEW shape of "ask what the layer cannot see": the caps rungs shipped as classes setting color inside @layer
+utilities, which is emitted ~27KB AFTER Tailwind's colour utilities, so source order silently killed eight
+call-site overrides — five gold eyebrows and THREE SAFETY-weighted red labels including SAFETY-CRITICAL.
+/visual-qa cleared it, because --spec-text-muted is a warm tan and at 11px on a near-black floor a warm tan
+reads as "probably gold". Diffing the BUILT CSS is what proved it. The layer wasn't pointed at the wrong
+thing this time — it lacked the precision to answer. Fixed by moving all four type rungs to @layer
+components; SH5 measures it now. Also: SH4 (new, counts filled-cream per viewport) found the Plan intent
+screen carrying TWO filled cream buttons on the seeded onboarding hand-off, and my first fix softened the
+wrong half — the field arrives pre-filled so both controls fired the same call, one action drawn twice, and
+you ruled it DELETED rather than softened. Next: B8b, the last B item — the rest of the type scale. Scope it
+the way B8a was scoped, measure first: the trimmed version I agreed to is the 22 rem sites (pre-spec
+near-misses of rungs that already exist) plus text-sm/text-xs where they stand in for a rung, leaving
+deliberate off-ladder sizes alone, plus the four sites caps-rungs.test.ts allow-lists (chiefly the
+memory-card provenance, which belongs to the Meta rung). Read docs/whats-next.md, docs/scope-v1.md and
+docs/scope-1F.md first, give me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is CLOSED as
+won't-do, the non-prod Supabase project closed NO — don't reopen any of them. Don't run the E2E suite while
+I'm using the app. The only thing owed by me is still B2's phone check: whether the bottom edge reads calm
+now the toolbar deletion and the squared nav corners are on screen together. On Opus 4.8.
+```
+
+**Design-independent alternative** (B8b has no design question in it at all, so this is a pure ordering
+choice — take C if you'd rather have the PWA on your phone before finishing the type work):
+```
+Resume meal app — S57 split 1F/B8 and closed B8a (700 unit + 132 E2E green on main, visual-qa 0/0, 56/56
+capture states ok). Skip B8b this session and take Workstream C, the PWA, instead: web app manifest + the
+full home-screen icon set iOS and Android actually ask for, a service worker whose offline scope is honestly
+bounded (offline READ of the current grocery list — standing in a store with bad signal — not offline
+generation), the install prompt, and full-screen launch without browser chrome. It has to be verified on my
+phone and my wife's, not a desktop emulator, so tell me exactly what to tap and what to look for. Offer me
+the design pass FIRST — S52 decided C gets one (icon/splash/install prompt/offline state are net-new surface
+in no spec), unlike B. Order is B -> C -> D -> validate and I already overruled pulling D forward, so don't
+propose it. B8b (the rest of the type scale, ~303 sites on ~35 sizes against a 10-rung ladder) stays filed
+in scope-1F.md. BUG-042 is closed as won't-do and the non-prod Supabase project closed NO; don't reopen
+either. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope
+check, keep 700 unit + 132 E2E green. Don't run the E2E suite while I'm using the app. On Opus 4.8.
+```
+
+---
+
+## ⚠️ S56 (superseded by S57 above — B8a is closed)
+
+### ▶ **B7 is CLOSED. Workstream B is 8 of 9; only B8 remains.**
 
 **S56 built spec §09's one freeform control.** **697 unit + 130 E2E green**, lint + typecheck clean,
 `/visual-qa` Layer A across all five surfaces with **54/54 capture states `ok`**, nothing on a branch.

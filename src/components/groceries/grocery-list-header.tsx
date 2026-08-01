@@ -26,7 +26,7 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
 
   return (
     <div className="space-y-3.5">
-      <p className="text-[11px] font-semibold uppercase tracking-[2px] text-muted-foreground">
+      <p className="spec-eyebrow">
         Groceries · This week
       </p>
       <div className="flex items-baseline justify-between gap-3">
@@ -48,7 +48,12 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
 
       <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(240,222,190,0.07)]">
         <div
-          className="h-full rounded-full bg-primary transition-[width] duration-300"
+          // ⚠️ Was bg-primary: cream, the ACTION hue, filling a bar you cannot
+          // press. §01 says cream is what the finger is meant to find, so a
+          // status indicator wearing it is B1's draft pill and BUG-046's recipe
+          // body one surface over. It measures completion, so it takes the
+          // completion hue the checks beneath it now carry.
+          className="h-full rounded-full bg-[var(--spec-success)] transition-[width] duration-[var(--spec-motion-enter)]"
           style={{ width: `${pct}%` }}
           data-testid="grocery-progress-bar"
         />
