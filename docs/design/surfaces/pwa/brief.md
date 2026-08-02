@@ -1,5 +1,47 @@
 # PWA (Phase 1F, Workstream C) — GENERATE brief
 
+> ## ✅ ANSWERED — the round ran, and it closed THREE artifacts and CUT one (S60)
+>
+> **Result: [`directions.dc.html`](directions.dc.html)** (`PWA Directions.dc.html` in the Claude Design
+> project). **This brief is now history except where it is amended below.** Read the directions file for
+> the locked values; read this brief only for the reasoning that produced the questions.
+>
+> | Artifact | Outcome |
+> |---|---|
+> | 1. App icon | ✅ **Locked — `1a` "Ember".** Orb at **54%** of the 1024 artboard, centred, at rest, floor full-bleed. **Toque at every size**, because an icon is one raster downsampled and dropping it at 60px would mean shipping two icons. |
+> | 2. Launch screen | ✅ **Locked — `1e` "Hero".** Orb at **88**, frozen at the top of the ember cycle. |
+> | 3. Install prompt | ⛔ **CUT. Not building it.** |
+> | 4. Offline grocery list | ✅ **Locked — `1h` "The clause".** Offline is **four characters appended to the count**: `18 / 34 · offline`. |
+> | 5. Queued-changes indicator | ✅ **Locked — it COLLAPSED INTO artifact 4.** There is no separate indicator. |
+>
+> ### ⚠️ Three amendments this brief got wrong, recorded rather than quietly overwritten
+>
+> **1. The splash takes `light.hero`, NOT `light.ambient`.** This brief said ambient (§(2) below). §03
+> defines hero as the recipe for *"only where the orb is"* — and **the splash is nothing but the orb**, so
+> the rule already covered it and the brief was applying the wrong one. Hero wins; this brief is the thing
+> that was wrong.
+>
+> **2. The install prompt is cut, and the brief's framing is why it survived as long as it did.** This
+> brief spent a section designing around an *honest awkwardness* — a cream button that cannot perform the
+> action it names. The round's answer is that the awkwardness was the tell: **two users, both told how to
+> add it by hand before they ever open it.** An in-app prompt would spend the product's first act teaching
+> a browser gesture the app is not allowed to perform, to an audience that already knows it. Revisit only
+> if the audience widens before the native build.
+>
+> **3. The queued-changes indicator is not a fifth artifact.** This brief asked for three drawn moments
+> (holding / flushing / resolution). The round's answer folds all three into the one clause — `· offline`
+> → `· sending` → nothing — and **the queue is deliberately NOT counted**: a running tally invites worry
+> about a promise the app has already kept. Flushing is **one 180ms crossfade**, never a loop, because
+> only the chef loops.
+>
+> ### ⭐ One scope line the round added, and it belongs here so it is not solved by accident
+>
+> **A held tick that fails permanently — the item was deleted on the other phone — is a CONFLICT, not an
+> offline state, and it is out of scope for this surface.** Named explicitly because the natural instinct
+> is to reach for a red dot, which would put an error hue on the one screen this whole artifact exists to
+> keep calm. R1 is solo accounts in separate households, so it cannot happen yet; household sharing
+> (V1.5) is when it can.
+
 > **This is a to-generate brief, not an as-built record.** Five artifacts that exist in no spec and no
 > mock. Griffin runs this in the meal-app Claude Design project; Claude Code builds the result in real
 > components. Loop + round-trip mechanics: `../../design-workflow.md`.

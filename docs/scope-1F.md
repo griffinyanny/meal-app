@@ -79,7 +79,16 @@ code diff.
 
 - **Leave both env vars unset.** Prod stays open; the gate stays dormant. Going public later is deleting
   two env vars, and running a beta later is setting them — neither is a code change.
-- **No in-app feedback capture, no support path, no bug-report affordance.** This *is* real scope removed.
+- **⚠️ CORRECTED S60. This line originally read "no in-app feedback capture, no support path, no
+  bug-report affordance — this *is* real scope removed."** The support path and the
+  bug-report-affordance-for-strangers stay out. **In-app feedback capture is back IN, as Workstream E**
+  (Griffin, S60: *"I didn't mean to cut the in-app feedback"*).
+  **The cut was a bundling error, not a judgement call.** Every other item on this list is justified by
+  *there are no strangers in R1*. Feedback capture is not: **its primary user is Griffin, on his couch,
+  with a phone and no laptop.** That justification survives "no closed beta" completely intact, and it got
+  swept up only because it arrived in the same sentence as the support path. **The two validation weeks
+  are the densest couch-testing window this project will ever have** — shipping the capture tool after
+  them spends the window it exists for.
 - **No onboarding-for-strangers pass.** The interview is tuned for two people who know what the product is
   and can say so out loud; it does not have to survive a cold user this release.
 - **No multi-user load, abuse, or cost-per-user modelling** beyond what the existing rate limits give.
@@ -89,8 +98,20 @@ code diff.
 
 **What it does NOT remove.** The Definition of Done still requires Griffin **and his wife** to each run
 the full weekly ritual on prod for **2 consecutive real weeks**. Two users is the validation bar, not an
-excuse to skip validation — and his wife is the closest thing R1 gets to a cold user, since she has not
-been in any of these sessions. Her first run is the real test of the interview.
+excuse to skip validation.
+
+> **⚠️ FACTUAL CORRECTION, S60.** This paragraph used to end: *"his wife is the closest thing R1 gets to a
+> cold user, since she has not been in any of these sessions. Her first run is the real test of the
+> interview."* **Both halves are false.** Griffin, S60: she is a **software engineer**, she has **sat
+> beside him for much of this build**, and she will be **testing as aggressively as he does.** She is a
+> **second tester with context**, not a proxy for a stranger — R1 has **no** cold user and should stop
+> claiming one.
+> **Why this matters beyond the fact:** the false premise was written once in S49 and then repeated in
+> `scope-v1.md` and `decisions.md`, and by S60 it was load-bearing — it was the entire basis for a
+> recommendation to withhold `DEV_TOOLS_EMAILS` from her, stage her account creation as an observed event,
+> and weight her feedback below Griffin's. **All three fell the moment the premise was checked.** Same
+> failure mode as the feedback-capture bundling error two entries down, in a different costume: *a claim
+> nobody re-examined, repeated across three docs until it read as established.*
 
 **Future impact.** A closed beta is not cancelled, it is **deferred to V1.5 planning**, where household
 sharing arrives and the invite flow has to exist anyway. `ALLOWED_EMAILS` remains in place as the seam.
@@ -840,6 +861,37 @@ not transfer or has to be re-run. *(Claude argued for pulling D's instrumentatio
 clock ~2 weeks earlier; Griffin overruled it on exactly this ground, and the reasoning is recorded in
 `decisions.md`. The order stays **B → C → D → validate**.)*
 
+> ### ✅ THE DESIGN ROUND RAN (S60) — three artifacts locked, one CUT, one collapsed
+>
+> **Result: [`docs/design/surfaces/pwa/directions.dc.html`](design/surfaces/pwa/directions.dc.html).** The
+> brief carries the amendments; this is the summary.
+>
+> | Filed as | Outcome |
+> |---|---|
+> | App icon | ✅ **`1a` "Ember"** — orb at 54% of the 1024 artboard, toque at **every** size (one raster downsampled; dropping the toque at 60px would mean shipping two icons) |
+> | Launch screen | ✅ **`1e` "Hero"** — orb at 88, frozen at the top of the ember cycle. ⚠️ **`light.hero`, not the brief's `light.ambient`** — §03 defines hero as *"only where the orb is"*, and the splash **is** nothing but the orb, so the brief was applying the wrong rule |
+> | Install prompt | ⛔ **CUT — see the bullet below** |
+> | Offline grocery list | ✅ **`1h` "The clause"** — offline is **four characters appended to the count**: `18 / 34 · offline` |
+> | Queued-changes indicator | ✅ **Collapsed into the clause.** Not a separate artifact |
+>
+> ⚠️ **The offline treatment is much smaller than this scope doc assumed, and deliberately so.** No banner,
+> no strip, no per-row badge, no second sentence. Meta type, caption colour, **no fill and no border** — so
+> law 05 never applies and there is nothing to tap or dismiss. Things offline genuinely breaks go
+> **provisional** (`rgba(240,222,190,.09)` fill, `.2` line, `#A29484` label) and **keep their ordinary
+> label** rather than each explaining themselves. **The queue is deliberately NOT counted** — a running
+> tally invites worry about a promise the app has already kept. Flushing is **one 180ms crossfade** to
+> `· sending` then a 180ms exit, never a loop, because only the chef loops. **The resolution is an
+> absence:** nothing confirms, nothing lands, nothing needs dismissing.
+>
+> ⚠️ **The tick must be pixel-identical offline** — same cream fill, same 120ms press, same dim-and-strike.
+> No dashed box, no clock badge, no per-row anything. *The queue is a fact about the app, not about the
+> onion.*
+>
+> ⭐ **One scope line the round added:** a held tick that fails permanently (the item was deleted on the
+> other phone) is a **conflict, not an offline state**, and is out of scope here — named explicitly because
+> the instinct is to reach for a red dot, which would put an error hue on the one screen this artifact
+> exists to keep calm. Cannot happen in R1 (solo accounts); it is a V1.5 question.
+
 **🎨 Design pass: RECOMMENDED for this workstream — and this is a reversal of the "skip it" call that
 applies to B.** B applies a locked spec to screens that are already designed, so a design round would only
 re-litigate settled decisions. **C is net-new surface that exists in no spec and no mock:** the app icon,
@@ -891,9 +943,13 @@ to look and feel finished so his validation-week feedback can be about design ra
       ⚠️ **Residue: the app-kill path is verified by construction, not by the suite.** Playwright cannot
       reproduce an iOS process kill. OF3/OF4 cover pause-and-flush within one session; the cold-start
       replay is the first thing to check on a real phone.
-- [ ] Install prompt — ⚠️ **iOS Safari has no install API**; `beforeinstallprompt` does not exist there, so
-      this is a hand-written "tap Share → Add to Home Screen" sheet. Both phones are iPhones, so that is
-      the only path that needs building.
+- [x] ⛔ **Install prompt — CUT S60, by the design round.** ⚠️ **This is scope removed, not scope done.**
+      The reasoning: two users, both told how to add it by hand before they ever open it. An in-app prompt
+      would spend the product's first act teaching a browser gesture **the app is not allowed to perform**
+      (iOS Safari has no install API — `beforeinstallprompt` does not exist there) to an audience that
+      already knows it. The brief had spent a section designing around that as an *"honest awkwardness"*;
+      the round's answer is that **the awkwardness was the tell.** Revisit only if the audience widens
+      before the native build. Nothing else in C depends on it.
 - [ ] Launches full-screen without browser chrome — ⚠️ **`statusBarStyle` is `black`, not
       `black-translucent`, and that is a measurement.** Translucent extends the web view *under* the status
       bar and needs `env(safe-area-inset-top)`; there is **not one `-top` inset anywhere in `src/`** (every
@@ -975,6 +1031,167 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
       default retry papers over it incidentally. **If it shows up in the wife's real first run, it becomes
       the first thing fixed** rather than a 1F hardening item.
 - [ ] **Full E2E suite green across all tabs** + the ship checklist
+- [ ] **Validation prep — the wife's account (added S60).** Her own account, **full `DEV_TOOLS_EMAILS`,
+      identical permissions to Griffin's, no carve-out and no sequencing.** She is a **software engineer**,
+      she has **sat beside Griffin through much of this build**, and she will be **testing as aggressively
+      as he does.** She is a second tester with context, and the account is a five-minute setup, not an
+      event to stage. ⚠️ **See the correction below — three drafts of this section treated her as an
+      outside party, and that was wrong at the source.**
+- [ ] **Mention session replay to her before it records.** One sentence between spouses; noted because
+      the replay item above owes it, not because it is ceremony.
+
+---
+
+# Workstream E — In-app feedback capture
+
+**Added S60, reversing the S49 cut** (see the correction under *Griffin's calls at phase open*). Origin:
+the S35 brain-dump and the S39 vision, both filed in `idea-backlog.md` and both tagged `[1F]` all along.
+
+**What it is, in Griffin's shape.** He is on the couch with his phone, hits something wrong, and **one
+control** opens a capture sheet. He says or types what happened. Submitting **auto-attaches everything
+needed to diagnose it** — so he describes the *problem*, never the *state* — and lands it somewhere Claude
+reads at the start of the next session. It must work for a **feature request** as well as a bug. The goal
+is **friction-free volume**: report quality is the system's job, not the reporter's.
+
+**Why it is R1 and not V1.5.** Because the alternative is the status quo, and the status quo is: he
+notices something at 9pm, has no laptop, and either texts himself or forgets. Every bug lost that way is
+lost from the *only* two weeks of real-usage data R1 will ever produce before it is declared done.
+
+## E0 — the deep scoping pass (NOT YET RUN — this is the slot, not the spec)
+
+**Trigger: when Workstream D's observability items land** (PostHog taxonomy + Sentry + session replay).
+Not before. The metadata half of this feature is a *join* against those three, and specifying a payload
+against an event taxonomy that does not exist yet produces a spec that gets rewritten. ⚠️ **But see the
+open call below — the *build* may not want to wait for the *scope*.**
+
+**What E0 must decide.** Carrying a recommendation into each so the deep pass starts from a position
+rather than a blank page:
+
+1. **The trigger affordance.** Floating control vs. shake vs. a You-tab entry. ⚠️ **Shake is the expensive
+   one on iOS**: `DeviceMotionEvent.requestPermission()` is a permission prompt that only fires from a user
+   gesture, so "shake to report" needs a settings toggle to arm it anyway. **Against a persistent control:**
+   it occupies real estate on every surface, and Workstream B just spent nine items making those surfaces
+   clean. *Lean: **reuse the HUD's corner control**, one tap, behind `DEV_TOOLS_EMAILS`.* Both R1 users
+   hold that flag, so the seam costs nothing and buys back the design pass. ⚠️ **The constraint is
+   V1.5-facing, not R1-facing:** build the mutation, table and payload so the surface can **graduate** to a
+   real product affordance when real users arrive, rather than wedging it into the HUD in a way that has to
+   be rebuilt.
+2. **Media capture.** ⚠️ **Screen recording is effectively unavailable in mobile Safari** —
+   `getDisplayMedia` is not supported on iOS, which kills the S39 vision's recording half outright. A
+   DOM-to-canvas screenshot is possible but produces a *reconstruction*, not what he saw, and it will
+   disagree with the bug on exactly the rendering bugs it is meant to capture. *Lean: no capture code at
+   all. **iOS's native screenshot + a plain file input**, so he screenshots the way he already does and
+   attaches it. Zero capture code, real pixels, and it handles video too because iOS screen-records
+   natively.*
+3. **⭐ Destination — the biggest simplification lever.** Options: a `feedback` table in Postgres that
+   Claude sweeps at session start; a **Linear** ticket (this was S19's named graduation trigger); a file.
+   *Lean: **the table.** Linear needs an OAuth authorization Griffin has not done, and it adds an
+   integration surface, a second source of truth, and a sync question for a two-person release whose bug
+   ledger is already a tracked, closeable markdown file. The "agent picks it up" queue that justified
+   Linear is **already how this repo works** — Claude reads the docs at session start. Adding "read the
+   feedback table" is a script, not an integration.* **The Linear trigger therefore moves to real users,
+   not to this feature.**
+4. **Where the LLM cleanup happens.** Server-side at submit, or by Claude at sweep time. *Lean: **sweep
+   time**, because it is free. Claude already writes the `bug-tracker.md` / `idea-backlog.md` entries in
+   the house format. A server-side call adds cost, latency, a failure mode and a rate limit to buy a
+   tidier row in a table only Claude reads.* ⚠️ **The one argument the other way:** cleanup at submit means
+   the report is legible to *Griffin* between sessions. Worth weighing at E0, not now.
+5. **The auto-attached payload.** **Big head start: `readDebugPanels()` already produces most of this and
+   is already on prod** (`src/lib/debug/debug-hud.ts`, shipped S17). Add: route, release/commit SHA,
+   device + OS + viewport, the PostHog session id (**this is the join to replay — get it in the payload or
+   the replay is unfindable**), recent tRPC calls, last Sentry error id, seeded-vs-real.
+6. **Bug vs. feature request.** One door or two. Griffin's S39 note is explicit that it must carry both.
+7. **✅ ANSWERED S60 — both users are engineers-with-context holding identical dev-tools permissions**, so
+   this surface serves **two aggressive testers, not a stranger.** It does **not** need to be discoverable
+   to someone who does not know they are testing, which is what makes question 1's cheap answer viable.
+   **What remains for E0:** the *claim-type* split — separating **"this is broken"** from **"we should
+   build X"** inside a single submission, since only the second is weighted by source and a `source` field
+   alone cannot express it.
+
+## E1 — the build
+
+Provisional pending E0. Recorded so the shape is not re-derived from scratch:
+
+- [ ] `feedback` table + tRPC mutation, rate-limited like the other write paths. **Carries `source`
+      AND a claim type** (defect | product direction), per the weighting call below
+- [ ] Capture sheet: text (iOS's native keyboard mic covers "dictate" for **zero code**), optional
+      image attach, optional feature-area select
+- [ ] Payload assembly from `readDebugPanels()` + route + build + device + PostHog session id
+- [ ] Session-start sweep → **defects from either user file directly** to `bug-tracker.md`; **the wife's
+      product-direction items file to a staging section** with a recommendation, for Griffin's ratification
+- [ ] **No full product design pass in R1** — it rides the HUD seam both users hold. Build it to
+      **graduate** when real users arrive; do not build the graduation now
+- [ ] One E2E spec that submits and asserts the payload, verified failing first
+
+## ✅ RESOLVED S60 — E1 builds ONCE, after D. No v0 pull-forward.
+
+Claude recommended splitting a bare-bones v0 forward on the argument that *"weeks of couch testing between
+now and D have no capture path."* **Griffin's counter invalidated the premise rather than outweighing it:**
+*"I won't aggressively test until we have all logging etc instrumented."* If the testing volume the v0
+exists to capture does not happen until D lands anyway, the v0 captures nothing and the split buys a
+throwaway build. **E1 therefore builds once, fully enriched, after D's observability.**
+
+⚠️ **Honest cost: this is net-new 1F scope** — roughly one session, on a phase that still has C's design
+artifacts, all of D, and two uncompressible validation weeks in front of it.
+
+## ✅ RESOLVED S60 — two accounts, and the two feedback streams are NOT weighted the same
+
+**Griffin's call:** his wife gets **her own test account, separate from his, with the same permissions**,
+and **her feedback is treated as *considerations* while his is treated as *dictation*.**
+
+**What "separate account" already implies, and it is not new scope:** R1 has no household sharing (V1.5),
+so separate accounts means **separate households** — her own preferences, her own chef memories, her own
+plan and grocery list. The DoD already required exactly this (*"Griffin **and his wife** each run the full
+weekly ritual"*), so this call confirms the existing bar rather than raising it. ⚠️ **The consequence to
+expect during validation: one kitchen will be running two independent weekly plans and two grocery
+lists.** That is awkward as a household but correct as a test, and it is the cleanest possible argument
+for why household sharing is V1.5's headline.
+
+**Same permissions means SAME. Full `DEV_TOOLS_EMAILS`, no carve-out.**
+
+⚠️ **Claude pushed back on this twice and was wrong twice, on a premise it never checked.** The push-back
+was: withhold dev tools, because the test-mode card can reset onboarding and because developer chrome
+would contaminate "the cold-user signal." **There is no cold-user signal.** Griffin, S60: she is a
+**software engineer**, she has **sat beside him for much of this build**, and she will be **testing as
+aggressively as he does.** Every argument for a carve-out was downstream of an S49 sentence calling her
+*"the nearest thing R1 has to a cold user, since she has been in none of these sessions"* — which was
+false when written and had been repeated in three docs since.
+
+**What the correct premise gives instead:** a second engineer testing aggressively, who will *want* the
+HUD and the test-mode card, and for whom the reset affordance is a feature rather than a hazard. Her
+account is a five-minute setup, not an event to stage.
+
+**Consequence for E0 question 1: the cheap answer is alive again.** With both users holding dev tools,
+the feedback control **can** ride the existing HUD seam for R1, and **E1 does not owe a full product design
+pass.** ⚠️ **One constraint survives, and it is about V1.5 rather than R1:** build it so it can *graduate*
+to a real surface when real users arrive — the mutation, the table and the payload should not assume a
+developer-only caller — rather than wedging it into the HUD in a way that gets thrown away.
+
+**The two streams, and how the sweep must treat them:**
+
+**⚠️ The split is by CLAIM TYPE, not by person.** Filing everything she submits as "consideration" is
+wrong once the cold-user premise is gone: she is an engineer, and **an engineer's bug report is an
+engineer's bug report.** Routing a clean repro through a ratification queue is friction that buys nothing.
+
+| Claim type | Treatment | What it means at sweep time |
+|---|---|---|
+| **A defect** — something is broken, wrong, or confusing | **Dictation, from either of them** | Files directly to `bug-tracker.md` in the normal format, with repro + severity. The report is already the decision |
+| **A product direction** — a feature, a redesign, a "we should…" | **Griffin dictates; wife's is a consideration** | Hers files to a **staging section** with a recommendation attached, and **Griffin ratifies before it becomes work** |
+
+**The line is product ownership, not credibility.** Griffin owns what this product is; that does not make
+her diagnosis worth less, and treating it as though it did would throw away the better half of a second
+engineer's testing. So the sweep separates *"this is broken"* from *"we should build X"* and weights only
+the second by source. **A `source` field alone cannot express that** — the claim-type split is the E0 item.
+
+**One prerequisite this creates, and it is not in E:** her account needs to exist on prod before the
+validation weeks, with full `DEV_TOOLS_EMAILS`. Routed to Workstream D's validation prep as a five-minute
+setup item.
+
+## E exit
+
+- [ ] E0 run and its calls recorded in `decisions.md`
+- [ ] E1 built, deployed to prod, and **used at least once from Griffin's phone** before the two
+      validation weeks start — a capture tool that has never captured anything is not verified
 
 ---
 
@@ -982,7 +1199,7 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 
 | Item | Destination | Why |
 |---|---|---|
-| Closed beta, invite flow, feedback capture, support path | V1.5 | Griffin's S49 call — two-user validation is the bar |
+| Closed beta, invite flow, support path, onboarding-for-strangers | V1.5 | Griffin's S49 call — two-user validation is the bar. ⚠️ **`feedback capture` sat on this row until S60 and no longer does** — it was bundled here by mistake and is now **Workstream E**. The rest of the row stands |
 | **BUG-023** 🟡 (`plan.modify` reports days, not slot ids) | Before multi-meal generation ships (V1.5+) | Not reachable in production: generation produces dinners only. At R1's one-dinner-per-day the client's resolution is *exactly* row-level |
 | **BUG-003** 🟡 (cooked-harvest writes inside `recipe.list`) | Revisit at a scheduler, or if `recipe.list` perf degrades | Accepted for V1, documented, idempotent |
 | A separate non-prod Supabase project | Griffin's call (see A5) | The cheap guard lands in 1F; the real fix may be V1.5 |
@@ -995,7 +1212,7 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 
 1F is the last phase, so its exit **is** the Release 1 Definition of Done. It closes when:
 
-- [ ] Workstreams A–D complete
+- [ ] Workstreams A–E complete
 - [ ] `/visual-qa` at **0 blockers / 0 high** on all five surfaces, re-captured after the design pass
 - [ ] Full E2E suite green across Plan, Recipes, Groceries, You, onboarding
 - [ ] **Griffin and his wife each run the full weekly ritual on prod for 2 consecutive real weeks**
@@ -1022,6 +1239,8 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-08-01 (S60) | **E's two open calls resolved, and an S49 factual error corrected across three docs.** (1) **E1 builds once, after D** — no v0 pull-forward. (2) **Griffin's wife gets her own account with FULL `DEV_TOOLS_EMAILS`, identical to his**, and the feedback weighting splits **by claim type, not by person**: a defect is dictation from either of them, only *product direction* is weighted by source. E1 consequently gets **cheaper** — it rides the HUD seam and owes no R1 design pass. Workstream D picks up one five-minute item (her account before validation). | **Claude pushed back on the permissions twice and was wrong twice, on a premise it never checked** — it argued for withholding her dev tools to protect *"the cold-user signal."* There is no cold-user signal: she is a **software engineer who has sat beside Griffin for much of this build** and will test as aggressively as he does. ⚠️ **The premise traces to one S49 sentence** — *"the nearest thing R1 has to a cold user, since she has been in none of these sessions"* — **repeated verbatim into three docs, where it went silently load-bearing under three separate recommendations** (withhold dev tools, stage her account creation as an observed one-time event, weight her feedback below his). All three collapsed the instant it was stated to the one person who could check it. **This is the session's second instance of the same failure mode** (see the row below: a decision's fallout list repeated unexamined), and the tell here is sharper and worth keeping: **a claim about a *person*, written in a doc, that the person has never seen.** Also: the v0 pull-forward recommendation was **sound on its logic and wrong on a fact only Griffin held** — that he would not test aggressively before the instrumentation lands |
+| 2026-08-01 (S60) | **⭐ NEW Workstream E — in-app feedback capture, reversing the S49 cut** (Griffin: *"I didn't mean to cut the in-app feedback"*). Structured as **E0 a deep scoping pass** (triggered when D's observability lands, seven named decisions each carrying a recommendation) + **E1 the build**, with an open call left in the doc for Griffin on whether a bare-bones v0 pulls forward. Exit requires it be **used once from his phone before the validation weeks**. The S49 fallout bullet, the *Deliberately NOT* row, and the A–D exit line all corrected in place rather than rewritten, and the same correction pushed to `scope-v1.md` + `decisions.md`. | **The cut was a bundling error, and naming it as one is the transferable part.** Every other item on S49's fallout list is justified by *there are no strangers in R1* — invite flow, support path, onboarding-for-cold-users. **Feedback capture is not: its primary user is Griffin, on his couch, with a phone and no laptop**, and that justification is untouched by "no closed beta." It died because it arrived in the same sentence as the support path. ⚠️ **A decision's fallout list is where unrelated scope goes to disappear** — the list was written once, ratified once, and then three separate docs repeated it verbatim for eleven sessions, so by S60 the cut looked like a considered call in triplicate rather than one unexamined bullet. **The check that would have caught it: does every item on this list fail for the *same reason* the decision gives?** Two more findings from the scoping: **`getDisplayMedia` is unsupported on iOS**, so the S39 vision's screen-recording half is not buildable in mobile Safari at all and the native screenshot + file input is both cheaper *and* the only thing that works; and **the rich tier was S19's named Linear graduation trigger, which now does not fire** — a Postgres table Claude sweeps at session start is the same queue without the integration, so Linear's trigger moves to real users |
 | 2026-08-01 (S60) | **Workstream C's whole non-visual half shipped** — service worker + app-shell cache, React Query → IndexedDB persistence, and the queued offline check-off. **Only the four design artifacts remain in C.** The `/visual-qa` pass S59 owed ran at **0 blockers / 0 high** and closed **BUG-050**; **BUG-051** was found and closed by the offline specs. New **OF** spec family (OF1–OF4) and a new capture state. **739 unit green**, lint + typecheck clean. | ⛔ **A service worker does not control the page that registers it** — that navigation is already in flight when `register()` runs, so the **first visit to a route never reaches the fetch handler and never gets cached**, and the worker then activates reporting itself healthy holding **nothing**. Invisible in a browser tab (tomorrow's visit caches it); in an **installed PWA it is the whole feature failing on the launch that matters most** — install, open once, walk to the shop, dead page. **Caught by running the specs, not by reading the code.** ⚠️ **The queued check-off's "smaller half" is an ILLUSION, not a lesser feature:** persisting the query cache without the mutations persists `onMutate`'s optimistic tick, so ticks survive a relaunch and are then **wiped by the first server refetch** — the user watched their work survive and concluded it was saved. React Query persists paused mutations **by default**, so doing nothing was never neutral. ⚠️ **A guard can be one-directional and look complete:** `caps-rungs.test.ts` sees labels routed *through* a rung but not something routed *to* a caps rung that should not uppercase — which is how `COOKED JUL 29` shipped beside `Cooked Jul 23` through 717 unit, 132 E2E and a full `/visual-qa`. |
 | 2026-08-01 (S59) | **Workstream C opened; the manifest, the icon pipeline and BUG-049 landed.** ⭐ **Gate 1 (`SITE_ACCESS_CODE`) RETIRED on Griffin's call** — env only, no code diff. **Queued check-off ADDED to C's scope**, widening "offline read" on Griffin's call. **BUG-049 CLOSED** at six sites, not the five filed. The design pass is **taken** (targeted, five artifacts) and its brief is written at `docs/design/surfaces/pwa/brief.md`. Recipes' and Groceries' titles moved off the chef's 26px rung onto §05's H1, **pending Griffin's look on a phone**. `PROJECT-CONTEXT.md` and `visual-qa-rubric.md` de-staled. **714 unit green**, lint + typecheck + build clean. | ⚠️ **The gate did not degrade the PWA, it made the PWA a dead icon — and nothing in C's filed list mentioned auth.** Gate 1 was a **cookie**, and a PWA's cookie jar is isolated from Safari's, so a freshly installed app opened at `start_url` with an empty jar and got the deliberately-blank 404 **with no address bar to escape it.** Underneath it, `/manifest.webmanifest` was not excluded by the proxy matcher and **a browser fetches a manifest with `credentials: "omit"`** — so it 404'd from a session that held the cookie, and **a failed manifest fetch is silent**: Add to Home Screen just makes a bookmark with Safari chrome. C's own "launches full-screen" line would have failed on production with nothing in any log. ⚠️ **Two more of the phase's own lessons fired.** BUG-049's filed fix (*"copy `ui/input.tsx`'s string to all five"*) was the thing to distrust for the **sixth session running** — copying a private string is how the bug happened, so the floor was NAMED instead; and the filed list was five because the S58 measurement hunted **arbitrary-value** sizes, missing the one input written `text-sm`. **A filed list inherits the blind spot of the measurement that produced it.** And the ratchet B8b shipped to stop the ladder growing back was set at **71 while measuring 26** — forty-five notches of slack, a ratchet that could not ratchet. |
 | 2026-08-01 (S58) | **B8b CLOSED — Workstream B is 9 of 9 and the design-system pass is DONE.** Re-measuring first found the S57 filing already stale (22/53/29 → 27/51/28 in one session, moved by B8a's own edits) and then found the actual shape: **six of §05's ten rungs had no class at all**, which is why 192 of 255 type sites were off a 30-size ladder. All six added, **169 sites routed**, adoption 218 rung call sites vs 71 hand-typed. Two things the sweep could not have found by size: **the chef's voice was drawn at three sizes while eight non-chef sites sat on its rung**, and **`0.9rem` = 14.4px rounds onto that rung** — so the filing's "the rem sites need no judgement" would have put five ordinary labels into gold italic. The four `caps-rungs.test.ts` allow-listed sites all closed and the **allow-list is deleted, not emptied**. New `type-scale.test.ts` (4 assertions), verified failing against pre-fix code. **BUG-049 🟠 filed** (five inputs under 16px zoom the iOS viewport). **705 unit green, lint + typecheck clean.** | ⚠️ **The lesson is the companion to B8a's, and it is new: a fix can be APPLIED correctly and still be overridden by what was already there.** The rungs live in `@layer components` so the call site can own colour — which means every leftover `font-bold` / `leading-tight` / `tracking-tight` beside the class still wins. The first pass left **81 lines where the rung was present, correct, and doing nothing.** No layer could see it: the screenshot shows type that looks like type, the DOM shows the class genuinely on the element, and `SH5` measures colour. Only reading the class string finds it. B8a learned that a layer aimed correctly can lack the precision to answer; this adds that a change can land and be silently outranked by the code it was applied to. Also: **§08 governs controls and §05 does not**, so 84 sites were deliberately left — and the controls' own 13-size scatter is now the obvious next item rather than a silent omission. |
@@ -1032,4 +1251,4 @@ phase does not create.
 | 2026-07-30 (S51) | **Workstream A CLOSED at 6 of 6.** A4 (BUG-013), A5 (BUG-042 measured + BUG-043 confirmed), A6 (BUG-018). **BUG-044 🟡 opened** (interviewStateSchema's `dietaryFramework` is a bounded string where the persist path enforces an enum) and routed to Workstream D's security review. The separate non-prod Supabase project moved out of this doc into `open-questions.md` as a decision with a recommendation (V1.5), since it is a call rather than a defect. | Two of the three items had a tracker recommendation that was wrong in a way only building it surfaced — BUG-013's recompute would have doubled the injection, BUG-018's named guard would have failed open. Recording that in the scope doc, not just the changelog, because it is the second phase running where the parked recommendation was the thing to distrust |
 | 2026-07-30 (S49) | **1F opened → 🔨.** Scope drafted from the carried-in list: BUG-035 first (the only *before R1 ship* item on the app's most important call), the standing bug list, spec §12 items 03/04/05/07, the S42 amber/green semantic calls, the S48 critic slate's four deferrals, PWA, and production readiness. Split into four independent workstreams (ship-blockers / design system / PWA / production readiness) with A→B→C→D recommended. | 1E.5 closed at M5.5 and 1F is the last phase of R1. Splitting by workstream rather than by surface keeps the per-surface `/visual-qa` discipline intact — the same argument that split 1E.7 out of 1F in the first place |
 | 2026-07-30 (S49) | **A5 added after first draft: BUG-042 + BUG-043**, which arrived on `main` with the access-gate work that merged alongside 1E.5's close. Neither is a code defect — BUG-042 is a Supabase dashboard toggle (dormant while the gates stay unset, but do it anyway), BUG-043 is correct to leave in place through all of R1 and graduates to a launch-day checklist instead of being fixed here. The closed-beta section was corrected in the same pass: the gate it assumed would need building **already exists on `main`** (PR #6). | The doc was drafted against a tree that did not yet carry the access gate. Scoping a phase against a stale picture of `main` is how an item gets built twice or missed entirely |
-| 2026-07-30 (S49) | **scope-v1 open question #1 RESOLVED: no closed beta.** Two-user validation (Griffin + wife, 2 consecutive real weeks) is enough to ship R1. Removes the invite gate, feedback capture, support path, and onboarding-for-strangers pass from this phase. `ALLOWED_EMAILS` stays fail-open as the V1.5 seam. | Parked *for* 1E and carried through three phase closes; it gated 1F's shape and could not be deferred again without opening the phase blind. The wife's first run is the nearest thing R1 has to a cold user, and it is already in the DoD |
+| 2026-07-30 (S49) | **scope-v1 open question #1 RESOLVED: no closed beta.** Two-user validation (Griffin + wife, 2 consecutive real weeks) is enough to ship R1. Removes the invite gate, feedback capture, support path, and onboarding-for-strangers pass from this phase. `ALLOWED_EMAILS` stays fail-open as the V1.5 seam. | Parked *for* 1E and carried through three phase closes; it gated 1F's shape and could not be deferred again without opening the phase blind. ⚠️ **AMENDED S60 on two counts.** Feedback capture should never have been on the removal list (bundling error → now Workstream E), and this cell's original claim that *"the wife's first run is the nearest thing R1 has to a cold user"* is **factually false** — she is a software engineer who has sat beside Griffin through much of this build and will test as hard as he does. **R1 has no cold user**, and that false premise went on to hold up three separate recommendations before anyone checked it |

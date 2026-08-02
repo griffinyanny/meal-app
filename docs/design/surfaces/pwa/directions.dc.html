@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#0F0B08;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color:#F7F2EA;}
+  a{color:#F4EBDC;text-decoration:none;border-bottom:1px solid rgba(244,235,220,.32);}
+  a:hover{color:#FFFFFF;border-bottom-color:rgba(244,235,220,.7);}
+  .om-scroll::-webkit-scrollbar{width:0;height:0;}
+  .om-scroll{scrollbar-width:none;-ms-overflow-style:none;}
+  @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  @keyframes veilIn{from{opacity:0;}to{opacity:1;}}
+</style>
+</helmet>
+
+<section style="position:relative;background:radial-gradient(1100px 700px at 22% -8%, rgba(233,179,72,.07), transparent 60%), radial-gradient(900px 600px at 108% 34%, rgba(233,179,72,.05), transparent 55%), #0F0B08;padding:64px 56px 110px;">
+
+  <div style="max-width:1180px;margin:0 0 72px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 12px;">Phase 1F · Workstream C · three artifacts, locked</p>
+    <h1 style="font-size:32px;font-weight:700;line-height:1.08;letter-spacing:-.5px;color:#F7F2EA;margin:0 0 16px;max-width:740px;text-wrap:pretty;">Onto the home screen, and honest about the shop</h1>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 24px;max-width:680px;text-wrap:pretty;">Three decisions closed: the icon is the ember, the launch screen is lit as a hero, and offline is four characters appended to a count. Everything here inherits theme 11i as written — no new colour, radius, type size or component family. Two rungs stay missing on purpose, <span style="color:#F7F2EA;font-weight:600;">.spec-chef-voice</span> and <span style="color:#F7F2EA;font-weight:600;">.spec-spoken-headline</span>, because none of this is the chef talking. A network fact is the app reporting weather.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;">
+      <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);font-size:12.5px;color:#A29484;">Icon <a href="#1a">1a</a></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);font-size:12.5px;color:#A29484;">Launch <a href="#1e">1e</a></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);font-size:12.5px;color:#A29484;">Offline <a href="#1h">1h</a></span>
+      <span style="display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);font-size:12.5px;color:#8A7C6C;">Install prompt — cut</span>
+    </div>
+  </div>
+  <!-- ============================================================ 01 · ICON -->
+  <div style="margin:0 0 96px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 10px;">Artifact 01 · the app icon</p>
+    <h2 style="font-size:22px;font-weight:650;line-height:1.32;letter-spacing:-.3px;color:#F0EBE4;margin:0 0 12px;">One 1024 artboard, sitting in a grid of thirty other rounded squares</h2>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 6px;max-width:720px;text-wrap:pretty;">The ember, at 54% of the artboard, centred, at rest. A food-derived mark is not just the category cliché — it is a claim this product does not make. A pot or a fork says "recipes live here"; the ember says something is on and attending to you, which is the actual promise.</p>
+    <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 30px;max-width:720px;text-wrap:pretty;">§02's 40px mark threshold governs a <em style="font-style:italic;">drawn</em> orb in the UI. An icon is one raster downsampled, so the toque stays at every size — dropping it at 60px would mean shipping two icons.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;">
+
+      <!-- 1a -->
+      <div id="1a" style="flex:0 0 auto;width:340px;display:flex;flex-direction:column;gap:16px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);color:#A29484;font-size:11px;font-weight:700;letter-spacing:1.3px;">1a</span>
+          <span style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;">Ember</span>
+          <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#F7F2EA;">Locked</span>
+        </div>
+        <p style="font-size:13px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">§02 transplanted, nothing else. Orb at 54% of the artboard, centred, at rest. Reads as an object sitting in a warm room.</p>
+        <div style="position:relative;width:240px;height:240px;border-radius:54px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);">
+          <div style="position:absolute;inset:0;background:radial-gradient(70% 56% at 50% 2%, rgba(233,179,72,.16), transparent 62%);"></div>
+          <div style="position:absolute;left:23%;top:23%;width:54%;height:54%;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 66px -12px rgba(233,179,72,.6);">
+            <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+          </div>
+          <sc-if value="{{ safeZone }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;inset:10%;border:1px dashed rgba(240,222,190,.34);border-radius:34px;pointer-events:none;"></div>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:18px;">
+          <div style="text-align:center;">
+            <div style="position:relative;width:120px;height:120px;border-radius:27px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);">
+              <div style="position:absolute;inset:0;background:radial-gradient(70% 56% at 50% 2%, rgba(233,179,72,.16), transparent 62%);"></div>
+              <div style="position:absolute;left:23%;top:23%;width:54%;height:54%;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 33px -6px rgba(233,179,72,.6);">
+                <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:#8A7C6C;margin:8px 0 0;">120</p>
+          </div>
+          <div style="text-align:center;">
+            <div style="position:relative;width:60px;height:60px;border-radius:14px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);">
+              <div style="position:absolute;inset:0;background:radial-gradient(70% 56% at 50% 2%, rgba(233,179,72,.16), transparent 62%);"></div>
+              <div style="position:absolute;left:23%;top:23%;width:54%;height:54%;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 17px -3px rgba(233,179,72,.6);">
+                <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:#8A7C6C;margin:8px 0 0;">60</p>
+          </div>
+          <div style="text-align:center;">
+            <div style="position:relative;width:40px;height:40px;border-radius:9px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);">
+              <div style="position:absolute;inset:0;background:radial-gradient(70% 56% at 50% 2%, rgba(233,179,72,.16), transparent 62%);"></div>
+              <div style="position:absolute;left:23%;top:23%;width:54%;height:54%;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 11px -2px rgba(233,179,72,.6);">
+                <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+              </div>
+            </div>
+            <p style="font-size:11px;font-weight:700;letter-spacing:1.3px;color:#8A7C6C;margin:8px 0 0;">40</p>
+          </div>
+        </div>
+        <div style="padding:16px 18px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+          <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 8px;">At 1024</p>
+          <p style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.7;color:#F0EBE4;margin:0;">floor #0F0B08 full bleed<br>wash 70% 56% at 50% 2% · rgba(233,179,72,.16)<br>sphere 553px · centred · §02 gradient verbatim<br>glow 0 0 282px -51px rgba(233,179,72,.6)<br>toque 227px · #2A1C04 1.6@24vb · .85</p>
+        </div>
+        <div style="padding:16px 18px;border-radius:18px;background:{{ wallStyle }};">
+          <div style="display:flex;gap:16px;align-items:flex-start;">
+            <div style="text-align:center;">
+              <div style="position:relative;width:62px;height:62px;border-radius:14px;overflow:hidden;background:#0F0B08;">
+                <div style="position:absolute;inset:0;background:radial-gradient(70% 56% at 50% 2%, rgba(233,179,72,.16), transparent 62%);"></div>
+                <div style="position:absolute;left:23%;top:23%;width:54%;height:54%;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 17px -3px rgba(233,179,72,.6);">
+                  <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+                </div>
+              </div>
+              <p style="font-size:10px;color:{{ wallLabel }};margin:6px 0 0;">Meal</p>
+            </div>
+            <div style="width:62px;height:62px;border-radius:14px;background:rgba(240,222,190,.1);border:1px solid rgba(240,222,190,.07);"></div>
+            <div style="width:62px;height:62px;border-radius:14px;background:rgba(240,222,190,.07);border:1px solid rgba(240,222,190,.06);"></div>
+            <div style="width:62px;height:62px;border-radius:14px;background:rgba(240,222,190,.13);border:1px solid rgba(240,222,190,.07);"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ 02 · LAUNCH -->
+  <div style="margin:0 0 96px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 10px;">Artifact 02 · the launch screen</p>
+    <h2 style="font-size:22px;font-weight:650;line-height:1.32;letter-spacing:-.3px;color:#F0EBE4;margin:0 0 12px;">Floor, wash, mark. Half a second of it.</h2>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 6px;max-width:720px;text-wrap:pretty;">The brief said the splash carries <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12.5px;">light.ambient</span>; §03 says <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12.5px;">light.hero</span> is the recipe for "only where the orb is". <span style="color:#F7F2EA;font-weight:600;">Hero wins, and the brief gets amended.</span> The splash is nothing but the orb, so the rule already covers it.</p>
+    <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 30px;max-width:720px;text-wrap:pretty;">It is a static PNG per device size. The orb <em style="font-style:italic;">cannot</em> breathe here, so the ember is frozen at the top of its cycle — full opacity, scale 1.045 — and the first breath happens when the real screen paints. That handoff is the whole reason the wash matters.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;">
+
+      <div id="1e" style="flex:0 0 auto;display:flex;flex-direction:column;gap:16px;width:430px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);color:#A29484;font-size:11px;font-weight:700;letter-spacing:1.3px;">1e</span>
+          <span style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;">Hero</span>
+          <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#F7F2EA;">Locked</span>
+        </div>
+        <div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);box-shadow:0 30px 70px -30px rgba(0,0,0,.85);">
+          <div style="position:absolute;inset:0;background:radial-gradient(560px 440px at 50% 10%,rgba(233,179,72,.16),transparent 60%), radial-gradient(420px 300px at 50% 106%,rgba(233,179,72,.07),transparent 68%);"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:54px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px;">
+            <span style="font-size:15px;font-weight:600;letter-spacing:.2px;color:#F7F2EA;">9:41</span>
+            <div style="position:absolute;left:50%;top:11px;transform:translateX(-50%);width:118px;height:32px;background:#000;border-radius:18px;"></div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#F7F2EA"></rect><rect x="5" y="4" width="3" height="8" rx="1" fill="#F7F2EA"></rect><rect x="10" y="1.5" width="3" height="10.5" rx="1" fill="#F7F2EA"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="#F7F2EA"></rect></svg>
+              <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="#F7F2EA" stroke-opacity=".45" fill="none"></rect><rect x="3" y="3" width="16" height="7" rx="1.5" fill="#F7F2EA"></rect><rect x="23.5" y="4.5" width="1.6" height="4" rx=".8" fill="#F7F2EA" fill-opacity=".5"></rect></svg>
+            </div>
+          </div>
+          <div style="position:absolute;left:50%;top:47%;transform:translate(-50%,-50%) scale(1.045);width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 40% 34%,rgba(255,238,196,.97),rgba(233,179,72,.92) 46%,rgba(140,95,25,.42) 78%);box-shadow:0 0 44px -8px rgba(233,179,72,.6);">
+            <svg width="41%" height="41%" viewBox="0 0 24 24" fill="none" stroke="#2A1C04" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:29.5%;top:33%;opacity:.85;"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"></path><line x1="6" y1="17" x2="18" y2="17"></line></svg>
+          </div>
+          <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(240,222,190,.3);"></div>
+        </div>
+        <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">The light agrees with the object under it, and the floor bounce gives the screen a bottom. Onboarding and reflect already open this way, so the splash becomes the same room those screens are lit in rather than a fourth thing. The rule survives too: hero is <em style="font-style:italic;">where the orb is</em>, and here the orb is all there is.</p>
+      </div>
+
+      <div style="flex:0 0 auto;width:320px;padding:22px 24px;border-radius:22px;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.11);">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 12px;">What stays out</p>
+        <div style="display:flex;flex-direction:column;gap:11px;">
+          <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">No spinner.</span> Agreed, and the stronger version of your reason: a spinner would be the first thing a new user sees the chef do, and it would be a lie about work.</p>
+          <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">No wordmark.</span> The home-screen label already said "Meal" two hundred milliseconds ago.</p>
+          <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">Status bar and home indicator in.</span> They are what make it read as already open instead of as a card.</p>
+          <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">No ring, no steam.</span> Same call as the icon: both are 64px+ features and both are motion, which a PNG cannot have.</p>
+        </div>
+        <div style="height:1px;background:rgba(240,222,190,.07);margin:18px 0;"></div>
+        <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">Orb at 88 — the hero rung, unchanged. It looks small in a still frame and correct in the half-second it exists, because the next screen it hands to draws it at exactly the same size.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ 03 · INSTALL — cut -->
+  <div style="margin:0 0 96px;max-width:780px;padding:26px 30px;border-radius:22px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 10px;">Artifact 03 · cut</p>
+    <h3 style="font-size:19px;font-weight:650;line-height:1.28;letter-spacing:-.2px;color:#F7F2EA;margin:0 0 10px;">No install prompt</h3>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 10px;text-wrap:pretty;">Two users, both told how to add it by hand before they ever open it. An in-app prompt would spend the product's first act teaching a browser gesture the app is not allowed to perform — to an audience that already knows.</p>
+    <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">Revisit if it goes wider than that circle, or let the native build make it moot. Nothing else here depends on it.</p>
+  </div>
+
+  <!-- ============================================================ 04 + 05 · OFFLINE -->
+  <div style="margin:0 0 84px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 10px;">Artifact 04 · offline</p>
+    <h2 style="font-size:22px;font-weight:650;line-height:1.32;letter-spacing:-.3px;color:#F0EBE4;margin:0 0 12px;">Four characters, and nothing else on the screen changes its mind</h2>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 6px;max-width:720px;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">Offline is announced once, in one place: a clause appended to the count the header already shows.</span> Meta type, caption colour, no fill and no border — so law 05 never applies and there is nothing to tap, dismiss or ignore. No banner, no strip, no per-row badge, no second sentence lower down.</p>
+    <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 6px;max-width:720px;text-wrap:pretty;">Things offline genuinely breaks go <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;">provisional</span> — fill <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;">rgba(240,222,190,.09)</span>, line <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;">.2</span>, label <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;">#A29484</span> — and keep their ordinary label. They do not each explain themselves; the header already did. §01 has no hue for this and does not need one.</p>
+    <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 30px;max-width:720px;text-wrap:pretty;">The queue is not counted in the UI. A running tally invites worry about a promise the app has already kept, and <span style="color:#F7F2EA;font-weight:600;">only the chef loops</span> — so flushing cannot spin, pulse or shimmer either. One 180ms crossfade to a different word, then a 180ms exit. If the flush takes four seconds, the word just sits there.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;">
+
+      <!-- 1h -->
+      <div id="1h" style="flex:0 0 auto;display:flex;flex-direction:column;gap:16px;width:430px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);color:#A29484;font-size:11px;font-weight:700;letter-spacing:1.3px;">1h</span>
+          <span style="font-size:19px;font-weight:650;letter-spacing:-.2px;color:#F7F2EA;">The clause</span>
+          <span style="display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:9px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#F7F2EA;">Locked</span>
+        </div>
+        <p style="font-size:13px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">Offline is not a component. The count reads <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12px;">18 / 34 · offline</span> and that is the entire announcement. The list, the ticks and the input behave exactly as they do online.</p>
+
+        <div style="position:relative;width:430px;height:880px;border-radius:46px;overflow:hidden;background:#0F0B08;border:1px solid rgba(240,222,190,.11);box-shadow:0 30px 70px -30px rgba(0,0,0,.85);">
+          <div style="position:absolute;inset:0;background:radial-gradient(600px 400px at 78% -14%,rgba(233,179,72,.07),transparent 60%);"></div>
+          <div style="position:absolute;top:0;left:0;right:0;height:54px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px;">
+            <span style="font-size:15px;font-weight:600;letter-spacing:.2px;color:#F7F2EA;">9:41</span>
+            <div style="position:absolute;left:50%;top:11px;transform:translateX(-50%);width:118px;height:32px;background:#000;border-radius:18px;"></div>
+            <div style="display:flex;align-items:center;gap:7px;">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="1" fill="#F7F2EA" fill-opacity=".3"></rect><rect x="5" y="4" width="3" height="8" rx="1" fill="#F7F2EA" fill-opacity=".3"></rect><rect x="10" y="1.5" width="3" height="10.5" rx="1" fill="#F7F2EA" fill-opacity=".3"></rect><rect x="15" y="0" width="3" height="12" rx="1" fill="#F7F2EA" fill-opacity=".3"></rect></svg>
+              <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="#F7F2EA" stroke-opacity=".45" fill="none"></rect><rect x="3" y="3" width="16" height="7" rx="1.5" fill="#F7F2EA"></rect><rect x="23.5" y="4.5" width="1.6" height="4" rx=".8" fill="#F7F2EA" fill-opacity=".5"></rect></svg>
+            </div>
+          </div>
+
+          <div class="om-scroll" style="position:absolute;inset:0;overflow-y:auto;z-index:10;padding:54px 0 168px;">
+            <div style="padding:34px 22px 0;">
+              <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;margin:0 0 10px;">GROCERIES · THIS WEEK</p>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+                <h1 style="font-size:32px;font-weight:700;line-height:1.08;letter-spacing:-.5px;color:#F7F2EA;margin:0;">Your list</h1>
+                <span style="font-size:12.5px;color:#A29484;flex:0 0 auto;">{{ tickCount }} / 34<span style="color:#8A7C6C;">{{ liveClause }}</span></span>
+              </div>
+              <div style="height:6px;border-radius:7px;margin-top:14px;background:rgba(240,222,190,.07);overflow:hidden;">
+                <div style="height:100%;width:{{ tickPct }};background:#F4EBDC;border-radius:7px;"></div>
+              </div>
+
+            </div>
+
+            <div style="margin:18px 22px 0;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:16px;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.08);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F4EBDC" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+              <span style="flex:1;min-width:0;color:#A29484;font-size:16px;">Add an item</span>
+              <span style="width:34px;height:34px;border-radius:12px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);display:flex;align-items:center;justify-content:center;flex:0 0 auto;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A29484" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a5 5 0 0 0-5 5c0 1.5.6 2.5 1.3 3.3.5.6.7 1 .7 1.7v1h6v-1c0-.7.2-1.1.7-1.7C17.4 10.5 18 9.5 18 8a5 5 0 0 0-5-5Z"></path><path d="M9 18h6M10 21h4"></path></svg>
+              </span>
+            </div>
+
+            <div style="padding:8px 22px 0;">
+              <div style="margin-top:26px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:0 4px 10px;">
+                  <p style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#A29484;margin:0;">PRODUCE</p>
+                  <span style="font-size:11px;color:rgba(162,148,132,.6);">8</span>
+                </div>
+                <div style="border-radius:18px;overflow:hidden;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.13);">
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;opacity:.5;">
+                    <span style="width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;text-decoration:line-through;">Garlic</p>
+                    <span style="font-size:13px;color:#A29484;text-decoration:line-through;">2 heads</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);opacity:.5;">
+                    <span style="width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;text-decoration:line-through;">Lemon</p>
+                    <span style="font-size:13px;color:#A29484;text-decoration:line-through;">4</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);">
+                    <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(240,222,190,.28);flex:0 0 auto;"></span>
+                    <div style="flex:1;min-width:0;">
+                      <p style="font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;">Yellow onion</p>
+                      <p style="font-size:11.5px;color:#A29484;margin:2px 0 0;">2 dinners</p>
+                    </div>
+                    <span style="font-size:13px;color:#A29484;">3</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);">
+                    <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(240,222,190,.28);flex:0 0 auto;"></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;">Bell peppers</p>
+                    <span style="font-size:13px;color:#A29484;">3</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);">
+                    <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(240,222,190,.28);flex:0 0 auto;"></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;">Flat-leaf parsley</p>
+                    <span style="font-size:13px;color:#A29484;">1 bunch</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-top:26px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin:0 4px 10px;">
+                  <p style="font-size:11px;font-weight:600;letter-spacing:1.5px;color:#A29484;margin:0;">MEAT</p>
+                  <span style="font-size:11px;color:rgba(162,148,132,.6);">4</span>
+                </div>
+                <div style="border-radius:18px;overflow:hidden;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.13);">
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;opacity:.5;">
+                    <span style="width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;flex:0 0 auto;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;text-decoration:line-through;">Chicken thighs</p>
+                    <span style="font-size:13px;color:#A29484;text-decoration:line-through;">6</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);">
+                    <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(240,222,190,.28);flex:0 0 auto;"></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;">Italian sausage</p>
+                    <span style="font-size:13px;color:#A29484;">1 lb</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border-top:1px solid rgba(240,222,190,.11);">
+                    <span style="width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(240,222,190,.28);flex:0 0 auto;"></span>
+                    <p style="flex:1;min-width:0;font-size:14.5px;font-weight:500;margin:0;color:#F7F2EA;">Ribeye steaks</p>
+                    <span style="font-size:13px;color:#A29484;">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="position:absolute;left:22px;right:22px;bottom:96px;z-index:30;height:52px;border-radius:18px;background:rgba(240,222,190,.09);border:1px solid rgba(240,222,190,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+            <span style="font-size:15px;font-weight:600;color:#A29484;">Start a new list</span>
+          </div>
+
+          <nav style="position:absolute;bottom:0;left:0;right:0;z-index:35;height:84px;padding-bottom:18px;background:rgba(22,16,11,.72);backdrop-filter:blur(24px) saturate(180%);border-top:1px solid rgba(240,222,190,.13);">
+            <div style="display:flex;align-items:center;justify-content:space-around;height:66px;padding:0 8px;">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#A29484;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                <span style="font-size:10px;font-weight:500;">Plan</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#A29484;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                <span style="font-size:10px;font-weight:500;">Recipes</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#E9B348;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                <span style="font-size:10px;font-weight:600;">Groceries</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:#A29484;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span style="font-size:10px;font-weight:500;">You</span>
+              </div>
+            </div>
+            <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:rgba(240,222,190,.3);"></div>
+          </nav>
+        </div>
+
+        <div style="padding:16px 18px;border-radius:18px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.08);">
+          <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 8px;">What this frame is arguing</p>
+          <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 9px;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">One voice.</span> Four characters in the count, always current, gone without a sound. No one-shot line under the header, no caption under the input, no explanatory label on the action bar.</p>
+          <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0 0 9px;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">Adding still works, the chef doesn't.</span> The field is live at 16px; only the toque button is provisional. It keeps its shape and says nothing — tapping it explains, and the header already said why.</p>
+          <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;"><span style="color:#F7F2EA;font-weight:600;">No cream button on this screen.</span> A new list is the one thing offline genuinely breaks, so the contextual action sits in the provisional surface under its ordinary label rather than being hidden or relabelled.</p>
+        </div>
+      </div>
+
+      <!-- prototype control -->
+      <div style="flex:0 0 auto;width:320px;position:sticky;top:44px;padding:22px;border-radius:22px;background:rgba(22,16,11,.72);backdrop-filter:blur(24px) saturate(180%);border:1px solid rgba(240,222,190,.08);">
+        <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A29484;margin:0 0 4px;">PROTOTYPE CONTROL</p>
+        <h3 style="font-size:19px;font-weight:650;letter-spacing:-.2px;margin:0 0 6px;color:#F7F2EA;">Drive the clause</h3>
+        <p style="font-size:12.5px;line-height:1.45;color:#A29484;margin:0 0 18px;">Tick a few items, then reconnect. Watch the count move and the clause hold still.</p>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <button type="button" onClick="{{ queueOne }}" style="width:100%;height:44px;border-radius:14px;background:rgba(244,235,220,.1);border:1px solid rgba(244,235,220,.32);color:#F4EBDC;font-size:14.5px;font-weight:600;cursor:pointer;font-family:inherit;">Tick an item offline</button>
+          <button type="button" onClick="{{ reconnect }}" style="width:100%;height:44px;border-radius:14px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.1);color:#CAC4BC;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Signal returns</button>
+          <button type="button" onClick="{{ resetSync }}" style="width:100%;height:44px;border-radius:14px;background:rgba(240,222,190,.045);border:1px solid rgba(240,222,190,.1);color:#A29484;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Back offline</button>
+        </div>
+        <div style="height:1px;background:rgba(240,222,190,.07);margin:18px 0;"></div>
+        <p style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 8px;">Now</p>
+        <p style="font-size:13.5px;line-height:1.45;color:#CAC4BC;margin:0;">{{ phaseNote }}</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ 05 · THREE MOMENTS -->
+  <div style="margin:0 0 84px;">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 10px;">Artifact 05 · the three moments</p>
+    <h2 style="font-size:22px;font-weight:650;line-height:1.32;letter-spacing:-.3px;color:#F0EBE4;margin:0 0 12px;">Holding · flushing · gone</h2>
+    <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0 0 30px;max-width:720px;text-wrap:pretty;">At true size, cropped to the header. The third frame is the whole point: the resolution is an absence. Nothing confirms, nothing lands, nothing needs dismissing.</p>
+
+    <div style="display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start;">
+
+      <div style="flex:0 0 auto;width:430px;display:flex;flex-direction:column;gap:14px;">
+        <p style="font-size:15.5px;font-weight:600;color:#F7F2EA;margin:0;">1h · one trip through the shop</p>
+        <div style="border-radius:22px;overflow:hidden;border:1px solid rgba(240,222,190,.11);">
+          <div style="position:relative;background:#0F0B08;padding:22px;border-bottom:1px solid rgba(240,222,190,.08);">
+            <div style="position:absolute;inset:0;background:radial-gradient(600px 400px at 78% -60%,rgba(233,179,72,.07),transparent 60%);"></div>
+            <div style="position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <h1 style="font-size:32px;font-weight:700;line-height:1.08;letter-spacing:-.5px;color:#F7F2EA;margin:0;">Your list</h1>
+              <span style="font-size:12.5px;color:#A29484;flex:0 0 auto;">21 / 34<span style="color:#8A7C6C;"> · offline</span></span>
+            </div>
+            <p style="position:relative;font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8A7C6C;margin:12px 0 0;">Offline · the clause is the only mark</p>
+          </div>
+          <div style="position:relative;background:#0F0B08;padding:22px;border-bottom:1px solid rgba(240,222,190,.08);">
+            <div style="position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <h1 style="font-size:32px;font-weight:700;line-height:1.08;letter-spacing:-.5px;color:#F7F2EA;margin:0;">Your list</h1>
+              <span style="font-size:12.5px;color:#A29484;flex:0 0 auto;">21 / 34<span style="color:#8A7C6C;"> · sending</span></span>
+            </div>
+            <p style="position:relative;font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8A7C6C;margin:12px 0 0;">Flushing · one 180ms crossfade, no loop</p>
+          </div>
+          <div style="position:relative;background:#0F0B08;padding:22px;">
+            <div style="position:relative;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+              <h1 style="font-size:32px;font-weight:700;line-height:1.08;letter-spacing:-.5px;color:#F7F2EA;margin:0;">Your list</h1>
+              <span style="font-size:12.5px;color:#A29484;flex:0 0 auto;">21 / 34</span>
+            </div>
+            <p style="position:relative;font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8A7C6C;margin:12px 0 0;">Resolved · the clause is simply not there</p>
+          </div>
+        </div>
+        <p style="font-size:12.5px;line-height:1.5;color:#A29484;margin:0;text-wrap:pretty;">The layout does not move between the three. The count sits on a baseline that never shifts, so the clause can appear and vanish without the header twitching — which is the argument against a strip in one line: its exit is the loudest thing in a calm forty minutes.</p>
+      </div>
+
+      <div style="flex:0 0 auto;width:360px;padding:24px 26px;border-radius:22px;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.11);">
+        <p style="font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#A29484;margin:0 0 14px;">The tick</p>
+        <div style="display:flex;align-items:center;gap:22px;margin:0 0 16px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <span style="width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+            <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8A7C6C;">Online</span>
+          </div>
+          <span style="font-size:15.5px;color:#8A7C6C;">=</span>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <span style="width:22px;height:22px;border-radius:7px;background:#F4EBDC;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A140C" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></span>
+            <span style="font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#8A7C6C;">Held</span>
+          </div>
+        </div>
+        <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0 0 12px;text-wrap:pretty;">Identical offline, as the brief requires — same cream fill, same 120ms press, same dim-and-strike on the row. No dashed box, no clock badge, no per-row anything. The queue is a fact about the app, not about the onion.</p>
+        <div style="height:1px;background:rgba(240,222,190,.07);margin:0 0 14px;"></div>
+        <p style="font-size:13px;line-height:1.5;color:#CAC4BC;margin:0;text-wrap:pretty;">If a held tick ever fails permanently — the item was deleted on the other phone — that is a <span style="color:#F7F2EA;font-weight:600;">conflict</span>, not an offline state, and it is out of scope here. Worth a line in the brief so it does not get solved by accident with a red dot.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================ CLOSING -->
+  <div style="max-width:760px;padding:30px 32px;border-radius:22px;background:rgba(70,58,46,.4);backdrop-filter:blur(32px) saturate(115%);border:1px solid rgba(240,222,190,.11);">
+    <p style="font-size:11px;font-weight:600;letter-spacing:2px;color:#A79A8C;text-transform:uppercase;margin:0 0 14px;">On record</p>
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <div>
+        <p style="font-size:15.5px;font-weight:600;color:#F7F2EA;margin:0 0 6px;">Icon — the ember. <a href="#1a">1a</a></p>
+        <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;">Orb at 54%, toque at every rung, floor full bleed. One raster, downsampled — no second icon for small sizes, no ring and no steam, because a PNG cannot have motion.</p>
+      </div>
+      <div>
+        <p style="font-size:15.5px;font-weight:600;color:#F7F2EA;margin:0 0 6px;">Launch — hero light. <a href="#1e">1e</a></p>
+        <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;">§03 wins over the brief's <span style="font-family:ui-monospace,'SF Mono',SFMono-Regular,Menlo,monospace;font-size:12.5px;">light.ambient</span>; the brief gets amended. Orb at 88, frozen at the top of the ember cycle, handing to a screen that draws it at the same size in the same room.</p>
+      </div>
+      <div>
+        <p style="font-size:15.5px;font-weight:600;color:#F7F2EA;margin:0 0 6px;">Offline — the clause, alone. <a href="#1h">1h</a></p>
+        <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;">One announcement in the header. Everything offline breaks goes provisional under its ordinary label and stays quiet. No strip, no queue count, no second voice. If the queue ever needs inspecting, put the held ticks behind the count as a tap target later.</p>
+      </div>
+      <div>
+        <p style="font-size:15.5px;font-weight:600;color:#F7F2EA;margin:0 0 6px;">Install prompt — not building it.</p>
+        <p style="font-size:13.5px;line-height:1.55;color:#CAC4BC;margin:0;text-wrap:pretty;">Explained by hand to the people it is shared with. Revisit only if the audience widens before the native build.</p>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1700,&quot;height&quot;:1100},&quot;showSafeZone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Icon&quot;},&quot;wallpaper&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Black&quot;,&quot;options&quot;:[&quot;Black&quot;,&quot;Light&quot;,&quot;Warm grey&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Icon&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { extra: 0, phase: 'holding' };
+    this._t = [];
+  }
+  componentWillUnmount() { this._t.forEach(clearTimeout); }
+
+  queueOne() { this.setState(s => ({ extra: s.extra + 1, phase: 'holding' })); }
+  reconnect() {
+    if (this.state.phase !== 'holding') return;
+    this.setState({ phase: 'sending' });
+    const t = setTimeout(() => this.setState({ phase: 'online' }), 1400);
+    this._t.push(t);
+  }
+  resetSync() { this._t.forEach(clearTimeout); this._t = []; this.setState({ extra: 0, phase: 'holding' }); }
+
+  renderVals() {
+    const p = this.state.phase;
+    const held = this.state.extra;
+    const wallName = this.props.wallpaper || 'Black';
+    const walls = { 'Black': '#000000', 'Light': '#E4DED4', 'Warm grey': '#35302B' };
+    const ticked = 18 + held;
+
+    let liveClause = '';
+    if (p === 'holding') liveClause = ' \u00b7 offline';
+    else if (p === 'sending') liveClause = ' \u00b7 sending';
+
+    let phaseNote = held === 0
+      ? 'Offline. The clause is the only mark on the screen — everything else behaves as it does online.'
+      : 'Offline. ' + held + (held === 1 ? ' tick' : ' ticks') + ' held locally. The count moved; the clause did not, and nothing counts the queue.';
+    if (p === 'sending') phaseNote = 'Signal back. One word, one 180ms crossfade, no loop.';
+    if (p === 'online') phaseNote = 'Resolved. Nothing announced it — the clause is simply not there.';
+
+    return {
+      safeZone: !!this.props.showSafeZone,
+      wallStyle: walls[wallName] || '#000000',
+      wallLabel: wallName === 'Light' ? 'rgba(26,20,12,.85)' : 'rgba(247,242,234,.92)',
+      liveClause,
+      tickCount: ticked,
+      tickPct: Math.round((ticked / 34) * 100) + '%',
+      phaseNote,
+      queueOne: () => this.queueOne(),
+      reconnect: () => this.reconnect(),
+      resetSync: () => this.resetSync(),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

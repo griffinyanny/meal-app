@@ -1,6 +1,108 @@
 # What's Next
 
-Last updated: 2026-08-01 (Session 59; **1F/C opened** — manifest + icon pipeline + BUG-049 shipped; gate 1 retired)
+Last updated: 2026-08-01 (Session 60; **1F/C's non-visual half shipped**, **the design round landed**, and **Workstream E added** — in-app feedback capture is back in R1)
+
+## ⭐ THE DESIGN ROUND LANDED (S60) — three artifacts locked, one CUT, one collapsed
+
+**Result saved at [`docs/design/surfaces/pwa/directions.dc.html`](design/surfaces/pwa/directions.dc.html);
+the brief carries the amendments.** C's remaining work is now **three** builds, not four — and the biggest
+of them got materially smaller.
+
+| Filed as | Outcome |
+|---|---|
+| **App icon** | ✅ `1a` **"Ember"** — orb at **54%** of the 1024 artboard, centred, at rest, floor full-bleed. **Toque at every size**: an icon is one raster downsampled, so dropping it at 60px would mean shipping two icons |
+| **Launch screen** | ✅ `1e` **"Hero"** — orb at **88**, frozen at the top of the ember cycle, status bar + home indicator in, no spinner and no wordmark |
+| **Install prompt** | ⛔ **CUT — not building it** |
+| **Offline list** | ✅ `1h` **"The clause"** — offline is **four characters appended to the count**: `18 / 34 · offline` |
+| **Queued indicator** | ✅ **Collapsed into the clause.** Never a separate artifact |
+
+⚠️ **The offline treatment is far smaller than the scope doc assumed.** No banner, no strip, no per-row
+badge, no second sentence. Meta type, caption colour, **no fill and no border**, so law 05 never applies
+and there is nothing to tap or dismiss. Things offline genuinely breaks go **provisional** and keep their
+**ordinary label** rather than each explaining themselves — the header already said why. **The queue is
+deliberately NOT counted:** a running tally invites worry about a promise the app has already kept.
+Flushing is **one 180ms crossfade** to `· sending`, never a loop, because only the chef loops. **The
+resolution is an absence.**
+
+⚠️ **The tick must be pixel-identical offline** — same cream fill, same 120ms press, same dim-and-strike.
+No dashed box, no clock badge, no per-row anything. *The queue is a fact about the app, not about the
+onion.*
+
+**Two places the round corrected the brief rather than answering it**, both worth keeping:
+
+1. **`light.hero`, not `light.ambient`.** §03 defines hero as *"only where the orb is"* — and the splash
+   **is** nothing but the orb, so the rule already covered it and **the brief was applying the wrong one.**
+2. **The install prompt's "honest awkwardness" was the tell, not a design problem to solve.** The brief
+   spent a section designing around a cream button that cannot perform the action it names. The answer:
+   two users, both told how to add it by hand before they ever open it, so an in-app prompt would spend the
+   product's first act teaching a browser gesture **the app is not allowed to perform** to an audience that
+   already knows it.
+
+⭐ **One scope line the round added, and it is filed so it does not get solved by accident:** a held tick
+that fails permanently (the item was deleted on the other phone) is a **conflict, not an offline state**,
+and is out of scope for this surface — named because the instinct is a red dot, which would put an error
+hue on the one screen the artifact exists to keep calm. Cannot happen in R1 (solo accounts); it is V1.5's.
+
+---
+
+## ⭐ NEW — Workstream E: in-app feedback capture is back in R1 (S60, Griffin's call)
+
+**It had been cut, and nobody decided to cut it.** S49's *no closed beta* call carried a fallout list, and
+"in-app feedback capture" was bundled onto it beside the support path and the invite flow. Those are all
+justified by *there are no strangers in R1*. **This one is not** — its primary user is Griffin, on his
+couch, with a phone and no laptop. Griffin, S60: *"I didn't mean to cut the in-app feedback… it needs to
+be there."*
+
+⚠️ **The lesson is a documentation one:** the fallout list was written once and then repeated **verbatim
+in three docs** for eleven sessions, so by S60 an unexamined bullet read as a considered call made in
+triplicate. **The check: does every item on a decision's fallout list fail for the same reason the
+decision gives?** All three copies are amended in place, not rewritten.
+
+**Shape:** [scope-1F.md](scope-1F.md) → **Workstream E**. `E0` is a **scoping gate** (seven decisions,
+each carrying a recommendation) whose trigger is **D's observability landing** — the metadata half is a
+join against PostHog + Sentry + replay, so specifying it earlier means specifying it twice. `E1` is the
+build. Exit requires it be **used once from Griffin's phone before the validation weeks start.**
+
+**Two things already ruled out by the shallow pass:** `getDisplayMedia` is unsupported on iOS Safari, so
+the S39 vision's **screen-recording half is not buildable** (native screenshot + file input replaces it,
+cheaper *and* correct); and **Linear is not recommended as the destination** — a Postgres table Claude
+sweeps at session start is the same "agent picks it up" queue without the OAuth, the second source of
+truth, or the sync question. S19's Linear trigger moves to real users.
+
+**✅ Both open calls resolved same session. E is fully specified as a slot; nothing is awaiting Griffin.**
+
+**1. E1 builds ONCE, after D. No v0 pull-forward.** Claude recommended splitting a v0 forward; Griffin's
+counter *invalidated the premise* rather than outweighing it: *"I won't aggressively test until we have
+all logging etc instrumented."* No testing volume before D means the v0 captures nothing. ⚠️ **The shape
+worth keeping: the recommendation was sound on its logic and wrong on a fact about Griffin's behaviour
+that only he held.** ~1 session of net-new 1F scope, not ~2.
+
+**2. Two accounts, full identical permissions, and the weighting is by CLAIM TYPE rather than by person.**
+His wife gets her own account with **full `DEV_TOOLS_EMAILS`, no carve-out.**
+
+⛔ **THE ONE TO READ — Claude pushed back on this twice and was wrong twice, on a premise it never
+checked.** It argued for withholding her dev tools to protect *"the cold-user signal."* **There is no
+cold-user signal.** She is a **software engineer**, she has **sat beside Griffin for much of this build**,
+and she will **test as aggressively as he does.** The false premise traces to one S49 sentence — *"the
+nearest thing R1 has to a cold user, since she has been in none of these sessions"* — repeated verbatim
+into three docs, where it went **silently load-bearing under three separate recommendations** (withhold
+dev tools, stage her account creation as an observed event, weight her feedback below his). All three
+collapsed the instant it was said out loud to the person who could check it. ⚠️ **Same shape as the
+feedback-capture bundling error, in a different costume — and the tell to watch for is specific: a claim
+about a *person*, sitting in a doc, that the person has never seen.** All three copies corrected.
+
+**E1 therefore gets CHEAPER, not more expensive:** with both users on dev tools, the control rides the
+existing HUD seam and **R1 owes no product design pass** on it. Build it to *graduate* when real users
+arrive; don't build the graduation now.
+
+**The weighting, corrected:** a **defect is dictation from either of them** (an engineer's bug report is
+an engineer's bug report — routing a clean repro through ratification is friction for nothing). Only
+**product direction** is weighted by source, and that line is **product ownership, not credibility.**
+
+**Workstream D picks up one item:** her account on prod with full dev tools before the validation weeks.
+Five minutes, not an event.
+
+---
 
 ## 🔭 STANDING WATCH — Instacart applications (closed as of 2026-07-30). No action, just don't forget.
 

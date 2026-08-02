@@ -4,6 +4,131 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-01 (S60) — In-app feedback capture returns to R1, and a decision's fallout list is where unrelated scope disappears
+
+**Decision (Griffin).** In-app feedback capture is **back in R1**, as a new **Workstream E** in
+[scope-1F.md](scope-1F.md). His words: *"I didn't mean to cut the in-app feedback. I want a super easy way
+to submit rich feedback back to you/our system from my phone when I'm on my couch testing. We can simplify
+some elements, but it needs to be there."*
+
+**It had been cut, and nobody decided to cut it.** S49's *no closed beta* call carried a fallout list, and
+"in-app feedback capture" was the first item on it. **That was a bundling error.** Every other item on
+that list — invite flow, support path, onboarding-for-strangers, multi-user cost modelling — is justified
+by the same premise: *there are no strangers in R1*. **Feedback capture is not justified by that premise
+at all**, because its primary user was never a stranger. It is Griffin, on his couch, at 9pm, with a phone
+and no laptop. The premise that killed the other four leaves it completely untouched.
+
+**⚠️ The transferable lesson, and it is a documentation failure rather than a judgement one.** The list
+was written once, ratified once, and then **repeated verbatim in three separate docs** — `scope-1F.md`,
+`scope-v1.md` and this one — where it sat for eleven sessions. By S60 the cut read as a considered call
+made in triplicate, and answering *"remind me how we're doing feedback in R1"* returned three confident
+citations of a decision no one had made. **The check that catches this: does every item on a decision's
+fallout list fail for the same reason the decision gives?** If one item needs a different sentence to
+justify it, it is not fallout, it is separate scope that got a free ride. All three copies are now
+amended in place rather than rewritten, so the error stays legible.
+
+**What it does NOT reverse.** The support path, the bug-report affordance *for strangers*, the invite
+flow and the onboarding-for-cold-users pass all remain out of R1 → V1.5. Two-user validation is still the
+bar. This reverses exactly one bullet.
+
+**Structure: E0 (scope) then E1 (build), because the deep pass is not yet due.** Griffin asked to *"go
+deep on what this looks like at the right time in R1."* So E0 is a scoping gate whose **trigger is
+Workstream D's observability landing** (PostHog taxonomy + Sentry + session replay) — the metadata half of
+this feature is a join against those three, and specifying a payload against an event taxonomy that does
+not exist produces a spec that gets rewritten. Seven questions are enumerated in the scope doc, each
+carrying a recommendation so the deep pass starts from a position.
+
+**Three findings from the shallow pass that already constrain the design:**
+
+1. **⚠️ `getDisplayMedia` is unsupported on iOS Safari, so the S39 vision's screen-recording half is not
+   buildable** — not "expensive," not buildable. And a DOM-to-canvas screenshot renders a *reconstruction*
+   rather than what he saw, so it will disagree with the bug on precisely the rendering bugs it exists to
+   capture. **The cheapest option is also the only correct one: iOS's native screenshot (or native screen
+   recording) plus a plain file input.** Zero capture code, real pixels, video for free.
+2. **The rich tier was S19's named Linear graduation trigger, and it now does not fire.** The thing that
+   justified Linear was *"a board where an agent can pick it up"* — but **that is already how this repo
+   works.** Claude reads the tracking docs at session start; adding "read the `feedback` table" is a
+   script, not an integration. Linear would add an OAuth authorization Griffin has not done, a second
+   source of truth, and a sync question, for a two-person release whose bug ledger is already tracked and
+   closeable. **Linear's trigger therefore moves to real users, not to this feature.**
+3. **The LLM cleanup is free at sweep time and costed at submit time.** Claude already writes
+   `bug-tracker.md` / `idea-backlog.md` entries in the house format. The one argument for submit-time
+   cleanup is that it makes reports legible to *Griffin* between sessions — weighed at E0, not decided now.
+
+**The side benefit.** Griffin's wife has no bug-capture path today either, and she is a second tester
+running the app as hard as he does. E serves both of them. ⚠️ **An earlier draft of this paragraph called
+her "R1's nearest thing to a cold user" and built a discoverability requirement on it — see the accounts
+entry below for why that premise was false and what it was holding up.**
+
+**✅ RESOLVED same session — E1 builds ONCE, after D. No v0 pull-forward.** Claude recommended splitting a
+bare-bones v0 forward, on the argument that the weeks of couch testing between now and D had no capture
+path. **Griffin's counter invalidated the premise rather than outweighing it:** *"I won't aggressively
+test until we have all logging etc instrumented."* If the testing volume the v0 exists to capture does not
+happen until D lands, the v0 captures nothing and the split buys a throwaway build. **Worth recording as
+its own shape: the recommendation was not wrong on its logic, it was wrong on a fact about Griffin's
+behaviour that only he held.** Net-new 1F scope either way, now ~1 session rather than ~2.
+
+---
+
+## 2026-08-01 (S60) — Two accounts, and why the wife's feedback is weighted differently *by claim type* rather than by person
+
+**Decision (Griffin).** His wife gets **her own test account, separate from his, with the same
+permissions**. **Her feedback is treated as *considerations*; his is treated as *dictation*.**
+
+**Separate accounts means separate households, and that is already the bar.** R1 has no household sharing
+(V1.5), so she gets her own preferences, chef memories, plan and grocery list. The DoD already required
+*"Griffin **and his wife** each run the full weekly ritual"*, so this confirms the existing bar rather than
+raising it. ⚠️ **Expect one kitchen running two independent weekly plans and two grocery lists during
+validation.** Awkward as a household, correct as a test, and the cleanest possible argument for why
+household sharing is V1.5's headline feature.
+
+**Same permissions means SAME — full `DEV_TOOLS_EMAILS`, no carve-out, no sequencing.**
+
+**⚠️ Claude pushed back on this twice and was wrong twice, on a premise it never checked — and that is the
+entry's real content.** The push-back was: withhold dev tools, because the test-mode card can reset
+onboarding and because developer chrome would contaminate *"the cold-user signal."* **There is no
+cold-user signal.** Griffin, S60: she is a **software engineer**, she has **sat beside him for much of
+this build**, and she will be **testing as aggressively as he does.**
+
+**Where the false premise came from.** S49 wrote *"she is the nearest thing R1 has to a cold user, since
+she has been in none of these sessions."* Both clauses are false. It was then repeated verbatim in
+`scope-1F.md`, `scope-v1.md` and this log, and by S60 it was silently load-bearing under **three**
+recommendations: withhold her dev tools, stage her account creation as an observed one-time event, and
+weight her feedback below Griffin's. **All three collapsed the moment the premise was stated out loud to
+the one person who could check it.** ⚠️ **Same failure mode as the feedback-capture bundling error above,
+in a different costume: a claim written once, repeated across three docs, and never re-examined — so by
+the time it mattered it read as established fact rather than as an assumption.** The pattern to watch:
+**a sentence about a person, in a doc, that the person has never seen.**
+
+**What the correct premise gives instead:** a second engineer testing aggressively who *wants* the HUD and
+the test-mode card, and for whom the reset affordance is a feature rather than a hazard. Her account is a
+five-minute setup, not an event to stage.
+
+**Consequence — E1 gets CHEAPER, not more expensive.** With both users holding dev tools, the feedback
+control can ride the existing HUD seam and **R1 does not owe a full product design pass** on it. One
+constraint survives and it is V1.5-facing: build the mutation, table and payload so the surface can
+**graduate** to a real affordance when real users arrive, rather than wedging it into the HUD in a way
+that has to be rebuilt.
+
+**⚠️ The weighting is by CLAIM TYPE, not by person.** Filing everything she submits as "consideration" is
+wrong once the cold-user premise is gone — **an engineer's bug report is an engineer's bug report**, and
+routing a clean repro through a ratification queue is friction that buys nothing.
+
+| Claim type | Treatment |
+|---|---|
+| **A defect** — broken, wrong, or confusing | **Dictation from either of them.** Files straight to `bug-tracker.md` with repro + severity |
+| **A product direction** — a feature, a redesign, a "we should…" | **Griffin dictates; hers is a consideration** — files to a staging section with a recommendation, and he ratifies |
+
+**The line is product ownership, not credibility.** Griffin owns what this product is. That does not make
+her diagnosis worth less, and treating it as though it did would discard the better half of what a second
+engineer's testing produces. Only the *product-direction* half is weighted by source.
+
+**One prerequisite, in Workstream D not E:** her account exists on prod with full `DEV_TOOLS_EMAILS`
+before the validation weeks. Five minutes. Also, mention session replay to her before it records — the
+replay item owes that regardless.
+
+---
+
 ## 2026-08-01 (S60) — How offline is built, and why the smaller version of the queued tick was rejected
 
 **Four technical calls, made by Claude against the stated scope. Griffin's product calls from S59 are
@@ -526,13 +651,21 @@ and again in the `(app)` layout) are on `main`, **both default-off when their en
 beta" is operationally *leave two env vars alone*, and reversing it later is setting them — an env
 change, not a code diff, not a deploy of a diff.
 
-**What it genuinely removes from 1F:** in-app feedback capture, a support path, a bug-report affordance,
-an onboarding-for-strangers pass, and multi-user load/abuse/cost-per-user modelling beyond the existing
-rate limits. It removes **no** build work on the gate, which was the part that looked like scope.
+**What it genuinely removes from 1F:** a support path, an onboarding-for-strangers pass, and multi-user
+load/abuse/cost-per-user modelling beyond the existing rate limits. It removes **no** build work on the
+gate, which was the part that looked like scope.
 
-**What it does not lower.** The DoD still requires *both* people for two consecutive real weeks. Griffin's
-wife has been in none of these sessions, which makes her the nearest thing R1 has to a cold user — her
-first run is the real test of the interview, and the interview fires exactly once per account.
+> **⚠️ AMENDED 2026-08-01 (S60).** This list originally began *"in-app feedback capture, a support path, a
+> bug-report affordance…"*. **The first item was a bundling error and is reversed** — in-app feedback
+> capture is back in R1 as **1F Workstream E**. See the S60 entry at the top of this log.
+
+**What it does not lower.** The DoD still requires *both* people for two consecutive real weeks.
+
+> **⚠️ FACTUAL CORRECTION, S60.** This paragraph used to continue: *"Griffin's wife has been in none of
+> these sessions, which makes her the nearest thing R1 has to a cold user."* **False.** She is a software
+> engineer, she has sat beside Griffin for much of this build, and she will test as aggressively as he
+> does. **R1 has no cold user.** See the S60 accounts entry at the top of this log for what the false
+> premise was holding up.
 
 **Future impact.** A beta is **deferred to V1.5 planning**, not cancelled: household sharing arrives there
 and an invite flow has to exist anyway. `ALLOWED_EMAILS` stays in place as the seam. Two open bug rows
