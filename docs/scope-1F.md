@@ -1002,6 +1002,14 @@ to look and feel finished so his validation-week feedback can be about design ra
       nor `visibility: hidden` helps: `toHaveText` reads `textContent`. **At four characters of 12.5px
       caption type a fade-swap and a crossfade are the same thing to look at; announcing two
       contradictory states is not.**
+- [ ] ⚠️ **`/visual-qa` on Groceries — BLOCKED, BUG-053 🔴, and it is not S61's.** The pass owed for the
+      offline clause could not run: two seeded states never render and a third hangs on an unbounded
+      `.click()`, so the run dies at 120s **without writing a manifest** and the surface goes ungraded.
+      Reproduced with the entire source tree at `HEAD~1`. ⚠️ **The last successful Groceries capture
+      predates the service worker by three and a half hours** (15:01 PDT vs 18:42 PDT on 2026-08-01), so
+      **no Groceries capture has ever run against a build containing it** — and S60's *"0 blockers / 0
+      high, 56/56 states ok"* was reported from that earlier run. **C cannot be called closed until this
+      is fixed**, because the gate currently answers 0/0 by not looking.
 - [ ] Launches full-screen without browser chrome — ⚠️ **`statusBarStyle` is `black`, not
       `black-translucent`, and that is a measurement.** Translucent extends the web view *under* the status
       bar and needs `env(safe-area-inset-top)`; there is **not one `-top` inset anywhere in `src/`** (every

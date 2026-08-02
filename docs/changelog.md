@@ -95,6 +95,29 @@ This is *ask what the layer cannot see* with the ink still wet — S54's clause 
 does not exempt it from the question," S56 added "neither does fixing it once," and this adds the shortest
 version: **neither does writing it ten minutes ago.**
 
+### 🔴 And the `/visual-qa` pass owed for the clause could not run — BUG-053
+
+**The Groceries visual gate has been blind since S60.** `grocery-generating` and `grocery-error` never
+render their seeded state (15s `readyText` timeout each), and `grocery-checked-gotit` then hangs on a
+`.click()` with **no action timeout** because there are no rows to click — so the run blows its 120s budget
+and dies **without writing a manifest**, which is the one artifact that would say which state failed.
+
+⚠️ **Not S61's.** Reproduced three times with the Groceries components reverted, and a fourth with the
+**entire source tree** checked out at `HEAD~1`.
+
+⚠️ **The timeline is the finding.** Last successful Groceries capture: **15:01 PDT, 2026-08-01**. The
+offline half — service worker + IndexedDB persistence, PR #25 — merged at **18:42 PDT the same day**. So
+**no Groceries capture has ever run against a build containing the service worker**, and S60's handoff
+reported *"0 blockers / 0 high, 56/56 states ok"* from a pass run three and a half hours before the code it
+was meant to gate existed. **S55's *present, correct, and unrun* and S54's stale build in a third costume:
+a gate reporting on a tree that is not the one shipping** — and the reason it went unnoticed for a session
+is that the handoff quoted a real number from a real run, just not of the real code.
+
+**Deliberately not fixed here.** The prime suspect is the worker or the persisted cache serving a stale or
+empty `grocery.current` across capture states — the runner drives ONE page through every state — but that
+is a hypothesis, and this phase's standing rule is that the parked recommendation is the thing to distrust.
+**Measure before fixing.**
+
 ### Filed rather than fixed
 
 **BUG-051 🟠 — an item added offline is the S60 illusion one control over.** `grocery.current` is on the

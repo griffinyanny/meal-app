@@ -30,6 +30,19 @@ icon, the Hero launch screen, the offline clause). The install prompt was **CUT*
 check** — it is the item most likely to be quietly wrong on a real device, and nothing in the suite can
 answer it. Then **D (production readiness)**, then **E (feedback capture)**, then the two validation weeks.
 
+**🔴 S61 · THE GROCERIES VISUAL GATE HAS BEEN BLIND SINCE S60 — BUG-053. FIX IT BEFORE CLOSING C.**
+`npm run test:capture -- tests/e2e/capture/groceries.capture.ts` dies at its 120s budget **without writing a
+manifest**: `grocery-generating` and `grocery-error` never render their seeded state, and
+`grocery-checked-gotit` then hangs on a `.click()` that has **no action timeout** because there are no rows
+to click. ⚠️ **Not S61's** — reproduced with the entire source tree at `HEAD~1`. ⚠️ **The timeline is the
+finding:** the last successful Groceries capture was **15:01 PDT on 2026-08-01** and the offline half
+(service worker + IndexedDB persistence, PR #25) merged at **18:42 PDT the same day**, so **no Groceries
+capture has ever run against a build containing the service worker** — and S60's handoff reported *"0
+blockers / 0 high, 56/56 states ok"* from that earlier run. **S55's *present, correct, and unrun* in a third
+costume: a gate reporting on a tree that is not the one shipping, quoting a real number from a real run of
+the wrong code.** ⚠️ **Whenever a capture pass is quoted in a handoff, check its RUN TIME against the commit
+it is supposed to be grading.**
+
 **⚠️ S61 · A CSS VALUE TRANSCRIBED INTO SVG BY EYE IS WRONG THREE TIMES OUT OF THREE.** Rebuilding the app
 icon from `.ember-core` found that the placeholder had guessed every translated value: a
 `radial-gradient(circle at 40% 34%, …)` carries an implicit **`farthest-corner`** extent (radius
