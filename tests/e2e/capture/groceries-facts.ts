@@ -183,4 +183,32 @@ export const GROCERY_CAPTURE_STATES: CaptureStateDef[] = [
       await page.getByText("What else do you need?", { exact: false }).waitFor({ timeout: 8_000 });
     },
   },
+  {
+    id: "grocery-offline-clause",
+    briefRef: "groceries — offline (1F/C direction 1h, 'The clause')",
+    readyText: "Your list",
+    facts: {
+      clause:
+        "`0 / 4 · offline` appended to the count — meta rung, caption colour, NO fill and NO border",
+      onlyMark:
+        "⚠️ GRADE THE ABSENCES. No banner, no strip, no per-row badge, no second sentence, no queue count. If anything else on this screen mentions offline, that is the defect",
+      ticksUnchanged:
+        "the tick is pixel-identical to online — same cream fill, same dim-and-strike, no dashed box or clock badge",
+      chefProvisional:
+        "the toque is the ONLY changed control: hueless .09/.2 provisional under its ORDINARY label, because the header already said why",
+      fieldStillLive: "adding still works, the chef does not — the quick-add field is untouched",
+    },
+    prepare: () => seedGroceryState("GROCERY_READY"),
+    // ⚠️ Flipped via the browser's own `offline` event rather than
+    // `context.setOffline`, and that is what keeps this state from poisoning
+    // every state after it: the capture runner shares ONE page across the whole
+    // array, and `onlineManager`'s flag lives in JS memory that the next
+    // state's `goto` clears. Cutting the real network would persist on the
+    // context and quietly break the rest of the run.
+    navigate: async (page) => {
+      await gotoReady(page);
+      await page.evaluate(() => window.dispatchEvent(new Event("offline")));
+      await page.getByTestId("grocery-offline-clause").waitFor({ timeout: 8_000 });
+    },
+  },
 ];
