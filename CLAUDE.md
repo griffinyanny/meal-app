@@ -23,11 +23,66 @@ Senior product manager (not an engineer). 10 years in tech, 6 working closely wi
 A3 (BUG-011/012/010) as PRs #9/#10/#11; A4 (BUG-013), A5 (BUG-042/043), A6 (BUG-018) as PRs #12/#13.
 **Workstream B is ✅ CLOSED at 9 of 9** — B1 + B5 (S52), B9 (S53), B2 + B3 + B4 (S54), B6 (S55), B7 (S56),
 B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.**
-**Workstream C (PWA) is 🔨 OPEN (S59–S60)** — the manifest, the icon pipeline, the iOS meta tags, BUG-049,
-**the service worker and the whole offline half** are in; **only the four design artifacts remain**
-(install sheet, splash, offline state, queued indicator), and Griffin is running the Claude Design round.
-**739 unit + OF1–OF4 green, migration `0010` applied.** Then **D (production readiness)**, then the two
-validation weeks.
+**Workstream C (PWA) is ✅ CODE-COMPLETE (S59–S61)** — the manifest, the icon pipeline, the iOS meta tags,
+BUG-049, the service worker, the whole offline half, and **the three locked design artifacts** (the Ember
+icon, the Hero launch screen, the offline clause). The install prompt was **CUT** by the design round.
+**758 unit + OF1–OF7 green, migration `0010` applied.** ⚠️ **The only thing left in C is the two-phone
+check** — it is the item most likely to be quietly wrong on a real device, and nothing in the suite can
+answer it. Then **D (production readiness)**, then **E (feedback capture)**, then the two validation weeks.
+
+**🔴 S61 · THE GROCERIES VISUAL GATE HAS BEEN BLIND SINCE S60 — BUG-053. FIX IT BEFORE CLOSING C.**
+`npm run test:capture -- tests/e2e/capture/groceries.capture.ts` dies at its 120s budget **without writing a
+manifest**: `grocery-generating` and `grocery-error` never render their seeded state, and
+`grocery-checked-gotit` then hangs on a `.click()` that has **no action timeout** because there are no rows
+to click. ⚠️ **Not S61's** — reproduced with the entire source tree at `HEAD~1`. ⚠️ **The timeline is the
+finding:** the last successful Groceries capture was **15:01 PDT on 2026-08-01** and the offline half
+(service worker + IndexedDB persistence, PR #25) merged at **18:42 PDT the same day**, so **no Groceries
+capture has ever run against a build containing the service worker** — and S60's handoff reported *"0
+blockers / 0 high, 56/56 states ok"* from that earlier run. **S55's *present, correct, and unrun* in a third
+costume: a gate reporting on a tree that is not the one shipping, quoting a real number from a real run of
+the wrong code.** ⚠️ **Whenever a capture pass is quoted in a handoff, check its RUN TIME against the commit
+it is supposed to be grading.**
+
+**⚠️ S61 · A CSS VALUE TRANSCRIBED INTO SVG BY EYE IS WRONG THREE TIMES OUT OF THREE.** Rebuilding the app
+icon from `.ember-core` found that the placeholder had guessed every translated value: a
+`radial-gradient(circle at 40% 34%, …)` carries an implicit **`farthest-corner`** extent (radius
+`sqrt(.6²+.66²) = 0.892` of the box, not the 0.72 guessed) and **holds its last stop's colour to the
+edge**; a **box-shadow blur radius is TWICE the Gaussian σ** (282px → `stdDeviation 141`), with the spread
+shrinking the shadow's own shape; and an **outer box-shadow is clipped to outside its border box**, so an
+unmasked glow shines through a `.42`-alpha rim and makes the mark a different object. **None of them look
+wrong in a thumbnail.** Caught by **sampling the rendered pixels against the arithmetic** — S57's *"when a
+difference is small enough to argue about, stop judging and measure"*, one layer below anything
+`/visual-qa` can grade. **When porting CSS to SVG, port the DEFINITION, never the appearance.**
+
+**⚠️ S61 · A COMMENT EXPLAINING WHY A NUMBER IS RIGHT IS NOT EVIDENCE THAT IT STILL IS.** The placeholder
+icon's toque carried a careful argument for scaling by the *ink* rather than the container — which
+produced a hat ~8% larger than the value the design round later locked. The comment read as settled
+reasoning and was three sessions stale. **A parked bug's recommendation is a hypothesis from the day it
+was filed; so is a code comment's.**
+
+**⚠️ S61 · A TRUE CROSSFADE PUTS TWO CONTRADICTORY WORDS IN `textContent` AT ONCE.** The offline clause
+shipped as the artifact specifies — two stacked words in one grid cell — and that means the header
+announces both `· offline` and `· sending` to a screen reader simultaneously, and every text assertion
+reads `· offline · sending`. **Neither opacity nor `visibility: hidden` helps: `toHaveText` reads
+`textContent`, not `innerText`.** Corrected to a single-node fade-swap. **At four characters of caption
+type a fade-swap and a crossfade are the same thing to look at; announcing two contradictory states is
+not.**
+
+**⚠️ S61 · *ASK WHAT THE LAYER CANNOT SEE* NOW APPLIES TO A LAYER WRITTEN TEN MINUTES AGO.** `OF6`, whose
+entire stated subject is *"no per-row anything"*, **could not see a per-row `offline` badge** — it measured
+the checkbox's own computed style, and a sibling element changes nothing about that. OF5 caught it; OF6
+did not. S54: *writing the instrument does not exempt it from the question.* S56: *neither does fixing it
+once.* **S61: neither does writing it this session.** ⚠️ And the first force-failure **proved nothing while
+looking like it had** — the planted badge was unconditional, so it appeared in the online measurement AND
+the offline one and the comparison stayed equal. **A force-failure that does not reproduce the real defect
+is a green with extra steps.**
+
+**⚠️ S61 · THE FALSE GREEN'S SIXTH SHAPE: A LOG THE TEST RUNNER DELETES.** Redirecting the suite into
+`test-results/full-e2e.log` produced an 18-minute run with **no readable output at all** — Playwright wipes
+its output directory at startup, taking the log with it, and the writes then went to a deleted file
+descriptor. The run before that ended `; echo; grep | tail`, so the "exit code 0" it reported was the
+**`grep`'s** — the S56 trailing-command trap, walked into in the same session that quotes it. **Run the
+suite in the background with NO redirect and read the summary line out of the task's own output file.**
 
 **⚠️ S60 · A SERVICE WORKER DOES NOT CONTROL THE PAGE THAT REGISTERS IT.** That navigation is already in
 flight when `register()` runs, so the **first visit to a route never reaches the fetch handler and never
@@ -666,9 +721,11 @@ There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; deta
 
 **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
 
-⚠️ **It takes ~18 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Measured at S60: 136 specs, 17.8 minutes** (S58 estimated 17 from arithmetic; the measurement agrees, and the count has since grown by the four OF specs). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+⚠️ **It takes ~18 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S61: 139 specs, 18.2 minutes** (S60 measured 136 specs / 17.8 min; the three new OF specs account for the difference). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
 
-⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), **S60 (pipe again, on the offline specs)**. Redirect to a file and **read the summary line**, never the status.
+⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), S60 (pipe again, on the offline specs), **S61 (a trailing `grep`, in the same session that quoted this line)**. **Read the summary line, never the status.**
+
+⚠️ **And never redirect the log into `test-results/` — Playwright WIPES that directory at startup.** S61 lost a full 18-minute run that way: the log was deleted a second after it was created, every write went to a dead file descriptor, and the run finished having produced **no readable output at all**. **The safe shape is `run_in_background: true` with NO redirect**, then read the summary line out of the background task's own output file — which also removes the trailing-command trap above, because there is no trailing command.
 
 **Run it (without being asked) when:**
 - Your change touches code the suite covers, OR

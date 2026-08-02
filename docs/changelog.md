@@ -4,6 +4,133 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 61 — 2026-08-02 (1F/C — the three design artifacts)
+
+**Workstream C is code-complete.** The icon, the launch screen and the offline clause are built to the
+values the S60 design round locked; the only thing left in C is Griffin's two phones. **758 unit green**
+(+19), lint + typecheck clean. Work on `session-61-1f-c-design-artifacts`.
+
+### ⛔ THE ONE TO READ: every real defect this session was a CSS value transcribed by eye
+
+The icon carried three, and none of them look wrong in a thumbnail:
+
+1. **`radial-gradient(circle at 40% 34%, …)` has an implicit `farthest-corner` extent.** From (40%,34%)
+   the farthest corner is (100%,100%), so the radius is `sqrt(.6² + .66²) = 0.892` of the sphere's box.
+   The placeholder had guessed `72%`. And CSS **holds the last stop's colour out to the edge**, so a
+   three-stop gradient ending at 78% needs that stop repeated at 100% rather than fading to nothing.
+2. **A box-shadow blur radius is TWICE the Gaussian standard deviation.** `0 0 282px -51px` is
+   `stdDeviation 141`, and the spread shrinks the shadow's own circle rather than the blur.
+3. **An outer box-shadow is clipped to outside its border box.** This sphere's outer stop sits at `.42`
+   alpha, so an unmasked glow shines *through* the rim and quietly makes the ember a different object.
+   The glow is masked to outside the sphere.
+
+**Caught by sampling the rendered pixels against the arithmetic**, not by looking at it: highlight
+`247,230,189` against a predicted `247.8,231.2,190.4`, wash `50,38,18` against `49.9,37.8,18.2`, floor
+exactly `#0F0B08`. That is `/visual-qa`'s own S57 lesson — *when a difference is small enough to argue
+about, stop judging and measure* — one layer further down, in a file no capture pass will ever grade.
+
+⚠️ **And the locked artifact beat the reasoning that predated it.** The placeholder's toque carried a
+comment arguing at length for scaling by the *ink* rather than the container, which produced a hat ~8%
+larger than the artifact's stated `227px`. **A comment explaining why a number is right is not evidence
+that it still is.** Same shape as a parked bug's recommendation, in a file rather than a tracker.
+
+### The launch screen: one table, two consumers, because a silent pair drifts
+
+Eleven portrait PNGs (every iPhone back to the SE2) from a new `scripts/generate-splash.mjs`, plus one
+`apple-touch-startup-image` link tag each. iOS matches a launch image by an **exact** media query, so a tag
+with no file gives a white flash and a file with no tag is never shown — **both in complete silence**, and
+the size that drifts is the one in the pocket. Both halves read `src/assets/splash-devices.json`, and
+`splash.test.ts` holds them in step in both directions.
+
+⚠️ **It also scrapes `layout.tsx`.** Without that, every assertion in the file would stay green against a
+build that had dropped the tags entirely — the app would ship with no launch screen and the suite would
+say it was fine.
+
+⚠️ **No status bar and no home indicator are painted, and that is what "status bar and home indicator in"
+means.** iOS draws both itself, over the launch image. The frame draws them because a mock has to show the
+screen in situ; painting the frame's `9:41` into the PNG would put a second, permanently wrong clock
+underneath the real one.
+
+⚠️ **The pixel-ratio clause in each query is load-bearing:** iPhone 11 and 11 Pro Max are both 414x896pt
+and differ *only* by ratio, so matching on size alone would match both and hand one the wrong raster.
+
+### The clause: the naive rule is a different artifact, not a smaller one
+
+`· offline` / `· sending` on the Groceries count. Driven by React Query's **`onlineManager`**, never
+`navigator.onLine`, because `onlineManager` is what decides whether a mutation pauses — reading anything
+else lets the word and the queue disagree, which is the only failure that matters here.
+
+⚠️ **"Online and a pending tick" would put `· sending` on screen for every check-off the app ever makes.**
+Only a *paused* tick may start a hold. That also covers the cold-start case for free, since a mutation
+restored from IndexedDB is paused until it resumes. The unit table is verified failing against exactly
+that naive implementation.
+
+The chef launcher is the only control that changes, routing to the existing **`.spec-provisional`** — which
+was already byte-identical to the artifact's `.09`/`.2`, so the rung did not need naming for once.
+
+### ⚠️ Shipped as a crossfade, corrected to a fade-swap
+
+The artifact says "crossfade", so it shipped as two stacked words in one grid cell. That is a true
+crossfade **and puts `· offline` and `· sending` in the element's `textContent` simultaneously** — so the
+header announced two contradictory states to anyone not looking at it, and every text assertion read
+`· offline · sending`. Neither opacity nor `visibility: hidden` helps, because `toHaveText` reads
+`textContent`, not `innerText`.
+
+**At four characters of 12.5px caption type a fade-swap and a crossfade are the same thing to look at.
+Announcing two contradictory states is not.**
+
+### ⚠️ And OF6 shipped too narrow to catch its own subject
+
+A deliberately planted per-row `offline` badge — the exact treatment the round cut — **sailed past OF6**,
+whose entire stated subject is *no per-row anything*. It measured the checkbox's own computed style, and a
+sibling element changes nothing about that. **OF5 caught it; OF6 did not.** Widened to the row's text and
+bounding box.
+
+⚠️ **The first force-failure also proved nothing and looked like it had.** The planted badge was
+unconditional, so it appeared in the online measurement *and* the offline one and the comparison stayed
+equal. Re-planted as an offline-**conditional** badge, both specs go red. **A force-failure that does not
+reproduce the real defect is a green with extra steps.**
+
+This is *ask what the layer cannot see* with the ink still wet — S54's clause was "writing the instrument
+does not exempt it from the question," S56 added "neither does fixing it once," and this adds the shortest
+version: **neither does writing it ten minutes ago.**
+
+### 🔴 And the `/visual-qa` pass owed for the clause could not run — BUG-053
+
+**The Groceries visual gate has been blind since S60.** `grocery-generating` and `grocery-error` never
+render their seeded state (15s `readyText` timeout each), and `grocery-checked-gotit` then hangs on a
+`.click()` with **no action timeout** because there are no rows to click — so the run blows its 120s budget
+and dies **without writing a manifest**, which is the one artifact that would say which state failed.
+
+⚠️ **Not S61's.** Reproduced three times with the Groceries components reverted, and a fourth with the
+**entire source tree** checked out at `HEAD~1`.
+
+⚠️ **The timeline is the finding.** Last successful Groceries capture: **15:01 PDT, 2026-08-01**. The
+offline half — service worker + IndexedDB persistence, PR #25 — merged at **18:42 PDT the same day**. So
+**no Groceries capture has ever run against a build containing the service worker**, and S60's handoff
+reported *"0 blockers / 0 high, 56/56 states ok"* from a pass run three and a half hours before the code it
+was meant to gate existed. **S55's *present, correct, and unrun* and S54's stale build in a third costume:
+a gate reporting on a tree that is not the one shipping** — and the reason it went unnoticed for a session
+is that the handoff quoted a real number from a real run, just not of the real code.
+
+**Deliberately not fixed here.** The prime suspect is the worker or the persisted cache serving a stale or
+empty `grocery.current` across capture states — the runner drives ONE page through every state — but that
+is a hypothesis, and this phase's standing rule is that the parked recommendation is the thing to distrust.
+**Measure before fixing.**
+
+### Filed rather than fixed
+
+**BUG-051 🟠 — an item added offline is the S60 illusion one control over.** `grocery.current` is on the
+persist allow-list and `addItem`'s `onMutate` patches a temp row into it, so the optimistic row is
+dehydrated to IndexedDB — but `addItem` is deliberately *not* in `OFFLINE_MUTATION_PATHS`, so the mutation
+that would save it is not. Add an item in a shop, let iOS evict the app, relaunch, and the item is still
+there; go online and the refetch drops it. ⚠️ **The design frame says in as many words that "adding still
+works", so making the field provisional contradicts a locked artifact and is not the fix.** Doing it
+properly needs a client idempotency key (`checkItem` is idempotent, `addItem` is not) — a column, a unique
+index and a migration. **Routed to D**, on Griffin's call, rather than solved beside three design artifacts.
+
+---
+
 ## Session 60 — 2026-08-01 (1F/C — the offline half; the visual pass S59 owed)
 
 **Workstream C's whole non-visual half shipped, and both of the session's findings were things a layer

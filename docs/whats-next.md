@@ -1,6 +1,206 @@
 # What's Next
 
-Last updated: 2026-08-01 (Session 60; **1F/C's non-visual half shipped**, **the design round landed**, and **Workstream E added** — in-app feedback capture is back in R1)
+Last updated: 2026-08-02 (Session 61; **Workstream C is CODE-COMPLETE** — the three locked design artifacts are built. Only the two-phone check remains in C)
+
+## ▶ NEXT SESSION — **Workstream D, production readiness. C is done except Griffin's phones.**
+
+**758 unit + 139 E2E green** (18.2 min, measured), lint + typecheck clean. Work on
+`session-61-1f-c-design-artifacts`.
+**1F has D (production readiness) and E (feedback capture) left, then the two validation weeks.**
+
+### 🔴 READ THIS FIRST — `/visual-qa` on Groceries is BLOCKED, and it has been blind since S60
+
+**BUG-053.** The pass owed for the offline clause could not run. `grocery-generating` and `grocery-error`
+never render their seeded state (15s `readyText` timeout each), and `grocery-checked-gotit` then hangs on a
+`.click()` with **no action timeout** because there are no rows to click — so the run blows its 120s budget
+and dies **without writing a manifest**, and the whole surface goes ungraded.
+
+⚠️ **It is not S61's.** Reproduced three times with the Groceries components reverted, and a fourth with
+the **entire source tree** checked out at `HEAD~1`.
+
+⚠️ **The timeline is the actual finding.** The last successful Groceries capture is **15:01 PDT on
+2026-08-01**; the offline half — service worker + IndexedDB persistence, PR #25 — merged at **18:42 PDT
+the same day**. **No Groceries capture has ever run against a build containing the service worker**, and
+S60's handoff reported *"0 blockers / 0 high, 56/56 states ok"* from a pass run three and a half hours
+before the code it was gating existed. **S55's "present, correct, and UNRUN" and S54's stale build, in a
+third costume: a gate reporting on a tree that is not the one shipping.**
+
+**So the three artifacts are machine-verified by unit + E2E and NOT visually graded.** The clause has
+`OF5/OF6/OF7` measuring its colour, its absence of fill and border, and the tick's sameness; the icon and
+splash were verified by sampling rendered pixels. That is real coverage — but it is not the capture pass,
+and this handoff does not claim one.
+
+### ⛔ THE ONE TO READ: a CSS value transcribed into SVG by eye was wrong three times out of three
+
+Rebuilding the app icon from `.ember-core` found the placeholder had guessed **every** translated value,
+and not one of them looks wrong in a thumbnail:
+
+1. **`radial-gradient(circle at 40% 34%, …)` carries an implicit `farthest-corner` extent.** The radius is
+   `sqrt(.6² + .66²) = 0.892` of the sphere's box; the placeholder had `0.72`. CSS also **holds the last
+   stop's colour out to the edge**, so a three-stop gradient ending at 78% needs that stop repeated at
+   100% rather than fading away.
+2. **A box-shadow blur radius is TWICE the Gaussian σ.** `0 0 282px -51px` is `stdDeviation 141`, and the
+   spread shrinks the shadow's own circle rather than the blur.
+3. **An outer box-shadow is clipped to outside its border box.** This sphere's outer stop is at `.42`
+   alpha, so an unmasked glow shines *through* the rim and quietly makes the ember a different object.
+
+**Caught by sampling the rendered pixels against the arithmetic**, never by looking: highlight
+`247,230,189` against a predicted `247.8,231.2,190.4`, wash `50,38,18` against `49.9,37.8,18.2`, floor
+exactly `#0F0B08`. That is S57's *"when a difference is small enough to argue about, stop judging and
+measure"* one layer below anything `/visual-qa` can grade — **a `.svg` in `src/assets/` is graded by no
+layer this project owns.**
+
+⚠️ **And the locked artifact beat the reasoning that predated it.** The placeholder's toque carried a
+careful comment arguing for scaling by the *ink* rather than the container, which produced a hat ~8%
+larger than the artifact's stated `227px`. It read as settled reasoning and was three sessions stale.
+**A comment explaining why a number is right is not evidence that it still is** — a parked bug's
+recommendation in a different costume.
+
+### ⚠️ Two things I built wrong and corrected, both worth carrying
+
+**1. A true crossfade puts two contradictory words in `textContent` at once.** The clause shipped as the
+artifact words it — two stacked words in one grid cell — which announces `· offline` **and** `· sending`
+to a screen reader simultaneously and makes every text assertion read `· offline · sending`. Neither
+opacity nor `visibility: hidden` helps, because **`toHaveText` reads `textContent`, not `innerText`.**
+Corrected to a single-node fade-swap. At four characters of 12.5px caption type the two look identical;
+announcing two contradictory states does not.
+
+**2. `OF6` — whose entire stated subject is *"no per-row anything"* — could not see a per-row badge.** It
+measured the checkbox's own computed style, and a sibling element changes nothing about that. **OF5 caught
+the planted badge; OF6 did not.** Widened to the row's text and bounding box. S54: *writing the instrument
+does not exempt it from the question.* S56: *neither does fixing it once.* **S61: neither does writing it
+this session.**
+
+⚠️ **And the first force-failure proved nothing while looking like it had** — the planted badge was
+unconditional, so it appeared in the online measurement *and* the offline one and the comparison stayed
+equal. **A force-failure that does not reproduce the real defect is a green with extra steps.**
+
+### ⚠️ The false green's sixth and seventh shapes, both mine, in one session
+
+- **A trailing `grep`.** The first full run ended `npm run test:e2e > log 2>&1; echo; grep | tail`, so the
+  reported exit 0 came from the `grep` — **the S56 trailing-command trap, walked into in the same session
+  that quotes it.**
+- **A log the test runner deletes.** The retry redirected into `test-results/`, which **Playwright wipes
+  at startup**; the writes went to a dead file descriptor and an 18-minute run produced no readable output
+  at all. **The safe shape is `run_in_background: true` with NO redirect**, then read the summary line out
+  of the task's own output file. Both are now in `CLAUDE.md` and `.claude/rules/e2e.md`.
+
+### ⚠️ Filed rather than fixed — two, and the first one is real
+
+- **BUG-051 🟠 — an item added offline is the S60 illusion one control over.** `grocery.current` is on the
+  persist allow-list and `addItem`'s `onMutate` patches a temp row into it, so the optimistic row is
+  dehydrated to IndexedDB — but `addItem` is deliberately *not* replayable, so the mutation that would
+  save it is not. Add an item in a shop, let iOS evict the app, relaunch: **the item is still there**, and
+  the first refetch drops it. ⚠️ **The design frame says in as many words that "adding still works"**, so
+  making the field provisional contradicts a locked artifact and is not the fix. **Not a one-liner:**
+  `checkItem` is idempotent so replay is safe, `addItem` is not, so it needs a client idempotency key — a
+  column, a unique index and a migration. **Which makes it D's `migrations.test.ts` guard's first real
+  subject**, and the project's first non-additive-shaped migration.
+- **BUG-052 🟡 — the maskable icon has a seam** at its safe-zone boundary (the generator pastes an
+  80%-inset artboard onto flat floor, so the wash stops at a visible rectangle edge). Pre-existing, and
+  **both R1 phones are iPhones, which ignore `purpose: maskable` entirely** — so it is an asset nobody
+  renders this release.
+
+### ⚠️ Owed by Griffin — the same three, and one of them now gates C
+
+1. ⭐ **THE TWO-PHONE CHECK. This is the only thing left in Workstream C**, and it is the item most likely
+   to be quietly wrong on a real device. Install it on both phones and confirm: the **Ember icon** on the
+   home screen, the **launch screen** (floor, wash, orb — no white flash), full-screen with no Safari
+   chrome, and sign-in surviving installation.
+   ⭐ **And the one thing no automated layer can reach: the app-kill replay.** Tick two items in airplane
+   mode, **force-quit from the app switcher**, relaunch still offline, confirm the ticks are there, then
+   re-enable signal and confirm they reach the server. Playwright cannot reproduce an iOS process kill, so
+   this path is verified by construction and unit guard only.
+2. **The 32px titles**, still open from S59. Open Recipes and Groceries. Layer A's read is that 32 is
+   right; that is a 390px screenshot, not a device. If 26 wins, §05's H2 row gets amended.
+3. **The quantity editor's ~5px of headroom** (polish, not gating). Widening `w-[72px]` steals width from
+   the item name, which is the thing you read in a shop. Left alone deliberately.
+
+*(B2's bottom-edge check is still worth a tap in the same pass.)*
+
+### ⭐ Next up — D, then E, then the two validation weeks
+
+**D gates E** — E0's trigger is D's observability landing, because E's metadata payload is a join against
+PostHog + Sentry + replay. D's five parts are in [scope-1F.md](scope-1F.md); the security review has a new
+subject as of S60 (the offline cache puts a server-rendered copy of the household's week and the grocery
+list into unencrypted on-device storage) and now a second one in **BUG-051's migration**.
+
+**⭐ Model recommendation: Opus 4.9+ for D.** This is the one remaining workstream with real reasoning in
+it rather than construction against a known target — a security review of the full surface, a
+migration-safety discipline, and an observability taxonomy. S60's and S61's recommendation of 4.8 was for
+building designed surfaces to locked values, which D is not.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S61 built C's three locked design artifacts. 758 unit + 139 E2E green (18.2 min,
+measured), lint + typecheck clean. The Ember icon, the Hero launch screen and the offline clause are all
+in. ⚠️ FIRST, BUG-053 🔴: /visual-qa on GROCERIES IS BLOCKED and has been blind since S60 — grocery-generating
+and grocery-error never render their seeded state (15s readyText timeout each) and grocery-checked-gotit
+then hangs on a .click() with NO action timeout because there are no rows, so the run blows its 120s budget
+and dies WITHOUT WRITING A MANIFEST. It is NOT S61's: reproduced three times with the Groceries components
+reverted and a fourth with the ENTIRE source tree at HEAD~1. ⚠️ The timeline is the finding — the last good
+Groceries capture was 15:01 PDT on 2026-08-01 and the offline half (service worker + IndexedDB persistence,
+PR #25) merged at 18:42 PDT the same day, so NO Groceries capture has ever run against a build containing
+the service worker, and S60's handoff reported "0 blockers / 0 high, 56/56 states ok" from a pass run three
+and a half hours before the code it was gating existed. Prime suspect is the SW or the persisted query
+cache serving a stale/empty grocery.current across capture states (the capture drives ONE page through
+every state) — BUT THAT IS A HYPOTHESIS, NOT A MEASUREMENT, so log per-state timing in captureStates and
+look at what the page is actually showing before fixing anything. Two apparatus fixes ride along either
+way: give that .click() an explicit timeout, and make the runner write its manifest even on a test timeout
+— the manifest is the only artifact that says WHICH state failed and it's the one thing a timeout destroys.
+Fix that before Workstream C is called closed. THEN take WORKSTREAM D, production readiness. Five parts: (1)
+the security review of the full surface + rate-limiting audit, with TWO new subjects — the offline cache
+(the shell HTML is SERVER-RENDERED with the household's real content baked in, and the persisted query
+cache holds the grocery list; both sit in unencrypted on-device storage, both are cleared on sign-out by
+clearOfflineState(), and the persisted set is already an allow-list — verify it's actually closed), and
+BUG-051's migration. (2) migration safety per S54 — expand/contract into the drizzle rule, a
+migrations.test.ts destructive-SQL guard in this repo's source-scraping idiom, and a pg_dump before any
+acknowledged-destructive migration, because drizzle-kit generate cannot tell a rename from a drop-plus-add
+and all 11 migrations have been additive by luck, not control; ⚠️ a staging DB was EXPLICITLY REJECTED so
+don't propose one. ⚠️ BUG-051 is this guard's first real subject — an item added offline persists its
+optimistic row while the mutation that would save it does NOT, so it survives a relaunch and is then wiped
+by the refetch (the S60 illusion one control over). It needs a client IDEMPOTENCY KEY because checkItem is
+idempotent and addItem is not; that's a column + unique index + migration, i.e. the project's first
+non-additive-shaped one. ⚠️ Do NOT "fix" it by making the add field provisional offline — the locked design
+frame says in as many words that adding still works. (3) observability — PostHog with the S9 taxonomy plus
+Sentry plus session replay, and ⚠️ the masking posture must INVERT the vendor default (mask everything, then
+unmask chrome — this app's sensitive material is rendered OUTPUT, not typed input). ⚠️ This part GATES
+Workstream E: E0's trigger is D's observability landing, because E's metadata payload is a join against
+PostHog + Sentry + replay. (4) my wife's account on prod with FULL DEV_TOOLS_EMAILS, identical to mine,
+before the validation weeks — five minutes, not an event to stage; she's a software engineer who's sat
+beside me for much of this build and she'll test as aggressively as I do. R1 has NO cold user; don't
+reintroduce that premise. (5) BUG-044 rides with the security review. THE ONE TO READ from S61: a CSS value
+transcribed into SVG BY EYE was wrong three times out of three — a radial-gradient(circle at ...) has an
+implicit farthest-corner extent (0.892 of the box, not the 0.72 that was guessed) and HOLDS its last stop's
+colour to the edge; a box-shadow blur radius is TWICE the Gaussian sigma; and an outer box-shadow is
+CLIPPED to outside its border box, so an unmasked glow shines through a .42-alpha rim and makes the mark a
+different object. None of them look wrong in a thumbnail — they were caught by SAMPLING THE RENDERED PIXELS
+AGAINST THE ARITHMETIC, because a .svg in src/assets/ is graded by no layer this project owns. Also carry:
+a comment explaining why a number is right is NOT evidence that it still is (the placeholder toque's
+careful argument produced a hat 8% off the locked value); a TRUE CROSSFADE puts two contradictory words in
+textContent at once, so the offline clause is a single-node fade-swap (toHaveText reads textContent, not
+innerText, and neither opacity nor visibility:hidden helps); OF6 — whose whole subject is "no per-row
+anything" — could NOT see a per-row badge because it measured the checkbox's own style and a sibling
+changes nothing about that, so ask what the layer cannot see INCLUDING a layer written this session; and a
+force-failure that doesn't reproduce the real defect is a green with extra steps (my first planted badge
+was unconditional, so it appeared in both measurements and the comparison stayed equal). ⚠️ Two NEW false
+greens, both mine: a trailing `grep` reported the suite's exit code as 0 (the S56 trap, in the session that
+quotes it), and redirecting the log into test-results/ lost an entire 18-minute run because PLAYWRIGHT
+WIPES THAT DIRECTORY at startup — run it with run_in_background and NO redirect, then read the summary line
+from the task's own output file. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give
+me the <=6-line scope check, keep 758 unit green. maxDuration is CLOSED, BUG-042 CLOSED as won't-do, the
+non-prod Supabase project closed NO, gate 1 CLOSED as retired, the PWA install prompt CUT — don't reopen
+any. ⚠️ The E2E suite is 18.2 MINUTES (139 specs, measured) — tell me before you start it, don't run it
+while I'm using the app, and never pipe it or redirect it into test-results/. Owed by me: the two-phone
+check (icon, launch screen, full-screen, sign-in surviving install, and the app-kill replay — tick two
+items in airplane mode, force-quit from the app switcher, relaunch offline, confirm they're there, then
+reconnect), whether 32px reads right for the Recipes and Groceries titles, and whether the grocery quantity
+editor's ~5px of headroom bothers me. Consider Opus 4.9+ for the security half.
+```
+
+---
+
+## ⚠️ S60 — the design round (superseded by S61 above: all three artifacts are now BUILT)
 
 ## ⭐ THE DESIGN ROUND LANDED (S60) — three artifacts locked, one CUT, one collapsed
 
@@ -133,7 +333,9 @@ Full analysis incl. US market-share table: `technical-research.md` → TAM analy
 
 ---
 
-## ▶ NEXT SESSION — **Workstream C is DONE except its four design artifacts. The service worker and the whole offline half shipped.**
+## ⚠️ S60 (superseded by S61 above — the three artifacts are built and C is code-complete)
+
+### Workstream C was DONE except its four design artifacts; the service worker and the whole offline half shipped
 
 **739 unit green** (+22), **OF1–OF4 green against a real service worker with the network cut**, lint +
 typecheck clean, `/visual-qa` Layer A at **0 blockers / 0 high** (56/56 states, 57/57 with the new one).
