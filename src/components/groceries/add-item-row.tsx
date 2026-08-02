@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Plus, Brain } from "lucide-react";
 import { FreeformField } from "@/components/shared/freeform-field";
+import { useIsOnline } from "@/lib/offline/use-offline-clause";
+import { cn } from "@/lib/utils";
 
 interface AddItemRowProps {
   // "top" is an always-open field; "bottom" is a dashed affordance that opens on tap.
@@ -37,6 +39,7 @@ export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowPr
   const testId = rest["data-testid"];
   const [active, setActive] = useState(variant === "top");
   const [text, setText] = useState("");
+  const isOnline = useIsOnline();
 
   function submit() {
     const value = text.trim();
@@ -79,12 +82,26 @@ export function AddItemRow({ variant, onAdd, onOpenChef, ...rest }: AddItemRowPr
     return (
       <div className="flex items-start gap-2.5">
         {field}
+        {/* ⚠️ Offline, the chef is the one thing on this screen that genuinely
+            breaks — it is a live model call — so it goes PROVISIONAL (1F/C,
+            1h): the hueless `.09`/`.2` neutral, the muted label, and its
+            ORDINARY name. It does not explain itself and it is not relabelled
+            or hidden, because the header already said why in four characters
+            and a second voice saying the same thing is the strip the artifact
+            exists to avoid. The field beside it stays live: adding still
+            works, the chef does not. */}
         <button
           type="button"
           onClick={onOpenChef}
+          disabled={!isOnline}
           aria-label="Talk to the chef"
           data-testid="grocery-open-chef"
-          className="mt-1.5 flex size-11 flex-none items-center justify-center rounded-[12px] bg-primary/15 text-primary"
+          className={cn(
+            "mt-1.5 flex size-11 flex-none items-center justify-center rounded-[12px]",
+            isOnline
+              ? "bg-primary/15 text-primary"
+              : "spec-provisional text-[var(--spec-text-muted)]"
+          )}
         >
           <Brain className="size-[19px]" strokeWidth={1.8} />
         </button>

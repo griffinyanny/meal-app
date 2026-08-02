@@ -1,0 +1,35 @@
+{
+  "$comment": [
+    "The iOS launch-screen device table. ONE source, TWO consumers:",
+    "`scripts/generate-splash.mjs` rasterises a PNG per row, and `src/app/layout.tsx`",
+    "emits an `apple-touch-startup-image` link tag per row.",
+    "",
+    "⚠️ This file exists because the two halves CANNOT be allowed to drift. iOS picks",
+    "a splash by matching the media query exactly; a tag with no file shows a white",
+    "screen, and a file with no tag is dead weight nobody notices. Hand-keeping a list",
+    "of tags beside a list of files is the same failure `scripts/generate-icons.mjs`",
+    "was written to prevent, and the one that drifts is always the size the phone in",
+    "your pocket actually renders. `splash.test.ts` asserts the two stay in step.",
+    "",
+    "Portrait only, deliberately: the app is a phone-form-factor product with no",
+    "landscape layout, and iOS falls back to the app's background colour when no",
+    "orientation matches — which, on this floor, is the right fallback anyway.",
+    "",
+    "`width`/`height` are CSS points (what the media query matches); the raster is",
+    "width x ratio by height x ratio. Ordered newest-first so the models most likely",
+    "to be in use sit at the top of the head."
+  ],
+  "devices": [
+    { "id": "16-pro-max", "label": "iPhone 16 Pro Max", "width": 440, "height": 956, "ratio": 3 },
+    { "id": "16-pro", "label": "iPhone 16 Pro", "width": 402, "height": 874, "ratio": 3 },
+    { "id": "15-pro-max", "label": "iPhone 15/16 Plus, 15 Pro Max, 14 Pro Max", "width": 430, "height": 932, "ratio": 3 },
+    { "id": "15-pro", "label": "iPhone 15, 15 Pro, 16, 14 Pro", "width": 393, "height": 852, "ratio": 3 },
+    { "id": "14-plus", "label": "iPhone 14 Plus, 13 Pro Max, 12 Pro Max", "width": 428, "height": 926, "ratio": 3 },
+    { "id": "13", "label": "iPhone 14, 13, 13 Pro, 12, 12 Pro", "width": 390, "height": 844, "ratio": 3 },
+    { "id": "13-mini", "label": "iPhone 13 mini, 12 mini, 11 Pro, XS, X", "width": 375, "height": 812, "ratio": 3 },
+    { "id": "11-pro-max", "label": "iPhone 11 Pro Max, XS Max", "width": 414, "height": 896, "ratio": 3 },
+    { "id": "11", "label": "iPhone 11, XR", "width": 414, "height": 896, "ratio": 2 },
+    { "id": "8-plus", "label": "iPhone 8 Plus, 7 Plus, 6s Plus", "width": 414, "height": 736, "ratio": 3 },
+    { "id": "8", "label": "iPhone SE (2nd/3rd gen), 8, 7, 6s", "width": 375, "height": 667, "ratio": 2 }
+  ]
+}

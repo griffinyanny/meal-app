@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { TRPCProvider } from "@/components/shell/trpc-provider";
 import { ServiceWorkerRegistrar } from "@/components/shell/service-worker";
+import { APPLE_SPLASH_LINKS } from "./apple-splash";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,7 +22,9 @@ export const metadata: Metadata = {
   // ⚠️ iOS does NOT read the manifest's `icons` array for the home screen — it
   // reads this link tag. A PWA with a perfect manifest and no apple-touch-icon
   // installs with a screenshot of the page as its icon.
-  icons: { apple: "/icons/apple-touch-icon.png" },
+  // `other` carries the iOS launch screen — one tag per device size, generated
+  // from the same table as the PNGs. See `./apple-splash`.
+  icons: { apple: "/icons/apple-touch-icon.png", other: APPLE_SPLASH_LINKS },
   appleWebApp: {
     capable: true,
     // The label under the icon. iOS truncates around 12 characters.
