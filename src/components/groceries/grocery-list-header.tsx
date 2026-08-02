@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOfflineClause } from "@/lib/offline/use-offline-clause";
 
 interface GroceryListHeaderProps {
   total: number;
@@ -17,6 +18,7 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
   const [copied, setCopied] = useState(false);
   const pct = total > 0 ? Math.round((checkedCount / total) * 100) : 0;
   const allChecked = total > 0 && checkedCount === total;
+  const clause = useOfflineClause();
 
   function handleCopy() {
     onCopy();
@@ -33,8 +35,34 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
         {/* §05's H1 — see the note on the Recipes title. Not the chef's rung. */}
         <h1 className="spec-screen-title">Your list</h1>
         <div className="flex shrink-0 items-center gap-3">
-          <span className="spec-body text-muted-foreground" data-testid="grocery-progress-count">
-            {checkedCount} / {total}
+          {/* The count, and the ONLY place offline is announced (1F/C, 1h).
+              §05's meta rung, which is what the artifact draws the whole string
+              at — the clause is the same size as the count it is attached to
+              and differs only in colour, so a two-tone string at two sizes
+              would not be the artifact. */}
+          <span className="spec-meta">
+            {/* ⚠️ The count keeps its own node. The clause is a SIBLING, never
+                inside it: OF3/OF4 assert this element's exact text, and folding
+                four characters of chrome into the number they measure would
+                make the queue specs assert the announcement instead. */}
+            <span data-testid="grocery-progress-count">
+              {checkedCount} / {total}
+            </span>
+            {clause && (
+              /* ⚠️ `key` on the word, so a change REMOUNTS and replays the
+                 180ms fade rather than swapping the text under it. Exactly one
+                 word is in the DOM at a time — see the note on
+                 `.spec-offline-clause`: holding both put two contradictory
+                 words in `textContent` at once. */
+              <span
+                key={clause.word}
+                className="spec-offline-clause text-[var(--spec-text-caption)]"
+                data-leaving={clause.leaving}
+                data-testid="grocery-offline-clause"
+              >
+                {clause.word === "offline" ? " · offline" : " · sending"}
+              </span>
+            )}
           </span>
           <button
             type="button"

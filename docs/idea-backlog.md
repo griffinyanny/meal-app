@@ -1,12 +1,40 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S61) — surfaced building C's three design artifacts
+
+- **Put the held ticks behind the count as a tap target, if the queue ever needs inspecting.** The design
+  round's own closing line, and it is filed rather than built because **the artifact's whole argument is
+  that the queue must not be counted** — a running tally invites worry about a promise the app has already
+  kept. This is the escape hatch if real use proves otherwise: the count becomes a tap target, and what
+  opens is a list of what is held. **Do not build it speculatively**; the evidence that would justify it
+  is Griffin actually wanting to check, during a validation week.
+
+- **The permanently-failed held tick is a CONFLICT, not an offline state → V1.5.** If an item was deleted
+  on another phone, a held tick can never land. ⚠️ **Named explicitly so it does not get solved by
+  accident, because the instinct is a red dot** — and that would put an error hue on the one screen the
+  offline artifact exists to keep calm. Cannot happen in R1 (solo accounts, separate households); it
+  arrives with household sharing, alongside every other write conflict.
+
+- **`statusBarStyle: black-translucent` + a real `env(safe-area-inset-top)` pass.** Still deferred, still
+  for the same measured reason (S59): there is not one `-top` inset anywhere in `src/`, so translucent
+  today puts every screen title under the clock on a notched phone. It is a genuine improvement to how
+  finished the app feels full-screen, and it is a layout pass across every surface, not a meta tag. **The
+  splash now exists**, which removes one of the reasons it was bundled with "the design artifact."
+
 ## Incoming (S60) — surfaced building the offline half (1F/C)
 
 - **Offline `addItem` — V1.5, and it is blocked on a product answer, not on plumbing.** The queued
   check-off persists and replays exactly one mutation (`grocery.checkItem`), because that is the scope
-  Griffin widened to in S59: *in a shop the verb is tick*. Adding an item offline is one line in
-  `OFFLINE_MUTATION_PATHS` plus one `mutationFn` default — **except that `addItem` runs an AI categorize
-  pass (`tidyItem`) that cannot work without a network.** So the real question is what an offline-added
+  Griffin widened to in S59: *in a shop the verb is tick*.
+  ⚠️ **CORRECTED S61 — this entry used to say adding was "one line in `OFFLINE_MUTATION_PATHS` plus one
+  `mutationFn` default." That is false, and believing it is how BUG-051 would get closed badly.**
+  `checkItem` is **idempotent**, so replaying it is safe; `addItem` is **not**, so a replay whose original
+  POST landed but whose response was lost silently duplicates the row — in a shop, over exactly the flaky
+  connection that caused the pause. Doing it correctly needs a **client-supplied idempotency key**: a
+  column, a unique index and a migration. **See BUG-051**, which is the live defect this entry's feature
+  would resolve — the optimistic row persists today while the mutation that would save it does not.
+  Beyond that there is still an AI categorize
+  pass (`tidyItem`) that cannot work without a network. So the real question is what an offline-added
   item *looks like* before the chef has seen it: does it sit uncategorised at the bottom, does it guess a
   category locally and correct itself on reconnect, or does the quick-add field simply say it needs
   signal? **That is a design question, and it is exactly the kind that should not be answered by whoever

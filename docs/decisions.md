@@ -4,6 +4,52 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-02 (S61) — Three deviations from a locked artifact, each because the artifact's own goal required it
+
+The S60 design round locked three artifacts to exact values, and building them produced three places where
+the *stated* value and the artifact's *intent* pulled apart. All three resolved toward intent, and all
+three are recorded here rather than absorbed silently, because "we followed the design" should mean
+something specific.
+
+**1. The toque is lucide's CURRENT `ChefHat`, not the path the design frame's HTML quotes.** The frame
+hand-writes lucide's older chef-hat path; the app renders whatever `lucide-react` ships today, via
+`chef-presence.tsx`. The artifact's own instruction is *"§02 transplanted, nothing else"*, and §02's toque
+is defined by what the app draws — the splash exists to hand off to a screen drawing this exact object at
+88px, so a different path would break the one thing the artifact is for. Frame HTML authored outside the
+repo is a **rendering** of the system, not a second source for it.
+
+**2. The launch PNGs paint no status bar and no home indicator.** The frame draws both, and its caption
+says *"status bar and home indicator in — they are what make it read as already open."* iOS draws both
+itself, over the launch image. Painting the frame's `9:41` into the PNG would put a second, permanently
+wrong clock underneath the real one. **"In" describes the composed screen, not the file we ship.**
+
+**3. The clause is a fade-swap, not a crossfade.** ⚠️ **This one was built as specified first and then
+corrected, which is why it is a decision rather than a reading.** A true crossfade needs both words
+mounted simultaneously, and that puts `· offline` and `· sending` in the element's `textContent` at the
+same time — so the header announces two contradictory states to anyone using a screen reader, and every
+text assertion reads `· offline · sending`. Neither opacity nor `visibility: hidden` avoids it, because
+`textContent` ignores both. **At four characters of 12.5px caption type a fade-swap and a crossfade are
+the same thing to look at; announcing two contradictory states is not.** The 180ms, the single
+non-looping transition, and the resolution-as-absence all survive intact.
+
+**Also decided (Griffin, S61): BUG-051 is filed, not fixed.** An item added offline is the S60 illusion one
+control over — the optimistic row persists, the mutation that would save it does not, so it survives a
+relaunch and is then wiped by the refetch. Griffin's call was to file it. **The reason it is not a
+one-liner:** `checkItem` is idempotent so replay is safe, `addItem` is not, and a replay whose original
+POST landed but whose response was lost duplicates the row. Doing it properly needs a client idempotency
+key — a column, a unique index and a migration, which also makes it Workstream D's `migrations.test.ts`
+guard's first real subject. **Future impact:** it is the first non-additive-shaped migration in the
+project, so it is a rehearsal for V1.5's household sharing rather than an isolated fix.
+
+**A build note worth keeping, because it is not about design at all.** Every genuine defect in the icon was
+a **CSS value transcribed into SVG by eye rather than by its definition**: a `radial-gradient(circle at …)`
+has an implicit `farthest-corner` extent, a box-shadow blur radius is *twice* the Gaussian σ, and an outer
+box-shadow is clipped to outside its border box. None of them look wrong in a thumbnail. They were caught
+by sampling the rendered pixels against the arithmetic — S57's *"when a difference is small enough to
+argue about, stop judging and measure"*, one layer below anything `/visual-qa` can grade.
+
+---
+
 ## 2026-08-01 (S60) — In-app feedback capture returns to R1, and a decision's fallout list is where unrelated scope disappears
 
 **Decision (Griffin).** In-app feedback capture is **back in R1**, as a new **Workstream E** in

@@ -5,14 +5,20 @@ globs: src/components/plan/**/*.tsx, src/components/groceries/**/*.tsx, src/comp
 # E2E rule
 
 You are editing code the Playwright E2E suite covers. Coverage today: **Plan,
-Groceries, Recipes, You, onboarding, and the PWA's offline half** (136 specs).
+Groceries, Recipes, You, onboarding, and the PWA's offline half** (139 specs).
 Before wrapping:
 
 ⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`.** The
 harness reports the LAST command's exit code, so a failing suite comes back as
 exit 0 — S55 (pipe), S56 (trailing command), S57 (wrong directory) and **S60
-(pipe again)**. Redirect to a file and **read the summary line**, never the
-status.
+(pipe again)**. **Read the summary line, never the status.**
+
+⚠️ **And do NOT redirect into `test-results/` — Playwright WIPES that directory
+at startup.** S61: an 18-minute run wrote its whole log into a deleted file
+descriptor and produced no readable output at all. **The safe shape is
+`run_in_background: true` with NO redirect**, then read the summary line out of
+the task's own output file. That also avoids the trailing-command trap above,
+because there is no trailing command.
 
 - **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend). After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild.
 - **Extend the specs** in `tests/e2e/specs/` for any new behavior on a covered tab — a feature isn't done until its mechanics are covered. `docs/test-plan.md` is the 1:1 catalog.

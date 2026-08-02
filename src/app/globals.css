@@ -239,6 +239,52 @@
     background: rgba(156, 184, 111, 0.14);
     border: 1px solid rgba(156, 184, 111, 0.3);
   }
+  /* The offline clause (1F/C, direction 1h). Four characters appended to the
+     Groceries count: `18 / 34 · offline`.
+
+     ⚠️ NO FILL AND NO BORDER, deliberately — that is what keeps law 05 from
+     ever applying. Fill + border means it must respond to a tap; this only
+     names something, so it is flat type with no container, and there is
+     nothing to tap, dismiss or ignore. If you are about to give it a chip,
+     that is the artifact being reopened.
+
+     ⚠️ ONE fade, never a loop: only the chef loops, and a flush that takes four
+     seconds just leaves the word sitting there. 180ms in, 180ms out, which is
+     --spec-motion-exit's value and the number the artifact states for both
+     directions.
+
+     ⚠️ EXACTLY ONE WORD IS EVER IN THE DOM, and that is a correction to the
+     first build rather than a shortcut. The artifact says "crossfade", so this
+     shipped as two stacked words in one grid cell — which put `· offline` and
+     `· sending` in the element's `textContent` SIMULTANEOUSLY. Both are then in
+     the accessibility tree (opacity, and even `visibility: hidden` mid-
+     transition, does not help `textContent`), so the header announced two
+     contradictory words at once to anyone not looking at it, and every text
+     assertion on this element read `· offline · sending`. At four characters of
+     12.5px caption type a fade-swap and a crossfade are the same thing to look
+     at; announcing two contradictory states is not.
+
+     ⚠️ It sets NO colour, on purpose. A class in `@layer utilities` that sets
+     `color` silently outranks every `text-*` written beside it — B8a shipped
+     that once and killed eight call-site overrides including three SAFETY
+     labels. The caption token goes on the call site. */
+  .spec-offline-clause {
+    white-space: nowrap;
+    animation: clause-in var(--spec-motion-exit) ease-out;
+    transition: opacity var(--spec-motion-exit) ease-out;
+  }
+  .spec-offline-clause[data-leaving="true"] {
+    opacity: 0;
+  }
+  @keyframes clause-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   /* ⚠️ The four TYPE rungs live in `@layer components` below, NOT here. A rung
      that sets `color` inside `utilities` beats every `text-*` utility written
      beside it, because within one cascade layer source order decides and these

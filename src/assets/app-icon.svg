@@ -1,56 +1,99 @@
 <!--
-  The home-screen mark. 1024x1024, one artboard — every raster size is generated
-  from this file by `npm run icons`, so this is the only image to replace.
+  The home-screen mark — "Ember", direction 1a, LOCKED by the S60 design round.
+  docs/design/surfaces/pwa/directions.dc.html → Artifact 01.
 
-  ⚠️ PLACEHOLDER, pending 1F/C's design pass. It is spec-faithful rather than
-  designed: the ember gradient is `.ember-core`'s exact three stops from
-  globals.css, and the toque is lucide's ChefHat — the same path
-  `chef-presence.tsx` renders — stroked at #2A1C04 / 85%, sized to 41% of the
-  sphere and seated just below centre, which is what spec §02 specifies. It
-  exists so the PWA can be installed and the standalone auth path tested before
-  the artwork lands. See docs/design/surfaces/pwa/brief.md, artifact 1.
+  1024x1024, one artboard. Every raster size is generated from this file by
+  `npm run icons`, so this is the only image to replace. There is no small-size
+  variant and there must never be one: an icon is ONE raster downsampled by the
+  OS, so dropping the toque at 60px would mean shipping two icons that disagree.
+  (§02's 40px mark threshold governs a *drawn* orb in the UI, where the stroke
+  really does go sub-pixel and reads as dirt. That rule does not reach here.)
 
-  Full-bleed floor, deliberately: iOS applies its own rounded-rect mask and does
-  not composite transparency, so a transparent orb would arrive as a black box.
+  The round's values, verbatim from the artifact's "At 1024" block:
+
+    floor  #0F0B08 full bleed
+    wash   70% 56% at 50% 2% · rgba(233,179,72,.16)
+    sphere 553px · centred · §02 gradient verbatim
+    glow   0 0 282px -51px rgba(233,179,72,.6)
+    toque  227px · #2A1C04 1.6@24vb · .85
+
+  Three notes on translating CSS values into SVG, because each one is a place a
+  faithful-looking transcription would be wrong:
+
+  1. `radial-gradient(circle at 40% 34%, …)` has an implicit `farthest-corner`
+     extent. From (40%,34%) the farthest corner is (100%,100%), so the radius is
+     sqrt(.6² + .66²) = 0.89197 of the sphere's box — NOT the 72% the placeholder
+     guessed. And CSS holds the last stop's colour out to the edge, so the 78%
+     stop is repeated at 100% rather than fading to nothing.
+
+  2. A CSS box-shadow blur radius is TWICE the Gaussian standard deviation, so
+     282px of blur is stdDeviation 141, and the -51px spread shrinks the shadow
+     circle to r = 276.48 - 51. The glow is also MASKED to outside the sphere,
+     because an outer box-shadow is clipped to outside its own border box — and
+     this sphere's outer gradient stop sits at .42 alpha, so an unmasked glow
+     would shine through the rim and quietly make the ember a different object.
+
+  3. The toque is scaled by its BOX (41% of the sphere = 227px), which is what
+     the artifact specifies and what the frame draws. The placeholder scaled it
+     by the ink instead and produced a hat ~8% larger; the locked value wins.
+
+  The toque path is lucide's current `ChefHat` — the same one `chef-presence.tsx`
+  renders — rather than the older lucide path the design frame's HTML happens to
+  quote. The artifact's own instruction is "§02 transplanted, nothing else", and
+  §02's toque is whatever the app draws; the splash hands off to a screen drawing
+  this exact object at 88px, so it has to be the same object.
+
+  Floor is full-bleed, deliberately: iOS applies its own rounded-rect mask and
+  does not composite transparency, so a transparent orb arrives as a black box.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <!-- `.ember-core`: radial-gradient(circle at 40% 34%, ...) — same stops. -->
-    <radialGradient id="ember" cx="40%" cy="34%" r="72%">
-      <stop offset="0%"   stop-color="#FFEEC4" stop-opacity="0.97" />
-      <stop offset="46%"  stop-color="#E9B348" stop-opacity="0.92" />
-      <stop offset="78%"  stop-color="#8C5F19" stop-opacity="0.42" />
-      <stop offset="100%" stop-color="#8C5F19" stop-opacity="0.16" />
+    <!-- §01's wash. CSS `70% 56% at 50% 2%` is an ELLIPSE: the y radius is 0.8
+         of the x radius, which SVG expresses as a gradientTransform scaling y
+         about the gradient's own centre. -->
+    <radialGradient id="wash" gradientUnits="userSpaceOnUse"
+      cx="512" cy="20.48" r="716.8"
+      gradientTransform="translate(0 20.48) scale(1 0.8) translate(0 -20.48)">
+      <stop offset="0" stop-color="#E9B348" stop-opacity="0.16" />
+      <stop offset="0.62" stop-color="#E9B348" stop-opacity="0" />
+      <stop offset="1" stop-color="#E9B348" stop-opacity="0" />
     </radialGradient>
-    <!-- The 44px -8px ember glow, scaled to the artboard. -->
-    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="34" result="b" />
-      <feColorMatrix in="b" type="matrix"
-        values="0 0 0 0 0.914  0 0 0 0 0.702  0 0 0 0 0.282  0 0 0 0.6 0" result="g" />
-      <feMerge><feMergeNode in="g" /><feMergeNode in="SourceGraphic" /></feMerge>
+
+    <!-- §02's ember, three stops, verbatim. -->
+    <radialGradient id="ember" cx="0.4" cy="0.34" r="0.89197">
+      <stop offset="0" stop-color="#FFEEC4" stop-opacity="0.97" />
+      <stop offset="0.46" stop-color="#E9B348" stop-opacity="0.92" />
+      <stop offset="0.78" stop-color="#8C5F19" stop-opacity="0.42" />
+      <stop offset="1" stop-color="#8C5F19" stop-opacity="0.42" />
+    </radialGradient>
+
+    <!-- The filter region has to hold ~3σ of spread past the shadow circle, or
+         the glow is clipped into a visible square. -->
+    <filter id="glow" x="-150%" y="-150%" width="400%" height="400%">
+      <feGaussianBlur stdDeviation="141" />
     </filter>
+
+    <mask id="outside-sphere" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024">
+      <rect width="1024" height="1024" fill="#fff" />
+      <circle cx="512" cy="512" r="276.48" fill="#000" />
+    </mask>
   </defs>
 
   <rect width="1024" height="1024" fill="#0F0B08" />
-  <!-- §01's light.ambient wash, so the icon sits on the same floor the app does. -->
-  <radialGradient id="wash" cx="78%" cy="-12%" r="62%">
-    <stop offset="0%" stop-color="#E9B348" stop-opacity="0.13" />
-    <stop offset="100%" stop-color="#E9B348" stop-opacity="0" />
-  </radialGradient>
   <rect width="1024" height="1024" fill="url(#wash)" />
 
-  <!-- The ember. 512px sphere on a 1024 artboard = half the width, which leaves
-       the outer ~10% clear for Android's mask. -->
-  <circle cx="512" cy="512" r="256" fill="url(#ember)" filter="url(#glow)" />
+  <g mask="url(#outside-sphere)">
+    <circle cx="512" cy="512" r="225.48" fill="#E9B348" fill-opacity="0.6" filter="url(#glow)" />
+  </g>
 
-  <!-- The toque: a hairline stroke, never a fill. §02 sizes it to 41% of the
-       sphere — 41% of 512px = 210px of DRAWN MARK, which is not 41% of the
-       viewBox: lucide's path spans ~15.2 of its 24 units, so scaling the box by
-       8.75 gave a 133px hat (26%). Scale against the ink, not the container:
-       210 / 15.2 = 13.8. Seated just below centre so the highlight stays clear
-       above the brim and the light still reads as coming from up-left.
-       Stroke-width divides by the scale to keep the 1.6-on-24 hairline. -->
-  <g transform="translate(512 548) scale(13.8) translate(-12 -12)"
+  <!-- 54% of 1024 = 553, centred. The outer ~23% stays clear, which is what
+       gives Android's maskable crop and iOS's squircle something to take. -->
+  <circle cx="512" cy="512" r="276.48" fill="url(#ember)" />
+
+  <!-- 227px box at 29.5%/33% of the sphere: horizontally centred, seated just
+       below centre so the highlight stays clear above the brim and the light
+       still reads as coming from up-left. -->
+  <g transform="translate(398.64 418) scale(9.4463)"
      fill="none" stroke="#2A1C04" stroke-opacity="0.85" stroke-width="1.6"
      stroke-linecap="round" stroke-linejoin="round">
     <path d="M17 21a1 1 0 0 0 1-1v-5.35c0-.457.316-.844.727-1.041a4 4 0 0 0-2.134-7.589 5 5 0 0 0-9.186 0 4 4 0 0 0-2.134 7.588c.411.198.727.585.727 1.041V20a1 1 0 0 0 1 1Z" />
