@@ -237,89 +237,112 @@ as residue rather than covered**, because their risk is structural: a `w-full` i
 - **The shipped icon is still a spec-faithful PLACEHOLDER.** Replace `src/assets/app-icon.svg` and run
   `npm run icons`.
 
-### ⭐ Next up — C's design half, then D
+### ⭐ Next up — C's THREE builds, then D, then E
 
-**Not built:** the install sheet (iOS has no `beforeinstallprompt`; both phones are iPhones, so the
-hand-written "tap Share → Add to Home Screen" sheet is the only path), the splash, the offline state and
-the queued-changes indicator. All four are drawn in `docs/design/surfaces/pwa/brief.md` and blocked only on
-the Claude Design URL.
+**The design round landed, so nothing here is blocked.** All three are specified to exact values in
+[`directions.dc.html`](design/surfaces/pwa/directions.dc.html):
 
-**⭐ Model recommendation: Opus 4.8.** Building four designed surfaces from a brief is construction against
-a known target — the same work 4.8 did across S40–S60. **Go higher for D**, whose security review is still
-the one remaining item with real reasoning in it.
+1. **The icon** — replace `src/assets/app-icon.svg` with the Ember (orb at 54%, toque at every size, floor
+   full-bleed, §02's gradient verbatim) and run `npm run icons`. Every raster regenerates from that one
+   file. **The currently shipped icon is a spec-faithful placeholder** and this is what replaces it.
+2. **The launch screen** — `light.hero`, orb at 88, frozen at the top of the ember cycle. iOS needs a real
+   PNG **per device size** plus `apple-touch-startup-image` link tags; there is no CSS involved.
+3. **The offline clause** — `· offline` / `· sending` appended to the Groceries count, plus the
+   **provisional** treatment on the things offline genuinely breaks. ⚠️ **Much smaller than this doc
+   assumed**, and the smallness is the design: no banner, no strip, no per-row badge, no queue count.
+
+**Order after C: D (production readiness) → E (feedback capture) → the two validation weeks.** E0's trigger
+is D's observability landing, so D genuinely gates E rather than merely preceding it.
+
+**⭐ Model recommendation: Opus 4.8.** Three designed surfaces built to locked values is construction
+against a known target — the same work 4.8 did across S40–S60. **Go higher for D**, whose security review
+is the one remaining item with real reasoning in it, and which now has a new subject: the offline cache
+puts a server-rendered copy of the household's week and the grocery list into unencrypted on-device
+storage.
 
 **Copy-paste kickoff prompt:**
 ```
-Resume meal app — S60 shipped 1F/C's whole non-visual half. 739 unit + OF1-OF4 green on branch
-session-60-1f-workstream-c, lint + typecheck clean, /visual-qa Layer A at 0 blockers/0 high (56/56 states).
-The service worker, the app-shell cache, React Query IndexedDB persistence and the queued offline check-off
-are all in. ONLY THE FOUR DESIGN ARTIFACTS REMAIN in C — install sheet, splash, offline state, queued
-indicator — and the brief is at docs/design/surfaces/pwa/brief.md. Ask me for the Claude Design URL. THE ONE
-TO READ: a service worker DOES NOT CONTROL THE PAGE THAT REGISTERS IT. That navigation is already in flight
-when register() runs, so the FIRST visit to a route never reaches the fetch handler and never gets cached —
-and the worker then activates and reports itself perfectly healthy holding NOTHING. In a browser tab that's
-invisible (tomorrow's visit caches it); in an INSTALLED PWA it's the whole feature failing on the launch
-that matters most — install, open once, walk to the shop, dead page. OF1/OF2 caught it as ERR_FAILED; I
-fixed it by warming the four tab routes on activate through the same isCacheable gate, so a worker
-activating while signed out fetches four redirects and stores none. A second bug rode along that would have
-made the fix look like it hadn't worked: the fallback needs ignoreVary, because Next sets Vary on route
-responses and a warmed entry is a plain GET while a reload is a NAVIGATION, so a Vary-respecting match
-misses an entry sitting right there. Caught by RUNNING THE SPECS, not by reading the code — S59's "green
-does not mean deployed-correct" through a different door, where the design was right and the LIFECYCLE was
-wrong. Second thing: the queued check-off's "smaller half" is an ILLUSION, not a lesser feature. Persisting
-the query cache without the mutations means onMutate's optimistic tick gets persisted (the query stays
-"success"), so you tick five items, iOS evicts the backgrounded PWA over a 45-minute shop, you relaunch and
-THE TICKS ARE STILL THERE — then signal returns and the server refetch wipes all five because the mutations
-died with the process. The user watched their work survive a relaunch and concluded it was saved. React
-Query forces the choice either way: defaultShouldDehydrateMutation is (m) => m.state.isPaused, so paused
-mutations persist BY DEFAULT — doing nothing was never neutral. So mutations are persisted with mutationFn
-defaults on the QueryClient. Also carry: persistence goes through SUPERJSON not JSON (grocery.current
-returns Drizzle rows whose createdAt/updatedAt are real Dates; a JSON persister hydrates them back as
-STRINGS and a cached list is silently a different type from a fetched one), and the persisted query set is
-an ALLOW-LIST per BUG-018's argument, because a deny-list fails open and persisting everything would put
-the chef's memories, the health answers and the kids' ages into unencrypted on-device storage. Third: the
-/visual-qa pass found the Recently-cooked strip rendering COOKED JUL 29 while the identical badge in the
-rows below rendered "Cooked Jul 23" — B8b routed it to .spec-label by matching SIZE AND WEIGHT, and both
-caps rungs carry text-transform:uppercase, so the change was a CASING change, which is exactly what a
-size-and-weight comparison can't see. caps-rungs.test.ts is ONE-DIRECTIONAL and couldn't catch it. Second
-instance of S57's rule: a rung is chosen by what the slot HOLDS. ⚠️ Residue: the app-kill path is verified
-by construction and unit guard, NOT by the suite — Playwright can't reproduce an iOS process kill, so
-cold-start replay is the first thing to check on a real phone. The icon is still a spec-faithful
-PLACEHOLDER (replace src/assets/app-icon.svg, run `npm run icons`), and statusBarStyle stays `black` until
-the full-screen artifact lands. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give
-me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is CLOSED as won't-do, the non-prod Supabase
-project closed NO, gate 1 is CLOSED as retired — don't reopen any of them. ⚠️ The E2E suite is now ~18
-MINUTES (136 specs) — tell me before you start it, don't run it while I'm using the app, and never pipe it
-through tail (it swallows the exit code; read the summary line). Owed by me: the Claude Design URL, whether
-32px reads right for the Recipes and Groceries titles on my phone, and whether the grocery quantity editor's
-~5px of headroom bothers me. On Opus 4.8.
+Resume meal app — S60 shipped 1F/C's whole non-visual half AND the design round landed. 739 unit + 136 E2E
+green on main, lint + typecheck clean, /visual-qa Layer A at 0 blockers/0 high. The service worker,
+app-shell cache, React Query IndexedDB persistence and the queued offline check-off are all in. THE DESIGN
+IS DECIDED — docs/design/surfaces/pwa/directions.dc.html, three artifacts locked, one CUT, one collapsed —
+so nothing is blocked and there is no URL to ask me for. Build the three: (1) the ICON, replace
+src/assets/app-icon.svg with the Ember (orb at 54% of the 1024 artboard, centred, at rest, floor full
+bleed, §02's gradient verbatim, toque at EVERY size because an icon is one raster downsampled and dropping
+it at 60px means shipping two icons) and run `npm run icons`; the shipped one is a placeholder. (2) the
+LAUNCH SCREEN — light.HERO not light.ambient (§03 defines hero as "only where the orb is" and the splash IS
+nothing but the orb, so the brief was applying the wrong rule and the brief got amended), orb at 88, frozen
+at the top of the ember cycle, status bar + home indicator in, no spinner, no wordmark; iOS needs a real
+PNG per device size plus apple-touch-startup-image link tags. (3) the OFFLINE CLAUSE — offline is FOUR
+CHARACTERS appended to the Groceries count, `18 / 34 · offline`, meta type, caption colour, NO fill and NO
+border so law 05 never applies and there's nothing to tap or dismiss. ⚠️ It is far smaller than the scope
+doc assumed and the smallness IS the design: no banner, no strip, no per-row badge, no second sentence.
+Things offline genuinely breaks go PROVISIONAL (rgba(240,222,190,.09) fill, .2 line, #A29484 label) and
+keep their ORDINARY label — the header already said why. The queue is deliberately NOT counted, because a
+running tally invites worry about a promise the app has already kept. Flushing is ONE 180ms crossfade to
+`· sending` then a 180ms exit, never a loop, because only the chef loops. The resolution is an ABSENCE:
+nothing confirms, nothing lands, nothing needs dismissing. ⚠️ The tick must be PIXEL-IDENTICAL offline —
+same cream fill, same 120ms press, same dim-and-strike, no dashed box, no clock badge, no per-row anything;
+the queue is a fact about the app, not about the onion. The INSTALL PROMPT IS CUT, don't build it: two
+users, both told how to add it by hand, so an in-app prompt would spend the product's first act teaching a
+browser gesture the app isn't allowed to perform to an audience that already knows. THE ONE TO READ from
+the build: a service worker DOES NOT CONTROL THE PAGE THAT REGISTERS IT — that navigation is already in
+flight when register() runs, so the FIRST visit to a route never reaches the fetch handler and never gets
+cached, and the worker then activates reporting itself perfectly healthy holding NOTHING. Invisible in a
+browser tab; in an INSTALLED PWA it's the whole feature failing on the launch that matters most (install,
+open once, walk to the shop, dead page). OF1/OF2 caught it as ERR_FAILED; fixed by warming the four tab
+routes on activate through the same isCacheable gate. A second bug rode along that would have made the fix
+look like it hadn't worked: the fallback needs ignoreVary, because Next sets Vary on route responses and a
+warmed entry is a plain GET while a reload is a NAVIGATION. Caught by RUNNING THE SPECS, not by reading the
+code. Also carry: the queued check-off's "smaller half" is an ILLUSION not a lesser feature (persisting the
+query cache without the mutations persists onMutate's optimistic tick, so ticks survive a relaunch and are
+then wiped by the first server refetch — React Query persists paused mutations BY DEFAULT, so doing nothing
+was never neutral); persistence goes through SUPERJSON not JSON (grocery.current returns Drizzle rows whose
+createdAt/updatedAt are real Dates); and the persisted query set is an ALLOW-LIST per BUG-018's argument.
+⚠️ Residue: the app-kill replay path is verified by construction and unit guard, NOT by the suite —
+Playwright can't reproduce an iOS process kill, so it's the first thing to check on a real phone (concrete
+tap sequence in idea-backlog). ⚠️ Also filed by the design round and NOT to be solved by accident: a held
+tick that fails permanently is a CONFLICT, not an offline state — out of scope here, because the instinct
+is a red dot and that would put an error hue on the one screen the artifact exists to keep calm. Order
+after C is D then E then the two validation weeks; E0's trigger is D's observability landing, so D gates E.
+Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first (⚠️ scope-1F now has a Workstream E —
+in-app feedback capture, back in R1), give me the <=6-line scope check. maxDuration is CLOSED, BUG-042 is
+CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 is CLOSED as retired, the install
+prompt is CUT — don't reopen any of them. ⚠️ The E2E suite is ~18 MINUTES (136 specs, measured) — tell me
+before you start it, don't run it while I'm using the app, and never pipe it through tail (it swallows the
+exit code; read the summary line). Owed by me: whether 32px reads right for the Recipes and Groceries
+titles on my phone, and whether the grocery quantity editor's ~5px of headroom bothers me. On Opus 4.8.
 ```
 
-**Design-independent alternative** (take this if the Claude Design round still isn't done — it moves D
-ahead of C's design half, which reverses nothing important since the two are independent):
+**Design-independent alternative** (the design round is done, so this is now purely an ordering choice —
+take it if you'd rather have production readiness before the three visual builds):
 ```
-Resume meal app — S60 shipped 1F/C's whole non-visual half (service worker, app-shell cache, React Query
-IndexedDB persistence, queued offline check-off). 739 unit + OF1-OF4 green on branch
-session-60-1f-workstream-c, lint + typecheck clean, /visual-qa 0/0. Skip C's four design artifacts this
-session (I haven't finished the Claude Design round) and take Workstream D, production readiness, instead —
-it needs no design pass at all. Four parts: (1) the security review of the full surface + a rate-limiting
-audit, which is the reason to consider a higher model, and ⚠️ it now has a new subject: the service worker
-and the offline cache. The shell HTML is SERVER-RENDERED with the household's real content baked in, and
-the persisted query cache holds the grocery list — both live in unencrypted on-device storage, both are
-cleared on sign-out by clearOfflineState(), and that path deserves a real look rather than my word for it.
-(2) the migration-safety discipline agreed in S54 — expand/contract written into the drizzle rule, a
-migrations.test.ts destructive-SQL guard in this repo's source-scraping idiom, and a pg_dump before any
-acknowledged-destructive migration, because drizzle-kit generate cannot tell a rename from a drop-plus-add
-and all 11 migrations have been additive by luck, not control; ⚠️ a staging DB was EXPLICITLY REJECTED so
-don't propose one; (3) observability — PostHog with the S9 event taxonomy plus Sentry, and ⚠️ the session-
-replay masking posture must INVERT the vendor default (mask everything, then unmask chrome — this app's
-sensitive material is rendered OUTPUT, not typed input); (4) BUG-044 (the dietaryFramework enum mismatch)
-rides with the security review. C's four design artifacts stay filed in scope-1F.md. maxDuration is CLOSED,
-BUG-042 is CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 is CLOSED as retired — don't
-reopen any of them. Read docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first, give me the
-<=6-line scope check, keep 739 unit green. ⚠️ The E2E suite is ~18 MINUTES (136 specs) — tell me before you
-start it and never pipe it through tail. Owed by me: whether 32px reads right for the Recipes and Groceries
-titles on my phone. Consider Opus 4.9+ for the security half.
+Resume meal app — S60 shipped 1F/C's whole non-visual half and the design round landed. 739 unit + 136 E2E
+green on main, lint + typecheck clean, /visual-qa 0/0. Skip C's three remaining builds this session (icon,
+launch screen, offline clause — all specified to exact values in docs/design/surfaces/pwa/directions.dc.html,
+nothing blocked) and take Workstream D, production readiness, instead. Five parts now: (1) the security
+review of the full surface + rate-limiting audit, and ⚠️ it has a NEW subject as of S60: the offline cache.
+The shell HTML is SERVER-RENDERED with the household's real content baked in, and the persisted query cache
+holds the grocery list — both sit in unencrypted on-device storage, both are cleared on sign-out by
+clearOfflineState(), and that path deserves a real look rather than my word for it. The persisted set is
+already an allow-list for exactly this reason; verify it's actually closed. (2) migration safety per S54 —
+expand/contract into the drizzle rule, a migrations.test.ts destructive-SQL guard in this repo's
+source-scraping idiom, and a pg_dump before any acknowledged-destructive migration, because drizzle-kit
+generate cannot tell a rename from a drop-plus-add and all 11 migrations have been additive by luck, not
+control; ⚠️ a staging DB was EXPLICITLY REJECTED so don't propose one. (3) observability — PostHog with the
+S9 taxonomy plus Sentry plus session replay, and ⚠️ the masking posture must INVERT the vendor default (mask
+everything, then unmask chrome — this app's sensitive material is rendered OUTPUT, not typed input). ⚠️ This
+part also GATES Workstream E: E0's trigger is D's observability landing, because E's metadata payload is a
+join against PostHog + Sentry + replay. (4) my wife's account on prod with FULL DEV_TOOLS_EMAILS, identical
+to mine, before the validation weeks — five minutes, not an event to stage; she's a software engineer who's
+sat beside me for much of this build and she'll test as aggressively as I do. R1 has NO cold user; don't
+reintroduce that premise. (5) BUG-044 rides with the security review. C's three builds stay filed. Read
+docs/whats-next.md, docs/scope-v1.md and docs/scope-1F.md first (⚠️ scope-1F now has a Workstream E — in-app
+feedback capture, back in R1 after being cut by a bundling error), give me the <=6-line scope check, keep
+739 unit green. maxDuration is CLOSED, BUG-042 CLOSED as won't-do, the non-prod Supabase project closed NO,
+gate 1 CLOSED as retired, the PWA install prompt CUT — don't reopen any. ⚠️ The E2E suite is ~18 MINUTES
+(136 specs) — tell me before you start it and never pipe it through tail. Owed by me: whether 32px reads
+right on my phone. Consider Opus 4.9+ for the security half.
 ```
 
 ---
