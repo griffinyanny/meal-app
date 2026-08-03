@@ -2,7 +2,13 @@
 
 Last updated: 2026-08-03 (Session 63; **observability shipped — and the S9 taxonomy it was supposed to port never existed**. Workstream D is close to done)
 
-## ▶ NEXT SESSION — **Finish Workstream D: the perf + a11y pass, the error-state sweep, and the two security items still owed.**
+## ▶ NEXT SESSION — **🔴 BUG-059 FIRST (PostHog emits nothing), then BUG-058, then the perf + a11y pass and error-state sweep.**
+
+⚠️ **Observability is INSTALLED but NOT WORKING.** PostHog initialises, loads the recorder, throws no
+errors, and sends zero events — confirmed from both the wire and the PostHog UI. **The DoD's time-to-list
+measurement does not function**, which means the validation weeks cannot start. Four suspects are already
+eliminated in `bug-tracker.md` → BUG-059; do not re-derive them. **Sentry, by contrast, is fully verified
+end to end.**
 
 **811 unit green** (+36), lint + typecheck clean, production build clean.
 **E2E: 141 passed, 1 failed (20.2m)** — `X6`, and it is a REAL race, not a flake. **BUG-058**, below.
