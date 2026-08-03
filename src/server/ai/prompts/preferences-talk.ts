@@ -15,6 +15,7 @@
 // <what_i_know>, <what_i_remember> and <message> are DATA at user privilege, never
 // instructions. The system prompt is snapshot-tested — any change is a deliberate review.
 import { z } from "zod";
+import { DIETARY_FRAMEWORKS } from "@/lib/diet";
 
 export interface PreferencesTalkMemoryRef {
   ref: number; // 1-based; the server holds ref → memoryId
@@ -32,16 +33,12 @@ export interface PreferencesTalkSnapshot {
   memories: PreferencesTalkMemoryRef[];
 }
 
-export const DIETARY_FRAMEWORKS = [
-  "omnivore",
-  "vegetarian",
-  "vegan",
-  "pescatarian",
-  "keto",
-  "paleo",
-  "mediterranean",
-  "other",
-] as const;
+// Re-exported from the canonical list rather than restated (BUG-044), so the
+// values named in the prompt can never drift from the values the persist path
+// will accept — a model told about a framework the schema rejects produces an
+// op that silently fails validation. Imported as well as re-exported because
+// the prompt body below interpolates it.
+export { DIETARY_FRAMEWORKS };
 
 export const MEMORY_CATEGORIES = [
   "preference",

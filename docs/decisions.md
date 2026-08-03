@@ -4,6 +4,42 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-03 (S62) — Three technical calls, two of them deviations from a written recommendation
+
+**1. The capture runner resets the CLIENT between states, and the order is the fix.**
+BUG-053's cause was that `seedGroceryState` resets the server while nothing reset the browser, and since
+PR #25 the browser carries a query cache persisted to IndexedDB. The obvious fix — clear IndexedDB before
+each state — is a **race**: the previous page is still live during the seed, and a refetch it left in
+flight re-persists over the clear. (That is not hypothetical; it is precisely what produced the empty-list
+half of the bug.) So the sequence is **`about:blank` → clear over CDP → seed → navigate**: destroying the
+page first is what makes the clear final, and it is S57's *fix a race by construction, not by lengthening
+a wait*. Rejected alternatives: a fresh `BrowserContext` per state (correct but a rewrite of the runtime
+and every capture file), and lowering `staleTime` (a product change to serve a test).
+
+⚠️ **`actionTimeout` is set at the capture PROJECT level, not on the one `.click()` the bug named.** The
+harness has always set `navigationTimeout` and never `actionTimeout`, so every action in every capture
+state inherited none. Fixing the named call site would have left the class. The behavior suite is
+deliberately **not** changed — its 30s test budget already bounds an untimed action, and it is not what
+broke.
+
+**2. BUG-044's boundary COERCES rather than rejects — a deviation from the tracker's own recommendation.**
+The row says to narrow `interviewStateSchema.dietaryFramework` to the enum. Applied literally that turns
+an unrecognised value into a **400 on the whole `finishOnboarding` call** — the final step of an interview
+that fires exactly **once per account** — to protect a field that path never persists. `asDietaryFramework`
+fails safe instead, and the parsed type is `DietaryFramework | null` either way, which was the actual
+complaint. **Fifth session running where the parked recommendation was the thing to distrust**, and the
+first where it was distrusted for its *blast radius* rather than its correctness.
+
+**3. `migrations.test.ts`'s patterns come from measuring the eleven existing migrations, not from the four
+statements the scope doc named.** `0002_rls.sql` carries **eleven** `DROP POLICY IF EXISTS` and `0010`
+carries an `ALTER COLUMN … DROP DEFAULT` — both harmless, both matched by a naive `/DROP/` guard. A guard
+red on day one teaches you to edit the expectation (S59), so the exemptions and their reasons are written
+into the file rather than discovered later. Two expand/contract patterns were **added** beyond the scope
+doc's list (`ADD COLUMN … NOT NULL` with no `DEFAULT`, `ALTER COLUMN … SET NOT NULL`) because both abort
+against a table that already has rows, which on Supabase Free means a half-applied deploy on real data.
+
+---
+
 ## 2026-08-02 (S61) — Three deviations from a locked artifact, each because the artifact's own goal required it
 
 The S60 design round locked three artifacts to exact values, and building them produced three places where

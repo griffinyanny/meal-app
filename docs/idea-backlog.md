@@ -1,5 +1,17 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S62) — surfaced during the 1F/D security review
+
+- **[1F/D or V1.5] `/api/plan/stream` hand-rolls `aiProcedure`'s entire check chain, and nothing keeps
+  them in step.** The route is a Next handler, not a tRPC procedure, so it cannot use the middleware —
+  and it correctly reimplements all five checks in the right order (`getUser` → `isEmailAllowed` →
+  household membership → per-minute rate limit → daily budget). **No defect today; verified line by line.**
+  The risk is structural: a sixth check added to `init.ts` lands in every procedure and silently misses the
+  single most expensive endpoint in the product. **One object, two answers** — the shape that produced
+  BUG-050. Cheapest fix is an exported `assertAiCaller(ctx)` both call, or failing that a comment in
+  `init.ts` naming the route as the other implementation. Not worth a sweep for one route; worth naming
+  before there are two.
+
 ## Incoming (S61) — surfaced building C's three design artifacts
 
 - **Put the held ticks behind the count as a tap target, if the queue ever needs inspecting.** The design

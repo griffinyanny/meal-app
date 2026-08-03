@@ -1,8 +1,212 @@
 # What's Next
 
-Last updated: 2026-08-02 (Session 61; **Workstream C is CODE-COMPLETE** — the three locked design artifacts are built. Only the two-phone check remains in C)
+Last updated: 2026-08-03 (Session 62; **BUG-053 fixed and the Groceries gate can see again** — 55 capture states green across all five surfaces. Workstream D is part-done)
 
-## ▶ NEXT SESSION — **Workstream D, production readiness. C is done except Griffin's phones.**
+## ▶ NEXT SESSION — **Finish Workstream D: observability (which gates E), then the a11y + error-state sweep.**
+
+**775 unit green** (+17), lint + typecheck clean, **`/visual-qa` capture: 6 files, 55 states, all `ok`**.
+**1F has the rest of D, then E, then the two validation weeks.**
+
+### ⛔ THE ONE TO READ — the seed reset the SERVER, and nothing had ever reset the CLIENT
+
+**BUG-053 is closed, and the filed prime suspect was wrong.** The tracker named the **service worker**;
+navigations are network-first, so the SW was never serving stale HTML. The real cause: the capture runner
+drives **one page** through every state, and since PR #25 that page carries a React Query cache persisted
+to IndexedDB with **`staleTime: 30_000`**. Every `goto` restored the *previous* state's `grocery.current`,
+found it fresh, and never refetched.
+
+⚠️ **One number explained all of it, including the two halves that looked like different bugs.** Instrumenting
+rather than reasoning is what showed it — per-state timing plus a dump of what the page was *actually*
+displaying, which came back as the previous state's items **by name**:
+
+| state | age of cached data | what rendered |
+|---|---|---|
+| 2, 3 | < 30s | **state 1's list, verbatim** — timed out waiting for copy that was never coming |
+| 4 | > 30s | stale → refetched → correct |
+| 5, 6, 7 | < 30s | an **empty** list: state 4's `setOrganizeMode` invalidate fired a refetch nobody awaited, and it landed inside the next seed's `wipe()` window |
+| 8, 9 | > 30s | stale → refetched → correct |
+
+**Fixed by construction, never by lengthening a wait** (S57's rule). Before each state the runner goes to
+`about:blank` — which *destroys the live page*, so no in-flight refetch and no pending persist write can
+land on top of what we are about to clear — then clears the origin's IndexedDB over CDP, then seeds.
+Order is the whole fix.
+
+⚠️ **The force-failure had five subjects and needed no planting:** the five red states went green, and
+`grocery-generating` / `grocery-error` now pass by matching **their own** seeded copy, which a stale cache
+could not have produced. Run time went from a 120s death with no manifest to **48s, 9/9 ok**.
+
+**Two apparatus fixes rode along, and one is bigger than it was filed as.** The harness sets
+`navigationTimeout` and has **never** set `actionTimeout` — so *every* `.click()` in *every* capture state
+inherited no timeout, not just the one in the bug. Set at the **capture project level** rather than per
+call site, so a state written later cannot reintroduce it. And the manifest is now written **before and
+after every state**, with an `in-flight` placeholder in between, so a hard test timeout leaves a record
+naming exactly which state was running.
+
+### ⛔ AND THE SECURITY REVIEW'S FIRST FINDING WAS THAT ONE OF ITS OWN SUBJECTS IS FALSE
+
+`scope-1F.md`, `whats-next.md` and the S61 kickoff prompt all state that the offline cache holds *"the
+shell HTML, SERVER-RENDERED with the household's real content baked in."* **It does not.**
+
+Measured rather than read: fetched all four cacheable routes with a real session, once against an **empty**
+household and once against a **fully seeded** one. **Byte-identical MD5s.** No household strings, no uuids,
+no tokens. All four tab routes are thin server components wrapping `"use client"` children that fetch over
+tRPC **POST** — which is the exact reason `persister.ts` has to exist at all, and that sentence is written
+in the file.
+
+⚠️ **The claim was written once in S60 and copied verbatim into three docs**, where it became a named
+subject of a security review nobody had checked it against. **Fourth instance of that pattern** — after the
+cold-user premise, the feedback-capture bundling, and §09's stale four-controls sentence. What survives is
+real and smaller: the **IndexedDB** half genuinely holds the grocery list in cleartext, and its allow-list
+is genuinely closed (verified: `grocery.current` + `staples.list`, fail-closed by construction).
+
+⚠️ **I nearly recorded a false negative on this.** The first fetch came back clean — but the capture's
+`afterAll` had just wiped the household, so "no garlic in the HTML" proved nothing. The seeded re-run is
+the measurement; the first one was an empty room.
+
+### ✅ What shipped
+
+- **BUG-053 🔴 CLOSED** — above. Full capture suite re-run: **6 files, 55 states, every one `ok`**, no
+  regression on plan / recipes / you / onboarding from the reset.
+- **BUG-044 🟡 CLOSED**, and it was **five** definitions of the dietary-framework domain, not the two the
+  row named. One canonical `src/lib/diet.ts`; the persist enum is built from it and the prompt imports it;
+  both `DIET_LABEL` maps typed `Record<DietaryFramework, string>` so a ninth framework is a **compile
+  error**. ⚠️ **BUG-013 had been fixed at one call site of four** — the identical `DIET_LABEL[x] ?? x` echo
+  survived at two more in `synthesize.ts` and one in `caught.ts`, and **`caught.ts`'s runs server-side**.
+- **Migration safety — the discipline and the guard.** Expand/contract written into
+  `.claude/rules/drizzle-schema.md` with the `pg_dump` command, and a new
+  **`src/server/db/migrations.test.ts`** scraping every `migrations/*.sql`. **Verified in all three
+  directions:** red on 7 planted offences, silent on the two lookalikes that must NOT trip it
+  (`DROP POLICY IF EXISTS` ×11 and `ALTER COLUMN … DROP DEFAULT`, both real and both harmless), green once
+  acknowledged, green on the real 11.
+- **775 unit green** (+9 migration guard, +8 diet domain), lint + typecheck clean.
+
+### ⚠️ Filed rather than fixed — three, and two want your call
+
+- **BUG-054 🟠 — Groceries renders NO heading at all in its generating, error and no-list states.** The
+  tab's only `<h1>` lives in `grocery-list-header.tsx`, which renders on the **ready path only**. So those
+  screens are a floating card on an unlabelled page, with **no `<h1>` in the document** — an outline gap on
+  a surface D's a11y pass is chartered to sweep. **BUG-028's exact defect on a different tab**: S44 fixed
+  it on Plan and nobody asked whether Groceries had the same hole. ⚠️ **It was invisible because those two
+  states had never once been captured successfully** — the first successful frames in the project's
+  history are the ones that found it. Fix is to lift the **title block only** out of `GroceryList`, not to
+  render the whole header (the progress bar, count, toggle and Copy are meaningless with no list, and law
+  05 would then have controls that do nothing). **Your call — it changes two screens.**
+- **BUG-055 🟠 — `clearOfflineState()` has one call site, and it is the one sign-out that is not a
+  revocation.** Only the You-tab button calls it. `auth/callback`, `auth/rejected` and plain session expiry
+  do not, so removing an account from `ALLOWED_EMAILS` signs it out server-side while the phone keeps the
+  grocery list in cleartext IndexedDB. Recommended fix is narrow: clear from `/no-access`. ⚠️ **Not from
+  `/login`** — a session lapsing mid-shop bounces there, and clearing would destroy queued ticks that had
+  not flushed. That is data loss to fix a disclosure on the user's own locked device.
+- **BUG-051 was allocated twice.** S61 spent an id S60 had already used (the service-worker warming bug,
+  resolved). The open offline-add row is renumbered **BUG-056**; the resolved one keeps `BUG-051`. Second
+  instance of the S48 collision, same cause: **an id allocated by reading the Open table rather than the
+  whole file.**
+
+### ⭐ The security review's one recommendation for you, and it is one env var
+
+**Prod signup is open to any Google account that finds the URL, and each new account carries a 150-call/day
+budget on your OpenAI key.** That is the deliberate S49 state — both gates unset, `robots.txt` + `noindex`
+keeping the URL unfound — and I am not relitigating "no closed beta", which is a different question.
+
+**But "no beta" and "open signup" are not the same decision, and only the first one was made.** You are
+about to create your wife's account in D anyway. Setting `ALLOWED_EMAILS` to exactly your two addresses at
+the same moment costs one env var, no code diff, and it is the seam S43a already built and tested. It
+bounds both the AI spend and the PII exposure for the two validation weeks, and going public later is
+deleting the variable.
+
+⚠️ **The one real cost, stated:** `isEmailAllowed` returns true when the list is empty, so a typo that
+empties the var silently opens the app rather than locking you out — which is the deliberate default
+(`access.ts` argues it, and the argument is right). So the failure mode of setting it is "it quietly stops
+working", not "we get locked out."
+
+### What Workstream D still owes — honest split
+
+| Part | State |
+|---|---|
+| **(1)** Security review | **Part done.** Covered: authz + IDOR sweep across every router (clean — the one unscoped-looking update re-reads household-scoped first), rate limiting (`aiProcedure` + the hand-rolled duplicate in `/api/plan/stream`, correct and in the right order), SSRF on URL import (thorough — protocol allow-list, v4/v6/mapped IP checks, per-hop redirect re-validation, documented DNS-rebinding limit), the access gates, the offline cache, BUG-044. **Not covered: prompt-injection review, secrets audit.** ⚠️ **RLS is not on that list and the reason is worth carrying:** `rls.test.ts` already statically proves every table in the migration chain has `ENABLE ROW LEVEL SECURITY` + a policy. What is *unverified* is whether the app's own Drizzle connection is subject to those policies at runtime at all — if its role bypasses RLS, then **`protectedProcedure`'s `householdId` and the explicit `where` clauses are doing 100% of the enforcement** and RLS is defence-in-depth for a path nothing takes. That scoping is complete (swept every router this session, zero unscoped reads). The open item is to **state which layer is actually load-bearing** rather than assume both are. |
+| **(2)** Migration safety | ✅ **Done** — rule + guard + `pg_dump` discipline. BUG-056 is its first real subject and is **not** fixed (it needs the idempotency-key column + unique index + migration). |
+| **(3)** Observability | ❌ **Not started.** PostHog + S9 taxonomy + Sentry + session replay with the **inverted** masking posture. **This is what gates Workstream E.** |
+| **(4)** Wife's account on prod | ❌ **Yours** — five minutes, full `DEV_TOOLS_EMAILS`, no carve-out. Pair it with the `ALLOWED_EMAILS` call above. |
+| **(5)** BUG-044 | ✅ **Done.** |
+| Perf + a11y pass, error-state sweep | ❌ Not started. BUG-054 lands here. |
+
+### ⚠️ Owed by Griffin — the three from S61, unchanged, plus two calls
+
+1. ⭐ **THE TWO-PHONE CHECK. Still the only thing left in Workstream C.** The Ember icon on the home
+   screen, the launch screen (floor, wash, orb — no white flash), full-screen with no Safari chrome, and
+   sign-in surviving installation. ⭐ **And the app-kill replay, which no automated layer can reach:** tick
+   two items in airplane mode, **force-quit from the app switcher**, relaunch still offline, confirm the
+   ticks are there, then re-enable signal and confirm they reach the server.
+2. **The 32px titles**, still open from S59. Open Recipes and Groceries and say whether 32 reads right.
+3. **The quantity editor's ~5px of headroom** (polish, not gating).
+4. 🆕 **`ALLOWED_EMAILS`** — set it to your two addresses when you create your wife's account?
+   `open-questions.md` #1 carries the argument and the one real cost.
+5. 🆕 **BUG-054** — does the Groceries title-block fix ship with the a11y sweep? `open-questions.md` #2.
+
+*(B2's bottom-edge check is still worth a tap in the same pass.)*
+
+### ⭐ Model recommendation: **Opus 4.9+** for the next session.
+
+Observability is a taxonomy design plus a masking posture that has to invert a vendor default — the
+judgement half of D, and the part that gates E. Not construction against a known target.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S62 fixed BUG-053 and opened Workstream D. 775 unit green, lint + typecheck clean, and
+/visual-qa capture is 6 files / 55 states / ALL OK across every surface — the Groceries gate can see again
+for the first time since the service worker landed. THE ONE TO READ: the filed prime suspect (the service
+worker) was WRONG — navigations are network-first so it was never serving stale HTML. The real cause is
+that the capture runner drives ONE page through every state and the seed reset the SERVER while nothing
+ever reset the CLIENT: since PR #25 that page carries a React Query cache persisted to IndexedDB with
+staleTime 30_000, so each goto restored the PREVIOUS state's grocery.current, found it fresh, and never
+refetched. ONE NUMBER explained every symptom including the two that looked like different bugs (states 2-3
+showed state 1's list verbatim; states 5-7 showed an EMPTY list because state 4's setOrganizeMode
+invalidate fired a refetch nobody awaited and it landed inside the next seed's wipe() window). Found by
+INSTRUMENTING not reasoning — per-state timing plus a dump of what the page was actually showing, which
+came back as the previous state's items BY NAME. Fixed by construction: about:blank first (destroying the
+live page so no in-flight refetch can land on the clear), then clear IndexedDB over CDP, then seed. Also
+carry: a DOCUMENTED SECURITY SUBJECT WAS FALSE — three docs said the offline shell HTML is server-rendered
+with the household's content baked in, and it is byte-identical MD5s between an empty household and a
+seeded one, because every tab route is a thin server component wrapping a use-client child fetching over
+tRPC POST (which is the whole reason persister.ts exists). Fourth instance of a claim written once and
+repeated until it read as established. AND I NEARLY RECORDED A FALSE NEGATIVE ON IT: the first fetch came
+back clean but the capture's afterAll had just wiped the household, so an absence measured against an empty
+room is not an absence. NOW FINISH WORKSTREAM D. (3) OBSERVABILITY IS THE PRIORITY AND IT GATES WORKSTREAM
+E — PostHog with the S9 taxonomy plus Sentry plus session replay, and ⚠️ the masking posture must INVERT
+the vendor default (mask everything, then unmask chrome — this app's sensitive material is rendered OUTPUT,
+not typed input); confirm the free-tier recording quota at build time rather than assuming it; and the
+time-to-list instrumentation (an event at intent-submit and one at list-ready) is what the DoD's "<10
+minutes on a real week" needs before the validation weeks count. Then the PERF + A11Y pass and the
+ERROR-STATE SWEEP, which is where BUG-054 lands. Already DONE, don't redo: migration safety (expand/contract
+in .claude/rules/drizzle-schema.md, migrations.test.ts verified red on 7 planted offences and silent on the
+two lookalikes that must not trip it, pg_dump discipline) and BUG-044 (five definitions of the diet domain
+collapsed into src/lib/diet.ts; ⚠️ BUG-013 had been fixed at ONE call site of FOUR, and caught.ts's runs
+SERVER-SIDE). Security review is PART done — authz/IDOR across every router, rate limiting, SSRF, the
+access gates, the offline cache. STILL OWED: prompt-injection review, RLS verification, secrets audit.
+⚠️ Two calls are mine and are in open-questions.md: whether ALLOWED_EMAILS gets set to our two addresses
+when my wife's account is created (prod today takes any Google account that finds the URL, each carrying
+150 AI calls/day on my key — "no closed beta" and "open signup" are not the same decision and only the
+first was made), and whether BUG-054's fix ships. ⚠️ BUG-056 (renumbered from BUG-051, which had been
+allocated twice) is the offline-add defect and needs a client IDEMPOTENCY KEY — a column, a unique index
+and a migration, i.e. migrations.test.ts's first real subject; do NOT "fix" it by making the add field
+provisional offline, the locked design frame says adding still works. Read docs/whats-next.md,
+docs/scope-v1.md and docs/scope-1F.md first, give me the <=6-line scope check, keep 775 unit green.
+maxDuration is CLOSED, BUG-042 CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 CLOSED
+as retired, the PWA install prompt CUT — don't reopen any. ⚠️ The E2E suite is 18+ MINUTES (139 specs) —
+tell me before you start it, don't run it while I'm using the app, never pipe it and never redirect it into
+test-results/ (Playwright wipes that directory at startup); run it with run_in_background and NO redirect
+and read the summary line from the task's own output file. Owed by me: the two-phone check (icon, launch
+screen, full-screen, sign-in surviving install, and the app-kill replay), whether 32px reads right for the
+Recipes and Groceries titles, and whether the grocery quantity editor's ~5px of headroom bothers me.
+Consider Opus 4.9+ — observability is a taxonomy design plus a masking posture that has to invert a vendor
+default, not construction against a known target.
+```
+
+---
+
+## ⚠️ S61 — the three locked design artifacts (superseded by S62 above)
+
+## ▶ S61's handoff — **Workstream D, production readiness. C is done except Griffin's phones.**
 
 **758 unit + 139 E2E green** (18.2 min, measured), lint + typecheck clean. Work on
 `session-61-1f-c-design-artifacts`.

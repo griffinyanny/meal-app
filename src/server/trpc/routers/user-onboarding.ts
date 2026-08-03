@@ -23,6 +23,7 @@ import {
 } from "@/server/db/schema";
 import { householdCompositionSchema } from "@/lib/household";
 import { synthesizeMemories } from "@/lib/onboarding/synthesize";
+import { asDietaryFramework } from "@/lib/diet";
 
 // BUG-013 · `memory` and `dimension` are DELIBERATELY absent. Both are
 // derivations the client happens to hold, and both are recomputed server-side
@@ -41,15 +42,24 @@ const deepAnswerSchema = z.object({
 // The array fields reuse the SAME schemas `user.updatePreferences` enforces
 // rather than restating their bounds a second time.
 //
-// `dietaryFramework` stays a bounded string, even though the persist path
-// restricts it to an enum, because narrowing it here means moving the framework
-// list into a shared pure module and re-typing the client's `InterviewState` —
-// scope this fix does not need. Nothing here PERSISTS the field: it is read only
-// by `synthesizeHeadlineMemory`, which now drops a framework it does not
-// recognise instead of echoing it back as memory text. Logged as BUG-044.
+// ⚠️ `dietaryFramework` is now COERCED to the domain rather than accepted as a
+// bounded string (BUG-044, closed in 1F/D). The list lives in `@/lib/diet` and
+// the persist path's enum is built from it, so the two boundaries can no longer
+// disagree about what a framework is — which is how BUG-013's echo got there.
+//
+// Coerced, not rejected, and that is a deliberate deviation from the tracker's
+// recommendation ("narrow it to the enum"). Applied literally, an unrecognised
+// value would 400 the whole `finishOnboarding` call — the LAST step of an
+// interview that fires exactly once per account — to protect a field this path
+// never persists. `asDietaryFramework` fails safe instead, and the parsed type
+// is `DietaryFramework | null` either way, which was the actual complaint.
 export const interviewStateSchema = z.object({
   composition: householdCompositionSchema.nullable(),
-  dietaryFramework: z.string().max(30).nullable(),
+  dietaryFramework: z
+    .string()
+    .max(30)
+    .nullable()
+    .transform((v) => asDietaryFramework(v)),
   restrictions: restrictionsSchema,
   maxCookTimeWeeknight: z.number().int().min(5).max(300).nullable(),
   cuisinePreferences: cuisinePreferencesSchema,

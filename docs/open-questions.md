@@ -6,6 +6,48 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
+### 1. Should `ALLOWED_EMAILS` be set to the two real addresses for the validation weeks? (S62, 1F/D security review)
+
+**Recommendation: yes, at the same moment the wife's account is created.** One env var, no code diff, and
+it is the seam S43a already built and tested.
+
+⚠️ **This is NOT a reopening of the closed-beta decision.** That question — *do we recruit testers beyond
+the two of us* — is closed **NO** and stays closed. This is a different one that was never separately
+asked: **"no beta" and "open signup" are not the same decision, and only the first was made.**
+
+**The state today, verified rather than assumed:** both gates unset, `disable_signup: false`, `google:
+true`. So **any Google account that finds the URL gets an account**, and each one carries a **150 call/day**
+budget on Griffin's OpenAI key (`AI_DAILY_BUDGET`, enforced in Postgres per user). `robots.txt` +
+`X-Robots-Tag: noindex` are what keep the URL unfound — obscurity, which is the deliberate S49 posture and
+was proportionate when the app held less.
+
+**What changed since S49 to make it worth re-asking:** the two validation weeks put a real household's
+dietary and health answers, children's ages, memories and weekly spend into prod, and D is about to add
+**session replay**. And the wife's account has to be created anyway, so the marginal cost of naming two
+addresses instead of zero is one env var typed once.
+
+⚠️ **The one real cost, stated plainly:** `isEmailAllowed` returns **true** on an empty list, so a typo
+that blanks the variable silently opens the app rather than locking anyone out. That default is deliberate
+and `access.ts` argues it correctly (a fail-closed default would lock Griffin out of production on a typo,
+which is both likelier and worse). It means the failure mode of setting this is *"it quietly stops
+working"*, not *"we get locked out"* — worth knowing, not a reason against.
+
+**If no:** nothing breaks, and the position is unchanged from today. Record it as a decision either way, so
+the next security pass finds an answer rather than re-deriving the question.
+
+### 2. Does BUG-054's fix ship — lifting the Groceries title block out of `GroceryList`? (S62)
+
+**Recommendation: yes, with the a11y sweep, and lift the title block ONLY.** The Groceries tab currently
+renders **no heading at all** in its generating, error and no-list states, because its only `<h1>` lives in
+`grocery-list-header.tsx` and that renders on the ready path alone. It is BUG-028's exact defect on a
+different tab, plus an `<h1>`-less document on a surface D's a11y pass is chartered to sweep.
+
+⚠️ **It is Griffin's call because it changes two screens**, and 1F's own rule is that this phase is not a
+redesign. The argument that it is in-scope: S44 treated the identical hole on Plan as a bug and fixed it,
+the fix reuses type that already exists, and D already owns *"every surface has a fallback with a retry,
+not a blank screen."* ⚠️ **Do not render the whole header** — its progress bar, count, organize toggle and
+Copy are meaningless with no list, and law 05 would then have controls that do nothing.
+
 > **✅ Nothing is pending here as of S55.** **The one thing still owed by Griffin on 1F is not a decision but
 > an observation he has to make himself:** B2's phone check, whether S28's density complaint reads resolved
 > now that the toolbar deletion (1E.5) and the squared nav corners (S54) are finally on screen together.
