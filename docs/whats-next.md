@@ -157,52 +157,111 @@ expect a false red.**
 ### ▶ NEXT-SESSION KICKOFF PROMPT
 
 ```
-Resume meal app — S64 closed BUG-059, BUG-060 and the masking verification; BUG-058 is STILL OPEN and my
-fix was aimed at the wrong mechanism. 🔴 START WITH BUG-058, AND THE FIRST ACTION IS ONE FULL E2E RUN WITH NOTHING ELSE RUNNING — no vitest,
-no lint, no typecheck, no dev server. That single run decides whether this is a product bug at all.
-X6 fails identically after lifting the intent
-text into plan-page-client: `Send to chef` stays disabled for the full 30s because the field is empty. THE
-REMOUNT DIAGNOSIS FROM S63 IS NOT CONFIRMED AND MY FIX DID NOT ADDRESS THE REAL CAUSE — do not re-derive it
-from the code a third time. WHAT THE TRACE ACTUALLY SHOWS: the textarea was present in the post-`goto`
-snapshot, yet fill()'s locator took 125ms to resolve and the subsequent click's took 800ms — an element
-that stays put resolves instantly, so the tree is being replaced at least twice in the first second. X5 is
-BYTE-FOR-BYTE IDENTICAL to X6 in setup, fill and click and PASSES, so the trigger is load/timing, not the
-code path. X6 now carries a TEMPORARY diagnostic (tests/e2e/specs/error.spec.ts) logging a
-value/disabled/sameNode timeline — `sameNode` is an expando on the DOM node, so it proves remount vs state
-reset. ALREADY MEASURED, do not redo: error.spec.ts ALONE passes (7 passed, X6 healthy at every tick), and the
-EXACT full-suite prefix (cost+debug-hud+drawer+elapsed+error = the same 24 tests in the same order)
-ALSO passes in 3.1m. So it is NOT the preceding specs, NOT shared state, NOT a long-lived server. The
-only thing that differed in the failing run is that vitest/lint/typecheck were running CONCURRENTLY
-inside it — CPU contention, which is S53's 'never run two suites at once' in a costume nobody
-recognised. Then decide honestly whether this is a PRODUCT bug or a TEST-hygiene one: a real user types seconds
-after load, long past any remount window, and if the remount is inherent to page load then filling 15ms
-after goto is the test doing something no user does. That distinction is NOT the same as S57's "don't
-lengthen a wait" — waiting for the app to settle is legitimate; papering over a product defect is not.
-Remove the diagnostic when it closes. THEN the PERF + A11Y PASS (start it from BUG-060 — six components
-just changed their accessible names and that surface has never been swept) and the ERROR-STATE SWEEP, then
-BUG-057 (4 high-severity CVEs, Next 16.2.6 → 16.2.12, needs its own E2E run), then the prompt-injection
-review, secrets audit, and the RLS "which layer is load-bearing" statement. ✅ DONE AND VERIFIED, don't
-redo: BUG-059 was posthog-js's own bot filter (`capture()` skips the send when `_is_bot()`, which fires on
-`navigator.webdriver` OR a blocklisted UA — headless Playwright trips both; the gate is in capture(), NOT
-init(), which is why config/recorder/no-errors all looked healthy). No production code changed; the bot
-filter STAYS in prod. BUG-060 was session replay recording the grocery list, meal titles, recipe library
-and DIETARY CONSTRAINTS in the clear via aria-label — rrweb records attributes verbatim and exposes no
-attribute hook, and there is no central scrub point because snapshots are compressed before before_send.
-Fixed in 6 components (names now come from text nodes / aria-labelledby / sr-only verbs), verified at 0
-leaks across 157KB, guarded by src/lib/analytics/aria-leak.test.ts. ⚠️ THE MASKING HARNESS HAD BEEN
-VACUOUS TWO WAYS — URL-keyed gunzip that never fired (the /s/ request has no query string) and an outer
-JSON envelope whose every snapshot item is gzipped AGAIN inside it. Both fixed with guards. 🔴 OWED BY ME
-AND NOW BLOCKING: NEXT_PUBLIC_POSTHOG_KEY and NEXT_PUBLIC_SENTRY_DSN are NOT set in Vercel Production, so
-neither SDK has ever run there and "no events yet" was evidence of nothing. Sentry's DSN I can set anytime;
-the PostHog key waits until I've told my wife session replay exists. Also owed: ALLOWED_EMAILS, the
-two-phone check + app-kill replay, whether 32px reads right for the Recipes/Groceries titles, and whether
-the grocery quantity editor's ~5px headroom bothers me. ⚠️ E2E is ~20 MINUTES (142 specs) — tell me before
-starting it, never while I'm using the app, run it with run_in_background and NO redirect, never pipe it,
-never redirect into test-results/, and read the summary line from the task's own output file. Keep 815 unit
-green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md BUG-058 first, then give me the <=6-line
-scope check. Model: Opus 4.9+ — BUG-058 is a diagnosis problem where two readings of the code have now been
-wrong.
+Resume meal app — S64 closed BUG-059 and BUG-060 and finally verified the replay masking on a real
+recording. BUG-058 is STILL OPEN and my S64 fix was aimed at the wrong mechanism, so do not build on it.
+
+🔴 FIRST ACTION, BEFORE ANY CODE: run the FULL E2E suite with NOTHING else running — no vitest, no lint,
+no typecheck, no dev server, and confirm with me that I am not using the app. ~20 minutes. That single
+uncontaminated run decides whether BUG-058 is a product bug at all, and we do not have one yet: the S64 run
+that failed had vitest/lint/typecheck running CONCURRENTLY inside it, which is CPU contention and is S53's
+"never run two suites at once" in a costume nobody recognised.
+
+⚠️ ALREADY MEASURED — DO NOT REDO: error.spec.ts ALONE passes (7 passed, X6 healthy at every tick). The
+EXACT full-suite prefix — cost + debug-hud + drawer + elapsed + error, the same 24 tests in the same order
+X6 occupies in the full run — ALSO passes, 24 passed in 3.1m, X6 healthy at every tick. So it is NOT the
+preceding specs, NOT shared-state corruption, and NOT a long-lived server (X6 runs 2-3 minutes into the
+full run, not at minute 20).
+
+⚠️ THE DIAGNOSIS HAS BEEN WRONG TWICE AND BOTH TIMES BY READING CODE INSTEAD OF MEASURING. S63 read a
+remount off the source and filed it as the cause; S64 inherited that and shipped a fix for it that did not
+close X6. DO NOT PROPOSE A THIRD MECHANISM FROM THE SOURCE. X6 carries a temporary probe logging
+value/disabled/sameNode at +0/150/400/1000/2500ms — `sameNode` is an expando on the DOM node, so it
+separates a REMOUNT from a state reset on the same element.
+
+⭐ WHILE THAT RUN IS GOING, BUILD THE DIAL: add CPU throttling to X6 via CDP
+(`context.newCDPSession(page)` → `Emulation.setCPUThrottlingRate`). The harness ALREADY uses CDP (the
+BUG-053 fix clears IndexedDB that way), so this is an established pattern here, not a new one. The point is
+to stop this being a coin flip — right now the trigger is uncontrolled load, so a pass proves nothing and a
+failure is not reproducible. Throttling turns it into a dial and makes all three outcomes decidable:
+  - passes clean, FAILS at 4x throttle  → PRODUCT BUG. A real phone is a slow CPU. Fix the app.
+  - passes clean, passes at 4x, fails only under absurd contention → TEST ARTIFACT. Fix the spec, say so
+    plainly, close it. (That is NOT S57's "don't lengthen a wait" — that rule is about papering over a
+    defect, not about letting an app finish mounting.)
+  - FAILS on the clean run → contention theory is dead; read `sameNode` and it tells you what replaced the
+    tree.
+Any of those three is a resolution. A fourth session of "it passed this time" is not.
+Remove the probe when it closes.
+
+⚠️ What DID ship in S64 for BUG-058 is a real fix on its own terms and should be KEPT, it just is not this
+bug: the intent text now lives in plan-page-client (controlled), and the onboarding seed applies via a
+once-only ref-guarded effect — that pre-fill previously only worked when the plan query happened to lose a
+race to the handoff read.
+
+✅ DONE AND VERIFIED, do not redo. BUG-059 was posthog-js's own bot filter: `capture()` opens with
+`!config.opt_out_useragent_filter && this._is_bot()` and skips the send; `_is_bot()` fires on
+`navigator.webdriver` OR a blocklisted UA, and headless Playwright trips both independently. The gate is in
+capture(), NOT init() — which is why remote config, the recorder download and the total absence of errors
+all looked healthy, and why `/s/` died with `/i/v0/e/`. NO production code changed; the bot filter STAYS in
+prod (it also keeps Lighthouse and Vercel's screenshot bot out of the DoD numbers).
+BUG-060: session replay was recording the grocery list, the week's meal titles, the recipe library and my
+DIETARY CONSTRAINTS in the clear, via aria-label — rrweb records attributes verbatim, exposes no attribute
+hook at all, and there is no central scrub point because snapshots are compressed before before_send. Fixed
+in 6 components (names now come from text nodes / aria-labelledby / sr-only verbs), verified at 0 leaks
+across 157KB, guarded by src/lib/analytics/aria-leak.test.ts (force-failed to confirm it catches the real
+defect). ⚠️ The masking harness itself had been VACUOUS TWO WAYS — a URL-keyed gunzip that never fired (the
+/s/ request has no query string) and an outer JSON envelope whose every snapshot item is gzipped AGAIN
+inside it. Both fixed, with guards that fail on an undecoded body and on an expansion that stops expanding.
+
+▶ THEN, in order: the PERF + A11Y PASS (start it from BUG-060 — six components just changed their
+accessible names and that surface has never been swept), the ERROR-STATE SWEEP, then BUG-057 (4
+high-severity CVEs, Next 16.2.6 → 16.2.12, needs its own E2E run), then the prompt-injection review,
+secrets audit, and the RLS "which layer is load-bearing" statement. Then Workstream E.
+
+🔴 PRODUCTION IS STILL DARK AND BUG-058 IS WHAT IS BLOCKING IT. NEXT_PUBLIC_POSTHOG_KEY and
+NEXT_PUBLIC_SENTRY_DSN are now SET in Vercel Production (S64), but they are INERT: main has none of the
+observability code, because PR #28 is unmerged on a 141/142 suite with X6 red. So the merge — and therefore
+the DoD's time-to-list measurement, and therefore the validation weeks — is gated on the BUG-058 call above.
+Do NOT redeploy production before the merge; it would rebuild code that has no analytics in it.
+⚠️ SENTRY_AUTH_TOKEN is not set anywhere, so production stack traces will be minified. Build-time only,
+never reaches the bundle — worth generating in Sentry before the merge.
+
+STILL OWED BY ME: ALLOWED_EMAILS needs my wife's address added when her account exists (the var is already
+in Vercel from 5 days ago). The two-phone check + app-kill replay. Whether 32px reads right for the Recipes
+and Groceries titles, and whether the grocery quantity editor's ~5px headroom bothers me.
+
+⚠️ E2E is ~20 MINUTES (142 specs). Tell me before starting it, never run it while I am using the app, never
+run anything else alongside it, use run_in_background with NO redirect, never pipe it, never redirect into
+test-results/ (Playwright wipes that directory), and read the summary line — not the exit status — from the
+task's own output file.
+
+Keep 815 unit green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md BUG-058 first, then give
+me the <=6-line scope check.
+
+MODEL: stay on Opus 5. This is not a reasoning-horsepower problem — it is a measurement-discipline problem,
+and two wrong diagnoses both came from reading code instead of instrumenting. A second opinion
+(/codex-review) is worth spending only AFTER the clean run gives us a mechanism to argue about; asking for
+one now just multiplies theories, which is what got us here.
 ```
+
+### 🔴 S64 · PRODUCTION IS DARK, AND THE ENV VARS ARE NOT WHAT WAS BLOCKING IT
+
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` were **set in Vercel Production on 2026-08-03**,
+once Griffin confirmed his wife knows about session replay. `ALLOWED_EMAILS` was already there (5 days
+prior) and still needs her address added when the account exists.
+
+⚠️ **They are INERT, and the reason is worth stating plainly: `main` carries none of the observability
+code.** PR #28 is unmerged, so production has no `instrumentation-client.ts`, no `lib/analytics`, no
+`sentry-init` — the env vars are a prerequisite that will do nothing until the merge plus a production
+deploy. **Do not redeploy before the merge**; it would rebuild code with no analytics in it.
+
+⚠️ **So the DoD's time-to-list measurement, and therefore the validation weeks, are gated on BUG-058** —
+the only thing holding a 141/142 PR. That is a sharper dependency than "observability is built" implied,
+and it is why BUG-058 is the first action rather than the perf pass.
+
+⚠️ **`SENTRY_AUTH_TOKEN` is not set anywhere**, so production stack traces will be minified — readable, but
+pointing at `chunks/[root-of-the-server]__0p7j_.js:140:115362` rather than a filename. Build-time only and
+never reaches the bundle. Worth generating before the merge, or the first real production error is harder
+to read than it needs to be.
 
 ### ⚠️ Scaffolding status
 
