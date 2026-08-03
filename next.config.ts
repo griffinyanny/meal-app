@@ -36,45 +36,50 @@ const nextConfig: NextConfig = {
   },
 };
 
-// ⚠️ The wrapper is a BUILD-time concern and is deliberately conditional.
+// ⚠️ The wrapper ALWAYS runs; only the source-map upload is conditional.
 //
-// `withSentryConfig` adds a source-map upload step. Both Playwright suites run
-// `npm run build` inside their own webServer command — the behaviour suite
-// already costs ~19 minutes — and neither has (or should have) an auth token.
-// Without this guard the wrapper runs on every one of those builds, warns, and
-// buys nothing.
+// An earlier version made the whole wrapper conditional on `SENTRY_AUTH_TOKEN`,
+// which quietly coupled two unrelated things: `tunnelRoute` is a RUNTIME
+// ad-blocker mitigation and source-map upload is a BUILD-time convenience, and
+// tying them meant a production deploy without a token would silently have no
+// tunnel. Nothing would look wrong; error reports would just stop arriving from
+// anyone running a blocker.
 //
-// So the upload only engages where a token exists, which in practice is Vercel.
-// Everything else (dev, CI, both suites) gets the plain config, and the runtime
-// SDK still initialises wherever a DSN is set — the two are independent.
-const withSourceMaps = !!process.env.SENTRY_AUTH_TOKEN;
+// Upload engages only where a token exists (in practice, Vercel). Both
+// Playwright suites build without one and pay only for the wrapper itself.
+const uploadSourceMaps = !!process.env.SENTRY_AUTH_TOKEN;
 
-export default withSourceMaps
-  ? withSentryConfig(nextConfig, {
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      silent: true,
-      // Strip the maps from the client bundle after upload. Without this the
-      // full unminified source is served to anyone who opens devtools — and
-      // this app's client bundle contains the chef's prompt scaffolding and
-      // every access-gate code path.
-      sourcemaps: { deleteSourcemapsAfterUpload: true },
-      // ⚠️ `tunnelRoute` is deliberately NOT set, and this is the S59 finding
-      // applied before it could bite rather than after.
-      //
-      // It creates a same-origin route (`/monitoring`) that the browser POSTs
-      // error reports to, to dodge ad blockers. `src/proxy.ts` gates every
-      // path not on `isSignedOutReachable()`, and `/monitoring` would not be
-      // on it — so a report from a SIGNED-OUT browser would 307 to `/login`
-      // and Sentry would receive nothing. Errors on the login screen are
-      // exactly the ones worth having, and the failure is silent: the tell is
-      // "we get no errors from /login", which reads as "none happen there".
-      //
-      // That is the third time this exact shape has appeared in this app
-      // (`/manifest.webmanifest` twice in S59, `/robots.txt` before it), and
-      // the fix each time was a path added to a list nobody re-reads. At two
-      // users, ad-blocker evasion does not buy enough to add a fourth. Same
-      // call as PostHog's, so both vendors go direct and there is one rule.
-    })
-  : nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  // No token → nothing to upload, and the plugin must not try. With one, strip
+  // the maps from the bundle after upload: otherwise the full unminified source
+  // is served to anyone who opens devtools, and this client bundle carries the
+  // chef's prompt scaffolding and every access-gate code path.
+  sourcemaps: uploadSourceMaps
+    ? { deleteSourcemapsAfterUpload: true }
+    : { disable: true },
+  // Widens the set of client files uploaded, which is what makes a client stack
+  // trace resolve to real code instead of a minified chunk name.
+  widenClientFileUpload: uploadSourceMaps,
+  // ⚠️ REVERSED IN S63 after reading Sentry's own Next.js reference.
+  //
+  // This was originally left OFF, reasoning that a same-origin ingest route
+  // sits behind `src/proxy.ts` and would 307 signed-out error reports to
+  // `/login` — the S59 manifest bug a third time. That risk is real, but the
+  // conclusion was wrong: Sentry documents the proxy exclusion as a REQUIRED
+  // step, and this app already has the mechanism (`isSignedOutReachable()`,
+  // one line, already tested). A mitigable risk is not a reason to skip a
+  // feature; it is a reason to apply the mitigation.
+  //
+  // What changed the call: without the tunnel, an ad blocker silently drops
+  // error reports — and one of the two validation users is a software
+  // engineer who may well run one. Losing half the cohort's errors, silently,
+  // costs more than one entry on a list.
+  //
+  // ⚠️ `/monitoring` MUST stay on `isSignedOutReachable()`. `access.test.ts`
+  // pins it.
+  tunnelRoute: "/monitoring",
+});

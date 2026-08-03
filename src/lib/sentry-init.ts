@@ -36,10 +36,11 @@ export function initSentry(extra: Parameters<typeof Sentry.init>[0] = {}): void 
     // it. Without it every regression looks like it has always been there.
     release: process.env.VERCEL_GIT_COMMIT_SHA,
 
-    // Errors are the point. Performance tracing is a separate cost centre and a
-    // separate quota, and this app's latency questions are already answered by
-    // the taxonomy's own `duration_ms` fields on the calls that matter.
-    tracesSampleRate: 0,
+    // Sentry's Next.js guidance is 0.1 in production. At two users that would
+    // throw away nine of every ten traces for a quota concern that cannot bite
+    // (5M spans free), and the traces worth having are on the AI pipeline —
+    // exactly the slow, rare path a 10% sample is most likely to miss.
+    tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 1.0,
 
     // ⚠️ OFF. Sentry's own replay is a SECOND recorder with its OWN masking
     // defaults, and this project deliberately inverted PostHog's. Running both
@@ -49,11 +50,27 @@ export function initSentry(extra: Parameters<typeof Sentry.init>[0] = {}): void 
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 0,
 
-    // ⚠️ `sendDefaultPii` is false by DEFAULT in the SDK and is restated here
-    // because it is the one flag whose absence looks identical to its being
-    // considered. It would attach IP addresses, cookies and request bodies —
-    // and a request body on this app is an interview answer or a chef message.
-    sendDefaultPii: false,
+    // ⚠️ `dataCollection`, NOT `sendDefaultPii` — the latter is DEPRECATED in
+    // the installed SDK and removed in v11 ("Use the dataCollection option
+    // instead… If both are set, sendDefaultPii will be ignored"). Checked
+    // against the installed type definitions rather than remembered.
+    //
+    // Every category is turned OFF explicitly. This is the one block whose
+    // absence looks identical to its having been considered, and on this app
+    // each category is a real disclosure:
+    //   · userInfo    — IP address and user id
+    //   · cookies     — the Supabase session cookie, i.e. account takeover
+    //   · httpBodies  — a tRPC POST body here is an interview answer, a chef
+    //                   message, or the household's grocery list
+    //   · queryParams — `/invite?code=` carries the access-gate secret
+    dataCollection: {
+      userInfo: false,
+      cookies: false,
+      httpHeaders: { request: false, response: false },
+      // An empty target list = collect no bodies, in either direction.
+      httpBodies: [],
+      queryParams: false,
+    },
 
     ...extra,
   });
