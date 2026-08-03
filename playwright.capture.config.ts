@@ -37,7 +37,20 @@ export default defineConfig({
       testIgnore: /-live\.capture\.ts$/,
       // deviceScaleFactor 2: crisp enough to read titles/chips, ~half the pixels
       // of the behavior suite's 3x (bounds the cost of Claude reading the PNGs).
-      use: { storageState: STORAGE_STATE_PATH, deviceScaleFactor: 2 },
+      use: {
+        storageState: STORAGE_STATE_PATH,
+        deviceScaleFactor: 2,
+        // ⚠️ The harness sets `navigationTimeout` and has never set this one, so
+        // every `.click()` in every capture state inherits NO timeout. That is
+        // survivable in the behavior suite, whose 30s test budget bounds it
+        // anyway — here the budget is 120s for a whole surface, so one action
+        // waiting on an element that will never exist eats the entire run and
+        // the surface goes ungraded rather than reporting a failed state.
+        // BUG-053: `grocery-checked-gotit` clicked a row that was not there.
+        // Set at the project level rather than per call site, so a state added
+        // later cannot reintroduce it (the unnamed-rung argument, one layer out).
+        actionTimeout: 10_000,
+      },
     },
   ],
 });

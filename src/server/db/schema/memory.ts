@@ -13,17 +13,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { households, users } from "./households";
 import { z } from "zod";
+import { DIETARY_FRAMEWORKS } from "@/lib/diet";
 
-export const dietaryFrameworkSchema = z.enum([
-  "omnivore",
-  "vegetarian",
-  "vegan",
-  "pescatarian",
-  "keto",
-  "paleo",
-  "mediterranean",
-  "other",
-]);
+// Built from the canonical list rather than restating it (BUG-044). This is the
+// persist gate; `src/lib/diet.ts` says what the domain IS.
+export const dietaryFrameworkSchema = z.enum(DIETARY_FRAMEWORKS);
 
 export const restrictionsSchema = z.array(z.string().max(100)).max(50);
 export const dislikesSchema = z.array(z.string().max(100)).max(50);
