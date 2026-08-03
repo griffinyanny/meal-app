@@ -114,6 +114,29 @@ export function PlanPageClient() {
     enabled: seedRequest !== null,
   });
 
+  // ⚠️ BUG-058 · The intent field's text lives HERE, not in `NoPlanState`.
+  //
+  // `renderBody` returns `<NoPlanState>` from two different positions, so a
+  // branch flip unmounts one and mounts the other, and component-local state
+  // does not survive that. This component does. See the note on
+  // `NoPlanStateProps.request`.
+  const [intentRequest, setIntentRequest] = useState("");
+
+  // ⚠️ The seed is applied ONCE, by an effect, and it cannot be a `useState`
+  // initializer: `takeHandoff()` is itself read in a mount effect and the
+  // preference chips arrive from a query after that, so `seed` is undefined on
+  // the render where the field first exists. An initializer would have captured
+  // the empty string and never looked again — which means the pre-filled
+  // hand-off only ever worked when the plan query happened to be slower than
+  // the handoff read. `seededRef` is what keeps it from re-filling a field the
+  // person has since cleared on purpose.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || !seedRequest?.request) return;
+    seededRef.current = true;
+    setIntentRequest(seedRequest.request);
+  }, [seedRequest]);
+
   const seed = useMemo(() => {
     if (!seedRequest) return undefined;
     const prefs = seedPrefsQuery.data;
@@ -276,6 +299,11 @@ export function PlanPageClient() {
     // Abandon any in-flight modify so its late result can't clobber the new plan.
     cancelInFlight();
     setIntentMode(false);
+    // The field's text is now the week's. Clearing here keeps the behaviour
+    // identical to the pre-BUG-058 build, where submitting unmounted the
+    // component and destroyed its state — lifting the state without this would
+    // have quietly changed what `Start over →` shows you.
+    setIntentRequest("");
     sheet.close();
     setStreamDied(false);
     const pickedRecipeIds = intentPicks.map((p) => p.id);
@@ -455,6 +483,8 @@ export function PlanPageClient() {
         <NoPlanState
           onGenerate={handleGenerate}
           isGenerating={isStreaming}
+          request={intentRequest}
+          onRequestChange={setIntentRequest}
           onCancel={() => setIntentMode(false)}
           replaceWarning={isConfirmed}
           onOpenPicker={openIntentPicker}
@@ -575,6 +605,8 @@ export function PlanPageClient() {
       <NoPlanState
         onGenerate={handleGenerate}
         isGenerating={isStreaming}
+        request={intentRequest}
+        onRequestChange={setIntentRequest}
         seed={seed}
         onOpenPicker={openIntentPicker}
         picks={intentPicks}

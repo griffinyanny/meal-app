@@ -42,7 +42,12 @@ export function RecipeCard({
           onClick(id);
         }
       }}
-      aria-label={`View recipe: ${title}`}
+      // ⚠️ BUG-060 · No `aria-label={`View recipe: ${title}`}` here. The `<h3>`
+      // below already carries the title as this element's text, and rrweb
+      // records attributes verbatim while our replay masking only reaches text
+      // nodes — so the label was leaking the whole recipe library into session
+      // replay while the visible titles were correctly masked.
+      aria-label={title ? undefined : "View recipe"}
     >
       <div className="min-w-0 flex-1">
         <h3 className="spec-row-title line-clamp-2">

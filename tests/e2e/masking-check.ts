@@ -11,11 +11,15 @@
 // is the stronger check: it cannot be fooled by a dashboard that happens to
 // redact on display, and it needs nobody's dashboard login.
 //
-// Every ingest request is ABORTED after its body is read, so nothing reaches
-// PostHog and the project's dataset stays clean.
-import { gunzipSync } from "node:zlib";
+// ⚠️ Ingest traffic is READ AND FORWARDED, not aborted — see the note on the
+// route handler. A handful of events from this run land in the real PostHog
+// project on purpose, so Griffin can open the recording himself.
+import fs from "node:fs";
+import path from "node:path";
+import { gunzipSync, inflateSync } from "node:zlib";
 import { test, expect } from "@playwright/test";
 import { seedGroceryState, resetTestHousehold } from "./app/seed";
+import { STORAGE_STATE_PATH } from "./app/test-context";
 
 /**
  * posthog-js gzips replay payloads (`?compression=gzip-js`), which PostHog's own
@@ -27,21 +31,257 @@ import { seedGroceryState, resetTestHousehold } from "./app/seed";
  * the false green this whole exercise exists to avoid.
  */
 function readBody(url: string, buffer: Buffer | null, raw: string | null): string {
-  if (buffer && url.includes("compression=gzip")) {
-    try {
-      return gunzipSync(buffer).toString("utf8");
-    } catch {
-      // Not actually gzip. Fall through rather than silently returning "".
+  if (buffer && buffer.length >= 2) {
+    // gzip: 1f 8b. zlib/deflate: 78 01 / 78 9c / 78 da.
+    const gzip = buffer[0] === 0x1f && buffer[1] === 0x8b;
+    const zlib = buffer[0] === 0x78;
+    if (gzip || zlib) {
+      try {
+        return (gzip ? gunzipSync(buffer) : inflateSync(buffer)).toString("utf8");
+      } catch {
+        // Fall through rather than silently returning "" — an undecodable body
+        // must reach the caller as bytes so `assertDecoded` can reject it.
+      }
     }
   }
   return raw ?? buffer?.toString("utf8") ?? "";
+}
+
+/**
+ * ⚠️ THE REPLAY PAYLOAD IS COMPRESSED TWICE, AND THE DOM IS ONLY IN THE INNER
+ * ONE. This is the difference between measuring the recording and measuring its
+ * envelope.
+ *
+ * After the outer gzip, the `/s/` body is ordinary JSON — and every large
+ * `$snapshot_data` item carries its payload as `data: "<gzip>"`, a SECOND gzip
+ * stream that posthog-js writes into the JSON as a latin1 string (each byte one
+ * code point, so control bytes arrive as `\b…`). **The rendered
+ * text — the grocery item names, or the bullets that should have replaced
+ * them — exists only inside that inner stream.**
+ *
+ * ⚠️ Which means the leak check was vacuous in TWO stacked ways, not one. Even
+ * after the outer gzip was fixed, searching the outer JSON for "garlic" could
+ * not find it whether or not it leaked, because the outer JSON has never
+ * contained a single word of page content. A check that reads an envelope and
+ * reports on the letter.
+ */
+function expandSnapshots(body: string): { text: string; expanded: number } {
+  let expanded = 0;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return { text: body, expanded: 0 };
+  }
+
+  const out: string[] = [];
+  const walk = (node: unknown): void => {
+    if (typeof node === "string") {
+      // latin1 → bytes, because that is how posthog-js wrote them.
+      const buf = Buffer.from(node, "latin1");
+      if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+        try {
+          out.push(gunzipSync(buf).toString("utf8"));
+          expanded += 1;
+          return;
+        } catch {
+          /* not a usable stream; fall through and keep the raw string */
+        }
+      }
+      out.push(node);
+      return;
+    }
+    if (Array.isArray(node)) return node.forEach(walk);
+    if (node && typeof node === "object") {
+      for (const [k, v] of Object.entries(node)) {
+        out.push(k);
+        walk(v);
+      }
+      return;
+    }
+    out.push(String(node));
+  };
+  walk(parsed);
+  return { text: out.join("\n"), expanded };
+}
+
+/**
+ * ⚠️ THE VACUOUS-PASS GUARD, and it caught a real one.
+ *
+ * The first version of `readBody` gunzipped only when the URL contained
+ * `compression=gzip`. **The `/s/` request carries no query string at all** —
+ * posthog-js compresses the replay payload and says so in a header, not the
+ * URL — so the branch never fired, and 30,726 bytes of gzip went into the leak
+ * check as text. Searching compressed bytes for "garlic" cannot find it whether
+ * or not it leaked, so **the "no grocery names in the payload" assertion passed
+ * while measuring nothing.** This file's own header warned about exactly that
+ * and the URL heuristic walked into it anyway.
+ *
+ * So: prove the payload is readable BEFORE reading anything out of it. A body
+ * that is mostly unprintable bytes is not evidence of anything.
+ */
+function assertDecoded(label: string, body: string): void {
+  if (body.length === 0) return; // GETs legitimately have none.
+  const unprintable = (body.match(/[\x00-\x08\x0e-\x1f\x7f-\x9f]/g) ?? []).length;
+  expect(
+    unprintable / body.length,
+    `${label} did not decode to text (${unprintable}/${body.length} unprintable ` +
+      `bytes). Anything read out of this body is noise, not a measurement.`
+  ).toBeLessThan(0.02);
 }
 
 test.afterAll(async () => {
   await resetTestHousehold();
 });
 
-test("session replay masks the grocery list on the wire", async ({ page }) => {
+/**
+ * ⚠️ BUG-059's cause, and the reason this harness could never have worked.
+ *
+ * posthog-js drops EVERY event — analytics and session replay alike — when it
+ * decides the browser is a robot. The gate is the first line of `capture()`:
+ *
+ *   const bot = !this.config.opt_out_useragent_filter && this._is_bot()
+ *   if (!bot || this.config.__preview_capture_bot_pageviews) { …actually send… }
+ *
+ * and `_is_bot()` is true if ANY of three things hold: the user-agent string
+ * matches the built-in blocklist (which contains `"headlesschrome"`), the
+ * `userAgentData.brands` match it, or `navigator.webdriver` is set.
+ *
+ * **A headless Playwright browser trips two of the three independently.**
+ *
+ * ⚠️ It explains every observed symptom and eliminates none of the four
+ * suspects the tracker had already ruled out, because it is upstream of all of
+ * them: `init()` has no bot gate, so remote config is fetched and
+ * `posthog-recorder.js` is downloaded exactly as observed; the gate is a silent
+ * early return, so there is no error and no warning; and replay chunks ride
+ * `capture("$snapshot")`, so `/s/` dies with `/i/v0/e/`.
+ *
+ * ⚠️ The production config is CORRECT and stays untouched. Filtering bots is
+ * the behaviour we want from a real browser's point of view. The apparatus is
+ * what has to change, so these two overrides are the minimum deviation that
+ * makes the subject of the measurement exist at all.
+ */
+/**
+ * The two ingest endpoints, and the only evidence that counts.
+ *
+ * `/s/` carries session-replay chunks, `/i/v0/e/` carries ordinary events.
+ * Everything else posthog-js touches — `/array/<token>/config.js`, `/flags/`,
+ * `/static/*` — happens during `init()`, which has no bot gate, and is
+ * therefore present in BOTH legs of this measurement. Reading those as "PostHog
+ * is working" is precisely how the symptom read as a configuration problem.
+ */
+const INGEST_PATHS = ["/s/", "/i/v0/e/", "/e/"] as const;
+
+/** Outside `test-results/`, which Playwright wipes at startup. */
+const WIRE_DUMP_DIR = path.join(process.cwd(), ".masking-wire");
+
+const NOT_A_ROBOT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+
+/**
+ * A context that posthog-js will not classify as a robot.
+ *
+ * Built by hand rather than through `test.use()` so the deviation is visible at
+ * its one call site instead of hidden in a fixture — this browser is
+ * deliberately not the browser the rest of the suite runs in, and that fact
+ * should be impossible to read past.
+ */
+async function notARobotContext(browser: import("@playwright/test").Browser) {
+  const context = await browser.newContext({
+    userAgent: NOT_A_ROBOT,
+    storageState: STORAGE_STATE_PATH,
+  });
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => false });
+    // The UA string is set on the context; `userAgentData.brands` is NOT, and
+    // it carries "HeadlessChrome" independently — the second of the three gates.
+    Object.defineProperty(navigator, "userAgentData", { get: () => undefined });
+  });
+  return context;
+}
+
+/**
+ * The two properties posthog-js's bot check actually reads.
+ *
+ * ⚠️ DIAGNOSTIC ONLY — deliberately not an assertion. The obvious version of
+ * this asked the SDK directly (`window.posthog._is_bot()`) and **both tests
+ * failed on it**, because the npm module does NOT register the instance on
+ * `window` — only `__PosthogExtensions__` and `_POSTHOG_REMOTE_CONFIG` are
+ * there. Asserting through it would have been a check that fails for a reason
+ * unrelated to its subject. The WIRE is the evidence; this only records which
+ * browser produced it.
+ */
+async function readBrowserIdentity(page: import("@playwright/test").Page) {
+  return page.evaluate(() => ({
+    webdriver: navigator.webdriver,
+    ua: navigator.userAgent,
+    posthogGlobals: Object.keys(window).filter((k) =>
+      k.toLowerCase().includes("posthog")
+    ),
+  }));
+}
+
+/**
+ * ⚠️ THE FORCE-FAILURE. This is the BUG-059 repro, kept deliberately, because
+ * "the fix worked" is worth nothing without "the broken case was broken for the
+ * reason I predicted" (S52). It runs UNSPOOFED and asserts the silence, so if
+ * posthog-js ever changes its bot policy this goes red and tells us the harness
+ * below is now measuring a different browser than it thinks.
+ */
+test("BUG-059 repro: a headless browser is silently dropped by posthog-js", async ({
+  page,
+}) => {
+  const ingest: string[] = [];
+  await page.route(/i\.posthog\.com/, async (route) => {
+    ingest.push(new URL(route.request().url()).pathname);
+    await route.continue();
+  });
+
+  await page.goto("/groceries");
+  await page.waitForTimeout(8_000);
+
+  const identity = await readBrowserIdentity(page);
+  console.log(`[bot] unspoofed identity: ${JSON.stringify(identity)}`);
+
+  // Both gates, asserted on the browser rather than assumed from the docs.
+  expect(identity.webdriver, "navigator.webdriver is not set").toBe(true);
+  expect(
+    identity.ua.toLowerCase(),
+    "UA does not contain a string on posthog's blocklist"
+  ).toContain("headlesschrome");
+
+  // ⚠️ The SDK did start — this is what proves the gate is in `capture()` and
+  // not in `init()`, and therefore why the symptom looked so much like a
+  // configuration problem.
+  expect(
+    ingest.length,
+    "posthog never even fetched config, so this is not the bot gate"
+  ).toBeGreaterThan(0);
+
+  // The symptom, restated as an assertion: config and static assets fetched,
+  // zero ingest.
+  //
+  // ⚠️ `/s/` EXACTLY, never `startsWith("/s")` — the first version of this line
+  // matched `/static/posthog-recorder.js` and reported the recorder script as
+  // ingest traffic, i.e. it claimed the bot HAD sent replay data. A prefix that
+  // happens to be a prefix of something else is the same class of mistake as
+  // BSD grep's `\b` in S59.
+  const posted = ingest.filter((p) => INGEST_PATHS.some((i) => p.startsWith(i)));
+  expect(
+    posted,
+    `expected total silence from a bot-classified browser, got: ${posted.join(", ")}`
+  ).toEqual([]);
+  console.log(
+    `[bot] confirmed — ${ingest.length} requests, 0 ingest. Endpoints: ${[
+      ...new Set(ingest),
+    ].join(", ")}`
+  );
+});
+
+test("session replay masks the grocery list on the wire", async ({ browser }) => {
+  const context = await notARobotContext(browser);
+  const page = await context.newPage();
   const seen: { url: string; body: string }[] = [];
 
   // ⚠️ `continue()`, NOT `abort()`. The first attempt aborted every request to
@@ -65,6 +305,15 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
     // recording runs) and the separate `posthog-recorder` script. Their absence
     // from the endpoint list read as "never happened" when it only meant "no
     // POST body" — an instrument that could not see half its own subject.
+    const buf = route.request().postDataBuffer();
+    const p = new URL(url).pathname;
+    if (INGEST_PATHS.some((i) => p.startsWith(i))) {
+      const h = route.request().headers();
+      console.log(
+        `[wire] ${p} ct=${h["content-type"]} ce=${h["content-encoding"]} ` +
+          `bytes=${buf?.length ?? 0} magic=${buf?.subarray(0, 8).toString("hex") ?? "-"}`
+      );
+    }
     seen.push({ url, body });
     await route.continue();
   });
@@ -97,16 +346,78 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
   await page.goto("/groceries");
   await expect(page.getByTestId("grocery-list")).toBeVisible();
 
+  // ⚠️ Assert the gate is OPEN before measuring anything through it. Without
+  // this, a silent wire is ambiguous between "masking works" and "BUG-059
+  // again", which is exactly the ambiguity that cost this measurement a
+  // session — the harness could not tell a clean recording from no recording.
+  const identity = await readBrowserIdentity(page);
+  console.log(`[masking] spoofed identity: ${JSON.stringify(identity)}`);
+  expect(identity.webdriver, "the webdriver spoof did not take").toBe(false);
+  expect(
+    identity.ua.toLowerCase(),
+    "the UA override did not take"
+  ).not.toContain("headless");
+
   // rrweb batches; scroll and interact so a full snapshot plus incremental
   // events are emitted, then give the flush interval time to fire.
   await page.mouse.wheel(0, 300);
   await page.getByTestId("grocery-row").first().hover();
   await page.waitForTimeout(12_000);
 
-  const wire = seen.map((s) => s.body).join("\n");
+  // The wire, fully expanded: outer gzip undone by `readBody`, inner per-item
+  // gzip undone here. This string is the first thing in this test that has ever
+  // actually contained the page's rendered text.
+  let innerExpanded = 0;
+  const wire = seen
+    .map((s) => {
+      const { text, expanded } = expandSnapshots(s.body);
+      innerExpanded += expanded;
+      return text;
+    })
+    .join("\n");
   const endpoints = [...new Set(seen.map((s) => new URL(s.url).pathname))];
   console.log(`[masking] endpoints hit: ${endpoints.join(", ")}`);
   console.log(`[masking] ${seen.length} requests, ${wire.length} bytes`);
+
+  // ⚠️ Per-request sizes, and the full decoded payload on disk. A single total
+  // cannot distinguish "the replay chunk decoded to 30KB of DOM" from "the
+  // replay chunk failed to decode and the 30KB is somebody else's response" —
+  // and this check's entire job is to read what the recording CONTAINS.
+  // ⚠️ NOT under `test-results/`: Playwright wipes that directory at startup
+  // (S61 lost an 18-minute run to exactly this).
+  for (const s of seen) {
+    console.log(
+      `[masking]   ${new URL(s.url).pathname} — ${s.body.length} bytes decoded`
+    );
+  }
+
+  // ⚠️ WRITE THE DUMP BEFORE ASSERTING ANYTHING. The first version asserted
+  // first, so the one run that had something to explain threw before writing
+  // the file that would have explained it — an instrument that deletes its own
+  // evidence at exactly the moment the evidence exists.
+  const dump = `${WIRE_DUMP_DIR}/masking-wire.txt`;
+  fs.mkdirSync(WIRE_DUMP_DIR, { recursive: true });
+  fs.writeFileSync(
+    dump,
+    seen
+      .map((s) => `===== ${s.url}\n${expandSnapshots(s.body).text}`)
+      .join("\n\n"),
+    "utf8"
+  );
+  console.log(
+    `[masking] ${innerExpanded} inner snapshot streams expanded; full wire at ${dump}`
+  );
+
+  // ⚠️ The expansion must have DONE something. Without this, a change to how
+  // posthog-js packs snapshots turns `expandSnapshots` into a no-op and every
+  // assertion below goes back to reading an envelope — green, and blind. This
+  // project has produced the test-that-cannot-fail three separate ways; this is
+  // the guard against the fourth.
+  expect(
+    innerExpanded,
+    "no inner snapshot stream was decompressed, so the DOM was never inspected"
+  ).toBeGreaterThan(0);
+  assertDecoded("expanded replay payload", wire);
 
   // ---- 1. The RECORDER is running, not merely the SDK. ----------------------
   // ⚠️ Two separate facts, and conflating them is how the first attempt fooled
@@ -154,6 +465,7 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
   console.log(
     `[masking] VERIFIED — ${seen.length} requests, ${wire.length} bytes inspected, 0 leaks`
   );
+  await context.close();
 });
 
 // ⚠️ TEMPORARY, S63 — Sentry wiring verification.

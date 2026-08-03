@@ -189,9 +189,43 @@ test("X6 - a generation that stalls past both attempts ends as a named failure, 
   await seedPlanState("EMPTY");
   await page.goto("/plan");
 
-  await page
-    .getByPlaceholder("Or just start talking. What sounds good?")
-    .fill("[E2E:SLOW=20000] plan my week");
+  const field = page.getByPlaceholder("Or just start talking. What sounds good?");
+  await field.fill("[E2E:SLOW=20000] plan my week");
+
+  // ⚠️ TEMPORARY DIAGNOSTIC (BUG-058, S64). The failure is that `Send to chef`
+  // stays disabled after a successful `fill()`, i.e. the text is empty. S63 read
+  // a remount off the code and filed it as the cause; lifting the state into
+  // `plan-page-client` did NOT fix it, so the cause is something else and the
+  // next move is to MEASURE rather than reason again (S62). This timeline says
+  // whether the value never took or took and was then cleared — which are two
+  // different bugs and the screenshot cannot tell them apart.
+  // An expando on the DOM node itself: if the textarea is ever replaced, the
+  // marker is gone, which distinguishes a REMOUNT from a state reset on the
+  // same element. Nothing in the app can see this, so it cannot perturb what it
+  // measures.
+  await field.evaluate((el) => {
+    (el as HTMLElement & { __x6?: number }).__x6 = 1;
+  });
+
+  for (const ms of [0, 150, 400, 1000, 2500]) {
+    if (ms) await page.waitForTimeout(ms);
+    const state = await page.evaluate(() => {
+      const el = document.querySelector<HTMLTextAreaElement>(
+        'textarea[placeholder="Or just start talking. What sounds good?"]'
+      );
+      const send = document.querySelector<HTMLButtonElement>(
+        '[data-testid="plan-intent-send"]'
+      );
+      return {
+        present: !!el,
+        value: el?.value ?? null,
+        sameNode: !!(el as (HTMLElement & { __x6?: number }) | null)?.__x6,
+        disabled: send?.disabled ?? null,
+      };
+    });
+    console.log(`[X6] +${ms}ms ${JSON.stringify(state)}`);
+  }
+
   await page.getByRole("button", { name: "Send to chef" }).click();
 
   // Two 2.5s attempts, then the failure — comfortably inside this budget, and
