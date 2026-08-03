@@ -11,11 +11,16 @@ import { cn } from "@/lib/utils";
 import { valueMeterProgress } from "@/lib/onboarding/planner";
 import { makeRestriction } from "@/components/you/constraint-utils";
 import type { Dimension, InterviewState, QuestionOption } from "@/lib/onboarding/types";
+import type { DietaryFramework } from "@/lib/diet";
 
 // The three core turns that render through the shared question screen. Household
 // has its own screen (three steppers plus the baby follow-up); these three are
 // the plain tap-or-tell shape.
-const DIET_OPTIONS: QuestionOption[] = [
+// ⚠️ Typed by the domain (BUG-044), so a ninth framework cannot ship without a
+// chip. The ORDER is deliberately the design's, not the canonical list's — this
+// is the sequence the chips read in, and deriving it from `DIETARY_FRAMEWORKS`
+// would silently reshuffle the screen.
+export const DIET_OPTIONS: (QuestionOption & { value: DietaryFramework })[] = [
   { value: "omnivore", label: "No restrictions" },
   { value: "pescatarian", label: "Pescatarian" },
   { value: "vegetarian", label: "Vegetarian" },
