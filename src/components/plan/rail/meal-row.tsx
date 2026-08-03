@@ -10,6 +10,17 @@ import {
   metaLine,
 } from "../rail-helpers";
 
+// ⚠️ BUG-060 · NEVER INTERPOLATE HOUSEHOLD CONTENT INTO `aria-label` — here or
+// anywhere. rrweb records ATTRIBUTES VERBATIM, and our session-replay masking
+// reaches TEXT NODES ONLY (`maskTextFn`; rrweb has no attribute-masking hook at
+// all, measured against the installed package). So `aria-label={`Open ${title}`}`
+// wrote the entire week's plan into the replay in the clear while every visible
+// string beside it was correctly bulleted out. Both rows already render the
+// title as their own text, so the label added nothing except the leak — and
+// deriving the accessible name from the visible text is what WCAG 2.5.3 asks
+// for anyway. The fallback below only fires for an untitled meal, which has no
+// text to name it.
+//
 // Where a row sits. "solo" is a day with one meal, where the day container IS
 // the card (frames 3i/3j/3o). "nested" is a day with two or more, where the
 // container becomes an 8px shell holding 14px rows (frames 3h/3p).
@@ -105,7 +116,7 @@ export function MealRowFeature({
       data-meal-date={meal.date}
       onClick={onOpen ? () => onOpen(meal) : undefined}
       disabled={!onOpen}
-      aria-label={`Open ${meal.title ?? "this meal"}`}
+      aria-label={meal.title ? undefined : "Open this meal"}
       className={cn(
         "block w-full min-w-0 text-left font-[inherit] transition-shadow",
         solo
@@ -178,7 +189,7 @@ export function MealRowCompact({
       data-meal-date={meal.date}
       onClick={onOpen ? () => onOpen(meal) : undefined}
       disabled={!onOpen}
-      aria-label={`Open ${meal.title ?? "this meal"}`}
+      aria-label={meal.title ? undefined : "Open this meal"}
       className={cn(
         "spec-inset flex w-full items-center gap-[9px] rounded-[14px] px-3 py-[9px] text-left font-[inherit] transition-shadow",
         working && "shadow-[0_0_0_1.5px_rgba(233,179,72,0.42)]"

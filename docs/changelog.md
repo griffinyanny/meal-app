@@ -4,6 +4,92 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 64 — 2026-08-03 (BUG-059 was the vendor muting the robot; the check meant to close D3 had been reading an envelope)
+
+### ⛔ The headline: **a check that could not fail, twice in the same payload**
+
+`masking-check.ts` — the measurement written in S63 specifically to catch a false green — reported **clean**
+while `aria-label="Check off Garlic"` sat in the recording. Its own header warns about exactly this failure
+(*"searching a GZIPPED body for 'garlic' finds nothing whether or not it leaked"*), and two layers of it
+shipped regardless.
+
+1. **`readBody` gunzipped only when the URL contained `compression=gzip`.** The `/s/` request **carries no
+   query string at all** — posthog-js compresses the body and says so in a header, not the URL. So 30KB of
+   gzip went into the leak check as text. Fixed by sniffing magic bytes.
+2. **Even decompressed, the outer body is an envelope.** The `/s/` JSON's every large `$snapshot_data` item
+   carries `data` as a **second, separately gzipped** latin1 string. **The outer JSON has never contained
+   one word of page content.**
+
+⚠️ **The generalisable check: before reading a value out of a payload, prove the payload is readable.**
+`assertDecoded` now fails if an ingest body is mostly unprintable bytes, and a second guard fails if the
+inner expansion ever stops expanding. **Fourth distinct shape of the test-that-cannot-fail in this project.**
+
+### 🔴 BUG-060 — session replay was recording the household in the clear, through `aria-label`
+
+Text masking works — **zero leaks in text nodes, measured.** But **rrweb records attributes verbatim**, and
+the installed build exposes **no attribute-masking hook at all** (measured against
+`posthog-js/dist/rrweb.d.ts`: `recordOptions` offers `maskTextClass`, `maskTextSelector`, `maskAllInputs`,
+`maskInputOptions`, `maskInputFn`, `maskTextFn`, and nothing for attributes). There is no central
+interception point either — posthog-js compresses each snapshot item inside the lazily-loaded recorder
+bundle, **before `before_send` runs**. **No configuration could have fixed this.**
+
+Leaking: the **grocery list**, the **week's meal titles**, the **recipe library**, and the user's **dietary
+constraints** — essentially the whole content inventory the masking posture exists to protect.
+
+⚠️ **The project's own rule produced it.** `.claude/rules/react-components.md` says *"all interactive
+elements need aria labels"*, so ``aria-label={`Check off ${item.name}`}`` is what a careful person writes.
+**The accessibility rule and the privacy posture were in direct conflict and nothing in the repo could see
+it.** This is the S63 grocery-row finding one layer down: there, the item name escaped as a display
+`<button>`; here it escaped as that button's label.
+
+Fixed in six components by naming controls from **text nodes** — own contents, or `aria-labelledby` at the
+node that already renders the name, with icon-only verbs moved into `sr-only` spans. WCAG 2.5.3 prefers it
+anyway. Guarded by `src/lib/analytics/aria-leak.test.ts` (reasoned allow-list + stale-exemption check +
+did-it-scan-anything check). **Verified: 10 requests, 157,787 bytes inspected, 0 leaks.**
+
+### ✅ BUG-059 — posthog-js's bot filter, upstream of all four eliminated suspects
+
+`capture()` opens with `const bot = !config.opt_out_useragent_filter && this._is_bot()` and skips the send.
+`_is_bot()` fires on a blocklisted UA, on blocklisted `userAgentData.brands`, **or on `navigator.webdriver`**
+— and a headless Playwright browser trips **two of the three independently**. ⚠️ **The gate is in
+`capture()`, not `init()`**, which is exactly why the symptom read as configuration: remote config fetched,
+recorder downloaded, zero errors, zero warnings, and replay chunks die with analytics because `/s/` rides
+`capture("$snapshot")`.
+
+Measured as an A/B — same build, same project, only the browser's identity changed: headless gave 5 requests
+and **zero ingest**; not-a-robot gave **`/s/` and `/i/v0/e/`**, 32KB of replay. The unspoofed leg is kept as
+a permanent regression test. **No production code changed** — filtering bots is correct behaviour.
+
+### 🔴 And the half still open: **production has never had either SDK enabled**
+
+`NEXT_PUBLIC_POSTHOG_KEY` is **not set in Vercel Production**, nor is `NEXT_PUBLIC_SENTRY_DSN`. Both are
+allow-listed on key/DSN presence. ⚠️ So *"this project has no events yet"* was true and **evidence of
+nothing** — production could not emit, and the only browser that ever ran a key-carrying build was one
+PostHog mutes on purpose. **An absence measured against an empty room** (S62), in the place it mattered most.
+
+⚠️ **Deliberately not set by Claude:** enabling PostHog in production starts recording Griffin's wife's
+sessions, and telling her is an owed item. **The conversation comes first, then the env var.**
+
+### ✅ BUG-058 — fixed by construction, and it was hiding a second defect
+
+The intent text moved into `plan-page-client` and is passed down controlled, so a branch flip cannot discard
+it (not a longer wait — S57). ⚠️ **The second defect:** the seed was a `useState` initializer, but
+`takeHandoff()` is read in a mount effect and the chips arrive from a query after that, so `seed` is
+undefined on the render where the field first exists. **The onboarding hand-off's pre-fill only ever worked
+when the plan query happened to be slower than the handoff read.** Now a once-only, ref-guarded effect.
+
+### ⚠️ Three source-scanning guards fired on their own explanatory comments
+
+`aria-leak.test.ts` flagged a `Check off ${name}` that existed **only in the comment explaining the fix**;
+`type-scale.test.ts` and `freeform-field.test.ts` each flagged an `<input>` written inside a comment. **A
+failure list pointing at correct code teaches people to edit the expectation (S59)**, so the new scanner
+strips comments. The two older ones still read them — noted rather than fixed, because their expectations
+are pinned by line number.
+
+### State
+
+**815 unit green** (+3), lint + typecheck clean, masking harness 4/4 including the BUG-059 repro.
+
 ## Session 63 — 2026-08-03 (Observability — and the taxonomy it was supposed to port did not exist)
 
 ### ⛔ The headline: **the "S9 event taxonomy" was never there**

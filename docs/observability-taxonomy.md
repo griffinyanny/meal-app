@@ -239,12 +239,60 @@ BUG-018's guard an allow-list.
 looks correct and records the grocery list is precisely the false green this project has produced six
 distinct ways. The config is the hypothesis; the recording is the measurement.
 
+### ✅ S64 — the recording was measured, and it was leaking (BUG-060)
+
+**Text masking works: zero leaks in text nodes.** The leak was `aria-label`.
+
+⚠️ **`maskTextFn` reaches TEXT NODES ONLY. rrweb records ATTRIBUTES VERBATIM, and the installed build
+exposes no attribute hook at all** — measured against `posthog-js/dist/rrweb.d.ts`, whose `recordOptions`
+offers `maskTextClass`, `maskTextSelector`, `maskAllInputs`, `maskInputOptions`, `maskInputFn` and
+`maskTextFn`, and nothing for attributes. **Nor is there a central place to scrub it:** posthog-js
+compresses each snapshot item inside the lazily-loaded recorder bundle, *before* `before_send` runs. **No
+configuration could have closed this.**
+
+Leaking through ``aria-label={`Check off ${item.name}`}`` and five siblings: the grocery list, the week's
+meal titles, the recipe library, and the user's **dietary constraints**.
+
+⚠️ **The rule that produced it is our own.** `.claude/rules/react-components.md` says *"all interactive
+elements need aria labels."* **The accessibility rule and this masking posture were in direct conflict and
+nothing in the repo could see it.** Resolved by naming controls from text nodes — the element's own
+contents, or `aria-labelledby` at the node that already renders the name, with icon-only verbs in `sr-only`
+spans. WCAG 2.5.3 ("Label in Name") prefers that anyway. Enforced by `src/lib/analytics/aria-leak.test.ts`.
+
+⚠️ **AND THE CHECK WAS VACUOUS IN TWO STACKED WAYS BEFORE IT COULD SEE ANY OF IT.** (1) `readBody`
+gunzipped only when the URL contained `compression=gzip`, and **the `/s/` request carries no query string at
+all** — so 30KB of gzip was searched as text, and searching compressed bytes for "garlic" finds nothing
+whether or not it leaked. (2) Even decompressed, the outer `/s/` body is an **envelope**: every large
+`$snapshot_data` item carries `data` as a **second, separately gzipped** latin1 string, so **the outer JSON
+has never contained one word of page content.** **The generalisable rule: before reading a value out of a
+payload, prove the payload is readable.** `assertDecoded` now fails on a mostly-unprintable ingest body, and
+a second guard fails if the inner expansion stops expanding.
+
+**Verified: 10 requests, 157,787 bytes inspected, 0 leaks.**
+
+### ⚠️ Analytics cannot be observed in the default test browser, by the vendor's design (BUG-059)
+
+posthog-js's `capture()` opens with `!config.opt_out_useragent_filter && this._is_bot()` and **skips the
+send entirely** when true. `_is_bot()` fires on a blocklisted UA, on blocklisted `userAgentData.brands`, or
+on **`navigator.webdriver`** — and headless Playwright trips **two of the three independently**
+(`"headlesschrome"` is on PostHog's built-in list). **The gate is in `capture()`, not `init()`**, so remote
+config is fetched, the recorder downloads, and nothing errors — and replay dies with analytics because `/s/`
+rides `capture("$snapshot")`.
+
+**This is why `masking-check.ts` runs in a context that overrides both signals**, and why its first test is
+the unspoofed leg asserting the silence: if posthog-js ever changes its bot policy, that goes red rather
+than silently changing what the harness measures. **The production config keeps the bot filter** — it is
+correct behaviour for real traffic, and it also keeps Lighthouse and Vercel's screenshot bot out of the DoD
+numbers, both of which are on the same list.
+
 **Quota, confirmed at build time rather than assumed** (posthog.com/pricing, fetched 2026-08-03): free tier
 is **1M events/mo, 5,000 session recordings/mo, 100k error-tracking exceptions**, no card required. Two
 users for two weeks cannot approach any of it.
 
 **Griffin's wife is recorded too, and should be told.** One sentence; it is in D's checklist because the
-replay item owes it.
+replay item owes it. ⚠️ **As of S64 this is a BLOCKER, not a courtesy:** `NEXT_PUBLIC_POSTHOG_KEY` is not
+set in Vercel Production, so nothing is being recorded yet — and **the env var should not go in until that
+conversation has happened.** The order matters and it is the only reason production analytics is still off.
 
 ---
 

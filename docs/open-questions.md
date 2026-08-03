@@ -6,7 +6,36 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-*Both S62 questions were answered in S63. Nothing is pending here — see the two resolved entries below.*
+### 🆕 S64 — Do the masking harness and its config graduate, or get deleted?
+
+They were filed as **temporary scaffolding** for BUG-059. **Recommendation: graduate them**, as
+`npm run test:masking`.
+
+Reasons: they are the only thing that can verify session-replay masking, which is a **privacy control over
+the household's grocery list**; they found a real leak the moment they could actually read the payload
+(BUG-060); they now carry the BUG-059 repro as a permanent regression test against a vendor policy change;
+and they **cannot** be folded into `npm run test:e2e`, which pins `NEXT_PUBLIC_POSTHOG_KEY: ""` by design
+and must keep doing so.
+
+Cost of keeping them: one more config file, and a run that puts a handful of events into the real PostHog
+project each time. Cost of deleting them: the next change to a component's accessible names is unverifiable.
+
+**Cadence if kept:** at wrap, whenever `masking.ts`, the analytics config, or a component's accessible names
+change.
+
+### 🆕 S64 — When do the production env vars go in? (blocked on one conversation, not on code)
+
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are **absent from Vercel Production**, so neither SDK
+has ever initialised there and the DoD's time-to-list measurement cannot run on real usage.
+
+**Sentry's DSN can go in now** — nothing gates it.
+
+**PostHog's key should not go in until Griffin has told his wife session replay exists.** That is already an
+owed item on Workstream D's checklist; S64 only makes the ordering explicit, because setting the var is what
+starts recording her. Claude deliberately did not set it. The recording is verified masked (0 leaks), which
+is what makes the conversation a short one rather than an awkward one.
+
+*Both S62 questions were answered in S63 — see the two resolved entries below.*
 
 ### ✅ RESOLVED S63 — `ALLOWED_EMAILS` gets set to the two real addresses
 

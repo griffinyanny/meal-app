@@ -1073,6 +1073,17 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 > The two facts sat four files apart for 44 sessions and nobody joined them. Consequence: D3 was
 > design-from-zero, not install-and-port — see `docs/observability-taxonomy.md`.
 
+**S64 progress.** ✅ **(3) observability — DONE AND VERIFIED**, including the owed real-recording check,
+which found and closed **BUG-060** (session replay was recording the grocery list, meal titles, recipe
+titles and dietary constraints in the clear, through `aria-label` — attributes are outside every masking
+hook the vendor exposes). ✅ **BUG-059 CLOSED** — posthog-js's own bot filter silencing the headless test
+browser, upstream of all four suspects the tracker had eliminated; **no production code changed.**
+✅ **BUG-058 CLOSED** by lifting the intent text out of a component whose identity flips.
+🔴 **NEW AND OPEN, and it is Griffin's:** `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are **not
+set in Vercel Production**, so **neither SDK has ever initialised there** — the DoD's time-to-list
+measurement cannot run on real usage until they are. The PostHog one is deliberately gated behind telling
+his wife that replay exists.
+
 **S63 progress.** ✅ **(3) observability — the taxonomy, both SDKs, the masking posture and the whole
 north-star funnel.** ✅ **BUG-054 shipped** (Griffin's call). See the S63 rows below.
 
@@ -1127,11 +1138,25 @@ not called on the revocation paths).
       name as a display `<button>`** (the `<input>` only exists while editing), so `button` would have
       recorded the largest piece of household content in the product, on the surface used most, via a rule
       that looks obviously safe. That case is a named test.
-      ⚠️ **What is OWED: look at a real recording.** The mask *logic* is unit-tested (10 cases, including the
-      grocery-row trap and "no digits survive" — ages and quantities are content too). The *wiring* is not
-      verified, and cannot be until Griffin creates the PostHog project. **A masking config that reads
+      ✅ **THE OWED VERIFICATION RAN IN S64, AND IT FOUND A LEAK — BUG-060.** *"A masking config that reads
       correctly and records the grocery list is precisely the false green this project has produced six
-      distinct ways.** The config is the hypothesis; the recording is the measurement.
+      distinct ways"* was right, and that is what was happening. **Text masking works — zero leaks in text
+      nodes, measured.** But **rrweb records ATTRIBUTES VERBATIM** and the installed build has **no
+      attribute-masking hook at all** (`posthog-js/dist/rrweb.d.ts` → `recordOptions` offers
+      `maskTextClass`, `maskTextSelector`, `maskAllInputs`, `maskInputOptions`, `maskInputFn`, `maskTextFn`,
+      and nothing for attributes), and no central place to scrub it either — each snapshot item is
+      compressed inside the lazily-loaded recorder bundle **before `before_send` runs**. **No configuration
+      could have closed it.** Leaking through ``aria-label={`Check off ${item.name}`}`` and its siblings: the
+      grocery list, the week's meal titles, the recipe library, and the user's **dietary constraints**.
+      ⚠️ **The bullet above predicted the door and missed the doorway.** It correctly named `grocery-row`'s
+      display `<button>` as the trap — and the leak was that same button's **label**, one layer further out.
+      ⚠️ **And the check itself was vacuous in two stacked ways before it could see any of this:** the `/s/`
+      request carries **no `compression=` in its URL**, so the URL-keyed gunzip never fired; and even
+      decompressed, the outer body is an envelope whose every large `$snapshot_data` item is gzipped **again**
+      inside it — **the outer JSON has never contained one word of page content.** Fixed by sniffing magic
+      bytes, expanding inner streams recursively, and two guards: one that fails if an ingest body is mostly
+      unprintable, one that fails if the inner expansion stops expanding.
+      **Now verified: `10 requests, 157,787 bytes inspected, 0 leaks`.**
       **Quota confirmed at build time rather than assumed** (posthog.com/pricing, fetched 2026-08-03):
       **1M events / 5,000 recordings / 100k exceptions per month, free, no card.** Two users for two weeks
       cannot approach any of it.

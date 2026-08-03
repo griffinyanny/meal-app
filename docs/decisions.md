@@ -4,6 +4,44 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-03 (S64) — Four calls that came out of measuring the observability build
+
+**1. Production keeps posthog-js's bot filter. `opt_out_useragent_filter` stays unset.**
+BUG-059 was that filter silencing the headless test browser, and the tempting "fix" is to switch it off.
+That would be wrong twice over: filtering bots is the correct behaviour for real traffic, and the same
+blocklist keeps **Lighthouse** (`chrome-lighthouse`) and **Vercel's screenshot bot** out of the DoD numbers
+— both matter, and the perf pass is the very next item. **The apparatus changed instead:** the masking
+harness runs in a context that overrides `navigator.webdriver` and the UA, with the unspoofed leg kept as a
+permanent test so a change in the vendor's bot policy goes red rather than silently altering what the
+harness measures. **Zero production diff.**
+
+**2. Accessible names come from TEXT NODES, never from interpolated attributes.**
+BUG-060's fix and now a standing rule in `.claude/rules/react-components.md`. Session-replay masking reaches
+text nodes only; **rrweb records attributes verbatim and exposes no attribute hook at all**, and there is no
+central scrub point because snapshot items are compressed inside the recorder bundle before `before_send`.
+So the rule is not a style preference — it is the only available mechanism. ⚠️ **It resolves a genuine
+conflict with the rule directly above it** (*"all interactive elements need aria labels"*), which is what
+produced the leak: the natural way to satisfy that rule put the grocery list, the meal titles, the recipe
+library and the user's dietary constraints into session replay in the clear. Naming from visible text
+satisfies both, and is what WCAG 2.5.3 asks for. Enforced by `src/lib/analytics/aria-leak.test.ts` with a
+reasoned allow-list for values that are app vocabulary rather than household content.
+
+**3. Claude does NOT set the production PostHog key. The order is: tell your wife, then set the var.**
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are both absent from Vercel Production, which is why
+neither SDK has ever run there — and why *"this project has no events yet"* was evidence of nothing.
+Setting the PostHog one starts recording Griffin's wife's sessions, and *"mention session replay to her"* is
+an owed item on D's own checklist. **A one-line env change that begins recording another person is not a
+step to take on someone's behalf**, even with the recording verified masked. Sentry's DSN carries no such
+constraint and can go in whenever.
+
+**4. Recommendation (Griffin's call): graduate the masking harness rather than delete it.**
+`playwright.masking.config.ts` + `tests/e2e/masking-check.ts` were filed as temporary scaffolding for
+BUG-059. They should stay: they are the only thing that can verify replay masking — a privacy control over
+the household's grocery list — they now carry the BUG-059 repro as a regression test, and they **cannot**
+be folded into `npm run test:e2e`, which blanks the PostHog key by design and must keep doing so. Suggested
+shape: an `npm run test:masking` script run at wrap whenever masking, the analytics config, or a
+component's accessible names change.
+
 ## 2026-08-03 (S63) — Observability: Griffin's two calls, and four technical ones
 
 **Griffin's calls.**

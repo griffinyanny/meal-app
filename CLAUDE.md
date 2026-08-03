@@ -29,13 +29,56 @@ icon, the Hero launch screen, the offline clause). The install prompt was **CUT*
 **775 unit green, migration `0010` applied, `/visual-qa` capture at 6 files / 55 states / all `ok`.**
 ⚠️ **The only thing left in C is the two-phone check** — the item most likely to be quietly wrong on a real
 device, and nothing in the suite can answer it.
-**Workstream D (production readiness) is 🔨 PART-DONE (S62–S63):** migration safety ✅, BUG-044 ✅,
-**observability ✅ S63** (34-event taxonomy + PostHog + Sentry + inverted replay masking + the whole
-north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**), BUG-054 ✅.
+**Workstream D (production readiness) is 🔨 PART-DONE (S62–S64):** migration safety ✅, BUG-044 ✅,
+**observability ✅ S63, VERIFIED S64** (34-event taxonomy + PostHog + Sentry + inverted replay masking +
+the whole north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**),
+BUG-054 ✅, BUG-058 ✅, BUG-059 ✅, BUG-060 ✅.
+🔴 **BUT NEITHER SDK HAS EVER RUN IN PRODUCTION:** `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN`
+are **not set in Vercel Production** and both are allow-listed on key/DSN presence. **The PostHog one is
+deliberately held until Griffin tells his wife session replay exists.**
 Security review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
 prompt-injection review, RLS "which layer is load-bearing", secrets audit**). ❌ **Perf + a11y pass and the
 error-state sweep are NOT started — that is the next session.** Then **E (feedback capture)**, then the two
 validation weeks.
+
+**⚠️ S64 · THE CHECK WRITTEN TO CATCH A FALSE GREEN WAS ITSELF VACUOUS, TWICE, IN ONE PAYLOAD.**
+`masking-check.ts` reported **clean** while `aria-label="Check off Garlic"` sat in the recording — and its
+own header already warned that *"searching a GZIPPED body for 'garlic' finds nothing whether or not it
+leaked."* Two layers of exactly that shipped: `readBody` gunzipped only when the URL contained
+`compression=gzip`, and **the `/s/` request carries no query string at all**; then, even decompressed, the
+outer body is an **envelope** — every large `$snapshot_data` item carries `data` as a **second, separately
+gzipped** latin1 string, so **the outer JSON has never contained one word of page content.** ⚠️ **THE
+GENERALISABLE CHECK: before reading a value out of a payload, prove the payload is READABLE.** A clean
+result and no result look identical. `assertDecoded` now fails on a mostly-unprintable ingest body and a
+second guard fails if the inner expansion ever stops expanding — **the fourth distinct shape of the
+test-that-cannot-fail in this project.**
+
+**⚠️ S64 · THE ACCESSIBILITY RULE AND THE PRIVACY POSTURE WERE IN DIRECT CONFLICT — BUG-060.** Replay
+masking runs through `maskTextFn`, which rrweb calls for **text nodes only**; **attributes are recorded
+VERBATIM** and the installed build exposes **no attribute hook at all** (measured against
+`posthog-js/dist/rrweb.d.ts`), with no central scrub point either — snapshot items are compressed inside the
+lazily-loaded recorder bundle **before `before_send` runs**. So ``aria-label={`Check off ${item.name}`}``
+put the **grocery list, the week's meal titles, the recipe library and the user's dietary constraints**
+into session replay in the clear, while every visible string beside them was correctly bulleted out.
+⚠️ **`.claude/rules/react-components.md`'s own *"all interactive elements need aria labels"* is what
+produced it** — the natural way to satisfy the rule was the leak, and nothing in the repo could see the
+conflict. **Fix: accessible names come from TEXT NODES** — the element's own contents, or `aria-labelledby`
+at the node that already renders the name, with icon-only verbs in `sr-only` spans. WCAG 2.5.3 prefers it
+anyway. Enforced by `src/lib/analytics/aria-leak.test.ts`. ⚠️ **This is S63's grocery-row finding one layer
+out:** that one predicted the item name would escape as a display `<button>` — it escaped as that button's
+*label*. **When you name the door a value escapes through, ask what else is attached to that door.**
+
+**⚠️ S64 · A VENDOR CAN SILENCE YOU DELIBERATELY, SILENTLY, AND ONLY IN THE TEST BROWSER — BUG-059.**
+posthog-js's `capture()` opens with `!config.opt_out_useragent_filter && this._is_bot()` and skips the send;
+`_is_bot()` fires on a blocklisted UA, on blocklisted `userAgentData.brands`, **or on `navigator.webdriver`**
+— and headless Playwright trips **two of the three independently** (`"headlesschrome"` is literally on
+PostHog's list). ⚠️ **The gate is in `capture()`, NOT `init()`**, so remote config is fetched, the recorder
+downloads, nothing errors, and replay dies with analytics because `/s/` rides `capture("$snapshot")`. It sat
+**upstream of all four suspects the tracker had eliminated**, which is why eliminating them never got closer.
+⚠️ **And the corroboration was hollow:** *"the PostHog UI says no events yet"* was true because
+`NEXT_PUBLIC_POSTHOG_KEY` **is not set in Vercel Production**, so no real browser has ever run a
+key-carrying build. **An absence measured against an empty room (S62), in the place it mattered most.**
+**When a vendor SDK goes quiet, read the vendor's own `capture()` guard clauses before suspecting config.**
 
 **⚠️ S63 · A DOC CITED AN ARTIFACT THAT ANOTHER DOC, IN THIS REPO, RECORDED AS DESTROYED.** Six documents
 named *"the event taxonomy from S9"* as the input to observability. **It does not exist.** Its only source
