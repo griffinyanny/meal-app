@@ -14,13 +14,19 @@ import {
 } from "@/lib/household";
 import { DEEP_QUESTIONS, memoryForAnswer } from "./questions";
 import type { DeepAnswer, InterviewState } from "./types";
+import { type DietaryFramework, isDietaryFramework } from "@/lib/diet";
 
 export interface SynthesizedMemory {
   content: string;
   category: "preference" | "brand" | "feedback" | "behavior" | "restriction";
 }
 
-const DIET_LABEL: Record<string, string> = {
+// ⚠️ `Record<DietaryFramework, …>`, not `Record<string, …>` (BUG-044). These are
+// chef-voice sentence fragments and are deliberately NOT the same vocabulary as
+// `caught.ts`'s UI labels — but both must COVER the domain, and typing the key
+// is what makes a ninth framework a compile error here rather than a `?? rawValue`
+// echo at runtime. That echo is what BUG-013 was.
+const DIET_LABEL: Record<DietaryFramework, string> = {
   omnivore: "eats everything",
   vegetarian: "vegetarian",
   vegan: "vegan",
@@ -30,6 +36,20 @@ const DIET_LABEL: Record<string, string> = {
   mediterranean: "Mediterranean",
   other: "following their own approach",
 };
+
+/**
+ * The label, or null — never the raw value.
+ *
+ * ⚠️ BUG-013 removed a `DIET_LABEL[x] ?? x` echo from `synthesizeHeadlineMemory`
+ * and left the same expression at two sibling call sites in this file and one in
+ * `caught.ts`. Neither is exploitable today (their inputs are enum-constrained
+ * upstream), but "fixed at one call site" is how the first one survived, so all
+ * four now route through here and DROP what they cannot label. A framework the
+ * chef has no words for is one it cannot cook to either.
+ */
+function dietLabel(value: string | null | undefined): string | null {
+  return isDietaryFramework(value) ? DIET_LABEL[value] : null;
+}
 
 // The one memory that always gets written, even when the user only tapped and
 // even when they skipped every optional turn. The brief's requirement: a
@@ -48,7 +68,7 @@ export function synthesizeHeadlineMemory(state: MemorySource): string {
   // the deep-answer one through a quieter door. Omitting the clause is also the
   // honest outcome: a framework the chef has no label for is one it cannot cook
   // to either.
-  const diet = state.dietaryFramework ? DIET_LABEL[state.dietaryFramework] : null;
+  const diet = dietLabel(state.dietaryFramework);
   if (diet && state.dietaryFramework !== "omnivore") parts.push(diet);
 
   if (state.maxCookTimeWeeknight) {
@@ -271,9 +291,8 @@ export function reflectSummary(state: InterviewState): string {
   const bits: string[] = [];
 
   if (state.composition) bits.push(`Cooking for ${householdPhrase(state.composition)}`);
-  if (state.dietaryFramework && state.dietaryFramework !== "omnivore") {
-    bits.push(DIET_LABEL[state.dietaryFramework] ?? state.dietaryFramework);
-  }
+  const diet = dietLabel(state.dietaryFramework);
+  if (diet && state.dietaryFramework !== "omnivore") bits.push(diet);
   if (state.maxCookTimeWeeknight) bits.push(`${state.maxCookTimeWeeknight} minutes on a weeknight`);
   if (state.cuisinePreferences.length > 0) {
     bits.push(`leaning ${state.cuisinePreferences.slice(0, 3).join(", ")}`);
@@ -308,7 +327,8 @@ export function seedChips(source: SeedChipSource): string[] {
   const diet = source.dietaryFramework;
   // Chips are labels, not sentence fragments, so the diet gets a capital to sit
   // level with "Under 30 min" and "No shellfish" beside it.
-  if (diet && diet !== "omnivore") chips.push(capitalize(DIET_LABEL[diet] ?? diet));
+  const dietChip = dietLabel(diet);
+  if (dietChip && diet !== "omnivore") chips.push(capitalize(dietChip));
   if (source.maxCookTimeWeeknight) chips.push(`Under ${source.maxCookTimeWeeknight} min`);
   for (const cuisine of (source.cuisinePreferences ?? []).slice(0, 2)) chips.push(cuisine);
   if (source.composition && source.composition.children > 0) chips.push("Kid-friendly");

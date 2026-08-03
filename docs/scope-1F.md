@@ -1033,6 +1033,32 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 
 # Workstream D — Production readiness
 
+> **⚠️ FACTUAL CORRECTION, S62 — one of this workstream's named security subjects is FALSE.**
+> Three drafts of this section (and `whats-next.md`, and two kickoff prompts) state that the offline
+> cache holds *"the shell HTML, SERVER-RENDERED with the household's real content baked in."* **It does
+> not.** Measured: all four cacheable routes fetched with a real session, once against an empty household
+> and once against a fully seeded one — **byte-identical MD5s**, zero household strings, zero uuids, zero
+> tokens. Every tab route is a thin server component wrapping a `"use client"` child that fetches over
+> tRPC **POST**, which is the exact reason `persister.ts` exists and is written in that file.
+>
+> **What survives is real and smaller:** the **IndexedDB** half genuinely holds the grocery list in
+> cleartext on-device, and its allow-list is genuinely closed (verified — `grocery.current` +
+> `staples.list`, fail-closed by construction). The service worker's shell cache holds app chrome only.
+>
+> **Why this is recorded rather than quietly edited:** the claim was written once in S60 and repeated
+> verbatim into three documents, where it became a named subject of a security review nobody had checked
+> it against. **Fourth instance of the pattern** — after the cold-user premise, the feedback-capture
+> bundling, and §09's stale four-controls sentence. The check is the same one S60 wrote down: *does every
+> item on a list survive being measured, or only being repeated?*
+
+**S62 progress.** ✅ **(2) migration safety — DONE** (rule + `migrations.test.ts` + `pg_dump` discipline).
+✅ **(5) BUG-044 — CLOSED.** 🔨 **(1) security review — PART DONE**: authz/IDOR sweep across every router,
+rate limiting, SSRF, the access gates, the offline cache. **Still owed: prompt-injection review, RLS
+verification, secrets audit.** ❌ **(3) observability — not started, and it gates Workstream E.**
+❌ **(4) the wife's account — Griffin's five minutes.** New rows: **BUG-054** (Groceries has no heading in
+its generating/error/empty states — lands with the a11y sweep) and **BUG-055** (`clearOfflineState()` is
+not called on the revocation paths).
+
 - [ ] **Observability: PostHog** with the event taxonomy from S9, **+ Sentry.** Without this, the
       two-week validation run produces anecdotes instead of the time-to-list measurement the DoD requires.
       ⚠️ **And, per Griffin (S52), that is the smaller half of why it comes before validation:** it is the
@@ -1069,18 +1095,25 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
       migrations are **purely additive** — zero `DROP TABLE` / `DROP COLUMN` / `TRUNCATE` / `DELETE FROM` —
       which is a young schema, not a control. **The first genuinely destructive change is V1.5's household
       sharing**, which is why this lands in D rather than displacing Workstream B. Three parts:
-      - [ ] **Expand/contract written into `.claude/rules/drizzle-schema.md` as the standing discipline.** No
+      - [x] **Expand/contract written into `.claude/rules/drizzle-schema.md` as the standing discipline ✅ S62.** No
             migration both removes something and depends on its absence: add nullable → backfill → switch
             reads → drop later, as a separate migration. Rollback becomes a code deploy, not a data restore.
             ⚠️ **Already done instinctively once** — `0010` dropped a *default* and deliberately did not
             backfill, because a genuine "2 adults" answer is byte-identical to the default. The reasoning
             exists; it is not written down as a rule.
-      - [ ] **`migrations.test.ts`** — scan `src/server/db/migrations/*.sql` for destructive statements and
-            fail unless the file carries an explicit acknowledgement comment. This repo's established idiom
-            (`config.test.ts` scrapes `maxDuration` from route source; `palette.test.ts` scrapes hexes with an
-            allow-list; `globals.test.ts` fails on hand-written vendor prefixes). Turns "we remembered to read
-            the SQL" into "the gauntlet will not let it through."
-      - [ ] **`pg_dump` before any acknowledged-destructive migration.** ⚠️ **This is the part a staging
+      - [x] **`migrations.test.ts` ✅ S62** — scans every `migrations/*.sql` and fails unless the file
+            carries `-- ACKNOWLEDGED-DESTRUCTIVE: <reason>`. Six data-destroying patterns plus the two
+            expand/contract violations that are checkable from the string (`ADD COLUMN … NOT NULL` with no
+            `DEFAULT`, and `ALTER COLUMN … SET NOT NULL`). ⚠️ **Verified in all three directions**, which
+            mattered: red on 7 planted offences, **silent on the two lookalikes that must not trip it** —
+            `DROP POLICY IF EXISTS` (×11 in `0002_rls.sql`, idempotent re-creates) and
+            `ALTER COLUMN … DROP DEFAULT` (`0010`, removes a default for future rows, touches no data) —
+            green once acknowledged, green on the real 11. **Measuring the existing migrations before
+            writing the patterns is what kept it from crying wolf on day one**, which is the failure that
+            teaches you to edit the expectation (S59). ⚠️ It **cannot** verify a dump was taken and says so
+            in its own failure text; the marker is a sentence you have to type, not a flag you can pass.
+      - [x] **`pg_dump` before any acknowledged-destructive migration ✅ S62** — the command is in the rule
+            file, and the guard's failure message points at it. ⚠️ **This is the part a staging
             project would NOT have given us** — rehearsing a bad migration and then applying the same bad
             migration to prod loses the data either way. The dump is the only step that helps at the moment
             it matters.

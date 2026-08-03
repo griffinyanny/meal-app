@@ -9,6 +9,7 @@
 //
 // Pure and structural on purpose: the router owns the diff, this owns the
 // wording, and neither needs the other's imports.
+import { type DietaryFramework, isDietaryFramework } from "@/lib/diet";
 
 export interface PreferenceSnapshot {
   dietaryFramework: string;
@@ -20,7 +21,11 @@ export interface PreferenceSnapshot {
   maxCookTimeWeekend: number;
 }
 
-const DIET_LABEL: Record<string, string> = {
+// ⚠️ Typed by the domain, not by `string` (BUG-044). These are the UI labels —
+// the same words the onboarding chips wear — and are deliberately a different
+// vocabulary from `synthesize.ts`'s chef-voice fragments. Both must cover the
+// domain; only the type can enforce that.
+const DIET_LABEL: Record<DietaryFramework, string> = {
   omnivore: "No restrictions",
   vegetarian: "Vegetarian",
   vegan: "Vegan",
@@ -72,8 +77,18 @@ export function describeCaught(
 ): string[] {
   const labels: string[] = [];
 
-  if (after.dietaryFramework && after.dietaryFramework !== before.dietaryFramework) {
-    labels.push(DIET_LABEL[after.dietaryFramework] ?? after.dietaryFramework);
+  // ⚠️ Drops rather than echoes an unrecognised framework — BUG-013's fix,
+  // applied to the sibling it did not reach. This one runs SERVER-SIDE (the
+  // user-talk router imports `describeCaught`), so `?? rawValue` here was the
+  // same echo one door over. Not exploitable today (the talk path validates
+  // `set_diet` against the same list before it gets here), which is exactly why
+  // it survived being looked at once.
+  if (
+    after.dietaryFramework &&
+    after.dietaryFramework !== before.dietaryFramework &&
+    isDietaryFramework(after.dietaryFramework)
+  ) {
+    labels.push(DIET_LABEL[after.dietaryFramework]);
   }
   // Avoids keep their "(allergy)" marker: on the safety turn that marker is the
   // whole point of the confirmation.

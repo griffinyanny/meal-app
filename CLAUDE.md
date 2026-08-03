@@ -26,11 +26,50 @@ B8a (S57) and **B8b (S58)**. **THE DESIGN-SYSTEM PASS IS DONE.**
 **Workstream C (PWA) is ✅ CODE-COMPLETE (S59–S61)** — the manifest, the icon pipeline, the iOS meta tags,
 BUG-049, the service worker, the whole offline half, and **the three locked design artifacts** (the Ember
 icon, the Hero launch screen, the offline clause). The install prompt was **CUT** by the design round.
-**758 unit + OF1–OF7 green, migration `0010` applied.** ⚠️ **The only thing left in C is the two-phone
-check** — it is the item most likely to be quietly wrong on a real device, and nothing in the suite can
-answer it. Then **D (production readiness)**, then **E (feedback capture)**, then the two validation weeks.
+**775 unit green, migration `0010` applied, `/visual-qa` capture at 6 files / 55 states / all `ok`.**
+⚠️ **The only thing left in C is the two-phone check** — the item most likely to be quietly wrong on a real
+device, and nothing in the suite can answer it.
+**Workstream D (production readiness) is 🔨 PART-DONE (S62):** migration safety ✅, BUG-044 ✅, the security
+review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
+prompt-injection review, RLS verification, secrets audit**). ⚠️ **Observability is NOT started and it gates
+Workstream E.** Then **E (feedback capture)**, then the two validation weeks.
 
-**🔴 S61 · THE GROCERIES VISUAL GATE HAS BEEN BLIND SINCE S60 — BUG-053. FIX IT BEFORE CLOSING C.**
+**⚠️ S62 · THE SEED RESET THE SERVER, AND NOTHING HAD EVER RESET THE CLIENT.** BUG-053's filed prime
+suspect was the **service worker**, and it was wrong — navigations are network-first, so the SW was never
+serving stale HTML. The capture runner drives **one page** through every state, and since 1F/C that page
+carries a React Query cache persisted to IndexedDB with **`staleTime: 30_000`** — so each `goto` restored
+the *previous* state's data, found it fresh, and never refetched. **One number explained every symptom**,
+including the two that looked like separate bugs (states 2–3 showed state 1's list; states 5–7 showed an
+*empty* list, because an un-awaited `setOrganizeMode` invalidate fired a refetch that landed inside the
+next seed's `wipe()` window). Found by **instrumenting rather than reasoning** — per-state timing plus a
+dump of what the page was actually showing, which came back as the previous state's items by name. **Fixed
+by construction:** `about:blank` first (destroying the live page so no in-flight refetch can land on the
+clear), then clear IndexedDB over CDP, then seed. ⚠️ **Whenever apparatus drives one page through many
+seeded states, ask what the BROWSER carries between them** — the server-side reset is only half a reset.
+
+**⚠️ S62 · A DOCUMENTED SECURITY SUBJECT WAS FALSE, AND HAD BEEN COPIED INTO THREE DOCS.** Workstream D
+named the offline cache as holding *"the shell HTML, SERVER-RENDERED with the household's real content
+baked in."* **Measured: byte-identical MD5s** on all four cacheable routes between an empty household and
+a fully seeded one — every tab route is a thin server component wrapping a `"use client"` child that
+fetches over tRPC **POST**, which is the exact reason `persister.ts` exists and is written in that file.
+**Fourth instance of a claim written once and repeated until it read as established** (after the cold-user
+premise, the feedback-capture bundling, and §09's four-controls sentence). ⚠️ **And a FALSE NEGATIVE was
+nearly recorded on the way:** the first fetch came back clean, but the capture's `afterAll` had just wiped
+the household — *"no household data in the HTML"* proved nothing until the fetch was repeated with data
+actually seeded. **An absence measured against an empty room is not an absence.**
+
+**⚠️ S62 · A GUARD'S PATTERNS COME FROM MEASURING THE EXISTING CORPUS, NOT FROM THE DOC THAT ASKED FOR IT.**
+`migrations.test.ts` was scoped off four statement types; the eleven real migrations carry **eleven**
+`DROP POLICY IF EXISTS` and one `ALTER COLUMN … DROP DEFAULT`, both harmless and both matched by a naive
+`/DROP/`. A guard red on day one teaches you to edit the expectation (S59), so the exemptions and their
+reasons live in the file. Two patterns were **added** beyond the doc's list, because both abort on a table
+that already has rows. ⚠️ **And BUG-013 had been fixed at ONE call site of four** — the same
+`DIET_LABEL[x] ?? x` echo survived at three siblings, one of them **server-side**. *Ask what else wears
+the pattern you just fixed.* ⚠️ One of the new echo tests **initially could not fail**: `seedChips` runs
+its output through `capitalize()`, so a lowercase marker never matched a string that HAD been echoed —
+**S51's proteins branch, repeated exactly**, and caught only by forcing the failure.
+
+**🔴 S61 · THE GROCERIES VISUAL GATE HAS BEEN BLIND SINCE S60 — BUG-053. ✅ FIXED S62 (see above).**
 `npm run test:capture -- tests/e2e/capture/groceries.capture.ts` dies at its 120s budget **without writing a
 manifest**: `grocery-generating` and `grocery-error` never render their seeded state, and
 `grocery-checked-gotit` then hangs on a `.click()` that has **no action timeout** because there are no rows

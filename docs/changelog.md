@@ -4,6 +4,106 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 62 — 2026-08-03 (BUG-053, and Workstream D opens)
+
+**The Groceries visual gate can see again, and Workstream D is part-done.** **775 unit green** (+17),
+lint + typecheck clean, **`/visual-qa` capture at 6 files / 55 states / all `ok`** across every surface.
+
+### ⛔ THE ONE TO READ: the seed reset the SERVER and nothing had ever reset the CLIENT
+
+BUG-053's filed prime suspect was the **service worker**. It was wrong — navigations are network-first, so
+the SW was never serving stale HTML. The cause is that the capture runner drives **one page** through every
+state, and since PR #25 that page carries a React Query cache persisted to IndexedDB with
+**`staleTime: 30_000`**. Each `goto` restored the *previous* state's `grocery.current`, found it fresh, and
+never refetched. The seed and the screen had been describing different databases.
+
+**One number explained every symptom**, including the two that looked like separate bugs: states 2–3 showed
+state 1's list verbatim (cached data < 30s old); state 4 crossed the threshold and refetched correctly;
+states 5–7 showed an **empty** list, because state 4's `setOrganizeMode` invalidate fired a refetch nobody
+awaited and it landed inside the next seed's `wipe()` window; 8–9 crossed the threshold again and were fine.
+
+**Found by instrumenting rather than reasoning**, which is what the filing asked for: per-state timing plus
+a dump of what the page was actually displaying. It came back as the previous state's items **by name** —
+`Garlic · 2 dinners · 6 clove · Lemon · Butter · Chicken thighs` — on a page seeded `GROCERY_GENERATING`.
+
+**Fixed by construction, never by lengthening a wait** (S57). Before each state the runner goes to
+`about:blank` — destroying the live page so no in-flight refetch or pending persist write can land on top
+of what is about to be cleared — then clears the origin's IndexedDB over CDP, then seeds. **Order is the
+whole fix.** ⚠️ **The force-failure needed no planting and had five subjects:** the five red states went
+green, and `grocery-generating` / `grocery-error` now pass by matching **their own** seeded copy, which a
+stale cache could not produce. 120s death with no manifest → **48s, 9/9 ok**.
+
+**Two apparatus fixes, and one was bigger than filed.** The harness sets `navigationTimeout` and has
+**never** set `actionTimeout` — so *every* `.click()` in *every* capture state inherited no timeout, not
+just the one named in the bug. Set at the **capture project level**, so a state written later cannot
+reintroduce it. And the manifest is now written **before and after every state** with an `in-flight`
+placeholder, so a hard timeout leaves a record naming which state was running.
+
+### ⛔ AND THE SECURITY REVIEW'S FIRST FINDING WAS THAT ONE OF ITS OWN SUBJECTS IS FALSE
+
+Three documents state the offline cache holds *"the shell HTML, SERVER-RENDERED with the household's real
+content baked in."* **Measured: it does not.** All four cacheable routes fetched with a real session, once
+against an empty household and once fully seeded — **byte-identical MD5s**, zero household strings, zero
+uuids, zero tokens. Every tab route is a thin server component wrapping a `"use client"` child fetching
+over tRPC **POST**, which is the exact reason `persister.ts` exists and is written in that file.
+
+⚠️ Written once in S60, copied verbatim into three docs, and it became a **named subject of a security
+review nobody had checked it against**. Fourth instance of that pattern. What survives is real and smaller:
+the IndexedDB half genuinely holds the grocery list in cleartext, and its allow-list is genuinely closed.
+
+⚠️ **A false negative was nearly recorded on the way:** the first fetch came back clean, but the capture's
+`afterAll` had just wiped the household — "no garlic in the HTML" proved nothing. **The seeded re-run is
+the measurement; the first one was an empty room.**
+
+### Migration safety shipped, and measuring the existing migrations is what kept the guard honest
+
+Expand/contract is now the written default in `.claude/rules/drizzle-schema.md`, with the `pg_dump` command
+and the reasoning that `drizzle-kit generate` cannot tell a rename from a drop-plus-add. New
+`migrations.test.ts` scrapes every `migrations/*.sql`. ⚠️ **The patterns were written from a measurement of
+the eleven existing files, not from the four statements the scope doc named** — because `0002_rls.sql`
+carries eleven `DROP POLICY IF EXISTS` and `0010` carries an `ALTER COLUMN … DROP DEFAULT`, and a guard that
+flagged either would have gone red on day one. **A guard that cries wolf teaches you to edit the
+expectation** (S59). Verified red on 7 planted offences, silent on both lookalikes, green once acknowledged.
+
+### BUG-044 was five definitions, and BUG-013 had been fixed at one call site of four
+
+The dietary-framework domain lived in the persist enum, the AI-prompt list, two different `DIET_LABEL` maps
+and `DIET_OPTIONS`. All five agreed, which is the only reason nothing had broken. One canonical
+`src/lib/diet.ts` now; both label maps typed `Record<DietaryFramework, string>` so a ninth framework is a
+**compile error**. ⚠️ **`DIET_OPTIONS` completeness is not type-enforceable** (a 7-element array still
+typechecks), so the test asserts it at runtime.
+
+⚠️ **And BUG-013's `DIET_LABEL[x] ?? x` echo survived at three sibling call sites**, one of which
+(`caught.ts`'s `describeCaught`) runs **server-side** from the user-talk router. All four drop rather than
+echo now. Both echo tests verified failing against the pre-fix code, returning `carnivore-<script>`
+verbatim. ⚠️ **One of them initially could not fail**: `seedChips` runs its output through `capitalize()`,
+so a lowercase marker never matched a string that had in fact been echoed — **S51's proteins branch,
+repeated exactly**, and caught only by forcing the failure rather than trusting the green.
+
+⚠️ **Deviation from the tracker's own recommendation, stated:** narrowing `interviewStateSchema` to the
+enum would 400 the whole `finishOnboarding` call — the last step of an interview that fires **once per
+account** — to protect a field that path never persists. Coerced with `asDietaryFramework` instead; the
+parsed type is `DietaryFramework | null` either way, which was the actual complaint.
+
+### Filed rather than fixed
+
+- **BUG-054 🟠** — Groceries renders **no heading at all** in its generating, error and no-list states.
+  BUG-028's exact defect on a different tab, and an `<h1>`-less document on a surface D's a11y pass owns.
+  ⚠️ **Invisible until now because those two states had never once been captured successfully.**
+- **BUG-055 🟠** — `clearOfflineState()` is called only from the You-tab sign-out, not from `auth/rejected`,
+  `auth/callback` or session expiry. The gate exists to revoke access and the local copy survives it.
+- **BUG-051 was allocated twice** (S60's resolved service-worker bug and S61's open offline-add bug). The
+  open row is renumbered **BUG-056**. Second instance of the S48 collision, same cause: **an id allocated
+  by reading the Open table rather than the whole file.**
+
+### Recommended to Griffin, not decided
+
+`ALLOWED_EMAILS` set to exactly the two real addresses at the same moment his wife's account is created.
+**"No closed beta" and "open signup" are not the same decision, and only the first was made.** Prod today
+takes any Google account that finds the URL, each carrying a 150-call/day OpenAI budget.
+
+---
+
 ## Session 61 — 2026-08-02 (1F/C — the three design artifacts)
 
 **Workstream C is code-complete.** The icon, the launch screen and the offline clause are built to the
