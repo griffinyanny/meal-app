@@ -148,8 +148,10 @@ through the real AI mock (deterministic `grocery-talk` fixture). Spec:
 | GR11 | GROCERY_READY | Open the chef, type "remove the garlic", send | The item's `[N]` ref resolves to the real row and it's removed (the ID-safety path) | 🟢 |
 | GR-L1 | GROCERY_PENDING_CACHED | Open Groceries; the fully-cached plan confirms | Lands on the merged list with no normalize hang; the two recipes' shared garlic is ONE row carrying the merge marker. **S52: asserts the marker's TEXT (`2 dinners`), not its presence** — the old amber dot was visible whenever `sources.length > 1` was truthy at all, so it could not fail on a wrong count | 🟢 |
 | GR-L2 | GROCERY_HYDRATING_STRAGGLERS | Open Groceries mid-generation | The straggler hint names the exact remaining count ("Finishing 2 recipes…"), not a generic shimmer; the list stays hidden | 🟢 |
+| GR12 | GROCERY_GENERATING · GROCERY_ERROR | Open Groceries in each non-ready state | **BUG-054.** The page's `<h1>` is present ("Your list") — asserted **by role**, never by text, because `getByText` passes against a `<p>` and the whole fix IS the heading level (S54). Also asserts the list controls are NOT rendered: law 05 would otherwise put a progress bar and a Copy button on a screen with no list. **Force-failure earned** — reverting the fix and rebuilding turned this red | 🟢 (S63) |
+| GR13 | GROCERY_READY | Open Groceries on a ready list | Exactly **ONE** `<h1>`, not two — the failure mode of BUG-054's own fix, since the title is rendered by the page client for non-ready states and by the header on the ready path. No unit test can see a duplicated heading | 🟢 (S63) |
 
-**Groceries: 13 passing**, 0 findings. Merge quality (canonical sums, under-merge
+**Groceries: 16 passing**, 0 findings. Merge quality (canonical sums, under-merge
 correctness) and NL→ops quality are wrap-time real-model checks + Griffin's taste pass
 — the harness mocks the model.
 

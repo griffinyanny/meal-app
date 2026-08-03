@@ -1051,6 +1051,31 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 > bundling, and §09's stale four-controls sentence. The check is the same one S60 wrote down: *does every
 > item on a list survive being measured, or only being repeated?*
 
+> **⚠️ FACTUAL CORRECTION, S63 — this workstream's OTHER named input does not exist either.**
+> *"Observability: PostHog **with the event taxonomy from S9**"* appears in this doc, `scope-v1.md`,
+> `whats-next.md` (×4), `idea-backlog.md` and two kickoff prompts. **There is no such taxonomy.** Its only
+> source is one changelog line ([changelog.md:3545](changelog.md#L3545) — *"event taxonomy defined (30+
+> events across 8 categories)"*), and the artifact lived in
+> `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md`, which
+> [plans/README.md:10](plans/README.md#L10) records as **LOST** since S18: never committed, deleted,
+> unrecoverable.
+>
+> The plan's *phase-skeleton* half was consciously rescued into `scope-v1.md` at S19. Its *taxonomy* half
+> was not — and nobody noticed for 44 sessions, because nothing needed it until D opened.
+>
+> ⚠️ **The same S9 decision row carries a second claim that is false in effect:** *"vendor abstraction
+> layer built in Phase 1."* `src/lib/analytics.ts` existed — **15 lines of dev-only `console.log` with zero
+> call sites in the entire app.** The file's existence is what made the claim read true.
+>
+> **FIFTH instance of the pattern**, after the cold-user premise, the feedback-capture bundling, §09's
+> four-controls sentence, and S62's server-rendered-shell claim. ⚠️ **And the sharpest variant yet: this one
+> was a claim about an ARTIFACT that a different doc, in the same repo, already recorded as destroyed.**
+> The two facts sat four files apart for 44 sessions and nobody joined them. Consequence: D3 was
+> design-from-zero, not install-and-port — see `docs/observability-taxonomy.md`.
+
+**S63 progress.** ✅ **(3) observability — the taxonomy, both SDKs, the masking posture and the whole
+north-star funnel.** ✅ **BUG-054 shipped** (Griffin's call). See the S63 rows below.
+
 **S62 progress.** ✅ **(2) migration safety — DONE** (rule + `migrations.test.ts` + `pg_dump` discipline).
 ✅ **(5) BUG-044 — CLOSED.** 🔨 **(1) security review — PART DONE**: authz/IDOR sweep across every router,
 rate limiting, SSRF, the access gates, the offline cache. **Still owed: prompt-injection review, RLS
@@ -1059,12 +1084,71 @@ verification, secrets audit.** ❌ **(3) observability — not started, and it g
 its generating/error/empty states — lands with the a11y sweep) and **BUG-055** (`clearOfflineState()` is
 not called on the revocation paths).
 
-- [ ] **Observability: PostHog** with the event taxonomy from S9, **+ Sentry.** Without this, the
+- [x] **Observability: PostHog + Sentry ✅ S63** — the taxonomy is **designed, not ported** (see the
+      correction above): **34 events across 8 categories** in `docs/observability-taxonomy.md`, typed in
+      `src/lib/analytics/events.ts` so a wrong name or missing property **does not compile**.
+      ⚠️ **No property can carry user content, and that is a compile error too** — a type-level guard fails
+      `npm run typecheck` naming the offending event if any property is a wide `string` outside the opaque-id
+      allow-list, so "just send the item name, it'll help debug" is un-buildable rather than un-reviewed.
+      **Both vendors go DIRECT, no reverse proxy** — see the note under Sentry below; that is one rule for
+      both rather than two.
+      ⚠️ **8 of 34 events are actually WIRED**, and the doc says so loudly in its own status section. The
+      wired set is the complete north-star funnel plus the two lifecycle events, which is exactly what the
+      DoD and Workstream E need; the other 26 are typed and one line each at a known seam.
+      **`wiring.test.ts` reads `src/` off disk** and fails if an event is claimed wired and never called, or
+      called and not claimed — because "a table of events reads as a working pipeline, and is not one until
+      something calls it" is this workstream's own lesson turned into a guard.
+- [x] **⚠️ Analytics is OFF for every automated run ✅ S63** — enabled only by the presence of
+      `NEXT_PUBLIC_POSTHOG_KEY` (an allow-list), and **both Playwright configs pin it to `""` in
+      `webServerEnv`**. That variable is inlined at BUILD time and both suites build inside their own
+      webServer command, so an explicit empty value beats a real key in `.env.local`. Without it, a
+      139-spec run plus 55 capture states fabricate hundreds of rituals and grocery lists that then land in
+      the DoD's *"time-to-list < 10 minutes on a **real** week"* **as data** — real events, plausible
+      numbers, and the only tell is that Griffin did not do any of it. `analytics-config.test.ts` scrapes
+      both configs and fails if either line is removed.
+- [ ] ~~**Observability: PostHog** with the event taxonomy from S9, **+ Sentry.**~~ Without this, the
       two-week validation run produces anecdotes instead of the time-to-list measurement the DoD requires.
       ⚠️ **And, per Griffin (S52), that is the smaller half of why it comes before validation:** it is the
       *debugging substrate for the validation weeks themselves*. Without it he reports a bug from memory and
       Claude guesses. With it, the error and the path that produced it are both visible.
-- [ ] **PostHog session replay** (added S52, Griffin's call). The event taxonomy gives a named *sequence*
+- [x] **PostHog session replay ✅ S63 (built) · ⚠️ ONE VERIFICATION OWED.** The posture is inverted as
+      specified — `maskAllInputs: true` + `maskTextSelector: "*"` masks everything, then an explicit
+      `data-ph-unmask` attribute unmasks an allow-listed subtree. `autocapture` is **off**, because it
+      records the text of every clicked element and would route around the whole policy through a different
+      door.
+      ⚠️ **THE API THIS DOC ASSUMED DOES NOT EXIST.** The bullet below says *"mask everything, then
+      explicitly unmask the chrome"*. **posthog-js has no unmask capability at all** — measured, not read:
+      zero occurrences of `unmask` anywhere in the installed package, and no `ph-no-mask` class (only
+      `ph-no-capture`, which masks *harder*). The inverted posture is reachable **only** through
+      `maskTextFn`, the per-element escape hatch. A design written against a vendor API nobody checked
+      against the vendor — the same finding class as this workstream's other two, one layer down.
+      ⚠️ **AND THE OBVIOUS ALLOW-LIST WOULD HAVE LEAKED THE ENTIRE GROCERY LIST.** "Unmask the chrome — nav,
+      buttons, state labels" reads as a selector like `nav, button`. **`grocery-row.tsx` renders the item
+      name as a display `<button>`** (the `<input>` only exists while editing), so `button` would have
+      recorded the largest piece of household content in the product, on the surface used most, via a rule
+      that looks obviously safe. That case is a named test.
+      ⚠️ **What is OWED: look at a real recording.** The mask *logic* is unit-tested (10 cases, including the
+      grocery-row trap and "no digits survive" — ages and quantities are content too). The *wiring* is not
+      verified, and cannot be until Griffin creates the PostHog project. **A masking config that reads
+      correctly and records the grocery list is precisely the false green this project has produced six
+      distinct ways.** The config is the hypothesis; the recording is the measurement.
+      **Quota confirmed at build time rather than assumed** (posthog.com/pricing, fetched 2026-08-03):
+      **1M events / 5,000 recordings / 100k exceptions per month, free, no card.** Two users for two weeks
+      cannot approach any of it.
+- [x] **Sentry ✅ S63** — production-gated by DSN presence (the same allow-list shape), `sendDefaultPii:
+      false` restated explicitly because its absence looks identical to its having been considered, and
+      **Sentry's own session replay is OFF**: a second recorder with its own masking defaults would ship the
+      vendor default while the careful posture above governs only the other recording.
+      ⚠️ **`tunnelRoute` deliberately NOT set, and this is S59 applied BEFORE it bit rather than after.** It
+      creates a same-origin `/monitoring` route for error POSTs; `src/proxy.ts` gates every path not on
+      `isSignedOutReachable()`, and `/monitoring` would not be on it — so reports from a **signed-out**
+      browser would 307 to `/login` and vanish. Errors on the login screen are exactly the ones worth
+      having, and the failure is silent: the tell is *"we get no errors from /login"*, which reads as *"none
+      happen there"*. **Third time this shape has appeared in this app** (`/manifest.webmanifest` twice in
+      S59, `/robots.txt` before it), and each fix was a path added to a list nobody re-reads.
+      The build-time source-map upload is also conditional on `SENTRY_AUTH_TOKEN`, so neither Playwright
+      suite pays for a wrapper step it has no token for.
+- [ ] ~~**PostHog session replay**~~ (added S52, Griffin's call). The event taxonomy gives a named *sequence*
       (`intent_submitted` → `plan_confirmed`); Sentry gives the stack, release and user. **Neither shows what
       he actually tapped** — replay does, which is precisely the gap he named.
       **⚠️ The masking posture must INVERT the vendor default, and this is the part to get right.** PostHog
@@ -1079,9 +1163,21 @@ not called on the revocation paths).
       config is what carries forward, and if replay ever meets a real user on vendor defaults the leak is
       already live. Confirm the current free-tier recording quota at build time rather than assuming it.
       **Griffin's wife is recorded too** — she should be told; it costs one sentence.
-- [ ] **Time-to-list instrumentation specifically** — the DoD says *"< 10 minutes on a real week"*, and
-      that is a measurement, not a feeling. It needs an event at intent-submit and an event at
-      list-ready, shipped **before** the validation weeks start or the weeks do not count.
+- [x] **Time-to-list instrumentation ✅ S63** — `ritual_started` at intent-submit, `list_ready` when
+      `generationStatus` turns `ready`, correlated by a **client-minted `ritual_id`**.
+      ⚠️ **The id has to be client-minted, and that is a fact about the code rather than a preference:**
+      `persistPlan` runs in the stream's `onComplete`, so **no plan exists when the clock starts.** There is
+      no server-side id to correlate on.
+      ⚠️ **`localStorage`, never `sessionStorage`.** The clock spans four surfaces, a confirm, a background
+      projection and possibly a relaunch — iOS evicts a backgrounded PWA over a long shop, which is the
+      app-kill case this project already tests for. `sessionStorage` dies with the tab and would lose the
+      measurement in exactly the case most worth measuring.
+      ⚠️ **`ritual_abandoned` is part of the measurement, not garnish.** Without it, "< 10 minutes" is
+      computed only over rituals that *finished* — survivor bias with a number attached. The DoD deserves
+      its denominator.
+      Guarded against every way it could lie: a malformed record is discarded rather than trusted (a garbage
+      `startedAt` poisons the average while looking like data), a backwards clock cannot produce a negative
+      duration, and completing clears the ritual so a refetch or a second device cannot report it twice.
 - [ ] **Security review of the full surface** + rate-limiting audit. Per the standing rule for
       auth/secrets/PII work, live-code vulnerabilities ship as their own PR first.
 - [ ] **⭐ Migration safety — added S54, and it is the risk the non-prod-Supabase-project debate was standing

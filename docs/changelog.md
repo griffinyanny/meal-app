@@ -4,6 +4,146 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 63 — 2026-08-03 (Observability — and the taxonomy it was supposed to port did not exist)
+
+### ⛔ The headline: **the "S9 event taxonomy" was never there**
+
+Workstream D's observability item is written in six places as *"PostHog **with the event taxonomy from
+S9**"* — `scope-v1.md`, `scope-1F.md`, `whats-next.md` ×4, `idea-backlog.md`, and two kickoff prompts
+including the one that opened this session. **It does not exist.**
+
+Its only source is **one changelog line** (S9, above: *"event taxonomy defined (30+ events across 8
+categories)"*). The artifact lived in `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md`,
+which `docs/plans/README.md` line 10 records as **LOST** — never committed to the `~/.claude` repo, deleted
+in 2026, unrecoverable, and **discovered in S18**.
+
+⚠️ **The plan's phase-skeleton half was consciously rescued into `scope-v1.md` at S19. Its taxonomy half was
+not, and nobody noticed for 44 sessions, because nothing needed it until D opened.**
+
+⚠️ **The same S9 decision row carries a second claim that is false in effect:** *"Analytics: PostHog
+(decided, installed later). **Vendor abstraction layer built in Phase 1.**"* `src/lib/analytics.ts` did
+exist — **15 lines of dev-only `console.log`, imported by nothing.** Zero call sites in the entire app. The
+file's existence is exactly what made the claim survive a reading.
+
+**Fifth instance of the pattern** (after the cold-user premise, the feedback-capture bundling, §09's
+four-controls sentence and S62's server-rendered-shell claim) — **and the sharpest variant yet: a claim
+about an ARTIFACT that a different doc in the same repo already recorded as destroyed.** The two facts sat
+four files apart the whole time. ⚠️ **The generalisable check: when a doc cites an artifact, open it.** Not
+the sentence citing it — the artifact.
+
+Consequence: D3 was **design-from-zero, not install-and-port**, which is the shape the session actually
+took. Full taxonomy + rationale: **`docs/observability-taxonomy.md`** (new).
+
+### ✅ What shipped
+
+- **The taxonomy — 34 events, 8 categories**, derived by walking the routers and surfaces rather than
+  reconstructing a lost doc. Griffin chose **broad** over a lean ~14 recommendation, and the reasoning is
+  better than the recommendation was: at two users these answer *"does the feature I built get touched"*,
+  not a growth question.
+- **Typed so mistakes do not compile.** `src/lib/analytics/events.ts` — an unknown event name or a missing
+  property is a type error (the BUG-044 discipline). ⚠️ **And no property can carry user content, also as a
+  compile error:** a type-level guard fails `typecheck` *naming the offending event* if any property is a
+  wide `string` outside a two-key opaque-id allow-list. The leak arrives as a reasonable request ("just
+  send the item name, it'll help debug"); the useful answer is that it does not build.
+- **PostHog + Sentry, both DIRECT** — no reverse proxy, no `tunnelRoute`. See below.
+- **Session replay with the posture inverted**, and the whole grocery-row trap avoided. See below.
+- **The complete north-star funnel, wired end to end** — `ritual_started` → `plan_generated` →
+  `plan_confirmed` → `list_ready`, plus `ritual_abandoned`, `plan_generation_failed`, `app_launched` and
+  `connectivity_changed`. This is what the DoD's time-to-list measurement needs and what gates Workstream E.
+- **BUG-054 🟠 CLOSED** (Griffin's call) — the Groceries tab now has an `<h1>` on every state.
+- **811 unit green** (+36), lint + typecheck clean, production build clean. **E2E: 141 passed, 1 failed
+  (20.2m)** — see BUG-058 below.
+
+### ⚠️ Three things the build found that the plan had wrong
+
+**1. The masking API this project specified does not exist.** `scope-1F.md` says *"mask everything, then
+explicitly unmask the chrome"*. **posthog-js has no unmask capability at all** — measured rather than read:
+zero occurrences of `unmask` anywhere in the installed package, and no `ph-no-mask` class (only
+`ph-no-capture`, which masks *harder*). The inverted posture is reachable **only** through `maskTextFn`,
+the per-element escape hatch. A design written against a vendor API that was never checked against the
+vendor — the session's own lesson, one layer down.
+
+**2. The obvious allow-list would have recorded the entire grocery list.** "Unmask the chrome — nav,
+buttons, state labels" reads as a selector like `nav, button`. **`grocery-row.tsx` renders the item name as
+a display `<button>`** (the `<input>` exists only while editing). So the most natural reading of the spec
+would have shipped the largest piece of household content in the product, on the surface used most often,
+through a rule that looks obviously safe. It is now a named test.
+
+**3. `tunnelRoute` would have been the S59 manifest bug for the third time** — caught before shipping
+rather than after. Sentry's tunnel creates a same-origin `/monitoring` route; `src/proxy.ts` gates
+everything not on `isSignedOutReachable()`, and `/monitoring` would not have been on it, so **error reports
+from a signed-out browser would 307 to `/login` and vanish**. Errors on the login screen are exactly the
+ones worth having, and the failure is silent: the tell is *"we get no errors from /login"*, which reads as
+*"none happen there"*. Dropped, matching the PostHog decision, so both vendors follow one rule.
+
+### ⚠️ Guards, each verified failing before being believed
+
+- **Free-text guard** — planted `item_name: string`; `typecheck` failed naming `grocery_item_added`.
+- **Exhaustiveness guard** — planted an event missing from `ALL_EVENTS`; failed naming `foo_happened`.
+  ⚠️ Its first version reported only `Type 'true' is not assignable to type 'never'` and was rewritten to
+  name the offender, because a guard that makes you hunt is half a guard (S59).
+- **Doc-sync** — renamed an event in code only; the test named it. This is the guard against the exact
+  failure that opened the session: a doc and a taxonomy drifting apart.
+- **Wiring guard** — claimed an unwired event; failed naming it. ⚠️ **It also asserts the scan found
+  *anything*,** because without that a broken scan returns an empty set and every other assertion passes
+  vacuously — the "test that could not fail", which this project has now produced three separate ways.
+- **Analytics-off-in-CI guard** — planted a real key in `playwright.config.ts`; two assertions failed.
+- **GR12 (BUG-054)** — reverted the fix, rebuilt, and the spec went red.
+
+⚠️ **One test went red against correct code and was rewritten rather than "fixed".** A masking assertion
+hand-typed the expected bullet run and got the length wrong (Spaghetti is nine characters, not ten). A
+guard pointing at working code is S59's failure mode — it teaches you to edit the expectation — so the
+assertion now checks the **properties the function actually promises** (length preserved, no alphanumerics,
+word boundaries intact) instead of a transcription.
+
+### ⚠️ Stated plainly: 8 of 34 events are wired
+
+The other 26 are designed and typed, and each is a one-line call at a known seam — but **declared is not
+captured**, and a table of events reads as a working pipeline when it is not one. Given how this session
+started, that gap is written into `docs/observability-taxonomy.md` as its own status section and enforced
+by `wiring.test.ts`, which fails if the claim and the source disagree in either direction.
+
+### ⚠️ Owed, and it cannot be closed from here
+
+**Look at a real session recording.** The mask *logic* is unit-tested (10 cases including the grocery-row
+trap and "no digits survive" — ages and quantities are content too). The *wiring* is unverified and stays
+that way until Griffin creates the PostHog project. **A masking config that reads correctly and records the
+grocery list is exactly the false green this project has produced six distinct ways.** The config is the
+hypothesis; the recording is the measurement.
+
+### 🔴 BUG-058 — the E2E failure is a REAL race in the north-star flow's front door
+
+`X6` **passes alone in 12.0s** and fails in the full suite by waiting its entire 30s budget for a
+`Send to chef` button that stays **disabled** — meaning **the text was empty after a successful `fill()`**.
+Green in isolation, red under load: BUG-019's signature, and the reason it was chased rather than shrugged
+at.
+
+**Mechanism, read off the code:** `no-plan-state.tsx:55` holds the intent text as
+`useState(seed?.request ?? "")`, so **any remount resets it to empty**. `plan-page-client.tsx` renders
+`<NoPlanState>` from **two different call sites** (`:455` under `intentMode`, `:575` as the first-run empty
+state) — different positions in the tree, so flipping between them unmounts and remounts. A re-render that
+changes branch (most plausibly `plan.current` resolving after first paint) **discards what was typed**, and
+the send button, gated on `text.trim().length > 0`, silently returns to disabled.
+
+⚠️ **This is a user-facing defect on the first control of the north-star flow**, not a test artifact —
+BUG-014's class ("typed text lost on error") on a different surface.
+
+⚠️ **Attribution is honest-unknown and is recorded that way.** X6 has been green since S50, and this session
+added an `AnalyticsProvider` with two mount effects to the `(app)` layout plus Sentry's client
+instrumentation to the bundle — any of which can shift hydration timing enough to turn a latent race into a
+failing one. **But the race lives in code this session did not touch**, and no baseline run exists to prove
+it was previously immune rather than previously lucky. Claiming either way would be the exact move this
+session spent its opening findings on.
+
+⚠️ **Not to be fixed by lengthening a wait** (S57) — fix the remount, and **verify with the FULL suite**,
+because the spec passes alone today.
+
+Also found, not from this work: **4 high-severity CVEs in production dependencies** (`postcss` and
+`sharp`/libvips, both transitive under Next 16.2.6), fixed by a patch bump to 16.2.12. Filed for the
+security review rather than bundled into an observability PR.
+
+---
+
 ## Session 62 — 2026-08-03 (BUG-053, and Workstream D opens)
 
 **The Groceries visual gate can see again, and Workstream D is part-done.** **775 unit green** (+17),

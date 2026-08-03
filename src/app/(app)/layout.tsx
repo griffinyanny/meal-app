@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isEmailAllowed } from "@/lib/access";
 import { AppShell } from "@/components/shell/app-shell";
 import { OnboardGuard } from "@/components/shell/onboard-guard";
+import { AnalyticsProvider } from "@/components/shell/analytics-provider";
 
 export default async function AppLayout({
   children,
@@ -30,9 +31,14 @@ export default async function AppLayout({
     redirect("/auth/rejected");
   }
 
+  // Identity for analytics comes from the SAME verified claims this layout
+  // already checked — never a client-side guess, and never the email.
+  const userId = typeof data.claims.sub === "string" ? data.claims.sub : null;
+
   return (
     <AppShell>
       <OnboardGuard />
+      {userId && <AnalyticsProvider userId={userId} />}
       {children}
     </AppShell>
   );

@@ -35,5 +35,15 @@ export default baseE2EConfig({
     // all. Scoped to this one address: a spec that could enable dev tools for an
     // arbitrary user would be testing something the product never does.
     DEV_TOOLS_EMAILS: TEST_USER_EMAIL,
+    // ⚠️ Analytics OFF for the whole suite, and this line is load-bearing.
+    // `NEXT_PUBLIC_*` is inlined at BUILD time, and the build runs inside
+    // `webServerCommand` with this env — so an explicit empty value beats
+    // whatever `.env.local` holds. Without it a 139-spec run fabricates
+    // hundreds of rituals, plan generations and grocery lists, which then get
+    // averaged into the DoD's "time-to-list < 10 minutes on a REAL week" and
+    // burn the free-tier replay quota on a robot. Same shape as the AI mock
+    // above: the suite must not be able to reach a real vendor.
+    // `analytics-config.test.ts` fails if this is removed.
+    NEXT_PUBLIC_POSTHOG_KEY: "",
   },
 });

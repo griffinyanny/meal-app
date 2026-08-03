@@ -29,10 +29,60 @@ icon, the Hero launch screen, the offline clause). The install prompt was **CUT*
 **775 unit green, migration `0010` applied, `/visual-qa` capture at 6 files / 55 states / all `ok`.**
 ⚠️ **The only thing left in C is the two-phone check** — the item most likely to be quietly wrong on a real
 device, and nothing in the suite can answer it.
-**Workstream D (production readiness) is 🔨 PART-DONE (S62):** migration safety ✅, BUG-044 ✅, the security
-review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
-prompt-injection review, RLS verification, secrets audit**). ⚠️ **Observability is NOT started and it gates
-Workstream E.** Then **E (feedback capture)**, then the two validation weeks.
+**Workstream D (production readiness) is 🔨 PART-DONE (S62–S63):** migration safety ✅, BUG-044 ✅,
+**observability ✅ S63** (34-event taxonomy + PostHog + Sentry + inverted replay masking + the whole
+north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**), BUG-054 ✅.
+Security review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
+prompt-injection review, RLS "which layer is load-bearing", secrets audit**). ❌ **Perf + a11y pass and the
+error-state sweep are NOT started — that is the next session.** Then **E (feedback capture)**, then the two
+validation weeks.
+
+**⚠️ S63 · A DOC CITED AN ARTIFACT THAT ANOTHER DOC, IN THIS REPO, RECORDED AS DESTROYED.** Six documents
+named *"the event taxonomy from S9"* as the input to observability. **It does not exist.** Its only source
+is one changelog line; the artifact lived in a plan file `docs/plans/README.md` **line 10** has recorded as
+**LOST since S18** — never committed, deleted, unrecoverable. That plan's *phase-skeleton* half was
+consciously rescued into `scope-v1.md` at S19; its *taxonomy* half was not, and nobody noticed for 44
+sessions because nothing needed it until D opened. ⚠️ **The same S9 row's *"vendor abstraction layer built
+in Phase 1"* was equally hollow:** `src/lib/analytics.ts` existed as **15 lines of dev-only `console.log`
+with zero call sites** — and the file's existence is exactly what let the claim survive a reading.
+**Fifth instance of the pattern, and the sharpest variant: a claim about an ARTIFACT, contradicted by a
+file four directories away.** ⚠️ **THE CHECK: when a doc cites an artifact, open the ARTIFACT — not the
+sentence citing it.** And *a file existing is not a file working.*
+
+**⚠️ S63 · A DESIGN CAN BE WRITTEN AGAINST A VENDOR API THAT WAS NEVER CHECKED AGAINST THE VENDOR.**
+`scope-1F.md` specified session-replay masking as *"mask everything, then explicitly unmask the chrome."*
+**posthog-js has no unmask capability at all** — measured rather than read: zero occurrences of `unmask`
+anywhere in the installed package, and no `ph-no-mask` class (only `ph-no-capture`, which masks *harder*).
+The inverted posture is reachable **only** through `maskTextFn`, the per-element escape hatch. ⚠️ **And the
+obvious allow-list would have recorded the entire grocery list:** "unmask nav, buttons, state labels" reads
+as `nav, button`, and **`grocery-row.tsx` draws the item name as a display `<button>`** (the `<input>` only
+exists while editing) — so the most natural reading of our own spec would have shipped the largest piece of
+household content in the product, on the surface used most, through a rule that looks obviously safe.
+⚠️ **Still owed and uncloseable from here: LOOK AT ONE REAL RECORDING.** The mask *logic* is unit-tested;
+the *wiring* is not, and a config that reads correctly while recording the grocery list is the false green
+this project has produced six ways. **The config is the hypothesis; the recording is the measurement.**
+
+**⚠️ S63 · DECLARED IS NOT CAPTURED.** 8 of 34 events are wired. A table of events reads as a working
+pipeline and is not one until something calls it — which is the same failure that produced "the S9
+taxonomy". `src/lib/analytics/wiring.test.ts` reads `src/` off disk and fails if the claim and the source
+disagree **in either direction**, and it asserts the scan **found anything at all**, because without that a
+broken scan passes every other assertion vacuously (the "test that could not fail", now produced three
+separate ways in this project).
+
+**⚠️ S63 · ANALYTICS MUST BE OFF FOR EVERY AUTOMATED RUN, AND THE REASON IS THE DoD.** Both Playwright
+configs pin `NEXT_PUBLIC_POSTHOG_KEY: ""` in `webServerEnv`. `NEXT_PUBLIC_*` is inlined at **BUILD** time
+and both suites build inside their own webServer command, so an explicit empty value beats a real key in
+`.env.local`. Without it, 139 specs + 55 capture states fabricate hundreds of rituals and grocery lists that
+land in *"time-to-list < 10 minutes on a **real** week"* **as data** — real events, plausible numbers, and
+the only tell is that Griffin did none of it. `analytics-config.test.ts` fails if either line is removed.
+
+**⚠️ S63 · `tunnelRoute` WOULD HAVE BEEN THE S59 MANIFEST BUG A THIRD TIME.** Sentry's tunnel creates a
+same-origin `/monitoring` route for error POSTs; `src/proxy.ts` gates every path not on
+`isSignedOutReachable()`, and `/monitoring` would not be on it — so **reports from a signed-out browser
+would 307 to `/login` and vanish.** Errors on the login screen are the ones worth having, and the failure is
+silent: the tell is *"we get no errors from /login"*, which reads as *"none happen there"*. Dropped, matching
+the PostHog reverse-proxy call — **both vendors go direct, one rule instead of two.** ⚠️ Caught *before*
+shipping this time, by asking which subsystems the artifact TOUCHES rather than which its list names (S59).
 
 **⚠️ S62 · THE SEED RESET THE SERVER, AND NOTHING HAD EVER RESET THE CLIENT.** BUG-053's filed prime
 suspect was the **service worker**, and it was wrong — navigations are network-first, so the SW was never

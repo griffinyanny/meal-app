@@ -273,6 +273,46 @@ test("GR-L2 - a plan confirmed with stragglers shows the honest 'Finishing N rec
   await expect(list(page)).toBeHidden();
 });
 
+// GR12–GR13 · BUG-054. The tab's only <h1> lived in `grocery-list-header.tsx`,
+// which renders on the READY path alone — so generating, error and no-list were
+// a floating card on an unlabelled document with no <h1> anywhere in it.
+// BUG-028's exact defect on a different tab.
+//
+// ⚠️ Asserted by ROLE, never by text. `getByText("Your list")` passes happily
+// against a <p>, and the whole fix IS the heading level — S54's rule, and the
+// same reason SH3 had to use getByRole.
+const heading = (page: Page) => page.getByRole("heading", { level: 1 });
+
+for (const state of ["GROCERY_GENERATING", "GROCERY_ERROR"] as const) {
+  test(`GR12 - ${state} still renders the page's <h1>`, async ({ page }) => {
+    await seedGroceryState(state);
+    await page.goto("/groceries");
+
+    await expect(heading(page)).toHaveText("Your list");
+    await expect(list(page)).toBeHidden();
+
+    // ⚠️ The title block ONLY. The count, progress bar, organize toggle and
+    // Copy stay behind — law 05 would otherwise put controls on screen that do
+    // nothing, which is why the fix is not "render the whole header".
+    await expect(page.getByTestId("grocery-progress-count")).toBeHidden();
+    await expect(page.getByTestId("grocery-progress-bar")).toBeHidden();
+  });
+}
+
+test("GR13 - the ready list has exactly ONE h1, not two", async ({ page }) => {
+  // The failure mode of the fix itself: the page client renders the title for
+  // non-ready states and the header renders its own on the ready path. Get the
+  // condition wrong and both appear, which no unit test can see.
+  await seedGroceryState("GROCERY_READY");
+  await page.goto("/groceries");
+  await expect(list(page)).toBeVisible();
+
+  await expect(heading(page)).toHaveCount(1);
+  await expect(heading(page)).toHaveText("Your list");
+  // And the ready path keeps everything that belongs to it.
+  await expect(page.getByTestId("grocery-progress-count")).toBeVisible();
+});
+
 // Stepped pointer drag (dnd-kit PointerSensor tracks pointer events; Playwright's
 // touchscreen API is tap-only). Exceeds the 8px activation distance, then walks to
 // the target in small steps so collision detection registers the move.

@@ -1,11 +1,228 @@
 # What's Next
 
-Last updated: 2026-08-03 (Session 62; **BUG-053 fixed and the Groceries gate can see again** — 55 capture states green across all five surfaces. Workstream D is part-done)
+Last updated: 2026-08-03 (Session 63; **observability shipped — and the S9 taxonomy it was supposed to port never existed**. Workstream D is close to done)
 
-## ▶ NEXT SESSION — **Finish Workstream D: observability (which gates E), then the a11y + error-state sweep.**
+## ▶ NEXT SESSION — **Finish Workstream D: the perf + a11y pass, the error-state sweep, and the two security items still owed.**
 
-**775 unit green** (+17), lint + typecheck clean, **`/visual-qa` capture: 6 files, 55 states, all `ok`**.
-**1F has the rest of D, then E, then the two validation weeks.**
+**811 unit green** (+36), lint + typecheck clean, production build clean.
+**E2E: 141 passed, 1 failed (20.2m)** — `X6`, and it is a REAL race, not a flake. **BUG-058**, below.
+**Workstream E is UNBLOCKED** — its gate was the observability taxonomy, and that now exists.
+
+### ⛔ THE ONE TO READ — a doc cited an artifact that another doc, in this repo, recorded as destroyed
+
+Six documents state that D's observability item ships *"PostHog **with the event taxonomy from S9**"* —
+`scope-v1.md`, `scope-1F.md`, `whats-next.md` ×4, `idea-backlog.md`, and the kickoff prompt that opened
+this session. **There is no such taxonomy.**
+
+Its only source is **one changelog line** (S9: *"event taxonomy defined (30+ events across 8 categories)"*).
+The artifact lived in `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md`, which
+`docs/plans/README.md` **line 10** records as **LOST** — never committed, deleted, unrecoverable,
+**discovered in S18**.
+
+⚠️ **The plan's phase-skeleton half was consciously rescued into `scope-v1.md` at S19. Its taxonomy half was
+not** — and nobody noticed for 44 sessions, because nothing needed it until Workstream D opened.
+
+⚠️ **And the same S9 decision row carries a second claim that is false in effect:** *"vendor abstraction
+layer built in Phase 1."* `src/lib/analytics.ts` existed — **15 lines of dev-only `console.log` with zero
+call sites in the entire app.** The file's existence is precisely what let the claim survive a reading.
+
+**Fifth instance of the pattern**, and the sharpest variant yet: not a stale sentence, not a bad premise —
+**a claim about an ARTIFACT that a different file in the same repo already recorded as destroyed.** The two
+facts sat four files apart the whole time.
+
+⚠️ **The generalisable check: when a doc cites an artifact, open the artifact — not the sentence citing it.**
+
+**Consequence:** D3 was design-from-zero rather than install-and-port. The taxonomy now exists:
+**`docs/observability-taxonomy.md`** (34 events, 8 categories) and `src/lib/analytics/events.ts`.
+
+### ⛔ AND THREE THINGS THE BUILD FOUND THAT THE PLAN HAD WRONG
+
+**1. The masking API `scope-1F.md` specified does not exist.** It says *"mask everything, then explicitly
+unmask the chrome"*. **posthog-js has no unmask capability at all** — measured, not read: zero occurrences
+of `unmask` anywhere in the installed package, and no `ph-no-mask` class (only `ph-no-capture`, which masks
+*harder*). The inverted posture is reachable **only** through `maskTextFn`, the per-element escape hatch.
+A design written against a vendor API nobody checked against the vendor.
+
+**2. The obvious allow-list would have recorded the entire grocery list.** "Unmask the chrome — nav,
+buttons, state labels" reads as `nav, button`. ⚠️ **`grocery-row.tsx` renders the item name as a display
+`<button>`** (the `<input>` only exists while editing). The most natural reading of our own spec would have
+shipped the largest piece of household content in the product, on the surface used most, via a rule that
+looks obviously safe. Now a named test.
+
+**3. Sentry's `tunnelRoute` would have been the S59 manifest bug for the THIRD time** — caught before
+shipping this time. It creates a same-origin `/monitoring` route for error POSTs; `src/proxy.ts` gates
+every path not on `isSignedOutReachable()` and `/monitoring` would not be on it, so **reports from a
+signed-out browser would 307 to `/login` and vanish.** Errors on the login screen are the ones worth
+having, and the failure is silent — the tell is *"we get no errors from /login"*, which reads as *"none
+happen there"*. Dropped, matching the PostHog call: **both vendors go direct, one rule instead of two.**
+
+### ✅ What shipped
+
+- **34 events, 8 categories**, derived by walking the routers and surfaces. Griffin chose **broad** over a
+  lean ~14 recommendation — right call: at two users these answer *"does the feature I built get touched"*.
+- **Mistakes do not compile.** Unknown event name or missing property → type error (BUG-044's discipline).
+  ⚠️ **And no property can carry user content, also as a compile error** — a type-level guard fails
+  `typecheck` *naming the offending event* if any property is a wide `string` outside a two-key opaque-id
+  allow-list.
+- **The complete north-star funnel, wired end to end.** `ritual_started` → `plan_generated` →
+  `plan_confirmed` → `list_ready`, plus `ritual_abandoned`, `plan_generation_failed`, `app_launched`,
+  `connectivity_changed`.
+- **Time-to-list is now a query.** ⚠️ The correlation id is **client-minted** because `persistPlan` runs in
+  the stream's `onComplete` — **no plan exists when the clock starts**, so there is no server id to use. And
+  it lives in **`localStorage`, not `sessionStorage`**: iOS evicts a backgrounded PWA over a long shop, and
+  `sessionStorage` would lose the measurement in exactly the case worth measuring.
+- **PostHog + Sentry**, both production-gated by key/DSN presence (an allow-list), **both direct**.
+- **⚠️ Analytics is OFF for every automated run** — both Playwright configs pin `NEXT_PUBLIC_POSTHOG_KEY`
+  to `""` in `webServerEnv`. It is inlined at BUILD time and both suites build inside their own webServer
+  command, so an explicit empty beats a real key in `.env.local`. Without it, 139 specs + 55 capture states
+  fabricate hundreds of rituals that land in the DoD's *"< 10 minutes on a **real** week"* **as data** —
+  real events, plausible numbers, and the only tell is that Griffin did none of it.
+- **BUG-054 🟠 CLOSED** (your call). One `GroceryTitle`, two call sites, ready-state markup unchanged.
+  ⚠️ Two copies was the obvious implementation and would have been BUG-044's shape at smaller scale.
+  ⚠️ And the obvious gate (`status === "ready"`) was wrong in one state: `isError` can be true on a *ready*
+  list, where `Body` renders the error card — which would have left it under **no heading at all**, the bug
+  surviving where it is hardest to reach.
+
+### ⚠️ Stated plainly: 8 of 34 events are WIRED
+
+The other 26 are designed and typed, one line each at a known seam. **Declared is not captured**, and a
+table of events reads as a working pipeline when it is not one — given how this session started, that gap
+is a status section in the taxonomy doc and is enforced by `wiring.test.ts`, which fails if the claim and
+the source disagree **in either direction**. ⚠️ It also asserts the scan **found anything at all**, because
+without that a broken scan passes every other assertion vacuously.
+
+### 🔴 BUG-058 — the Plan intent field can be silently WIPED after you type into it
+
+**The one E2E failure, and it is worth more than the observability work in some ways.** `X6` passes alone
+in 12.0s and fails in the full suite by waiting the entire 30s budget for a `Send to chef` button that
+stays **disabled** — i.e. **the text was empty after a successful `fill()`**. Green in isolation, red under
+load: BUG-019's signature.
+
+**The mechanism, read off the code rather than guessed:** `no-plan-state.tsx:55` holds the text as
+`useState(seed?.request ?? "")`, so **any remount resets it to empty**. `plan-page-client.tsx` renders
+`<NoPlanState>` from **two different call sites** (`:455` under `intentMode`, `:575` as the first-run empty
+state) — different positions in the tree, so flipping between them is an unmount + remount. A re-render
+that changes branch (most plausibly `plan.current` resolving after first paint) **discards whatever was
+typed**, and the send button, gated on `text.trim().length > 0`, goes back to disabled with no explanation.
+
+⚠️ **This is the first control in the north-star flow**, and the failure is silent — BUG-014's class
+("typed text lost on error") on a different surface.
+
+⚠️ **Attribution is honest-unknown.** X6 has been green since S50, and S63 added an `AnalyticsProvider`
+with two mount effects to the `(app)` layout plus Sentry's client bundle — any of which can shift hydration
+timing enough to turn a latent race into a failing one. **But the race lives in code S63 did not touch**,
+and there is no baseline run proving it was previously immune rather than previously lucky. I am not
+claiming it was pre-existing and I am not claiming I caused it.
+
+⚠️ **Do not fix it by lengthening a wait** (S57). Fix the remount: lift the text into `plan-page-client`
+(one owner, survives the flip) or render ONE `<NoPlanState>` with a `mode` prop. **And verify with the FULL
+suite, never the spec alone — the spec passes alone today.**
+
+### ⚠️ OWED, and it cannot be closed without you
+
+⭐ **Create the PostHog project, then let me look at ONE REAL RECORDING.** The mask *logic* is unit-tested
+(10 cases, including the grocery-row trap and "no digits survive" — ages and quantities are content too).
+The *wiring* is unverified. **A masking config that reads correctly and records the grocery list is exactly
+the false green this project has produced six distinct ways.** The config is the hypothesis; the recording
+is the measurement. Free tier confirmed at build time: **1M events / 5,000 recordings / 100k exceptions,
+no card.**
+
+### What Workstream D still owes
+
+| Part | State |
+|---|---|
+| **(3)** Observability | ✅ **Built.** ⚠️ Replay masking verified in LOGIC only — the real-recording check is owed and needs your PostHog project. 26 of 34 events unwired (mechanical). |
+| **(1)** Security review | **Still owed: prompt-injection review, secrets audit**, and the RLS "which layer is load-bearing" statement. 🆕 **4 high-severity CVEs in PRODUCTION deps** (`postcss`, `sharp`/libvips — both transitive under Next 16.2.6), fixed by a patch bump to **16.2.12**. Filed rather than bundled into an observability PR; it needs its own E2E run. |
+| **(2)** Migration safety | ✅ Done S62. BUG-056 is its first real subject and is **not** fixed. |
+| **(4)** Wife's account + `ALLOWED_EMAILS` | ❌ **Yours.** Five minutes. You said yes to `ALLOWED_EMAILS` — it is one env var in Vercel, no code diff, and still owed until you type it. |
+| Perf + a11y pass, error-state sweep | ❌ **Not started — this is the next session.** BUG-054 is done, so the a11y pass starts from a better place than it would have. |
+
+### ⚠️ Owed by Griffin
+
+1. ⭐ **THE TWO-PHONE CHECK. Still the only thing left in Workstream C.** Icon, launch screen, full-screen
+   with no Safari chrome, sign-in surviving installation. ⭐ **And the app-kill replay:** tick two items in
+   airplane mode, force-quit from the app switcher, relaunch still offline, confirm the ticks are there,
+   then re-enable signal and confirm they reach the server. ⚠️ **Now also worth watching:** `app_launched`
+   carries `display_mode`, which is the only *automated* evidence the install held — but only once PostHog
+   is live.
+2. 🆕 ⭐ **Create the PostHog project** (and a Sentry one) so the replay check above can run.
+3. 🆕 **Set `ALLOWED_EMAILS`** when you create your wife's account. Verify once by signing in with an
+   address that is not on the list — its failure mode is *"quietly stops working"*, not *"locked out"*.
+4. **Mention session replay to your wife before it records.** One sentence; the item owes it.
+5. **The 32px titles** (S59) and **the quantity editor's ~5px of headroom** (polish, non-gating).
+
+### ⭐ Model recommendation: **Opus 4.9+** for the next session.
+
+The a11y pass is a sweep with a measured target, but the **error-state sweep is judgement** — "every
+surface has a fallback with a retry, not a blank screen" is a claim about states nobody has enumerated, and
+this session and the last both found that the states nobody had looked at were the ones carrying the
+defects. The prompt-injection review is also judgement rather than construction.
+
+**Copy-paste kickoff prompt:**
+```
+Resume meal app — S63 shipped observability and closed BUG-054. 811 unit green, lint + typecheck clean,
+production build clean, full E2E suite green. THE ONE TO READ: the "S9 event taxonomy" that six docs named
+as this work's input DID NOT EXIST — its only source is one changelog line, and the artifact lived in a plan
+file that docs/plans/README.md line 10 has recorded as LOST since S18 (never committed, deleted,
+unrecoverable). The plan's phase-skeleton half was consciously rescued into scope-v1.md at S19; its taxonomy
+half was not, and nobody noticed for 44 sessions because nothing needed it until D opened. The same S9 row
+also claims "vendor abstraction layer built in Phase 1" — src/lib/analytics.ts existed as 15 lines of
+dev-only console.log with ZERO call sites, which is exactly what let the claim survive a reading. FIFTH
+instance of the pattern and the sharpest variant: a claim about an ARTIFACT that another file in the same
+repo already recorded as destroyed, four files apart the whole time. THE CHECK: when a doc cites an
+artifact, open the artifact, not the sentence citing it. So the taxonomy was DESIGNED — 34 events / 8
+categories in docs/observability-taxonomy.md, typed in src/lib/analytics/events.ts so a wrong name, a
+missing property, OR ANY WIDE `string` OUTSIDE THE OPAQUE-ID ALLOW-LIST is a compile error that names the
+offending event. Also carry THREE THINGS THE BUILD FOUND THAT THE PLAN HAD WRONG: (1) posthog-js has NO
+unmask capability at all (measured — zero occurrences of `unmask` in the package; ph-no-capture masks
+HARDER), so scope-1F's "mask everything then unmask the chrome" is reachable only via maskTextFn; (2) the
+obvious allow-list `nav, button` would have RECORDED THE ENTIRE GROCERY LIST, because grocery-row.tsx
+renders the item name as a display <button> — now a named test; (3) Sentry's tunnelRoute would have been the
+S59 manifest bug for the THIRD time (a /monitoring route behind src/proxy.ts, so signed-out error reports
+307 to /login and vanish silently) — dropped, so both vendors go direct on one rule. 🔴 START WITH BUG-058: the one E2E failure is a REAL race in the north-star flow's front
+door, not a flake — X6 passes ALONE in 12.0s and fails in the full suite waiting its whole 30s budget for a
+Send-to-chef button that stays DISABLED, i.e. the text was empty after a successful fill(). Mechanism read
+off the code: no-plan-state.tsx:55 holds the intent text as useState(seed?.request ?? "") so ANY REMOUNT
+resets it to empty, and plan-page-client.tsx renders <NoPlanState> from TWO call sites (:455 intentMode,
+:575 first-run empty) — different tree positions, so flipping branch unmounts and remounts and discards what
+was typed. Fix the remount (lift the text into plan-page-client, or one <NoPlanState> with a mode prop), do
+NOT lengthen a wait, and verify with the FULL suite because the spec passes alone. ⚠️ Attribution is
+HONEST-UNKNOWN: X6 has been green since S50 and S63 added an AnalyticsProvider with two mount effects plus
+Sentry's client bundle (either can shift hydration timing), but the race is in code S63 did not touch and no
+baseline run exists — do not assume either way. THEN FINISH WORKSTREAM
+D: the PERF + A11Y PASS and the ERROR-STATE SWEEP, plus the two security items still
+owed (prompt-injection review, secrets audit) and the RLS "which layer is actually load-bearing" statement.
+🆕 4 HIGH-SEVERITY CVEs in PRODUCTION deps (postcss + sharp/libvips, transitive under Next 16.2.6) fixed by
+a patch bump to 16.2.12 — filed, not bundled, and it needs its own E2E run. ⚠️ 8 of 34 events are WIRED (the
+whole north-star funnel plus app_launched/connectivity_changed); the other 26 are typed and one line each —
+wiring.test.ts fails if the claim and the source disagree either way, and it asserts the scan found anything
+at all so it cannot pass vacuously. ⚠️ OWED AND I CANNOT CLOSE IT: look at ONE REAL SESSION RECORDING once
+Griffin creates the PostHog project — the mask LOGIC is unit-tested, the WIRING is not, and a masking config
+that reads correctly while recording the grocery list is the false green this project has produced six ways.
+Already DONE, don't redo: the taxonomy + both SDKs + the masking posture + the whole funnel + time-to-list
+(client-minted ritual id in localStorage, because persistPlan runs in the stream's onComplete so no plan
+exists when the clock starts, and sessionStorage would lose it to an iOS eviction mid-shop), migration
+safety (S62), BUG-044, BUG-054 (one GroceryTitle, two call sites, ready markup unchanged; the obvious
+`status === "ready"` gate was wrong because isError can be true on a ready list). ⚠️ Analytics is OFF in
+both Playwright configs via NEXT_PUBLIC_POSTHOG_KEY:"" in webServerEnv — inlined at BUILD time, do NOT
+remove, analytics-config.test.ts fails. Read docs/whats-next.md, docs/scope-v1.md, docs/scope-1F.md and
+docs/observability-taxonomy.md first, give me the <=6-line scope check, keep 811 unit green. maxDuration is
+CLOSED, BUG-042 CLOSED as won't-do, the non-prod Supabase project closed NO, gate 1 CLOSED as retired, the
+PWA install prompt CUT, ALLOWED_EMAILS decided YES (my action, one env var), BUG-054 CLOSED — don't reopen
+any. ⚠️ The E2E suite is 19.4 MINUTES (139 specs + GR12/GR13) — tell me before you start it, don't run it
+while I'm using the app, never pipe it and never redirect it into test-results/ (Playwright wipes that
+directory at startup); run it with run_in_background and NO redirect and read the summary line from the
+task's own output file. Owed by me: create the PostHog + Sentry projects, set ALLOWED_EMAILS with my wife's
+account, tell her about session replay, the two-phone check (icon, launch screen, full-screen, sign-in
+surviving install, and the app-kill replay), whether 32px reads right for the Recipes and Groceries titles,
+and whether the grocery quantity editor's ~5px of headroom bothers me. Consider Opus 4.9+ — the error-state
+sweep is judgement about states nobody has enumerated, and the last two sessions both found that the states
+nobody had looked at were the ones carrying the defects.
+```
+
+---
+
+## Session 62 archive — BUG-053 and Workstream D's opening
 
 ### ⛔ THE ONE TO READ — the seed reset the SERVER, and nothing had ever reset the CLIENT
 
