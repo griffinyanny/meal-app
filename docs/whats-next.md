@@ -225,8 +225,12 @@ Do NOT redeploy production before the merge; it would rebuild code that has no a
 ⚠️ SENTRY_AUTH_TOKEN is not set anywhere, so production stack traces will be minified. Build-time only,
 never reaches the bundle — worth generating in Sentry before the merge.
 
-STILL OWED BY ME: ALLOWED_EMAILS needs my wife's address added when her account exists (the var is already
-in Vercel from 5 days ago). The two-phone check + app-kill replay. Whether 32px reads right for the Recipes
+STILL OWED BY ME: the two-phone check + app-kill replay. ⚠️ ALLOWED_EMAILS is now SET
+(griffinyanny@gmail.com,akabor94@gmail.com — her account does not exist yet, which is fine, the list is
+just an allow-list). It takes effect on the next production DEPLOY, not immediately. Verify once after
+that deploy by signing in with a third address and confirming it bounces to /auth/rejected: its failure
+mode is "quietly stops working", not "obviously broken", and an empty or typo'd value silently OPENS the
+app rather than closing it (deliberate, see access.ts). Whether 32px reads right for the Recipes
 and Groceries titles, and whether the grocery quantity editor's ~5px headroom bothers me.
 
 ⚠️ E2E is ~20 MINUTES (142 specs). Tell me before starting it, never run it while I am using the app, never
@@ -258,10 +262,20 @@ deploy. **Do not redeploy before the merge**; it would rebuild code with no anal
 the only thing holding a 141/142 PR. That is a sharper dependency than "observability is built" implied,
 and it is why BUG-058 is the first action rather than the perf pass.
 
-⚠️ **`SENTRY_AUTH_TOKEN` is not set anywhere**, so production stack traces will be minified — readable, but
-pointing at `chunks/[root-of-the-server]__0p7j_.js:140:115362` rather than a filename. Build-time only and
-never reaches the bundle. Worth generating before the merge, or the first real production error is harder
-to read than it needs to be.
+✅ **`SENTRY_AUTH_TOKEN`, `SENTRY_ORG` and `SENTRY_PROJECT` are now set in Vercel Production too** (S64).
+The token is an **Organization Token** (`sntrys_`), which is what Sentry recommends for CI over a personal
+token — a personal one is bound to the user and inherits every org and project they can see.
+⚠️ **Verified by probing the API rather than assumed:** it 200s on
+`organizations/meal-app-uf/releases/` and `projects/meal-app-uf/javascript-nextjs/releases/` (the
+`project:releases` scope source-map upload actually needs) and 403s only on org/project *metadata*, which
+upload does not use. **A 403 on `projects/…/` is therefore EXPECTED and not a misconfiguration** — do not
+"fix" it. That project-scoped 200 also validates the `SENTRY_PROJECT` slug, which a wrong value would have
+404'd.
+
+⚠️ **The token is deliberately NOT in `.env.local`, and that must stay true.** `uploadSourceMaps` is gated
+purely on the token's presence (`next.config.ts:48`), so a local copy would make **every** build upload —
+including both Playwright suites, which build on most runs. That burns quota, litters the release list and
+slows every run. The existing split (org + project locally, token only on Vercel) is correct; leave it.
 
 ### ⚠️ Scaffolding status
 
