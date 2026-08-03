@@ -59,7 +59,13 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
       route.request().postDataBuffer(),
       route.request().postData()
     );
-    if (body) seen.push({ url, body });
+    // ⚠️ Record EVERY request, GET included. The first version pushed only when
+    // a body existed, which silently dropped the two GETs that matter most:
+    // `/array/<token>/config` (the remote config that actually decides whether
+    // recording runs) and the separate `posthog-recorder` script. Their absence
+    // from the endpoint list read as "never happened" when it only meant "no
+    // POST body" — an instrument that could not see half its own subject.
+    seen.push({ url, body });
     await route.continue();
   });
 
@@ -68,6 +74,15 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
   // session replay switched off, the SDK obeys and records nothing, with a
   // perfectly correct client config. Reading the answer is the difference
   // between "recording is off" and knowing WHY.
+  // ⚠️ If the recorder loads and emits nothing, the next suspect is OUR code:
+  // `maskTextFn` runs inside rrweb's serializer, and a throw there kills the
+  // snapshot silently. The unit tests cannot see this — their fake element
+  // always has `hasAttribute`, which is better behaved than a real DOM.
+  page.on("pageerror", (err) => console.log(`[masking] PAGE ERROR: ${err.message}`));
+  page.on("console", (msg) => {
+    if (msg.type() === "error") console.log(`[masking] CONSOLE ERROR: ${msg.text()}`);
+  });
+
   page.on("response", async (response) => {
     if (!response.url().includes("/flags")) return;
     try {
@@ -100,10 +115,20 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
   // only honest evidence the subject of this test exists at all.
   expect(seen.length, "posthog sent nothing at all").toBeGreaterThan(0);
   expect(
-    endpoints.some((p) => p.includes("/s")),
-    `no session-replay endpoint hit — recording is OFF. Endpoints seen: ${endpoints.join(", ")}. ` +
-      `Most likely cause: session replay is not enabled in the PostHog PROJECT SETTINGS, ` +
-      `which is a separate toggle from the SDK config.`
+    endpoints.some((p) => p.startsWith("/s")),
+    // ⚠️ CORRECTED. This message used to blame the PostHog project settings,
+    // and that diagnosis was WRONG — verified by fetching
+    // `us-assets.i.posthog.com/array/<token>/config` directly, which returns a
+    // full `sessionRecording` object with `linkedFlag: null` and no sample
+    // rate. Recording IS enabled on the project.
+    //
+    // `/flags/` also reports `sessionRecording: false`, and that field is NOT
+    // the authoritative source in current posthog-js — remote config is. Keying
+    // a diagnosis off it sent three rounds of "check your toggle" at settings
+    // that were correct the whole time.
+    `no /s/ replay chunk was posted. Endpoints seen: ${endpoints.join(", ")}. ` +
+      `Project config is NOT the suspect — verify the recorder script loaded ` +
+      `(a GET to us-assets.i.posthog.com) before looking anywhere else.`
   ).toBe(true);
 
   // ---- 2. What the screen was showing, by name. -----------------------------
@@ -129,4 +154,54 @@ test("session replay masks the grocery list on the wire", async ({ page }) => {
   console.log(
     `[masking] VERIFIED — ${seen.length} requests, ${wire.length} bytes inspected, 0 leaks`
   );
+});
+
+// ⚠️ TEMPORARY, S63 — Sentry wiring verification.
+//
+// Sentry's own skill says the task is not done until an event is CONFIRMED in
+// Sentry, and warns against stopping at "go check your dashboard". Their
+// confirm loop uses the Sentry MCP, which is not connected here — so this does
+// the equivalent from the other end: it proves the browser actually emits an
+// event envelope, and that the envelope survives our own proxy.
+//
+// That second half is the part worth testing. `tunnelRoute` makes the client
+// POST to `/monitoring` on OUR origin, which `src/proxy.ts` gates. If the
+// exemption in `isSignedOutReachable()` were wrong, this request would 307 to
+// /login and Sentry would receive nothing, silently.
+test("a client error reaches Sentry through our own tunnel", async ({ page }) => {
+  const tunnelHits: string[] = [];
+
+  await page.route("**/monitoring*", async (route) => {
+    tunnelHits.push(route.request().postData() ?? "");
+    await route.continue();
+  });
+
+  await page.goto("/groceries");
+
+  // A real unhandled error, not `captureException` — this exercises the global
+  // handler the SDK installs, which is the path a genuine crash takes.
+  await page.evaluate(() => {
+    setTimeout(() => {
+      throw new Error("S63 sentry wiring check");
+    }, 0);
+  });
+
+  await expect
+    .poll(() => tunnelHits.length, { timeout: 20_000 })
+    .toBeGreaterThan(0);
+
+  const envelope = tunnelHits.join("\n");
+  expect(envelope, "envelope did not name our error").toContain(
+    "S63 sentry wiring check"
+  );
+
+  // ⚠️ The PII posture, verified on the wire rather than trusted from config.
+  // `dataCollection` turns all of these off; a regression would show up here as
+  // a cookie or a request body riding along with the stack trace.
+  expect(envelope, "session cookie in the envelope").not.toContain("sb-");
+  expect(envelope.toLowerCase(), "cookies in the envelope").not.toContain(
+    '"cookies"'
+  );
+
+  console.log(`[sentry] VERIFIED — ${tunnelHits.length} envelope(s) via /monitoring`);
 });
