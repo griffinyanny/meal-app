@@ -161,7 +161,12 @@ Resume meal app — S64 closed BUG-059 and BUG-060 and finally verified the repl
 recording. BUG-058 is STILL OPEN and my S64 fix was aimed at the wrong mechanism, so do not build on it.
 
 🔴 FIRST ACTION, BEFORE ANY CODE: run the FULL E2E suite with NOTHING else running — no vitest, no lint,
-no typecheck, no dev server, and confirm with me that I am not using the app. ~20 minutes. That single
+no typecheck, no dev server, and confirm with me that I am not using the app. ⚠️ AND CHECK THE MACHINE
+FIRST, do not just check yourself: `lsof -ti:3000,3001,3102` plus `pgrep -fl "next-server|vitest|playwright"`.
+During S64 a `next-server (v16.2.10)` from ANOTHER project was running on port 3000 — this repo pins 16.2.6,
+so it was FFOS or similar. Whether it was up during the failing run is unknown, but the contention picture
+was broader than "Claude ran vitest inside the suite", and a clean run has to actually BE clean or it
+answers nothing. ~20 minutes. That single
 uncontaminated run decides whether BUG-058 is a product bug at all, and we do not have one yet: the S64 run
 that failed had vitest/lint/typecheck running CONCURRENTLY inside it, which is CPU contention and is S53's
 "never run two suites at once" in a costume nobody recognised.
