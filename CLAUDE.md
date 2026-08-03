@@ -32,7 +32,8 @@ device, and nothing in the suite can answer it.
 **Workstream D (production readiness) is 🔨 PART-DONE (S62–S64):** migration safety ✅, BUG-044 ✅,
 **observability ✅ S63, VERIFIED S64** (34-event taxonomy + PostHog + Sentry + inverted replay masking +
 the whole north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**),
-BUG-054 ✅, BUG-058 ✅, BUG-059 ✅, BUG-060 ✅.
+BUG-054 ✅, BUG-059 ✅, BUG-060 ✅. 🔴 **BUG-058 STILL OPEN** — S63's filed remount cause is unconfirmed
+and the S64 fix aimed at it did not close X6.
 🔴 **BUT NEITHER SDK HAS EVER RUN IN PRODUCTION:** `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN`
 are **not set in Vercel Production** and both are allow-listed on key/DSN presence. **The PostHog one is
 deliberately held until Griffin tells his wife session replay exists.**

@@ -70,14 +70,27 @@ PostHog mutes on purpose. **An absence measured against an empty room** (S62), i
 ⚠️ **Deliberately not set by Claude:** enabling PostHog in production starts recording Griffin's wife's
 sessions, and telling her is an owed item. **The conversation comes first, then the env var.**
 
-### ✅ BUG-058 — fixed by construction, and it was hiding a second defect
+### 🔴 BUG-058 — STILL OPEN. My fix was aimed at the wrong mechanism.
 
-The intent text moved into `plan-page-client` and is passed down controlled, so a branch flip cannot discard
-it (not a longer wait — S57). ⚠️ **The second defect:** the seed was a `useState` initializer, but
+**X6 fails identically** (141 passed / 1 failed, 20.2m — unchanged from S63). What DID ship is a real fix
+on its own terms and worth keeping: the intent text now lives in `plan-page-client` and is passed down
+controlled, and the onboarding seed applies via a once-only ref-guarded effect.
+
+⚠️ **That second half was a genuine, separate defect:** the seed was a `useState` initializer, but
 `takeHandoff()` is read in a mount effect and the chips arrive from a query after that, so `seed` is
 undefined on the render where the field first exists. **The onboarding hand-off's pre-fill only ever worked
-when the plan query happened to be slower than the handoff read.** Now a once-only, ref-guarded effect.
+when the plan query happened to be slower than the handoff read.**
 
+⚠️ **But it is not BUG-058.** The trace shows the textarea present in the post-`goto` snapshot, yet
+`fill()`'s locator took **125ms** to resolve and the following `click()`'s took **800ms** — an element that
+stays put resolves in ~1ms, so **the tree is being replaced at least twice during load**, upstream of
+wherever the state lives. Moving state from child to parent cannot help if the parent goes too.
+⚠️ **X5 is byte-for-byte identical to X6** and passes, so only timing distinguishes them.
+⚠️ **Measured baseline:** `error.spec.ts` ALONE gives 7 passed with `sameNode: true` and the value intact
+at every tick — the healthy case, and proof the probe reads what it claims to.
+
+**Sixth instance of the phase's lesson, and this time I was the one who inherited it:** S63 read the
+remount off the code and filed it as the cause; I built on that instead of measuring first.
 ### ⚠️ Three source-scanning guards fired on their own explanatory comments
 
 `aria-leak.test.ts` flagged a `Check off ${name}` that existed **only in the comment explaining the fix**;

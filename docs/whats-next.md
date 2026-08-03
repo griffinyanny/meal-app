@@ -4,7 +4,8 @@ Last updated: 2026-08-03 (Session 64; **BUG-059 was posthog-js muting the robot,
 
 ## ▶ NEXT SESSION — **the perf + a11y pass and the error-state sweep, then BUG-057, then Workstream E.**
 
-**815 unit green** (+3), lint + typecheck clean. **BUG-059 ✅, BUG-058 ✅, BUG-060 ✅ (new, 🔴).**
+**815 unit green** (+3), lint + typecheck clean. **BUG-059 ✅, BUG-060 ✅ (new, 🔴). BUG-058 STILL OPEN.**
+**E2E: 141 passed, 1 failed (20.2m)** — X6 only, unchanged from S63.
 Observability now works and **the replay masking is verified on a real recording** — the one item
 Workstream D could not close without a measurement.
 
@@ -84,17 +85,41 @@ against an empty room** — S62's lesson, in the place it mattered most.
 sessions, and *"mention session replay to your wife"* is an owed item. **The env var goes in after that
 conversation, not before.** Sentry's DSN has no such constraint and can go in whenever.
 
-### ✅ BUG-058 — fixed by construction, and it was hiding a second defect
+### 🔴 BUG-058 — STILL OPEN. My fix was aimed at the wrong mechanism.
 
-The intent text now lives in `plan-page-client` and is passed down controlled, so a branch flip cannot
-discard it. Not a longer wait (S57).
+**X6 fails identically** (141 passed / 1 failed, 20.2m — unchanged from S63). What DID ship is a real fix
+on its own terms and worth keeping: the intent text now lives in `plan-page-client` and is passed down
+controlled, and the onboarding seed applies via a once-only ref-guarded effect.
 
-⚠️ **The second defect, found while fixing the first:** the seed was applied as
-`useState(seed?.request ?? "")`, but `takeHandoff()` is itself read in a **mount effect** and the preference
-chips arrive from a query after that — so `seed` is undefined on the render where the field first exists.
-**The onboarding hand-off's pre-fill only ever worked when the plan query happened to be slower than the
-handoff read.** Now an effect that applies once, ref-guarded so it cannot re-fill a field the person cleared.
+⚠️ **That second half was a genuine, separate defect:** the seed was a `useState` initializer, but
+`takeHandoff()` is read in a mount effect and the chips arrive from a query after that, so `seed` is
+undefined on the render where the field first exists. **The onboarding hand-off's pre-fill only ever worked
+when the plan query happened to be slower than the handoff read.**
 
+⚠️ **But it is not BUG-058.** The trace shows the textarea present in the post-`goto` snapshot, yet
+`fill()`'s locator took **125ms** to resolve and the following `click()`'s took **800ms** — an element that
+stays put resolves in ~1ms, so **the tree is being replaced at least twice during load**, upstream of
+wherever the state lives. Moving state from child to parent cannot help if the parent goes too.
+⚠️ **X5 is byte-for-byte identical to X6** and passes, so only timing distinguishes them.
+⚠️ **Measured baseline:** `error.spec.ts` ALONE gives 7 passed with `sameNode: true` and the value intact
+at every tick — the healthy case, and proof the probe reads what it claims to.
+
+**Sixth instance of the phase's lesson, and this time I was the one who inherited it:** S63 read the
+remount off the code and filed it as the cause; I built on that instead of measuring first.
+
+⚠️ **AND THE STRONGEST LEAD, found by measuring instead of theorising a fourth time:** the EXACT
+full-suite prefix — `cost`, `debug-hud`, `drawer`, `elapsed`, `error`, i.e. the same 24 tests in the same
+order X6 occupies in the full run — **passes in 3.1m, X6 healthy at every tick.** So it is **not** the
+preceding specs, **not** shared-state corruption, and **not** a long-lived server (X6 runs 2–3 minutes in,
+not at minute 20). ⚠️ **The one thing that differed during the failing run: `vitest`, `lint` and
+`typecheck` were run CONCURRENTLY inside those 20 minutes.** That is CPU contention — **S53's "never run
+two suites at once" in a costume nobody recognised**, because it was not two Playwright suites, it was
+Playwright plus everything else happening while waiting for it.
+
+**▶ FIRST ACTION NEXT SESSION: re-run the full suite with NOTHING else running.** One 20-minute run
+decides whether BUG-058 is a product bug at all. If X6 passes, the defect is load-sensitivity and the real
+question becomes whether a phone can be slow enough to hit it — which a phone can. If it still fails, the
+contention theory dies and the `sameNode` probe says what replaced the tree.
 ### ⚠️ Three source-scanning guards fired on their own explanatory comments
 
 `aria-leak.test.ts` flagged a `Check off ${name}` that existed **only inside the comment explaining the
@@ -133,7 +158,9 @@ expect a false red.**
 
 ```
 Resume meal app — S64 closed BUG-059, BUG-060 and the masking verification; BUG-058 is STILL OPEN and my
-fix was aimed at the wrong mechanism. 🔴 START WITH BUG-058. X6 fails identically after lifting the intent
+fix was aimed at the wrong mechanism. 🔴 START WITH BUG-058, AND THE FIRST ACTION IS ONE FULL E2E RUN WITH NOTHING ELSE RUNNING — no vitest,
+no lint, no typecheck, no dev server. That single run decides whether this is a product bug at all.
+X6 fails identically after lifting the intent
 text into plan-page-client: `Send to chef` stays disabled for the full 30s because the field is empty. THE
 REMOUNT DIAGNOSIS FROM S63 IS NOT CONFIRMED AND MY FIX DID NOT ADDRESS THE REAL CAUSE — do not re-derive it
 from the code a third time. WHAT THE TRACE ACTUALLY SHOWS: the textarea was present in the post-`goto`
@@ -142,8 +169,12 @@ that stays put resolves instantly, so the tree is being replaced at least twice 
 BYTE-FOR-BYTE IDENTICAL to X6 in setup, fill and click and PASSES, so the trigger is load/timing, not the
 code path. X6 now carries a TEMPORARY diagnostic (tests/e2e/specs/error.spec.ts) logging a
 value/disabled/sameNode timeline — `sameNode` is an expando on the DOM node, so it proves remount vs state
-reset. RUN error.spec.ts ALONE FIRST (~90s) to see if it reproduces cheaply; if not, the full suite is the
-repro. Then decide honestly whether this is a PRODUCT bug or a TEST-hygiene one: a real user types seconds
+reset. ALREADY MEASURED, do not redo: error.spec.ts ALONE passes (7 passed, X6 healthy at every tick), and the
+EXACT full-suite prefix (cost+debug-hud+drawer+elapsed+error = the same 24 tests in the same order)
+ALSO passes in 3.1m. So it is NOT the preceding specs, NOT shared state, NOT a long-lived server. The
+only thing that differed in the failing run is that vitest/lint/typecheck were running CONCURRENTLY
+inside it — CPU contention, which is S53's 'never run two suites at once' in a costume nobody
+recognised. Then decide honestly whether this is a PRODUCT bug or a TEST-hygiene one: a real user types seconds
 after load, long past any remount window, and if the remount is inherent to page load then filling 15ms
 after goto is the test doing something no user does. That distinction is NOT the same as S57's "don't
 lengthen a wait" — waiting for the app to settle is legitimate; papering over a product defect is not.

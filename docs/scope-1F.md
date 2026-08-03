@@ -1078,7 +1078,8 @@ which found and closed **BUG-060** (session replay was recording the grocery lis
 titles and dietary constraints in the clear, through `aria-label` — attributes are outside every masking
 hook the vendor exposes). ✅ **BUG-059 CLOSED** — posthog-js's own bot filter silencing the headless test
 browser, upstream of all four suspects the tracker had eliminated; **no production code changed.**
-✅ **BUG-058 CLOSED** by lifting the intent text out of a component whose identity flips.
+🔴 **BUG-058 STILL OPEN** — lifting the intent text out of the component whose identity flips did NOT
+close X6, so the filed remount cause is not the mechanism. See the tracker row.
 🔴 **NEW AND OPEN, and it is Griffin's:** `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are **not
 set in Vercel Production**, so **neither SDK has ever initialised there** — the DoD's time-to-list
 measurement cannot run on real usage until they are. The PostHog one is deliberately gated behind telling
