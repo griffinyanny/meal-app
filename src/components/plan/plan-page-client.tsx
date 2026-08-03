@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { experimental_useObject as useObject } from "@ai-sdk/react";
 import { Settings } from "lucide-react";
@@ -20,6 +20,12 @@ import { usePlanHydration } from "./use-plan-hydration";
 import type { SlotToast } from "./rail/floating-slot";
 import { useDebugPanel } from "@/lib/debug/debug-hud";
 import type { PlanDay } from "./rail-helpers";
+import {
+  trackPlanConfirmed,
+  trackPlanGenerated,
+  trackPlanGenerationFailed,
+  trackRitualStarted,
+} from "@/lib/analytics/funnel";
 import { takeHandoff } from "@/lib/onboarding/handoff";
 import { takePickHandoff } from "@/lib/plan/pick-handoff";
 import { seedChips } from "@/lib/onboarding/synthesize";
@@ -168,6 +174,13 @@ export function PlanPageClient() {
   // `onFinish` is the honest signal: it fires once at stream end and reports the
   // final object, which is `undefined` exactly when no valid plan arrived.
   const [streamDied, setStreamDied] = useState(false);
+
+  // Refs rather than state: these feed analytics only, and re-rendering the
+  // app's signature surface to record a timestamp would be a real cost for no
+  // user-visible benefit.
+  const generationStartedAt = useRef(0);
+  const lastPickedCount = useRef(0);
+  const wasModifiedThisRitual = useRef(false);
   /**
    * The generation to run again.
    *
@@ -190,7 +203,21 @@ export function PlanPageClient() {
     api: "/api/plan/stream",
     schema: aiPlanSchema,
     onFinish: ({ object, error }) => {
-      if (error || object === undefined) setStreamDied(true);
+      const durationMs = Date.now() - generationStartedAt.current;
+      if (error || object === undefined) {
+        setStreamDied(true);
+        // The client can only ever say "the stream died" — it cannot tell a
+        // timeout from a stall from an invalid document, because the route
+        // returned 200 before any of them could happen. The server sink
+        // reports the real reason (BUG-035).
+        trackPlanGenerationFailed(durationMs);
+      } else {
+        trackPlanGenerated({
+          mealCount: object.meals?.length ?? 0,
+          durationMs,
+          pickedCount: lastPickedCount.current,
+        });
+      }
       utils.plan.current.invalidate();
     },
   });
@@ -207,7 +234,17 @@ export function PlanPageClient() {
   }
 
   const confirmMutation = trpc.plan.confirm.useMutation({
-    onSuccess: () => utils.plan.current.invalidate(),
+    onSuccess: () => {
+      // The handover point: from here the grocery projection builds, and the
+      // ritual clock keeps running on a different tab.
+      const cookable = persistedMeals.filter((m) => isCookable(m.slotType));
+      trackPlanConfirmed({
+        mealCount: cookable.length,
+        daysCovered: new Set(persistedMeals.map((m) => m.date)).size,
+        wasModified: wasModifiedThisRitual.current,
+      });
+      utils.plan.current.invalidate();
+    },
   });
 
   const feedbackMutation = trpc.plan.feedback.useMutation({
@@ -246,6 +283,21 @@ export function PlanPageClient() {
       ...(request ? { request } : {}),
       ...(pickedRecipeIds.length > 0 ? { pickedRecipeIds } : {}),
     };
+
+    // THE NORTH-STAR CLOCK STARTS HERE (1F/D3). This is the DoD's "I have no
+    // idea what to cook" moment; it stops when the grocery list is shoppable,
+    // on a different tab, after a confirm and a background projection — so the
+    // correlation id is minted client-side and carried in localStorage.
+    // ⚠️ `hasRequest` only, never the request text.
+    generationStartedAt.current = Date.now();
+    lastPickedCount.current = pickedRecipeIds.length;
+    wasModifiedThisRitual.current = false;
+    trackRitualStarted({
+      entry: persistedMeals.length > 0 ? "regenerate" : "intent",
+      hasRequest: !!request,
+      pickedCount: pickedRecipeIds.length,
+    });
+
     setLastGeneration(payload);
     submitGeneration(payload);
     // Cleared once handed over: they are now the week's, and leaving them here
