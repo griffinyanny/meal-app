@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -23,9 +23,39 @@ function configSource(file: string): string {
   return readFileSync(join(process.cwd(), file), "utf8");
 }
 
-const CONFIGS = ["playwright.config.ts", "playwright.capture.config.ts"];
+/**
+ * ⚠️ DERIVED FROM DISK, NOT HAND-LISTED — BUG-061.
+ *
+ * This was the literal pair `["playwright.config.ts", "playwright.capture.config.ts"]`,
+ * and `playwright.capture-live.config.ts` had `webServerEnv: {}` with no pin at
+ * all. The guard could not see the file it was missing, because the file was
+ * missing from the guard. A hand-maintained list of things to check is only as
+ * complete as the last person to remember it — the fourth instance in this
+ * project of a layer that cannot see its own subject.
+ *
+ * The masking config is the ONE deliberate exception: its entire purpose is to
+ * observe what a real recording contains, so it must carry a real key. It is
+ * excluded BY NAME with the reason attached, because an unexplained exemption
+ * outlives the reason for it (S52).
+ */
+const MASKING_CONFIG = "playwright.masking.config.ts";
+
+const CONFIGS = readdirSync(process.cwd())
+  .filter((f) => /^playwright\..*config\.ts$/.test(f) || f === "playwright.config.ts")
+  .filter((f) => f !== MASKING_CONFIG)
+  .sort();
 
 describe("analytics is disabled for every automated run", () => {
+  // Without this, a glob that matched nothing would pass every assertion below
+  // vacuously — the shape of failure this project has now produced five ways.
+  it("actually found the Playwright configs to check", () => {
+    expect(CONFIGS.length).toBeGreaterThanOrEqual(3);
+    expect(CONFIGS).toContain("playwright.config.ts");
+    expect(CONFIGS).toContain("playwright.capture.config.ts");
+    expect(CONFIGS).toContain("playwright.capture-live.config.ts");
+    expect(CONFIGS).not.toContain(MASKING_CONFIG);
+  });
+
   for (const file of CONFIGS) {
     it(`${file} pins NEXT_PUBLIC_POSTHOG_KEY to empty in webServerEnv`, () => {
       const source = configSource(file);

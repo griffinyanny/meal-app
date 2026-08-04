@@ -11,64 +11,17 @@ import {
   seedYouState,
   resetTestHousehold,
 } from "../app/seed";
+// Shared with the a11y sweep, which measures the sheets and onboarding this
+// tab-level sweep cannot reach. One implementation, three callers.
+import {
+  MIN_TARGET,
+  iconOnlyTargets,
+  undersized,
+  describeTargets,
+  type Target,
+} from "../app/hit-targets";
 
 const nav = (page: Page) => page.getByRole("navigation");
-
-/** Spec §12 item 05's floor: "the glyph is 19px; the target is 44px." */
-const MIN_TARGET = 44;
-
-interface Target {
-  where: string;
-  label: string;
-  tag: string;
-  width: number;
-  height: number;
-  exempt: string | null;
-}
-
-/**
- * Every icon-only control on the current screen, measured from its real box.
- *
- * "Icon-only" is defined the way the spec defines it — a control whose whole
- * visible content is a glyph — so it is derived from the rendered tree
- * (`innerText` empty, an `<svg>` inside) rather than from a list of class names
- * someone has to remember to update. Same argument as RC11: the property being
- * asserted is a measurement, so measure it.
- */
-async function iconOnlyTargets(page: Page, where: string): Promise<Target[]> {
-  return page.evaluate((whereLabel) => {
-    const SELECTOR = 'button, a[href], [role="button"], summary';
-    return Array.from(document.querySelectorAll(SELECTOR))
-      .filter((el) => {
-        const node = el as HTMLElement;
-        if (node.innerText.trim() !== "") return false;
-        if (!node.querySelector("svg")) return false;
-        const r = node.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      })
-      .map((el) => {
-        const node = el as HTMLElement;
-        const r = node.getBoundingClientRect();
-        return {
-          where: whereLabel,
-          label:
-            node.getAttribute("aria-label") ??
-            node.getAttribute("data-testid") ??
-            node.className.slice(0, 40),
-          tag: node.tagName.toLowerCase(),
-          width: Math.round(r.width * 10) / 10,
-          height: Math.round(r.height * 10) / 10,
-          exempt: node.getAttribute("data-hit-target-exempt"),
-        };
-      });
-  }, where);
-}
-
-const undersized = (targets: Target[]) =>
-  targets.filter((t) => t.width < MIN_TARGET || t.height < MIN_TARGET);
-
-const describeTargets = (targets: Target[]) =>
-  targets.map((t) => `  ${t.where} · <${t.tag}> "${t.label}" — ${t.width}×${t.height}`).join("\n");
 
 test("SH1 - the tab bar's top corners are square, and the hairline still separates it", async ({ page }) => {
   await page.goto("/plan");
