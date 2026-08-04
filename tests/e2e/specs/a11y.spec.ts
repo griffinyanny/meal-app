@@ -38,6 +38,12 @@ import {
   resetTestHousehold,
 } from "../app/seed";
 import { openMealSheet, sheetContent, planRail } from "../app/selectors";
+import {
+  MIN_TARGET,
+  iconOnlyTargets,
+  undersized,
+  describeTargets,
+} from "../app/hit-targets";
 
 // ⚠️ EVERY TEST STARTS ONBOARDED, AND THIS IS NOT DECORATION.
 //
@@ -341,6 +347,24 @@ for (const surface of SURFACES) {
         `ceiling of ${surface.otherCeiling}. These are not auto-fail, but the ` +
         `count only goes DOWN:\n${describe(other)}`
     ).toBeLessThanOrEqual(surface.otherCeiling);
+
+    // ⚠️ THE 44px FLOOR, ON THE SURFACES `SH2` CANNOT REACH.
+    //
+    // axe has no opinion about tap-target size, and `SH2` sweeps the four tabs
+    // plus the recipe-detail dialog — it has never opened the meal sheet and
+    // has never visited onboarding at all. That is the gap S54 named: the audit
+    // found 2 violations on the tabs while 4 more sat inside a dialog it never
+    // opened, and every one of those lived in a component the tab sweep could
+    // not see. Measured here with `SH2`'s own helper rather than a second
+    // implementation, because a duplicated measurement drifts and one copy
+    // keeps reporting clean.
+    const targets = await iconOnlyTargets(page, surface.name);
+    const tooSmall = undersized(targets).filter((t) => t.exempt === null);
+    expect(
+      tooSmall,
+      `icon-only controls under ${MIN_TARGET}px on ${surface.name}:\n` +
+        describeTargets(tooSmall)
+    ).toEqual([]);
   });
 }
 
