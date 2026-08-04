@@ -77,14 +77,26 @@ export function CountRow({
         {sub && <div className="mt-0.5 spec-meta text-[var(--spec-text-muted)]">{sub}</div>}
       </div>
       <div className="flex items-center gap-3">
+        {/* ⚠️ 44px TARGET, 36px PAINT (BUG-064). These were a bare `size-9`
+            button — 36×36, under §12 item 05's floor — and unlike the sheet's
+            close control they PAINT their box, so growing the button would have
+            redesigned the stepper rather than fixed its target. B8a's
+            constraint-chip trade instead: the target is the button, the paint
+            is the span inside it, and `-m-1` against `size-11` cancels the
+            growth so the layout box stays the 36px it always was.
+
+            Shipped unseen because the only 44px sweep walked the four tabs, and
+            this control appears in the interview and inside the You sheet. */}
         <button
           type="button"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
           aria-label={`One fewer ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
+          className="-m-1 grid size-11 place-items-center disabled:opacity-40"
         >
-          <Minus className="size-4" />
+          <span className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)]">
+            <Minus className="size-4" />
+          </span>
         </button>
         <span
           data-testid={testId}
@@ -92,14 +104,17 @@ export function CountRow({
         >
           {value}
         </span>
+        {/* Same trade as the decrement above — see its note. */}
         <button
           type="button"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
           aria-label={`One more ${label.toLowerCase()}`}
-          className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)] disabled:opacity-40"
+          className="-m-1 grid size-11 place-items-center disabled:opacity-40"
         >
-          <Plus className="size-4" />
+          <span className="flex size-9 items-center justify-center rounded-[12px] border border-[rgba(240,222,190,0.12)] bg-[rgba(240,222,190,0.06)] text-[var(--spec-text-primary)]">
+            <Plus className="size-4" />
+          </span>
         </button>
       </div>
     </div>

@@ -72,10 +72,20 @@ function DrawerContent({
         {/* Rendered after children so keyboard/AT users reach the sheet's
             heading and body before the Close control (positioned top-right by
             CSS, independent of DOM order). */}
+        {/* ⚠️ 44px TARGET, 20px GLYPH, AND THE PAINT DOES NOT MOVE (BUG-064).
+            This was `p-1.5` around a `size-5` icon = a 32×32 target on the
+            dismiss control of every sheet in the app — 12px under §12 item 05's
+            floor, on the control a person reaches for one-handed at the top
+            corner of a phone. It shipped unseen because `SH2` sweeps the four
+            tabs and has never opened a sheet.
+
+            `-m-1.5` against `size-11` is B8a's constraint-chip trade: the
+            negative margin cancels the growth, so the glyph's centre stays
+            exactly 32px from each edge and nothing visibly changes. */}
         {showCloseButton && (
           <DrawerClose
             aria-label="Close"
-            className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-4 top-4 -m-1.5 z-10 grid size-11 place-items-center rounded-full text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X className="size-5" />
           </DrawerClose>
