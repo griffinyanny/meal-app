@@ -28,7 +28,12 @@ test("Y1 - the returning-user audit surface renders every getChefContext field",
   await seedYouState("YOU_RETURNING");
   await page.goto("/you");
 
-  await expect(page.getByText("Here's what I know about you.")).toBeVisible();
+  // By role, not by text — Next 16.3.0's route announcer mirrors the `<h1>`
+  // into a hidden live region, so `getByText` on h1 copy resolves to two
+  // elements. See OB1 in `onboarding.spec.ts` for the full note.
+  await expect(
+    page.getByRole("heading", { name: "Here's what I know about you." })
+  ).toBeVisible();
 
   // Safety card: allergy-weighted + plain restriction.
   await expect(safety(page).getByText("Shellfish")).toBeVisible();
@@ -237,7 +242,8 @@ test("Y9 - a brand-new user sees the 'we've just met' + 'still learning' state",
   await seedYouState("YOU_NEW");
   await page.goto("/you");
 
-  await expect(page.getByText("We've just met.")).toBeVisible();
+  // By role — see OB1.
+  await expect(page.getByRole("heading", { name: "We've just met." })).toBeVisible();
   await expect(page.getByTestId("you-ledger-empty")).toBeVisible();
   await expect(page.getByText("Nothing here yet.")).toBeVisible();
 });
@@ -256,8 +262,13 @@ test("Y10 - test mode resets the interview back to a genuine first run", async (
   await page.getByTestId("you-reset-onboarding-confirm").click();
 
   await expect(page).toHaveURL(/\/welcome$/);
+  // By role — see OB1. This is a client-side redirect, which is exactly the
+  // navigation that populates the route announcer, so this one failed rather
+  // than lying latent.
   await expect(
-    page.getByText("Let's get to know each other. Then I'll cook your week.")
+    page.getByRole("heading", {
+      name: "Let's get to know each other. Then I'll cook your week.",
+    })
   ).toBeVisible();
 
   const saved = await readOnboardingResult();

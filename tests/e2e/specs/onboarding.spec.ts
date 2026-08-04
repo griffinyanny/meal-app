@@ -53,8 +53,18 @@ test("OB1 - a first-time user is sent into the interview", async ({ page }) => {
   await page.goto("/plan");
 
   await expect(page).toHaveURL(/\/welcome$/);
+  // ⚠️ By ROLE, not by text. Next 16.3.0's route announcer
+  // (`#__next-route-announcer__`, `role="alert"`) mirrors the page's `<h1>`
+  // into a visually-hidden live region on a client-side navigation, so
+  // `getByText` on any h1 copy now resolves to TWO elements and dies on strict
+  // mode. The announcer is correct behaviour and correctly hidden (verified in
+  // the failure screenshot — nothing duplicates on screen); it is the locator
+  // that was too loose. Asserting the heading role is also what S54 already
+  // required: the assertion should name the property being checked.
   await expect(
-    page.getByText("Let's get to know each other. Then I'll cook your week.")
+    page.getByRole("heading", {
+      name: "Let's get to know each other. Then I'll cook your week.",
+    })
   ).toBeVisible();
   // A conversation, not a destination — the tab bar is gone.
   await expect(page.getByRole("navigation")).toBeHidden();
@@ -65,7 +75,11 @@ test("OB2 - a user who already onboarded is never re-prompted", async ({ page })
   await page.goto("/plan");
 
   await expect(page).toHaveURL(/\/plan$/);
-  await expect(page.getByText("What are you thinking this week?")).toBeVisible();
+  // By role — see OB1. This one passed on the 16.3.0 run only because its
+  // navigation path left the announcer empty; it is the same latent collision.
+  await expect(
+    page.getByRole("heading", { name: "What are you thinking this week?" })
+  ).toBeVisible();
 });
 
 test("OB3 - completing the interview persists every core answer", async ({ page }) => {
@@ -161,7 +175,10 @@ test("OB6 - a skipped interview does not fire again on the next visit", async ({
 
   await page.goto("/plan");
   await expect(page).toHaveURL(/\/plan$/);
-  await expect(page.getByText("What are you thinking this week?")).toBeVisible();
+  // By role — see OB1.
+  await expect(
+    page.getByRole("heading", { name: "What are you thinking this week?" })
+  ).toBeVisible();
 });
 
 test("OB7 - the mic says voice is coming rather than failing silently", async ({
