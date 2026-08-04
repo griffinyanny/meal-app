@@ -8,6 +8,22 @@ You are editing code the Playwright E2E suite covers. Coverage today: **Plan,
 Groceries, Recipes, You, onboarding, and the PWA's offline half** (**143 specs**, S65).
 Before wrapping:
 
+⚠️ **NEVER ASSERT AN `<h1>` WITH `getByText` — USE `getByRole("heading", { name })`.** Next 16.3.0's route
+announcer (`#__next-route-announcer__`, `role="alert"`, `aria-live="assertive"`) mirrors the page's `<h1>`
+into a visually-hidden live region on every **client-side** navigation, so `getByText` on heading copy
+resolves to **two** elements and dies on strict mode. **The announcer is correct and correctly hidden** —
+verified in the failure screenshot, nothing duplicates on screen — so this is a locator defect, not a
+product one. ⚠️ **It only fires on client-side navigation**, which is why the S66 bump broke **2** specs and
+left **4** more latent on hard `goto`s: a passing `getByText` on an h1 is a collision that has not happened
+yet. All six are by role now, which is S54's rule anyway (*assert the property that changed*).
+
+⚠️ **`E2E_REUSE_BUILD=1` IS NO LONGER SAFE — IT DEFEATS THE ANALYTICS-OFF GUARD (BUG-061).**
+`playwright.config.ts` pins `NEXT_PUBLIC_POSTHOG_KEY: ""`, and its own comment states the load-bearing
+premise: *"the build runs inside `webServerCommand` with this env."* **Reuse removes exactly that premise.**
+Since S64 put a real `phc_` key in `.env.local`, a reused build inlines the **real** key and 143 specs fire
+fabricated rituals, plan generations and grocery lists into the PostHog project the DoD's time-to-list
+number is read from. `analytics-config.test.ts` cannot see it — the pinned line is still there.
+
 ⚠️ **CHECK THE MACHINE BEFORE TRUSTING A FULL-SUITE RESULT.** `top -l 2 -n 0 | grep "CPU usage"` — the
 **instantaneous** idle figure, NOT `uptime`'s load average, which lags by minutes and will show a number
 from work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`,
