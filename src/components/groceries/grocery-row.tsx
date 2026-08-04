@@ -78,6 +78,10 @@ export function GroceryRow({
     }
   }
 
+  // Derived from the row's own id rather than `useId`, so it is stable across
+  // the edit/display swap and readable in a DOM dump.
+  const nameId = `grocery-name-${item.id}`;
+
   return (
     <div
       ref={drag?.setNodeRef}
@@ -99,7 +103,15 @@ export function GroceryRow({
           type="button"
           role="checkbox"
           aria-checked={item.isChecked}
-          aria-label={`Check off ${capitalizeName(item.name)}`}
+          // ⚠️ BUG-060 · `aria-labelledby`, NEVER an interpolated `aria-label`.
+          // rrweb records attributes verbatim and our replay masking reaches
+          // text nodes only, so `aria-label={`Check off ${name}`}` wrote the
+          // grocery list into session replay in the clear — the single largest
+          // piece of household content in the product, on the surface used
+          // most, while every visible name beside it was correctly bulleted.
+          // Pointing at the name element instead gives a screen reader the real
+          // string and the recording the masked one.
+          aria-labelledby={nameId}
           onClick={() => onToggleCheck(item.id, !item.isChecked)}
           className={cn(
             "flex size-[22px] shrink-0 items-center justify-center rounded-[7px] border transition-colors",
@@ -117,7 +129,10 @@ export function GroceryRow({
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
+        {/* Carries `nameId` on the WRAPPER rather than the title button,
+            because that button is swapped for a text field while editing and an
+            `aria-labelledby` pointing at a removed node names nothing. */}
+        <div id={nameId} className="min-w-0 flex-1">
           {editing === "name" ? (
             <input
               value={editText}
@@ -132,7 +147,10 @@ export function GroceryRow({
             <button
               type="button"
               onClick={() => beginEdit("name")}
-              aria-label={`Edit ${capitalizeName(item.name)}`}
+              // ⚠️ BUG-060 · The name is this button's own text; the label was
+              // redundant AND leaked it into session replay via the attribute
+              // layer, which masking cannot reach.
+              aria-label={undefined}
               className="block w-full cursor-text text-left spec-row-title"
             >
               {capitalizeName(item.name)}

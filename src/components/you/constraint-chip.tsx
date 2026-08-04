@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,12 @@ export function ConstraintChip({
 }: ConstraintChipProps) {
   const danger = variant === "danger";
   const display = label.length > 0 ? label[0].toUpperCase() + label.slice(1) : label;
+  // `useId` rather than a slug of the label: the label IS the content, and a
+  // content-derived DOM id would put a dietary constraint back on the wire in
+  // an attribute — the exact leak this file is fixing, one door over.
+  const base = useId();
+  const displayId = `${base}-label`;
+  const removeId = `${base}-remove`;
   return (
     <span
       className={cn(
@@ -31,7 +38,7 @@ export function ConstraintChip({
           : "border-[rgba(240,222,190,0.1)] bg-[rgba(240,222,190,0.06)] font-medium text-[var(--spec-text-primary)]"
       )}
     >
-      {display}
+      <span id={displayId}>{display}</span>
       {subLabel && (
         <span
           className={cn(
@@ -59,7 +66,12 @@ export function ConstraintChip({
       <button
         type="button"
         onClick={onRemove}
-        aria-label={`Remove ${display}`}
+        // ⚠️ BUG-060 · `aria-labelledby`, not an interpolated `aria-label`.
+        // These chips carry DIETARY CONSTRAINTS — health data — and rrweb
+        // records attributes verbatim while replay masking reaches text nodes
+        // only, so the label was the one place a constraint survived into a
+        // recording in the clear.
+        aria-labelledby={`${removeId} ${displayId}`}
         className="group/remove -m-3 -mr-[14px] flex size-11 items-center justify-center"
       >
         <span
@@ -69,6 +81,12 @@ export function ConstraintChip({
           )}
         >
           <X className="size-3.5" strokeWidth={2.2} />
+        </span>
+        {/* The verb, as a TEXT NODE rather than an attribute — so the
+            accessible name stays "Remove No pork" while the recording sees
+            "Remove ••••••". Static copy, so masking it costs nothing. */}
+        <span id={removeId} className="sr-only">
+          Remove
         </span>
       </button>
     </span>

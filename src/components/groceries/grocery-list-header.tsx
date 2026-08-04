@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOfflineClause } from "@/lib/offline/use-offline-clause";
+import { GroceryTitle } from "./grocery-title";
 
 interface GroceryListHeaderProps {
   total: number;
@@ -28,13 +29,13 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
 
   return (
     <div className="space-y-3.5">
-      <p className="spec-eyebrow">
-        Groceries · This week
-      </p>
-      <div className="flex items-baseline justify-between gap-3">
-        {/* §05's H1 — see the note on the Recipes title. Not the chef's rung. */}
-        <h1 className="spec-screen-title">Your list</h1>
-        <div className="flex shrink-0 items-center gap-3">
+      {/* BUG-054 · the eyebrow + <h1> moved to `GroceryTitle` so the
+          generating, error and no-list states get a heading too. The markup
+          this renders is unchanged — the cluster below is passed as its
+          baseline-aligned `trailing` slot. */}
+      <GroceryTitle
+        trailing={
+          <div className="flex shrink-0 items-center gap-3">
           {/* The count, and the ONLY place offline is announced (1F/C, 1h).
               §05's meta rung, which is what the artifact draws the whole string
               at — the clause is the same size as the count it is attached to
@@ -72,8 +73,9 @@ export function GroceryListHeader({ total, checkedCount, onCopy }: GroceryListHe
             {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
             {copied ? "Copied" : "Copy"}
           </button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(240,222,190,0.07)]">
         <div
