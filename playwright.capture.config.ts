@@ -20,7 +20,15 @@ const base = baseE2EConfig({
   // Mirrors playwright.config.ts: the test-mode card only renders for an
   // allowlisted account, so without this the You capture would silently omit
   // the surface it exists to photograph.
-  webServerEnv: { E2E_AI_MOCK: "1", DEV_TOOLS_EMAILS: TEST_USER_EMAIL },
+  // ⚠️ `NEXT_PUBLIC_POSTHOG_KEY: ""` for the same reason as playwright.config.ts:
+  // inlined at build time, so an explicit empty value beats `.env.local` and
+  // keeps 55 capture states out of the dataset and out of the replay quota.
+  // Enforced by `analytics-config.test.ts`.
+  webServerEnv: {
+    E2E_AI_MOCK: "1",
+    DEV_TOOLS_EMAILS: TEST_USER_EMAIL,
+    NEXT_PUBLIC_POSTHOG_KEY: "",
+  },
 });
 
 export default defineConfig({

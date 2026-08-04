@@ -130,6 +130,23 @@ describe("shouldBlockRequest", () => {
     expect(isSignedOutReachable("/robots.txt")).toBe(true);
   });
 
+  it("should reach Sentry's tunnel without a session — the THIRD instance", () => {
+    // `tunnelRoute: "/monitoring"` (next.config.ts) makes the browser POST error
+    // reports same-origin so ad blockers cannot drop them. The SDK does not
+    // attach our session, so a report from the login screen looks signed-out —
+    // and without this it 307s to /login and Sentry receives nothing.
+    //
+    // ⚠️ Errors on /login are exactly the ones worth having, and the failure is
+    // silent: the tell is "we get no errors from the login screen", which reads
+    // as "none happen there". Same shape as the manifest and robots.txt above,
+    // which is why this is a pinned test rather than a line someone re-reads.
+    expect(isSignedOutReachable("/monitoring")).toBe(true);
+    // ⚠️ Both spellings. Read out of the generated build manifest, not guessed:
+    // the rewrite is `^/monitoring(/?)(?:/)?$`, so Sentry accepts a trailing
+    // slash and an exact-match exemption would gate one of the two forms.
+    expect(isSignedOutReachable("/monitoring/")).toBe(true);
+  });
+
   it("should still require a session for the app itself", () => {
     // The exemptions above are two static files. Widening this into "the PWA is
     // exempt" would hand every app route to anyone.
@@ -139,6 +156,10 @@ describe("shouldBlockRequest", () => {
     // Prefix-adjacent siblings must not ride along on the exact matches.
     expect(isSignedOutReachable("/manifest.webmanifest.map")).toBe(false);
     expect(isSignedOutReachable("/robots.txt.bak")).toBe(false);
+    // The tunnel is an EXACT match too — "/monitoring" must not open
+    // "/monitoring-dashboard" or anything else that merely starts with it.
+    expect(isSignedOutReachable("/monitoringx")).toBe(false);
+    expect(isSignedOutReachable("/monitoring/secrets")).toBe(false);
   });
 
   it("should always exempt the manifest from gate 1 too, or the app installs as a bookmark", () => {

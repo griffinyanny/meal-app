@@ -3,7 +3,9 @@
 import { useEffect, useRef } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { trackListReady } from "@/lib/analytics/funnel";
 import { GroceryList } from "./grocery-list";
+import { GroceryTitle } from "./grocery-title";
 
 type GroceryListData = NonNullable<RouterOutputs["grocery"]["current"]>;
 
@@ -57,8 +59,45 @@ export function GroceriesPageClient() {
     generateMutation.mutate({ listId: list.id });
   }
 
+  // ⚠️ THE NORTH-STAR CLOCK STOPS HERE (1F/D3). The DoD requires "time-to-list
+  // measured < 10 minutes on a real week", and this is the moment the list
+  // becomes shoppable — a different tab, a confirm and a background projection
+  // away from where the clock started, which is why the ritual id lives in
+  // localStorage rather than in React state.
+  //
+  // Guarded per list id: the tab polls, and `ready` is observed on every poll
+  // after the first. `trackListReady` also clears the ritual, so a remount or
+  // a second device cannot report the same one twice.
+  const reportedReadyFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!list || list.generationStatus !== "ready") return;
+    if (reportedReadyFor.current === list.id) return;
+    reportedReadyFor.current = list.id;
+
+    trackListReady({
+      itemCount: list.items.length,
+      sectionCount: new Set(list.items.map((i) => i.category)).size,
+      generationMs: Math.max(0, Date.now() - new Date(list.createdAt).getTime()),
+    });
+  }, [list]);
+
+  // Exactly the condition under which `Body` renders `GroceryList` — which is
+  // the only branch that draws its own heading. Derived here rather than
+  // approximated as `status === "ready"`, because `isError` can be true on a
+  // ready list (a failed retry), and that combination would otherwise render
+  // the error card under NO heading at all — the very bug being fixed,
+  // surviving in the one state hardest to reach.
+  const readyPath =
+    !!list && list.generationStatus === "ready" && !generateMutation.isError;
+
   return (
-    <div className="p-4">
+    <div className="space-y-3.5 p-4">
+      {/* BUG-054 · the heading renders on EVERY state. It used to live inside
+          the ready-path header, so generating / error / no-list were an
+          unlabelled document with no <h1> at all. The ready path draws its own
+          (with the count + Copy cluster attached), so this renders only when
+          that one will not — one heading on screen, never two. */}
+      {!readyPath && <GroceryTitle />}
       <Body
         list={list}
         isLoading={currentQuery.isLoading}

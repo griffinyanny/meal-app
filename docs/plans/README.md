@@ -8,6 +8,23 @@ This directory contains all plans created during the product build. Plans exist 
 High-level plans covering an entire phase (V1, V1.5, V2, etc.). Created before starting a phase. Covers architecture, feature scope, dependencies, and success criteria.
 
 - `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md` — Systems Architecture & Phase 1 Plan (approved 2026-05-26). **LOST** — the file was never committed to the `~/.claude` repo and an accidental 2026 deletion made it unrecoverable (discovered Session 18). Its phase skeleton (1A–1F) survives in `docs/changelog.md` Session 9; its scope-tracking role is absorbed by **`docs/scope-v1.md`** (the Release 1 hub, created Session 19), which is now the authoritative phase spine.
+  - ⚠️ **AMENDED S63 — the rescue was PARTIAL, and nobody wrote down which half was lost.** The phase
+    skeleton survived because it was deliberately copied out. **The event taxonomy did not.** That plan also
+    held *"event taxonomy defined (30+ events across 8 categories)"* (changelog S9), and for **44 sessions**
+    six documents went on citing *"the event taxonomy from S9"* as an available input to 1F Workstream D —
+    `scope-v1.md`, `scope-1F.md`, `whats-next.md` ×4, `idea-backlog.md`, and two session kickoff prompts.
+    It had not existed since S18, and **this file said so the whole time**, four directories away from every
+    doc that cited it.
+  - **Rebuilt from the code in S63** as `docs/observability-taxonomy.md` (34 events, 8 categories), derived
+    by walking the routers and surfaces rather than reconstructing a memory. Nothing else from the lost plan
+    is known to be outstanding — but that sentence is exactly the kind this session exists to distrust, so:
+    **the two things it is known to have carried were the phase skeleton and the taxonomy, and both are now
+    live artifacts in `docs/`.**
+  - ⚠️ **The generalisable lesson, recorded here because this is the file that would have prevented it:**
+    when a plan is lost, enumerate what it held and route each piece somewhere, or the unrescued parts keep
+    getting cited by docs that have no way to know they are gone. **A "LOST" note protects nobody who never
+    opens it** — and the only way anyone opens it is by resolving a citation to the artifact instead of
+    trusting the sentence that cites it.
 - Phase 1A: Foundation Sprint — **COMPLETED** 2026-05-27 (Milestone M1 achieved)
 - Phase 1B: AI Core + Recipes — **COMPLETED** 2026-05-27 (Milestone M2 achieved)
 - Phase 1C: Plan Tab — **ACTIVE** (see `docs/scope-1C.md`)

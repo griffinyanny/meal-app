@@ -5,8 +5,25 @@ globs: src/components/plan/**/*.tsx, src/components/groceries/**/*.tsx, src/comp
 # E2E rule
 
 You are editing code the Playwright E2E suite covers. Coverage today: **Plan,
-Groceries, Recipes, You, onboarding, and the PWA's offline half** (139 specs).
+Groceries, Recipes, You, onboarding, and the PWA's offline half** (**143 specs**, S65).
 Before wrapping:
+
+⚠️ **CHECK THE MACHINE BEFORE TRUSTING A FULL-SUITE RESULT.** `top -l 2 -n 0 | grep "CPU usage"` — the
+**instantaneous** idle figure, NOT `uptime`'s load average, which lags by minutes and will show a number
+from work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`,
+`lint` and `typecheck` running concurrently INSIDE the 20-minute run, and S65 found an unrelated project's
+`next dev` holding **123% CPU** on a 4-physical-core box. **S53's "never run two suites at once" is not
+only about Playwright** — it is about anything that competes for the CPU, including the gauntlet.
+
+⚠️ **A LOAD-SENSITIVE FAILURE NEEDS A LOAD KNOB, NOT ANOTHER THEORY.**
+`tests/e2e/harness/cpu-throttle.ts` throttles the page over CDP; rate comes from `E2E_CPU_THROTTLE` so every
+leg runs the same build. Use it when a spec passes in isolation and fails in the full run: a pass under
+uncontrolled load proves nothing, and a failure cannot be reproduced. **A green run cannot distinguish *the
+bug is gone* from *the trigger did not fire*.** ⚠️ It slows the **RENDERER only**, not the Next server on the
+same box — it reproduces a slow phone, not a loaded machine. ⚠️ And it **verifies itself**: an unthrottled
+dial is a no-op that would still let a spec report "passed at 4x".
+⚠️ **`X7` is pinned at 4x and the throttle IS the test** — at 1x its defect (BUG-058) does not occur at all,
+and X7 passes against the pre-fix code. Do not remove the throttle to speed the suite up.
 
 ⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`.** The
 harness reports the LAST command's exit code, so a failing suite comes back as

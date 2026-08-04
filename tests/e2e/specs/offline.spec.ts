@@ -209,12 +209,18 @@ test("OF6 - the tick is pixel-identical offline, and the chef is the only thing 
    * the same row before and after" is not a thing this screen can do — the
    * comparison has to be one ticked item against another.
    */
+  // ⚠️ Addressed by TESTID, not by `span:first`. BUG-060 moved the "Uncheck"
+  // verb out of an `aria-label` and into an sr-only text node (attributes are
+  // recorded verbatim by rrweb and cannot be masked), which made the first
+  // `<span>` in this button the VERB rather than the mark — so the old locator
+  // would have gone on measuring, silently, against the wrong element.
+  // The name is a prefix match for the same reason: the accessible name is now
+  // derived from the button's contents and carries the quantity too.
   const gotItMark = (name: string) =>
     page
       .getByTestId("grocery-gotit-zone")
-      .getByRole("button", { name: `Uncheck ${name.toLowerCase()}` })
-      .locator("span")
-      .first()
+      .getByRole("button", { name: new RegExp(`^Uncheck ${name}`, "i") })
+      .getByTestId("gotit-mark")
       .evaluate((el) => {
         const s = getComputedStyle(el);
         return [s.backgroundColor, s.borderRadius, s.width, s.height].join(" ");

@@ -6,7 +6,58 @@ Unresolved questions that need discussion or decision. Remove items as they get 
 
 ## Needs Griffin's call
 
-### 1. Should `ALLOWED_EMAILS` be set to the two real addresses for the validation weeks? (S62, 1F/D security review)
+### 🆕 S64 — Do the masking harness and its config graduate, or get deleted?
+
+They were filed as **temporary scaffolding** for BUG-059. **Recommendation: graduate them**, as
+`npm run test:masking`.
+
+Reasons: they are the only thing that can verify session-replay masking, which is a **privacy control over
+the household's grocery list**; they found a real leak the moment they could actually read the payload
+(BUG-060); they now carry the BUG-059 repro as a permanent regression test against a vendor policy change;
+and they **cannot** be folded into `npm run test:e2e`, which pins `NEXT_PUBLIC_POSTHOG_KEY: ""` by design
+and must keep doing so.
+
+Cost of keeping them: one more config file, and a run that puts a handful of events into the real PostHog
+project each time. Cost of deleting them: the next change to a component's accessible names is unverifiable.
+
+**Cadence if kept:** at wrap, whenever `masking.ts`, the analytics config, or a component's accessible names
+change.
+
+### 🆕 S64 — When do the production env vars go in? (blocked on one conversation, not on code)
+
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are **absent from Vercel Production**, so neither SDK
+has ever initialised there and the DoD's time-to-list measurement cannot run on real usage.
+
+**Sentry's DSN can go in now** — nothing gates it.
+
+**PostHog's key should not go in until Griffin has told his wife session replay exists.** That is already an
+owed item on Workstream D's checklist; S64 only makes the ordering explicit, because setting the var is what
+starts recording her. Claude deliberately did not set it. The recording is verified masked (0 leaks), which
+is what makes the conversation a short one rather than an awkward one.
+
+*Both S62 questions were answered in S63 — see the two resolved entries below.*
+
+### ✅ RESOLVED S63 — `ALLOWED_EMAILS` gets set to the two real addresses
+
+**Griffin's call, S63: YES**, as recommended. It goes in at the same moment his wife's account is created.
+
+⚠️ **This is an action Griffin takes, not a code change.** One env var in Vercel Production:
+`ALLOWED_EMAILS=<griffin>,<wife>`. There is no PR, and nothing in the repo changes — the seam shipped in
+S43a and both gate functions are already tested. It is **still owed** until he types it.
+
+**Recorded so the next security pass finds an answer rather than re-deriving the question.** The full
+argument is preserved below; the short version is that "no beta" and "open signup" were never the same
+decision and only the first had been made.
+
+⚠️ **The one real cost, carried forward:** `isEmailAllowed` returns **true** on an empty list, so a typo
+that blanks the variable silently reopens signup rather than locking anyone out. That default is deliberate
+and correct (a fail-closed default would lock Griffin out of production on a typo, which is likelier and
+worse). **The failure mode of this decision is "it quietly stops working", not "we get locked out"** —
+which means it is worth verifying once after setting it, by signing in with an address that is not on the
+list and confirming the bounce.
+
+<details>
+<summary>The original argument (S62), retained</summary>
 
 **Recommendation: yes, at the same moment the wife's account is created.** One env var, no code diff, and
 it is the seam S43a already built and tested.
@@ -35,18 +86,33 @@ working"*, not *"we get locked out"* — worth knowing, not a reason against.
 **If no:** nothing breaks, and the position is unchanged from today. Record it as a decision either way, so
 the next security pass finds an answer rather than re-deriving the question.
 
-### 2. Does BUG-054's fix ship — lifting the Groceries title block out of `GroceryList`? (S62)
+</details>
 
-**Recommendation: yes, with the a11y sweep, and lift the title block ONLY.** The Groceries tab currently
-renders **no heading at all** in its generating, error and no-list states, because its only `<h1>` lives in
-`grocery-list-header.tsx` and that renders on the ready path alone. It is BUG-028's exact defect on a
-different tab, plus an `<h1>`-less document on a surface D's a11y pass is chartered to sweep.
+### ✅ RESOLVED S63 — BUG-054's fix shipped
 
-⚠️ **It is Griffin's call because it changes two screens**, and 1F's own rule is that this phase is not a
-redesign. The argument that it is in-scope: S44 treated the identical hole on Plan as a bug and fixed it,
-the fix reuses type that already exists, and D already owns *"every surface has a fallback with a retry,
-not a blank screen."* ⚠️ **Do not render the whole header** — its progress bar, count, organize toggle and
-Copy are meaningless with no list, and law 05 would then have controls that do nothing.
+**Griffin's call, S63: YES**, as recommended — and it is **built and merged**, not just decided.
+
+The title block (eyebrow + `<h1>`) moved into a new `grocery-title.tsx` with **one definition and two call
+sites**: the page client renders it for the generating, error and no-list states; `grocery-list-header.tsx`
+renders it on the ready path with the count + offline clause + Copy cluster passed as its baseline-aligned
+`trailing` slot. **The ready state's markup is unchanged.**
+
+⚠️ **Two copies were the obvious implementation and would have been wrong.** Five definitions of one domain
+is how BUG-044 happened; a heading duplicated across a ready and a non-ready branch is the same shape at
+smaller scale, and the two would have drifted the first time the eyebrow copy changed.
+
+⚠️ **The title block only travelled**, as specified — the progress bar, count, organize toggle and Copy
+stay behind, because law 05 would otherwise put controls on screen that do nothing.
+
+⚠️ **One edge the obvious condition would have missed.** Gating on `status === "ready"` is wrong:
+`generateMutation.isError` can be true on a *ready* list (a failed retry), and `Body` renders the error card
+in that case — so the error card would have appeared under **no heading at all**, which is the very bug
+being fixed surviving in the state hardest to reach. The gate mirrors `Body`'s real ready branch instead.
+
+**Verified:** `GR12` (both non-ready states) and `GR13` (the ready list has exactly ONE `<h1>`, not two —
+the failure mode of the fix itself). Asserted **by role**, never by text: `getByText("Your list")` passes
+happily against a `<p>` and the whole fix *is* the heading level (S54's rule). **Force-failure earned** —
+reverting the fix and rebuilding turned `GR12` red.
 
 > **✅ Nothing is pending here as of S55.** **The one thing still owed by Griffin on 1F is not a decision but
 > an observation he has to make himself:** B2's phone check, whether S28's density complaint reads resolved

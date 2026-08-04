@@ -1051,6 +1051,51 @@ because the exemption is correct either way, and `ALLOWED_EMAILS` untouched.
 > bundling, and §09's stale four-controls sentence. The check is the same one S60 wrote down: *does every
 > item on a list survive being measured, or only being repeated?*
 
+> **⚠️ FACTUAL CORRECTION, S63 — this workstream's OTHER named input does not exist either.**
+> *"Observability: PostHog **with the event taxonomy from S9**"* appears in this doc, `scope-v1.md`,
+> `whats-next.md` (×4), `idea-backlog.md` and two kickoff prompts. **There is no such taxonomy.** Its only
+> source is one changelog line ([changelog.md:3545](changelog.md#L3545) — *"event taxonomy defined (30+
+> events across 8 categories)"*), and the artifact lived in
+> `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md`, which
+> [plans/README.md:10](plans/README.md#L10) records as **LOST** since S18: never committed, deleted,
+> unrecoverable.
+>
+> The plan's *phase-skeleton* half was consciously rescued into `scope-v1.md` at S19. Its *taxonomy* half
+> was not — and nobody noticed for 44 sessions, because nothing needed it until D opened.
+>
+> ⚠️ **The same S9 decision row carries a second claim that is false in effect:** *"vendor abstraction
+> layer built in Phase 1."* `src/lib/analytics.ts` existed — **15 lines of dev-only `console.log` with zero
+> call sites in the entire app.** The file's existence is what made the claim read true.
+>
+> **FIFTH instance of the pattern**, after the cold-user premise, the feedback-capture bundling, §09's
+> four-controls sentence, and S62's server-rendered-shell claim. ⚠️ **And the sharpest variant yet: this one
+> was a claim about an ARTIFACT that a different doc, in the same repo, already recorded as destroyed.**
+> The two facts sat four files apart for 44 sessions and nobody joined them. Consequence: D3 was
+> design-from-zero, not install-and-port — see `docs/observability-taxonomy.md`.
+
+**S64 progress.** ✅ **(3) observability — DONE AND VERIFIED**, including the owed real-recording check,
+which found and closed **BUG-060** (session replay was recording the grocery list, meal titles, recipe
+titles and dietary constraints in the clear, through `aria-label` — attributes are outside every masking
+hook the vendor exposes). ✅ **BUG-059 CLOSED** — posthog-js's own bot filter silencing the headless test
+browser, upstream of all four suspects the tracker had eliminated; **no production code changed.**
+**S65 progress.** ✅ **BUG-058 CLOSED — it was a real product bug, and S64's fix closes it.** The full suite
+on a verified-idle machine gives **142 passed / 0 failed (19.5m)**, so S64's failure was CPU contention
+(vitest + lint + typecheck running inside the run). ⚠️ **But that alone proves nothing**, which is the
+carry-forward: a green run cannot separate *the bug is gone* from *the trigger did not fire*. A CPU dial over
+CDP (`tests/e2e/harness/cpu-throttle.ts`) made it decidable — **pre-fix at 4x fails with `value: ""` and
+`disabled: true`; post-fix at 4x passes.** ⚠️ **S63's remount was the right mechanism all along**; it was
+filed off a code read, dismissed at S64, and confirmed at S65 by measurement — *at full speed the remount
+never fires*, so the defect and its fix were both invisible in every fast repro. New **`X7`** pins it at 4x
+(force-failed against `eb9343b^`); the S64 probe is removed from X6. **143 specs, all green.**
+🔴 **THE ONLY THING NOW BLOCKING D's observability half is the PR #28 MERGE**, which BUG-058 was gating.
+✅ **The production env vars are SET** (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN`/`ORG`/`PROJECT`, `ALLOWED_EMAILS` — S64, commit `3656851`) but **inert until the merge**,
+because `main` holds none of the observability code. ⚠️ **Do not redeploy production before the merge.**
+Still Griffin's: **one sentence to his wife that session replay exists** before real recording begins.
+
+**S63 progress.** ✅ **(3) observability — the taxonomy, both SDKs, the masking posture and the whole
+north-star funnel.** ✅ **BUG-054 shipped** (Griffin's call). See the S63 rows below.
+
 **S62 progress.** ✅ **(2) migration safety — DONE** (rule + `migrations.test.ts` + `pg_dump` discipline).
 ✅ **(5) BUG-044 — CLOSED.** 🔨 **(1) security review — PART DONE**: authz/IDOR sweep across every router,
 rate limiting, SSRF, the access gates, the offline cache. **Still owed: prompt-injection review, RLS
@@ -1059,12 +1104,85 @@ verification, secrets audit.** ❌ **(3) observability — not started, and it g
 its generating/error/empty states — lands with the a11y sweep) and **BUG-055** (`clearOfflineState()` is
 not called on the revocation paths).
 
-- [ ] **Observability: PostHog** with the event taxonomy from S9, **+ Sentry.** Without this, the
+- [x] **Observability: PostHog + Sentry ✅ S63** — the taxonomy is **designed, not ported** (see the
+      correction above): **34 events across 8 categories** in `docs/observability-taxonomy.md`, typed in
+      `src/lib/analytics/events.ts` so a wrong name or missing property **does not compile**.
+      ⚠️ **No property can carry user content, and that is a compile error too** — a type-level guard fails
+      `npm run typecheck` naming the offending event if any property is a wide `string` outside the opaque-id
+      allow-list, so "just send the item name, it'll help debug" is un-buildable rather than un-reviewed.
+      **Both vendors go DIRECT, no reverse proxy** — see the note under Sentry below; that is one rule for
+      both rather than two.
+      ⚠️ **8 of 34 events are actually WIRED**, and the doc says so loudly in its own status section. The
+      wired set is the complete north-star funnel plus the two lifecycle events, which is exactly what the
+      DoD and Workstream E need; the other 26 are typed and one line each at a known seam.
+      **`wiring.test.ts` reads `src/` off disk** and fails if an event is claimed wired and never called, or
+      called and not claimed — because "a table of events reads as a working pipeline, and is not one until
+      something calls it" is this workstream's own lesson turned into a guard.
+- [x] **⚠️ Analytics is OFF for every automated run ✅ S63** — enabled only by the presence of
+      `NEXT_PUBLIC_POSTHOG_KEY` (an allow-list), and **both Playwright configs pin it to `""` in
+      `webServerEnv`**. That variable is inlined at BUILD time and both suites build inside their own
+      webServer command, so an explicit empty value beats a real key in `.env.local`. Without it, a
+      139-spec run plus 55 capture states fabricate hundreds of rituals and grocery lists that then land in
+      the DoD's *"time-to-list < 10 minutes on a **real** week"* **as data** — real events, plausible
+      numbers, and the only tell is that Griffin did not do any of it. `analytics-config.test.ts` scrapes
+      both configs and fails if either line is removed.
+- [ ] ~~**Observability: PostHog** with the event taxonomy from S9, **+ Sentry.**~~ Without this, the
       two-week validation run produces anecdotes instead of the time-to-list measurement the DoD requires.
       ⚠️ **And, per Griffin (S52), that is the smaller half of why it comes before validation:** it is the
       *debugging substrate for the validation weeks themselves*. Without it he reports a bug from memory and
       Claude guesses. With it, the error and the path that produced it are both visible.
-- [ ] **PostHog session replay** (added S52, Griffin's call). The event taxonomy gives a named *sequence*
+- [x] **PostHog session replay ✅ S63 (built) · ⚠️ ONE VERIFICATION OWED.** The posture is inverted as
+      specified — `maskAllInputs: true` + `maskTextSelector: "*"` masks everything, then an explicit
+      `data-ph-unmask` attribute unmasks an allow-listed subtree. `autocapture` is **off**, because it
+      records the text of every clicked element and would route around the whole policy through a different
+      door.
+      ⚠️ **THE API THIS DOC ASSUMED DOES NOT EXIST.** The bullet below says *"mask everything, then
+      explicitly unmask the chrome"*. **posthog-js has no unmask capability at all** — measured, not read:
+      zero occurrences of `unmask` anywhere in the installed package, and no `ph-no-mask` class (only
+      `ph-no-capture`, which masks *harder*). The inverted posture is reachable **only** through
+      `maskTextFn`, the per-element escape hatch. A design written against a vendor API nobody checked
+      against the vendor — the same finding class as this workstream's other two, one layer down.
+      ⚠️ **AND THE OBVIOUS ALLOW-LIST WOULD HAVE LEAKED THE ENTIRE GROCERY LIST.** "Unmask the chrome — nav,
+      buttons, state labels" reads as a selector like `nav, button`. **`grocery-row.tsx` renders the item
+      name as a display `<button>`** (the `<input>` only exists while editing), so `button` would have
+      recorded the largest piece of household content in the product, on the surface used most, via a rule
+      that looks obviously safe. That case is a named test.
+      ✅ **THE OWED VERIFICATION RAN IN S64, AND IT FOUND A LEAK — BUG-060.** *"A masking config that reads
+      correctly and records the grocery list is precisely the false green this project has produced six
+      distinct ways"* was right, and that is what was happening. **Text masking works — zero leaks in text
+      nodes, measured.** But **rrweb records ATTRIBUTES VERBATIM** and the installed build has **no
+      attribute-masking hook at all** (`posthog-js/dist/rrweb.d.ts` → `recordOptions` offers
+      `maskTextClass`, `maskTextSelector`, `maskAllInputs`, `maskInputOptions`, `maskInputFn`, `maskTextFn`,
+      and nothing for attributes), and no central place to scrub it either — each snapshot item is
+      compressed inside the lazily-loaded recorder bundle **before `before_send` runs**. **No configuration
+      could have closed it.** Leaking through ``aria-label={`Check off ${item.name}`}`` and its siblings: the
+      grocery list, the week's meal titles, the recipe library, and the user's **dietary constraints**.
+      ⚠️ **The bullet above predicted the door and missed the doorway.** It correctly named `grocery-row`'s
+      display `<button>` as the trap — and the leak was that same button's **label**, one layer further out.
+      ⚠️ **And the check itself was vacuous in two stacked ways before it could see any of this:** the `/s/`
+      request carries **no `compression=` in its URL**, so the URL-keyed gunzip never fired; and even
+      decompressed, the outer body is an envelope whose every large `$snapshot_data` item is gzipped **again**
+      inside it — **the outer JSON has never contained one word of page content.** Fixed by sniffing magic
+      bytes, expanding inner streams recursively, and two guards: one that fails if an ingest body is mostly
+      unprintable, one that fails if the inner expansion stops expanding.
+      **Now verified: `10 requests, 157,787 bytes inspected, 0 leaks`.**
+      **Quota confirmed at build time rather than assumed** (posthog.com/pricing, fetched 2026-08-03):
+      **1M events / 5,000 recordings / 100k exceptions per month, free, no card.** Two users for two weeks
+      cannot approach any of it.
+- [x] **Sentry ✅ S63** — production-gated by DSN presence (the same allow-list shape), `sendDefaultPii:
+      false` restated explicitly because its absence looks identical to its having been considered, and
+      **Sentry's own session replay is OFF**: a second recorder with its own masking defaults would ship the
+      vendor default while the careful posture above governs only the other recording.
+      ⚠️ **`tunnelRoute` deliberately NOT set, and this is S59 applied BEFORE it bit rather than after.** It
+      creates a same-origin `/monitoring` route for error POSTs; `src/proxy.ts` gates every path not on
+      `isSignedOutReachable()`, and `/monitoring` would not be on it — so reports from a **signed-out**
+      browser would 307 to `/login` and vanish. Errors on the login screen are exactly the ones worth
+      having, and the failure is silent: the tell is *"we get no errors from /login"*, which reads as *"none
+      happen there"*. **Third time this shape has appeared in this app** (`/manifest.webmanifest` twice in
+      S59, `/robots.txt` before it), and each fix was a path added to a list nobody re-reads.
+      The build-time source-map upload is also conditional on `SENTRY_AUTH_TOKEN`, so neither Playwright
+      suite pays for a wrapper step it has no token for.
+- [ ] ~~**PostHog session replay**~~ (added S52, Griffin's call). The event taxonomy gives a named *sequence*
       (`intent_submitted` → `plan_confirmed`); Sentry gives the stack, release and user. **Neither shows what
       he actually tapped** — replay does, which is precisely the gap he named.
       **⚠️ The masking posture must INVERT the vendor default, and this is the part to get right.** PostHog
@@ -1079,9 +1197,21 @@ not called on the revocation paths).
       config is what carries forward, and if replay ever meets a real user on vendor defaults the leak is
       already live. Confirm the current free-tier recording quota at build time rather than assuming it.
       **Griffin's wife is recorded too** — she should be told; it costs one sentence.
-- [ ] **Time-to-list instrumentation specifically** — the DoD says *"< 10 minutes on a real week"*, and
-      that is a measurement, not a feeling. It needs an event at intent-submit and an event at
-      list-ready, shipped **before** the validation weeks start or the weeks do not count.
+- [x] **Time-to-list instrumentation ✅ S63** — `ritual_started` at intent-submit, `list_ready` when
+      `generationStatus` turns `ready`, correlated by a **client-minted `ritual_id`**.
+      ⚠️ **The id has to be client-minted, and that is a fact about the code rather than a preference:**
+      `persistPlan` runs in the stream's `onComplete`, so **no plan exists when the clock starts.** There is
+      no server-side id to correlate on.
+      ⚠️ **`localStorage`, never `sessionStorage`.** The clock spans four surfaces, a confirm, a background
+      projection and possibly a relaunch — iOS evicts a backgrounded PWA over a long shop, which is the
+      app-kill case this project already tests for. `sessionStorage` dies with the tab and would lose the
+      measurement in exactly the case most worth measuring.
+      ⚠️ **`ritual_abandoned` is part of the measurement, not garnish.** Without it, "< 10 minutes" is
+      computed only over rituals that *finished* — survivor bias with a number attached. The DoD deserves
+      its denominator.
+      Guarded against every way it could lie: a malformed record is discarded rather than trusted (a garbage
+      `startedAt` poisons the average while looking like data), a backwards clock cannot produce a negative
+      duration, and completing clears the ritual so a refetch or a second device cannot report it twice.
 - [ ] **Security review of the full surface** + rate-limiting audit. Per the standing rule for
       auth/secrets/PII work, live-code vulnerabilities ship as their own PR first.
 - [ ] **⭐ Migration safety — added S54, and it is the risk the non-prod-Supabase-project debate was standing
@@ -1332,6 +1462,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-08-03 (S65) | **BUG-058 CLOSED, and the suite has no red left — PR #28 is unblocked.** The full run on a verified-idle machine gave **142 passed / 0 failed (19.5m)**; S64's failure was CPU contention (vitest + lint + typecheck inside the run, plus an FFOS `next dev` holding 123% CPU on a 4-core box). New **`X7`** pins the fix at a 4x CPU throttle and the S64 probe comes out of X6; **143 specs, all green, 815 unit green.** New permanent harness capability: `tests/e2e/harness/cpu-throttle.ts`. | ⚠️ **A green run is not a resolution, and that is the transferable half.** It cannot separate *the bug is gone* from *the trigger did not fire* — which is exactly what three sessions of "it passed this time" had been hiding. The dial made the A/B decidable in two minutes: **pre-fix at 4x → `value: ""`, `disabled: true`; post-fix at 4x → text intact.** ⚠️ **S63's remount was RIGHT.** It was filed off a code read, dismissed at S64 as unconfirmed, and confirmed at S65 by measurement. The three-session cost was never bad reasoning about the mechanism — it was that **nothing in the harness could make the mechanism fire**, so each session concluded from whichever way the coin landed, and S64 read its own X6 failure as proof its (correct) fix had missed. **A mechanism read off the source is a hypothesis until you can turn its TRIGGER on and off; a defect that only appears under load needs a load knob before it needs another theory.** ⚠️ Riders: **CDP CPU throttling slows the RENDERER only**, not the Next server on the same box, so it reproduces a slow phone rather than a loaded machine (a 1500ms tRPC delay produced *no* remount rather than a worse one); **an unverified dial is a no-op wearing a passing test**, so the helper fails unless a fixed busy-loop actually got slower; and **teardown must never throw**, after `cdpSession.detach` replaced the real assertion error in the report |
 | 2026-08-02 (S61) | **C's three design artifacts BUILT — the icon, the launch screen and the offline clause.** Workstream C is code-complete; the only thing left in it is **Griffin's two phones**. New `scripts/generate-splash.mjs` + `src/assets/splash-devices.json` (one table, two consumers), new `apple-splash.ts` + `splash.test.ts`, new `use-offline-clause.ts` + its unit table, new `.spec-offline-clause`, new **OF5/OF6/OF7** and a new `grocery-offline-clause` capture state. **BUG-051 🟠 filed rather than fixed** (an item added offline is the S60 illusion one control over). | ⚠️ **Every real defect this session was a value transcribed by eye instead of by its definition, and the icon carried three.** A `radial-gradient(circle at …)` has an implicit `farthest-corner` extent (0.892, not the placeholder's guessed 0.72); a **box-shadow blur radius is twice the Gaussian σ**; and an outer box-shadow is **clipped to outside its border box**, so an unmasked glow shines through a `.42`-alpha rim and makes the ember a different object. None of these look wrong in a thumbnail — they were caught by **sampling the rendered pixels against the arithmetic**, which is `/visual-qa`'s own "stop judging and measure" one layer lower down. ⚠️ **And the artifact beat the reasoning that predated it**: the placeholder's toque carried a comment arguing for scaling by the ink, which produced a hat ~8% larger than the locked `227px`. A comment explaining why a number is right is not evidence that it still is. |
 | 2026-08-02 (S61) | **The clause shipped as a crossfade and was corrected to a fade-swap**, and OF6 shipped too narrow to catch its own subject. | ⚠️ **Two stacked words in one grid cell is a true crossfade and puts both words in `textContent` at once** — so the header announced two contradictory states to anyone not looking at it, and every text assertion read `· offline · sending`. Neither opacity nor `visibility: hidden` helps, because `toHaveText` reads `textContent`. **At four characters of caption type a fade-swap and a crossfade look identical; announcing two contradictory states does not.** ⚠️ **The sharper one: OF6, whose entire subject is *no per-row anything*, could not see a per-row badge** — it measured the checkbox's own computed style, and a sibling element changes nothing about that. OF5 caught it; OF6 did not. *Ask what the layer cannot see* — **including a layer written this session**, which is S54's clause with the ink still wet. Widened to the row's text and box, then re-verified against an offline-**conditional** badge, because the first planted defect was unconditional and therefore appeared in both measurements — **a force-failure that does not reproduce the real defect proves nothing.** |
 | 2026-08-01 (S60) | **E's two open calls resolved, and an S49 factual error corrected across three docs.** (1) **E1 builds once, after D** — no v0 pull-forward. (2) **Griffin's wife gets her own account with FULL `DEV_TOOLS_EMAILS`, identical to his**, and the feedback weighting splits **by claim type, not by person**: a defect is dictation from either of them, only *product direction* is weighted by source. E1 consequently gets **cheaper** — it rides the HUD seam and owes no R1 design pass. Workstream D picks up one five-minute item (her account before validation). | **Claude pushed back on the permissions twice and was wrong twice, on a premise it never checked** — it argued for withholding her dev tools to protect *"the cold-user signal."* There is no cold-user signal: she is a **software engineer who has sat beside Griffin for much of this build** and will test as aggressively as he does. ⚠️ **The premise traces to one S49 sentence** — *"the nearest thing R1 has to a cold user, since she has been in none of these sessions"* — **repeated verbatim into three docs, where it went silently load-bearing under three separate recommendations** (withhold dev tools, stage her account creation as an observed one-time event, weight her feedback below his). All three collapsed the instant it was stated to the one person who could check it. **This is the session's second instance of the same failure mode** (see the row below: a decision's fallout list repeated unexamined), and the tell here is sharper and worth keeping: **a claim about a *person*, written in a doc, that the person has never seen.** Also: the v0 pull-forward recommendation was **sound on its logic and wrong on a fact only Griffin held** — that he would not test aggressively before the instrumentation lands |

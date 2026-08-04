@@ -1,12 +1,26 @@
 "use client";
 
-import { useState } from "react";
 import { FreeformField } from "@/components/shared/freeform-field";
 import { LibraryDoor } from "./sheet/sheet-parts";
 
 export interface NoPlanStateProps {
   onGenerate: (request?: string) => void;
   isGenerating: boolean;
+  // ⚠️ BUG-058 · THE TYPED TEXT IS OWNED BY THE PARENT, NOT BY THIS COMPONENT.
+  //
+  // It used to be `useState(seed?.request ?? "")` right here, and
+  // `plan-page-client` renders `<NoPlanState>` from TWO call sites at different
+  // positions in the tree (the `intentMode` branch and the first-run empty
+  // state). React reconciles those as different elements, so any re-render that
+  // flips the branch is an unmount + remount — which reset the field to empty
+  // and silently disabled `Send to chef`, on the FIRST control of the
+  // north-star flow, with no error and nothing on screen to explain it.
+  //
+  // Controlled from one owner that survives the flip is the fix by
+  // construction. A longer wait would only have been a race with a longer fuse
+  // (S57).
+  request: string;
+  onRequestChange: (value: string) => void;
   // Present when re-prompting over an existing plan (vs. the first-run empty
   // state). `onCancel` returns to the current plan; `replaceWarning` tells the
   // user generating will replace a confirmed week.
@@ -44,6 +58,8 @@ const SUGGESTIONS = [
 export function NoPlanState({
   onGenerate,
   isGenerating,
+  request,
+  onRequestChange,
   onCancel,
   replaceWarning,
   seed,
@@ -52,8 +68,7 @@ export function NoPlanState({
   onRemovePick,
   carriedPickCount = 0,
 }: NoPlanStateProps) {
-  const [text, setText] = useState(seed?.request ?? "");
-  const canSubmit = text.trim().length > 0 && !isGenerating;
+  const canSubmit = request.trim().length > 0 && !isGenerating;
 
   return (
     <div className="space-y-6 py-2">
@@ -131,10 +146,10 @@ export function NoPlanState({
           a phone, where there is no Cmd key and Enter is the only key there
           is. */}
       <FreeformField
-        value={text}
-        onChange={setText}
+        value={request}
+        onChange={onRequestChange}
         onSubmit={() => {
-          if (canSubmit) onGenerate(text.trim());
+          if (canSubmit) onGenerate(request.trim());
         }}
         placeholder="Or just start talking. What sounds good?"
         inputAriaLabel="Tell the chef what you want this week"
@@ -158,14 +173,24 @@ export function NoPlanState({
               data-testid="plan-pick"
               className="spec-inset flex min-h-[52px] items-center gap-3 rounded-[14px] px-[14px] py-3"
             >
-              <span className="min-w-0 flex-1 spec-row-title text-[var(--spec-text-primary)]">
+              <span
+                id={`pick-title-${pick.id}`}
+                className="min-w-0 flex-1 spec-row-title text-[var(--spec-text-primary)]"
+              >
                 {pick.title}
               </span>
               {onRemovePick && (
                 <button
                   type="button"
                   onClick={() => onRemovePick(pick.id)}
-                  aria-label={`Remove ${pick.title}`}
+                  // ⚠️ BUG-060 · `aria-labelledby`, not an interpolated
+                  // `aria-label`: rrweb records attributes verbatim, so the
+                  // recipe title would have reached session replay in the clear
+                  // through the one layer masking cannot see. Naming the button
+                  // "Remove <title>" from the two real nodes keeps the screen
+                  // reader whole and leaves the recording masked.
+                  aria-labelledby={`pick-remove-${pick.id} pick-title-${pick.id}`}
+                  id={`pick-remove-${pick.id}`}
                   className="flex-none text-[12px] text-[var(--spec-text-caption)] underline underline-offset-2"
                 >
                   Remove

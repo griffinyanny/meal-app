@@ -4,6 +4,327 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 65 — 2026-08-03 (BUG-058 closed: a real product bug, provable only once the trigger became a dial)
+
+### ⛔ The headline: **a green run is not a resolution, and neither is a fix you cannot make fail**
+
+BUG-058 had survived three sessions. S63 read a remount off the source and filed it as the cause. S64 shipped
+a fix for it, watched X6 fail identically, and concluded **the fix had missed and the mechanism was wrong**.
+Both halves of that conclusion were false.
+
+**S65 changed one thing: it made the trigger controllable.**
+
+**First, the clean measurement.** The full suite was run on a machine verified idle beforehand — an FFOS
+`next dev` was holding **123% CPU** on a 4-physical-core box and was killed, taking instantaneous idle to
+79.5%. Result: **142 passed, 19.5m, zero failures.** S64's failing run had `vitest`, `lint` and `typecheck`
+executing inside it. **S53's "never run two suites at once" wearing a gauntlet as a costume.**
+
+⚠️ **But that alone proves nothing, and saying so is the point.** A green run cannot distinguish *the bug is
+gone* from *the trigger did not fire*, which is precisely why three sessions of "it passed this time" never
+closed anything.
+
+**Second, the dial.** `tests/e2e/harness/cpu-throttle.ts` — CPU throttling over CDP
+(`Emulation.setCPUThrottlingRate`), the same channel `capture-runtime.ts` already used to clear IndexedDB.
+Rate comes from `E2E_CPU_THROTTLE` rather than a hard-coded spec value, so every leg runs the same build.
+
+| Leg | Result |
+|---|---|
+| Full suite, idle machine | **142 passed**, X6 green, `sameNode: true` at every tick |
+| X6 at 4x / 6x / 20x (measured 4.27 / 6.47 / **22.93**) | **passes** — and the remount is REAL: field absent at +0ms, back as a **different node** |
+| 1500ms tRPC query delay | **no remount at all** — the remount tracks client render speed, not when data lands |
+| **Pre-fix code at 4x** | **✘ `value: ""`, `disabled: true`** |
+| **Post-fix code at 4x** | **✓ text intact, `disabled: false`** |
+
+**The last pair closed it.** Same build pipeline, same spec, same throttle; only `plan-page-client.tsx` and
+`no-plan-state.tsx` differ. **BUG-058 was a genuine product bug — a phone-speed CPU loses what you typed on
+the north-star flow's front door — and S64's fix closes it.**
+
+⚠️ **THE LESSON: a mechanism read off the source is a hypothesis until you can turn its TRIGGER on and off.**
+S63's remount was **right**. It was filed from a code read, dismissed at S64 as unconfirmed, and confirmed at
+S65 by measurement. The failure was never bad reasoning about the mechanism — it was that nothing in the
+harness could make the mechanism fire, so every run was a coin flip and each session drew its conclusion from
+whichever way it landed. **A defect that only appears under load needs a load knob before it needs another
+theory.** ⚠️ And the reason S64 could not see its own fix working: **at full speed the remount does not
+happen at all**, so the defect and its fix were both invisible in every fast repro.
+
+⚠️ **CDP CPU throttling slows the RENDERER ONLY, not the Next server on the same box.** It reproduces a slow
+phone, not a loaded machine — which is why the tRPC-delay leg produced *no* remount rather than a worse one.
+
+### ✅ What shipped
+
+- **`X7`** in `error.spec.ts` — BUG-058's regression test, pinned at **4x** (roughly a phone against this
+  desktop). It samples across the whole load window instead of asserting once, because a single assertion
+  that runs before the remount **passes on the pre-fix code too**. Carries a did-it-see-anything guard so it
+  cannot pass vacuously on a page that never rendered the field.
+  **Force-failed against `eb9343b^`: `intent text at +400ms · Expected "a week of easy dinners" · Received ""`.**
+- **`tests/e2e/harness/cpu-throttle.ts`** — generic, copyable. Two guards earned in this session: it times a
+  fixed busy-loop before and after and **fails if the page did not actually get slower** (an unverified dial
+  is a no-op that still lets a spec report "passed at 4x"), and it **re-checks after the navigation**, since
+  the rate is applied on `about:blank` and must survive a cross-origin navigation.
+- **The S64 diagnostic probe is REMOVED from X6**, which is back to owning the timeout ladder alone.
+  ⚠️ **X6 passes against the pre-fix code** — it had been catching BUG-058 only by accident of contention.
+
+### ⚠️ A third guard, found the hard way
+
+On the failing run, `restore()` threw `cdpSession.detach: Target page … has been closed` and **that error
+REPLACED the real one in the report**. Teardown now never throws. **A cleanup error that buries the failure
+it is cleaning up after points at the instrument instead of the defect** (S59's "a failure list pointing at
+correct code teaches people to edit the expectation", one layer over).
+
+### ⚠️ Two items the S64 handoff listed as owed were already done
+
+`SENTRY_AUTH_TOKEN` **and** `ALLOWED_EMAILS` were both set in commit `3656851`, which landed after the
+handoff text was written. The token is an **Organization Token** rather than a personal one, and deliberately
+not in `.env.local` because `uploadSourceMaps` is gated on its presence and a local copy would make both
+Playwright suites upload on most runs. **A handoff ages like a bug repro does.**
+
+### ▶ Where this leaves the release
+
+**The suite has no red left, so PR #28 is unblocked** — and it was the only thing blocking it. `main` holds
+none of the observability code, so the S64 production env vars stay inert until it merges, and the DoD's
+time-to-list measurement is gated behind that merge.
+
+---
+
+## Session 64 — 2026-08-03 (BUG-059 was the vendor muting the robot; the check meant to close D3 had been reading an envelope)
+
+### ⛔ The headline: **a check that could not fail, twice in the same payload**
+
+`masking-check.ts` — the measurement written in S63 specifically to catch a false green — reported **clean**
+while `aria-label="Check off Garlic"` sat in the recording. Its own header warns about exactly this failure
+(*"searching a GZIPPED body for 'garlic' finds nothing whether or not it leaked"*), and two layers of it
+shipped regardless.
+
+1. **`readBody` gunzipped only when the URL contained `compression=gzip`.** The `/s/` request **carries no
+   query string at all** — posthog-js compresses the body and says so in a header, not the URL. So 30KB of
+   gzip went into the leak check as text. Fixed by sniffing magic bytes.
+2. **Even decompressed, the outer body is an envelope.** The `/s/` JSON's every large `$snapshot_data` item
+   carries `data` as a **second, separately gzipped** latin1 string. **The outer JSON has never contained
+   one word of page content.**
+
+⚠️ **The generalisable check: before reading a value out of a payload, prove the payload is readable.**
+`assertDecoded` now fails if an ingest body is mostly unprintable bytes, and a second guard fails if the
+inner expansion ever stops expanding. **Fourth distinct shape of the test-that-cannot-fail in this project.**
+
+### 🔴 BUG-060 — session replay was recording the household in the clear, through `aria-label`
+
+Text masking works — **zero leaks in text nodes, measured.** But **rrweb records attributes verbatim**, and
+the installed build exposes **no attribute-masking hook at all** (measured against
+`posthog-js/dist/rrweb.d.ts`: `recordOptions` offers `maskTextClass`, `maskTextSelector`, `maskAllInputs`,
+`maskInputOptions`, `maskInputFn`, `maskTextFn`, and nothing for attributes). There is no central
+interception point either — posthog-js compresses each snapshot item inside the lazily-loaded recorder
+bundle, **before `before_send` runs**. **No configuration could have fixed this.**
+
+Leaking: the **grocery list**, the **week's meal titles**, the **recipe library**, and the user's **dietary
+constraints** — essentially the whole content inventory the masking posture exists to protect.
+
+⚠️ **The project's own rule produced it.** `.claude/rules/react-components.md` says *"all interactive
+elements need aria labels"*, so ``aria-label={`Check off ${item.name}`}`` is what a careful person writes.
+**The accessibility rule and the privacy posture were in direct conflict and nothing in the repo could see
+it.** This is the S63 grocery-row finding one layer down: there, the item name escaped as a display
+`<button>`; here it escaped as that button's label.
+
+Fixed in six components by naming controls from **text nodes** — own contents, or `aria-labelledby` at the
+node that already renders the name, with icon-only verbs moved into `sr-only` spans. WCAG 2.5.3 prefers it
+anyway. Guarded by `src/lib/analytics/aria-leak.test.ts` (reasoned allow-list + stale-exemption check +
+did-it-scan-anything check). **Verified: 10 requests, 157,787 bytes inspected, 0 leaks.**
+
+### ✅ BUG-059 — posthog-js's bot filter, upstream of all four eliminated suspects
+
+`capture()` opens with `const bot = !config.opt_out_useragent_filter && this._is_bot()` and skips the send.
+`_is_bot()` fires on a blocklisted UA, on blocklisted `userAgentData.brands`, **or on `navigator.webdriver`**
+— and a headless Playwright browser trips **two of the three independently**. ⚠️ **The gate is in
+`capture()`, not `init()`**, which is exactly why the symptom read as configuration: remote config fetched,
+recorder downloaded, zero errors, zero warnings, and replay chunks die with analytics because `/s/` rides
+`capture("$snapshot")`.
+
+Measured as an A/B — same build, same project, only the browser's identity changed: headless gave 5 requests
+and **zero ingest**; not-a-robot gave **`/s/` and `/i/v0/e/`**, 32KB of replay. The unspoofed leg is kept as
+a permanent regression test. **No production code changed** — filtering bots is correct behaviour.
+
+### 🔴 And the half still open: **production has never had either SDK enabled**
+
+`NEXT_PUBLIC_POSTHOG_KEY` is **not set in Vercel Production**, nor is `NEXT_PUBLIC_SENTRY_DSN`. Both are
+allow-listed on key/DSN presence. ⚠️ So *"this project has no events yet"* was true and **evidence of
+nothing** — production could not emit, and the only browser that ever ran a key-carrying build was one
+PostHog mutes on purpose. **An absence measured against an empty room** (S62), in the place it mattered most.
+
+⚠️ **Deliberately not set by Claude:** enabling PostHog in production starts recording Griffin's wife's
+sessions, and telling her is an owed item. **The conversation comes first, then the env var.**
+
+### 🔴 BUG-058 — STILL OPEN. My fix was aimed at the wrong mechanism.
+
+**X6 fails identically** (141 passed / 1 failed, 20.2m — unchanged from S63). What DID ship is a real fix
+on its own terms and worth keeping: the intent text now lives in `plan-page-client` and is passed down
+controlled, and the onboarding seed applies via a once-only ref-guarded effect.
+
+⚠️ **That second half was a genuine, separate defect:** the seed was a `useState` initializer, but
+`takeHandoff()` is read in a mount effect and the chips arrive from a query after that, so `seed` is
+undefined on the render where the field first exists. **The onboarding hand-off's pre-fill only ever worked
+when the plan query happened to be slower than the handoff read.**
+
+⚠️ **But it is not BUG-058.** The trace shows the textarea present in the post-`goto` snapshot, yet
+`fill()`'s locator took **125ms** to resolve and the following `click()`'s took **800ms** — an element that
+stays put resolves in ~1ms, so **the tree is being replaced at least twice during load**, upstream of
+wherever the state lives. Moving state from child to parent cannot help if the parent goes too.
+⚠️ **X5 is byte-for-byte identical to X6** and passes, so only timing distinguishes them.
+⚠️ **Measured baseline:** `error.spec.ts` ALONE gives 7 passed with `sameNode: true` and the value intact
+at every tick — the healthy case, and proof the probe reads what it claims to.
+
+**Sixth instance of the phase's lesson, and this time I was the one who inherited it:** S63 read the
+remount off the code and filed it as the cause; I built on that instead of measuring first.
+### ⚠️ Three source-scanning guards fired on their own explanatory comments
+
+`aria-leak.test.ts` flagged a `Check off ${name}` that existed **only in the comment explaining the fix**;
+`type-scale.test.ts` and `freeform-field.test.ts` each flagged an `<input>` written inside a comment. **A
+failure list pointing at correct code teaches people to edit the expectation (S59)**, so the new scanner
+strips comments. The two older ones still read them — noted rather than fixed, because their expectations
+are pinned by line number.
+
+### State
+
+**815 unit green** (+3), lint + typecheck clean, masking harness 4/4 including the BUG-059 repro.
+
+## Session 63 — 2026-08-03 (Observability — and the taxonomy it was supposed to port did not exist)
+
+### ⛔ The headline: **the "S9 event taxonomy" was never there**
+
+Workstream D's observability item is written in six places as *"PostHog **with the event taxonomy from
+S9**"* — `scope-v1.md`, `scope-1F.md`, `whats-next.md` ×4, `idea-backlog.md`, and two kickoff prompts
+including the one that opened this session. **It does not exist.**
+
+Its only source is **one changelog line** (S9, above: *"event taxonomy defined (30+ events across 8
+categories)"*). The artifact lived in `~/.claude/plans/resume-meal-app-let-s-partitioned-starfish.md`,
+which `docs/plans/README.md` line 10 records as **LOST** — never committed to the `~/.claude` repo, deleted
+in 2026, unrecoverable, and **discovered in S18**.
+
+⚠️ **The plan's phase-skeleton half was consciously rescued into `scope-v1.md` at S19. Its taxonomy half was
+not, and nobody noticed for 44 sessions, because nothing needed it until D opened.**
+
+⚠️ **The same S9 decision row carries a second claim that is false in effect:** *"Analytics: PostHog
+(decided, installed later). **Vendor abstraction layer built in Phase 1.**"* `src/lib/analytics.ts` did
+exist — **15 lines of dev-only `console.log`, imported by nothing.** Zero call sites in the entire app. The
+file's existence is exactly what made the claim survive a reading.
+
+**Fifth instance of the pattern** (after the cold-user premise, the feedback-capture bundling, §09's
+four-controls sentence and S62's server-rendered-shell claim) — **and the sharpest variant yet: a claim
+about an ARTIFACT that a different doc in the same repo already recorded as destroyed.** The two facts sat
+four files apart the whole time. ⚠️ **The generalisable check: when a doc cites an artifact, open it.** Not
+the sentence citing it — the artifact.
+
+Consequence: D3 was **design-from-zero, not install-and-port**, which is the shape the session actually
+took. Full taxonomy + rationale: **`docs/observability-taxonomy.md`** (new).
+
+### ✅ What shipped
+
+- **The taxonomy — 34 events, 8 categories**, derived by walking the routers and surfaces rather than
+  reconstructing a lost doc. Griffin chose **broad** over a lean ~14 recommendation, and the reasoning is
+  better than the recommendation was: at two users these answer *"does the feature I built get touched"*,
+  not a growth question.
+- **Typed so mistakes do not compile.** `src/lib/analytics/events.ts` — an unknown event name or a missing
+  property is a type error (the BUG-044 discipline). ⚠️ **And no property can carry user content, also as a
+  compile error:** a type-level guard fails `typecheck` *naming the offending event* if any property is a
+  wide `string` outside a two-key opaque-id allow-list. The leak arrives as a reasonable request ("just
+  send the item name, it'll help debug"); the useful answer is that it does not build.
+- **PostHog + Sentry, both DIRECT** — no reverse proxy, no `tunnelRoute`. See below.
+- **Session replay with the posture inverted**, and the whole grocery-row trap avoided. See below.
+- **The complete north-star funnel, wired end to end** — `ritual_started` → `plan_generated` →
+  `plan_confirmed` → `list_ready`, plus `ritual_abandoned`, `plan_generation_failed`, `app_launched` and
+  `connectivity_changed`. This is what the DoD's time-to-list measurement needs and what gates Workstream E.
+- **BUG-054 🟠 CLOSED** (Griffin's call) — the Groceries tab now has an `<h1>` on every state.
+- **811 unit green** (+36), lint + typecheck clean, production build clean. **E2E: 141 passed, 1 failed
+  (20.2m)** — see BUG-058 below.
+
+### ⚠️ Three things the build found that the plan had wrong
+
+**1. The masking API this project specified does not exist.** `scope-1F.md` says *"mask everything, then
+explicitly unmask the chrome"*. **posthog-js has no unmask capability at all** — measured rather than read:
+zero occurrences of `unmask` anywhere in the installed package, and no `ph-no-mask` class (only
+`ph-no-capture`, which masks *harder*). The inverted posture is reachable **only** through `maskTextFn`,
+the per-element escape hatch. A design written against a vendor API that was never checked against the
+vendor — the session's own lesson, one layer down.
+
+**2. The obvious allow-list would have recorded the entire grocery list.** "Unmask the chrome — nav,
+buttons, state labels" reads as a selector like `nav, button`. **`grocery-row.tsx` renders the item name as
+a display `<button>`** (the `<input>` exists only while editing). So the most natural reading of the spec
+would have shipped the largest piece of household content in the product, on the surface used most often,
+through a rule that looks obviously safe. It is now a named test.
+
+**3. `tunnelRoute` would have been the S59 manifest bug for the third time** — caught before shipping
+rather than after. Sentry's tunnel creates a same-origin `/monitoring` route; `src/proxy.ts` gates
+everything not on `isSignedOutReachable()`, and `/monitoring` would not have been on it, so **error reports
+from a signed-out browser would 307 to `/login` and vanish**. Errors on the login screen are exactly the
+ones worth having, and the failure is silent: the tell is *"we get no errors from /login"*, which reads as
+*"none happen there"*. Dropped, matching the PostHog decision, so both vendors follow one rule.
+
+### ⚠️ Guards, each verified failing before being believed
+
+- **Free-text guard** — planted `item_name: string`; `typecheck` failed naming `grocery_item_added`.
+- **Exhaustiveness guard** — planted an event missing from `ALL_EVENTS`; failed naming `foo_happened`.
+  ⚠️ Its first version reported only `Type 'true' is not assignable to type 'never'` and was rewritten to
+  name the offender, because a guard that makes you hunt is half a guard (S59).
+- **Doc-sync** — renamed an event in code only; the test named it. This is the guard against the exact
+  failure that opened the session: a doc and a taxonomy drifting apart.
+- **Wiring guard** — claimed an unwired event; failed naming it. ⚠️ **It also asserts the scan found
+  *anything*,** because without that a broken scan returns an empty set and every other assertion passes
+  vacuously — the "test that could not fail", which this project has now produced three separate ways.
+- **Analytics-off-in-CI guard** — planted a real key in `playwright.config.ts`; two assertions failed.
+- **GR12 (BUG-054)** — reverted the fix, rebuilt, and the spec went red.
+
+⚠️ **One test went red against correct code and was rewritten rather than "fixed".** A masking assertion
+hand-typed the expected bullet run and got the length wrong (Spaghetti is nine characters, not ten). A
+guard pointing at working code is S59's failure mode — it teaches you to edit the expectation — so the
+assertion now checks the **properties the function actually promises** (length preserved, no alphanumerics,
+word boundaries intact) instead of a transcription.
+
+### ⚠️ Stated plainly: 8 of 34 events are wired
+
+The other 26 are designed and typed, and each is a one-line call at a known seam — but **declared is not
+captured**, and a table of events reads as a working pipeline when it is not one. Given how this session
+started, that gap is written into `docs/observability-taxonomy.md` as its own status section and enforced
+by `wiring.test.ts`, which fails if the claim and the source disagree in either direction.
+
+### ⚠️ Owed, and it cannot be closed from here
+
+**Look at a real session recording.** The mask *logic* is unit-tested (10 cases including the grocery-row
+trap and "no digits survive" — ages and quantities are content too). The *wiring* is unverified and stays
+that way until Griffin creates the PostHog project. **A masking config that reads correctly and records the
+grocery list is exactly the false green this project has produced six distinct ways.** The config is the
+hypothesis; the recording is the measurement.
+
+### 🔴 BUG-058 — the E2E failure is a REAL race in the north-star flow's front door
+
+`X6` **passes alone in 12.0s** and fails in the full suite by waiting its entire 30s budget for a
+`Send to chef` button that stays **disabled** — meaning **the text was empty after a successful `fill()`**.
+Green in isolation, red under load: BUG-019's signature, and the reason it was chased rather than shrugged
+at.
+
+**Mechanism, read off the code:** `no-plan-state.tsx:55` holds the intent text as
+`useState(seed?.request ?? "")`, so **any remount resets it to empty**. `plan-page-client.tsx` renders
+`<NoPlanState>` from **two different call sites** (`:455` under `intentMode`, `:575` as the first-run empty
+state) — different positions in the tree, so flipping between them unmounts and remounts. A re-render that
+changes branch (most plausibly `plan.current` resolving after first paint) **discards what was typed**, and
+the send button, gated on `text.trim().length > 0`, silently returns to disabled.
+
+⚠️ **This is a user-facing defect on the first control of the north-star flow**, not a test artifact —
+BUG-014's class ("typed text lost on error") on a different surface.
+
+⚠️ **Attribution is honest-unknown and is recorded that way.** X6 has been green since S50, and this session
+added an `AnalyticsProvider` with two mount effects to the `(app)` layout plus Sentry's client
+instrumentation to the bundle — any of which can shift hydration timing enough to turn a latent race into a
+failing one. **But the race lives in code this session did not touch**, and no baseline run exists to prove
+it was previously immune rather than previously lucky. Claiming either way would be the exact move this
+session spent its opening findings on.
+
+⚠️ **Not to be fixed by lengthening a wait** (S57) — fix the remount, and **verify with the FULL suite**,
+because the spec passes alone today.
+
+Also found, not from this work: **4 high-severity CVEs in production dependencies** (`postcss` and
+`sharp`/libvips, both transitive under Next 16.2.6), fixed by a patch bump to 16.2.12. Filed for the
+security review rather than bundled into an observability PR.
+
+---
+
 ## Session 62 — 2026-08-03 (BUG-053, and Workstream D opens)
 
 **The Groceries visual gate can see again, and Workstream D is part-done.** **775 unit green** (+17),

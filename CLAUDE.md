@@ -29,10 +29,129 @@ icon, the Hero launch screen, the offline clause). The install prompt was **CUT*
 **775 unit green, migration `0010` applied, `/visual-qa` capture at 6 files / 55 states / all `ok`.**
 ⚠️ **The only thing left in C is the two-phone check** — the item most likely to be quietly wrong on a real
 device, and nothing in the suite can answer it.
-**Workstream D (production readiness) is 🔨 PART-DONE (S62):** migration safety ✅, BUG-044 ✅, the security
-review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
-prompt-injection review, RLS verification, secrets audit**). ⚠️ **Observability is NOT started and it gates
-Workstream E.** Then **E (feedback capture)**, then the two validation weeks.
+**Workstream D (production readiness) is 🔨 PART-DONE (S62–S64):** migration safety ✅, BUG-044 ✅,
+**observability ✅ S63, VERIFIED S64** (34-event taxonomy + PostHog + Sentry + inverted replay masking +
+the whole north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**),
+BUG-054 ✅, BUG-059 ✅, BUG-060 ✅, **BUG-058 ✅ CLOSED S65** — a real product bug (a phone-speed CPU lost
+what you typed on the north-star flow's front door), closed by S64's fix, which S64 itself could not prove.
+**E2E: 142 passed / 0 failed, then 143 with the new `X7`. The suite has no red left.**
+🔴 **THE NEXT ACTION IS MERGING PR #28**, which was gated on BUG-058 and nothing else. `main` holds **none**
+of the observability code, so the production env vars are inert until it lands — and **do not redeploy
+production before the merge**, which would rebuild a tree with no analytics in it. Env vars ARE now set
+(`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`/`ORG`/`PROJECT`, `ALLOWED_EMAILS`).
+⚠️ **Griffin still owes his wife one sentence about session replay existing** before real recording starts.
+Security review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
+prompt-injection review, RLS "which layer is load-bearing", secrets audit**). ❌ **Perf + a11y pass and the
+error-state sweep are NOT started — that is the next session.** Then **E (feedback capture)**, then the two
+validation weeks.
+
+**⚠️ S65 · A MECHANISM READ OFF THE SOURCE IS A HYPOTHESIS UNTIL YOU CAN TURN ITS *TRIGGER* ON AND OFF.**
+BUG-058 cost three sessions, and the reason was never bad reasoning about the mechanism. **S63's remount was
+RIGHT** — filed from a code read, dismissed at S64 as unconfirmed, confirmed at S65 by measurement. What was
+missing is that **nothing in the harness could make the remount fire**, so every run was a coin flip and each
+session concluded from whichever way it landed: S63 filed a cause it could not demonstrate, S64 shipped the
+correct fix and read its own X6 failure as proof the fix had missed. ⚠️ **At full speed the defect does not
+exist** (`sameNode: true` at every tick), so the bug AND its fix were invisible in every fast repro. The dial
+— CPU throttling over CDP, `tests/e2e/harness/cpu-throttle.ts` — made the A/B decidable in two minutes:
+**pre-fix at 4x → `value: ""`, `disabled: true`; post-fix at 4x → text intact.** **A defect that only appears
+under load needs a load knob before it needs another theory.** ⚠️ **And a green run is never a resolution**:
+it cannot distinguish *the bug is gone* from *the trigger did not fire*, which is exactly what "it passed this
+time" had been hiding. ⚠️ Two riders. **CDP CPU throttling slows the RENDERER ONLY**, not the Next server on
+the same box — it reproduces a slow phone, not a loaded machine (a 1500ms tRPC delay produced *no* remount
+rather than a worse one). And **an unverified dial is a no-op wearing a passing test**, so the helper times a
+fixed busy-loop before and after and fails if the page did not actually get slower — the fifth shape of the
+test-that-cannot-fail, pre-empted rather than discovered. ⚠️ **Check the MACHINE before trusting a
+full-suite result** (`top -l 2 -n 0 | grep "CPU usage"`, not the load average, which lags by minutes): an
+FFOS `next dev` was holding 123% CPU on a 4-core box at this session's start, and S64's failing run had
+vitest + lint + typecheck inside it — **S53's "never run two suites at once" wearing a gauntlet as a costume.**
+⚠️ **Teardown must never throw:** `restore()` raised `cdpSession.detach: Target page … has been closed` on
+the failing run and **that replaced the real assertion error in the report**.
+
+**⚠️ S64 · THE CHECK WRITTEN TO CATCH A FALSE GREEN WAS ITSELF VACUOUS, TWICE, IN ONE PAYLOAD.**
+`masking-check.ts` reported **clean** while `aria-label="Check off Garlic"` sat in the recording — and its
+own header already warned that *"searching a GZIPPED body for 'garlic' finds nothing whether or not it
+leaked."* Two layers of exactly that shipped: `readBody` gunzipped only when the URL contained
+`compression=gzip`, and **the `/s/` request carries no query string at all**; then, even decompressed, the
+outer body is an **envelope** — every large `$snapshot_data` item carries `data` as a **second, separately
+gzipped** latin1 string, so **the outer JSON has never contained one word of page content.** ⚠️ **THE
+GENERALISABLE CHECK: before reading a value out of a payload, prove the payload is READABLE.** A clean
+result and no result look identical. `assertDecoded` now fails on a mostly-unprintable ingest body and a
+second guard fails if the inner expansion ever stops expanding — **the fourth distinct shape of the
+test-that-cannot-fail in this project.**
+
+**⚠️ S64 · THE ACCESSIBILITY RULE AND THE PRIVACY POSTURE WERE IN DIRECT CONFLICT — BUG-060.** Replay
+masking runs through `maskTextFn`, which rrweb calls for **text nodes only**; **attributes are recorded
+VERBATIM** and the installed build exposes **no attribute hook at all** (measured against
+`posthog-js/dist/rrweb.d.ts`), with no central scrub point either — snapshot items are compressed inside the
+lazily-loaded recorder bundle **before `before_send` runs**. So ``aria-label={`Check off ${item.name}`}``
+put the **grocery list, the week's meal titles, the recipe library and the user's dietary constraints**
+into session replay in the clear, while every visible string beside them was correctly bulleted out.
+⚠️ **`.claude/rules/react-components.md`'s own *"all interactive elements need aria labels"* is what
+produced it** — the natural way to satisfy the rule was the leak, and nothing in the repo could see the
+conflict. **Fix: accessible names come from TEXT NODES** — the element's own contents, or `aria-labelledby`
+at the node that already renders the name, with icon-only verbs in `sr-only` spans. WCAG 2.5.3 prefers it
+anyway. Enforced by `src/lib/analytics/aria-leak.test.ts`. ⚠️ **This is S63's grocery-row finding one layer
+out:** that one predicted the item name would escape as a display `<button>` — it escaped as that button's
+*label*. **When you name the door a value escapes through, ask what else is attached to that door.**
+
+**⚠️ S64 · A VENDOR CAN SILENCE YOU DELIBERATELY, SILENTLY, AND ONLY IN THE TEST BROWSER — BUG-059.**
+posthog-js's `capture()` opens with `!config.opt_out_useragent_filter && this._is_bot()` and skips the send;
+`_is_bot()` fires on a blocklisted UA, on blocklisted `userAgentData.brands`, **or on `navigator.webdriver`**
+— and headless Playwright trips **two of the three independently** (`"headlesschrome"` is literally on
+PostHog's list). ⚠️ **The gate is in `capture()`, NOT `init()`**, so remote config is fetched, the recorder
+downloads, nothing errors, and replay dies with analytics because `/s/` rides `capture("$snapshot")`. It sat
+**upstream of all four suspects the tracker had eliminated**, which is why eliminating them never got closer.
+⚠️ **And the corroboration was hollow:** *"the PostHog UI says no events yet"* was true because
+`NEXT_PUBLIC_POSTHOG_KEY` **is not set in Vercel Production**, so no real browser has ever run a
+key-carrying build. **An absence measured against an empty room (S62), in the place it mattered most.**
+**When a vendor SDK goes quiet, read the vendor's own `capture()` guard clauses before suspecting config.**
+
+**⚠️ S63 · A DOC CITED AN ARTIFACT THAT ANOTHER DOC, IN THIS REPO, RECORDED AS DESTROYED.** Six documents
+named *"the event taxonomy from S9"* as the input to observability. **It does not exist.** Its only source
+is one changelog line; the artifact lived in a plan file `docs/plans/README.md` **line 10** has recorded as
+**LOST since S18** — never committed, deleted, unrecoverable. That plan's *phase-skeleton* half was
+consciously rescued into `scope-v1.md` at S19; its *taxonomy* half was not, and nobody noticed for 44
+sessions because nothing needed it until D opened. ⚠️ **The same S9 row's *"vendor abstraction layer built
+in Phase 1"* was equally hollow:** `src/lib/analytics.ts` existed as **15 lines of dev-only `console.log`
+with zero call sites** — and the file's existence is exactly what let the claim survive a reading.
+**Fifth instance of the pattern, and the sharpest variant: a claim about an ARTIFACT, contradicted by a
+file four directories away.** ⚠️ **THE CHECK: when a doc cites an artifact, open the ARTIFACT — not the
+sentence citing it.** And *a file existing is not a file working.*
+
+**⚠️ S63 · A DESIGN CAN BE WRITTEN AGAINST A VENDOR API THAT WAS NEVER CHECKED AGAINST THE VENDOR.**
+`scope-1F.md` specified session-replay masking as *"mask everything, then explicitly unmask the chrome."*
+**posthog-js has no unmask capability at all** — measured rather than read: zero occurrences of `unmask`
+anywhere in the installed package, and no `ph-no-mask` class (only `ph-no-capture`, which masks *harder*).
+The inverted posture is reachable **only** through `maskTextFn`, the per-element escape hatch. ⚠️ **And the
+obvious allow-list would have recorded the entire grocery list:** "unmask nav, buttons, state labels" reads
+as `nav, button`, and **`grocery-row.tsx` draws the item name as a display `<button>`** (the `<input>` only
+exists while editing) — so the most natural reading of our own spec would have shipped the largest piece of
+household content in the product, on the surface used most, through a rule that looks obviously safe.
+⚠️ **Still owed and uncloseable from here: LOOK AT ONE REAL RECORDING.** The mask *logic* is unit-tested;
+the *wiring* is not, and a config that reads correctly while recording the grocery list is the false green
+this project has produced six ways. **The config is the hypothesis; the recording is the measurement.**
+
+**⚠️ S63 · DECLARED IS NOT CAPTURED.** 8 of 34 events are wired. A table of events reads as a working
+pipeline and is not one until something calls it — which is the same failure that produced "the S9
+taxonomy". `src/lib/analytics/wiring.test.ts` reads `src/` off disk and fails if the claim and the source
+disagree **in either direction**, and it asserts the scan **found anything at all**, because without that a
+broken scan passes every other assertion vacuously (the "test that could not fail", now produced three
+separate ways in this project).
+
+**⚠️ S63 · ANALYTICS MUST BE OFF FOR EVERY AUTOMATED RUN, AND THE REASON IS THE DoD.** Both Playwright
+configs pin `NEXT_PUBLIC_POSTHOG_KEY: ""` in `webServerEnv`. `NEXT_PUBLIC_*` is inlined at **BUILD** time
+and both suites build inside their own webServer command, so an explicit empty value beats a real key in
+`.env.local`. Without it, 139 specs + 55 capture states fabricate hundreds of rituals and grocery lists that
+land in *"time-to-list < 10 minutes on a **real** week"* **as data** — real events, plausible numbers, and
+the only tell is that Griffin did none of it. `analytics-config.test.ts` fails if either line is removed.
+
+**⚠️ S63 · `tunnelRoute` WOULD HAVE BEEN THE S59 MANIFEST BUG A THIRD TIME.** Sentry's tunnel creates a
+same-origin `/monitoring` route for error POSTs; `src/proxy.ts` gates every path not on
+`isSignedOutReachable()`, and `/monitoring` would not be on it — so **reports from a signed-out browser
+would 307 to `/login` and vanish.** Errors on the login screen are the ones worth having, and the failure is
+silent: the tell is *"we get no errors from /login"*, which reads as *"none happen there"*. Dropped, matching
+the PostHog reverse-proxy call — **both vendors go direct, one rule instead of two.** ⚠️ Caught *before*
+shipping this time, by asking which subsystems the artifact TOUCHES rather than which its list names (S59).
 
 **⚠️ S62 · THE SEED RESET THE SERVER, AND NOTHING HAD EVER RESET THE CLIENT.** BUG-053's filed prime
 suspect was the **service worker**, and it was wrong — navigations are network-first, so the SW was never
@@ -760,7 +879,9 @@ There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; deta
 
 **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
 
-⚠️ **It takes ~18 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S61: 139 specs, 18.2 minutes** (S60 measured 136 specs / 17.8 min; the three new OF specs account for the difference). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+⚠️ **It takes ~20 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S65: 142 specs, 19.5 minutes on an idle machine** (S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+
+⚠️ **AND CHECK THE MACHINE, NOT JUST YOUR OWN PROCESSES, BEFORE TRUSTING THE RESULT.** Use `top -l 2 -n 0 | grep "CPU usage"` — the **instantaneous** idle figure, **not** `uptime`'s load average, which lags by minutes and reports work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`, `lint` and `typecheck` running concurrently **inside** the 20-minute run, and S65 opened with an unrelated project's `next dev` holding **123% CPU** on a 4-physical-core box. **S53's rule is not only about two Playwright suites** — it is about anything competing for the CPU, the gauntlet included. ⚠️ **And when a spec passes alone but fails in the full run, reach for `tests/e2e/harness/cpu-throttle.ts` before reaching for another theory:** under uncontrolled load a pass proves nothing and a failure cannot be reproduced, so the first move is a knob, not a hypothesis.
 
 ⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), S60 (pipe again, on the offline specs), **S61 (a trailing `grep`, in the same session that quoted this line)**. **Read the summary line, never the status.**
 

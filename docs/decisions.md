@@ -4,6 +4,133 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-03 (S65) — The harness gets a load dial, and device-speed defects get pinned tests
+
+**1. CPU throttling is a permanent harness capability, not a one-off probe.**
+`tests/e2e/harness/cpu-throttle.ts` stays, written generic and copyable like the rest of `harness/`. BUG-058
+took three sessions because its trigger was **uncontrolled load**: a pass proved nothing, a failure could not
+be reproduced, and each session concluded from whichever way the coin landed. Throttling turns that into a
+dial. ⚠️ **Rate comes from `E2E_CPU_THROTTLE`, never hard-coded into a spec**, so every leg of an
+investigation runs the *same build* — which is what keeps `E2E_REUSE_BUILD=1` honest between legs (S54: never
+verify a `src` edit against a reused build). **Future impact:** any load-sensitive defect gets a repro knob
+before it gets a second theory.
+
+**2. A device-speed regression is pinned at 4x, and the throttle is load-bearing.**
+`X7` runs at 4x because that is roughly a phone against this desktop — the claim being pinned is not "it
+survives a slow computer", it is "it survives the device the product ships on". ⚠️ **At 1x the defect does
+not exist**: the remount never fires and the pre-fix code passes. So the throttle is not decoration, and a
+future session that removes it to "speed the suite up" silently deletes the test. Stated in the spec's own
+comment for exactly that reason.
+
+**3. A dial that is not verified is a no-op wearing a passing test.**
+`setCPUThrottlingRate` resolves without complaint on a detached session or a browser that ignores it, so the
+helper times a fixed busy-loop before and after and **fails if the page did not actually get slower**, plus a
+guard that the baseline is long enough for the ratio to be signal. It also **re-checks after the navigation**,
+because the rate is applied on `about:blank` and has to survive a cross-origin navigation — without that,
+"passed at 4x" could be a measurement that never happened. **Fifth shape of the test-that-cannot-fail in this
+project, pre-empted rather than discovered.**
+
+**4. Test teardown must never throw.**
+`restore()` swallows CDP errors. On the force-failure run it threw `cdpSession.detach: Target page … has been
+closed` and **that replaced the real assertion error in the report**. A cleanup error that buries the failure
+it is cleaning up after points at the instrument instead of the defect.
+
+---
+
+## 2026-08-03 (S64) — Four calls that came out of measuring the observability build
+
+**1. Production keeps posthog-js's bot filter. `opt_out_useragent_filter` stays unset.**
+BUG-059 was that filter silencing the headless test browser, and the tempting "fix" is to switch it off.
+That would be wrong twice over: filtering bots is the correct behaviour for real traffic, and the same
+blocklist keeps **Lighthouse** (`chrome-lighthouse`) and **Vercel's screenshot bot** out of the DoD numbers
+— both matter, and the perf pass is the very next item. **The apparatus changed instead:** the masking
+harness runs in a context that overrides `navigator.webdriver` and the UA, with the unspoofed leg kept as a
+permanent test so a change in the vendor's bot policy goes red rather than silently altering what the
+harness measures. **Zero production diff.**
+
+**2. Accessible names come from TEXT NODES, never from interpolated attributes.**
+BUG-060's fix and now a standing rule in `.claude/rules/react-components.md`. Session-replay masking reaches
+text nodes only; **rrweb records attributes verbatim and exposes no attribute hook at all**, and there is no
+central scrub point because snapshot items are compressed inside the recorder bundle before `before_send`.
+So the rule is not a style preference — it is the only available mechanism. ⚠️ **It resolves a genuine
+conflict with the rule directly above it** (*"all interactive elements need aria labels"*), which is what
+produced the leak: the natural way to satisfy that rule put the grocery list, the meal titles, the recipe
+library and the user's dietary constraints into session replay in the clear. Naming from visible text
+satisfies both, and is what WCAG 2.5.3 asks for. Enforced by `src/lib/analytics/aria-leak.test.ts` with a
+reasoned allow-list for values that are app vocabulary rather than household content.
+
+**3. Claude does NOT set the production PostHog key. The order is: tell your wife, then set the var.**
+`NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN` are both absent from Vercel Production, which is why
+neither SDK has ever run there — and why *"this project has no events yet"* was evidence of nothing.
+Setting the PostHog one starts recording Griffin's wife's sessions, and *"mention session replay to her"* is
+an owed item on D's own checklist. **A one-line env change that begins recording another person is not a
+step to take on someone's behalf**, even with the recording verified masked. Sentry's DSN carries no such
+constraint and can go in whenever.
+
+**4. Recommendation (Griffin's call): graduate the masking harness rather than delete it.**
+`playwright.masking.config.ts` + `tests/e2e/masking-check.ts` were filed as temporary scaffolding for
+BUG-059. They should stay: they are the only thing that can verify replay masking — a privacy control over
+the household's grocery list — they now carry the BUG-059 repro as a regression test, and they **cannot**
+be folded into `npm run test:e2e`, which blanks the PostHog key by design and must keep doing so. Suggested
+shape: an `npm run test:masking` script run at wrap whenever masking, the analytics config, or a
+component's accessible names change.
+
+## 2026-08-03 (S63) — Observability: Griffin's two calls, and four technical ones
+
+**Griffin's calls.**
+
+**1. The event taxonomy is BROAD (~34 events, 8 categories), against a lean recommendation.**
+Claude argued for ~14 — the funnel plus AI failures — on the grounds that interaction detail is noise at
+two users. Griffin took broad, and the reasoning holds up better than the recommendation did: at two users
+these are **not growth metrics**, they answer *"does the feature I built ever get touched"*, which is a
+real MVP question and the only two weeks of real usage R1 will produce before being declared done.
+
+**2. `ALLOWED_EMAILS` gets set to the two real addresses**, at the moment his wife's account is created.
+This is **an action, not a code change** — one env var in Vercel Production, using the seam S43a already
+built and tested, and it is still owed until he types it. ⚠️ It is **not** a reopening of the closed-beta
+decision (closed NO, stays closed): *"no beta"* and *"open signup"* were never the same decision and only
+the first had been made. ⚠️ Its failure mode is *"it quietly stops working"*, not *"we get locked out"* —
+`isEmailAllowed` returns true on an empty list, deliberately, so a typo that blanks the var reopens signup.
+Worth one verification after setting it.
+
+**3. BUG-054 ships** — see `open-questions.md` and the tracker's Resolved log.
+
+**Technical calls.**
+
+**4. Both vendors go DIRECT. No reverse proxy for PostHog, no `tunnelRoute` for Sentry.**
+The standard argument for both is ad-blocker evasion. ⚠️ The argument against is specific to this app:
+`src/proxy.ts` gates every path not on `isSignedOutReachable()`, and a same-origin ingest route would not
+be on it — so **error reports from a signed-out browser would 307 to `/login` and vanish**, silently, with
+the tell being *"we get no errors from /login"* (which reads as "none happen there"). **That exact shape
+has already happened three times here** — `/manifest.webmanifest` twice in S59, `/robots.txt` before it —
+and each fix was a path added to a list nobody re-reads. At two users, evasion does not buy enough to add a
+fourth. One rule for both vendors instead of two.
+
+**5. Interaction events fire client-side; AI outcome events fire server-side.**
+Not a preference — BUG-035's lesson. `useObject` only populates `error` for a failed *request*, and the
+stream route has already returned 200 with an open body by the time a generation can stall, so a dead
+stream reaches the browser as a body that simply **closes**. **The client cannot tell a timeout from a
+stall from an invalid document**; only the server can. The client reports `client_stream_died`, which is
+the honest name for what it actually knows. The two streams join on the Supabase user id.
+
+**6. Session-replay masking inverts the vendor default, via the only API that can express it.**
+Mask all text and inputs, then unmask an explicit `data-ph-unmask` subtree. ⚠️ **`scope-1F.md`'s stated
+design was not implementable as written** — posthog-js has no unmask capability at all (zero occurrences of
+`unmask` in the installed package; `ph-no-capture` masks *harder*), so the posture is reachable only via
+`maskTextFn`. ⚠️ **An attribute rather than a class**, because classes get copied between components by
+people matching a visual style and `data-ph-unmask` has no visual meaning, so it can only be added
+deliberately. ⚠️ **And the allow-list is by marker, not by tag**: `nav, button` looks obviously safe and
+would record the entire grocery list, because `grocery-row.tsx` renders the item name as a `<button>`.
+
+**7. The PII rule is enforced by the compiler, not by review.**
+A type-level guard fails `npm run typecheck`, naming the offending event, if any property is a wide
+`string` outside a two-key opaque-id allow-list. Everything else is a number, a boolean or a literal union.
+The reason to spend a type on this rather than a lint rule or a code-review habit: the leak arrives as a
+reasonable-sounding request ("just send the item name, it'll help debug"), and the useful answer is that it
+does not build.
+
+---
+
 ## 2026-08-03 (S62) — Three technical calls, two of them deviations from a written recommendation
 
 **1. The capture runner resets the CLIENT between states, and the order is the fix.**

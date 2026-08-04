@@ -55,11 +55,18 @@ export function GotItZone({ items, onUncheck, onClear }: GotItZoneProps) {
                 type="button"
                 onClick={() => onUncheck(item.id)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left"
-                aria-label={`Uncheck ${item.name}`}
+                // ⚠️ BUG-060 · The item name is already this button's text, and
+                // the label duplicated it into an ATTRIBUTE — which rrweb
+                // records verbatim and replay masking cannot reach. The verb
+                // moves into a text node below instead.
               >
+                <span className="sr-only">Uncheck</span>
                 {/* Same completion hue as the row it mirrors (B5) — this zone
                     is the checked items, so it cannot say "done" differently. */}
-                <span className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-[var(--spec-success)]">
+                <span
+                  data-testid="gotit-mark"
+                  className="flex size-[22px] shrink-0 items-center justify-center rounded-[7px] bg-[var(--spec-success)]"
+                >
                   <Check className="size-[13px] text-[var(--spec-floor)]" strokeWidth={3} />
                 </span>
                 <span className="flex-1 spec-row-title text-muted-foreground line-through">

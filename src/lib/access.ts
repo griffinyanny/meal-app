@@ -117,6 +117,18 @@ export function isSignedOutReachable(pathname: string): boolean {
     pathname === "/no-access" || // shown immediately after being signed out
     pathname === "/robots.txt" ||
     pathname === "/manifest.webmanifest" ||
+    // Sentry's ad-blocker tunnel (1F/D3). The browser POSTs error reports here
+    // and the SDK does NOT attach our session, so without this a report from a
+    // signed-out page 307s to /login and is lost — and errors on the login
+    // screen are exactly the ones worth having. Third time this shape has come
+    // up in this file (manifest twice in S59, robots.txt before it); Sentry's
+    // own Next.js reference documents the exclusion as a required step.
+    // ⚠️ Both forms. The generated rewrite is `^/monitoring(/?)(?:/)?$`, so
+    // Sentry will accept a trailing slash and an exact-match exemption would
+    // gate exactly one of the two spellings — the prefix-sibling trap that
+    // `/manifest.webmanifest.map` already guards against, inverted.
+    pathname === "/monitoring" ||
+    pathname === "/monitoring/" ||
     pathname.startsWith("/auth")
   );
 }

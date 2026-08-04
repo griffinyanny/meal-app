@@ -66,8 +66,12 @@ describe("spec §09 — one freeform control", () => {
     expect(hits(/<input/i)).toEqual([
       // In-place edit of a row that already exists. Renaming "2 lemons" is not
       // telling the chef something; it is correcting a field.
-      "components/groceries/grocery-row.tsx:122",
-      "components/groceries/grocery-row.tsx:176",
+      // ⚠️ Line numbers only — the two inputs themselves are unchanged. They
+      // moved when BUG-060 added comments above them. This list is pinned by
+      // line, so any edit above a survivor reds it; that is the cost of naming
+      // the exact site rather than the file.
+      "components/groceries/grocery-row.tsx:137",
+      "components/groceries/grocery-row.tsx:194",
       // Header pattern B — search, explicitly excluded by §09.
       "components/plan/picker/picker-content.tsx:221",
       // A URL, not a sentence. Nothing is being said to anyone.

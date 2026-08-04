@@ -1,5 +1,19 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S65) — surfaced closing BUG-058
+
+- **A slow-device sweep, not just one throttled spec.** `X7` proves the intent field survives a 4x CPU, but
+  BUG-058 was found by accident — nothing else in the suite has ever run at phone speed, and the defect class
+  (a load-time remount discarding state held in the wrong component) is generic. **Candidate: run the
+  north-star path — intent → generate → confirm → grocery list — once at 4x as its own spec.** Phase tag:
+  **post-R1 / V1.5**, unless the perf + a11y pass turns up a second instance, in which case it earns its way
+  into 1F. ⚠️ Cost is real: throttling multiplies wall-clock on a suite already at ~20 minutes, so this is a
+  *targeted second pass*, never a global setting.
+- **The DoD's "time-to-list < 10 minutes" is measured on Griffin's and his wife's hardware, not a phone's.**
+  BUG-058 is a reminder that the product ships to a device several times slower than the machine every number
+  so far has been measured on. Worth deciding, when the real telemetry lands, whether the DoD figure should be
+  segmented by device rather than averaged. Phase tag: **validation weeks**.
+
 ## Incoming (S62) — surfaced during the 1F/D security review
 
 - **[1F/D or V1.5] `/api/plan/stream` hand-rolls `aiProcedure`'s entire check chain, and nothing keeps
