@@ -1,13 +1,18 @@
 # What's Next
 
-Last updated: 2026-08-03 (Session 64; **BUG-059 was posthog-js muting the robot, and the masking check that was meant to close D3 had been measuring an envelope**)
+Last updated: 2026-08-03 (Session 65; **BUG-058 CLOSED — it was a real product bug, and it could only be proven once the trigger became a dial**)
 
-## ▶ NEXT SESSION — **the perf + a11y pass and the error-state sweep, then BUG-057, then Workstream E.**
+## ▶ NEXT SESSION — **merge PR #28, then the perf + a11y pass and the error-state sweep, then BUG-057, then Workstream E.**
 
-**815 unit green** (+3), lint + typecheck clean. **BUG-059 ✅, BUG-060 ✅ (new, 🔴). BUG-058 STILL OPEN.**
-**E2E: 141 passed, 1 failed (20.2m)** — X6 only, unchanged from S63.
-Observability now works and **the replay masking is verified on a real recording** — the one item
-Workstream D could not close without a measurement.
+**815 unit green**, lint + typecheck clean. **BUG-058 ✅ CLOSED (S65)** — joining BUG-059 ✅ and BUG-060 ✅.
+**E2E: 142 passed (19.5m), zero failures** on a verified-idle machine, then **143 with the new `X7`.**
+**The suite has no red left, so PR #28 is unblocked** — and with it the DoD's time-to-list measurement and
+the validation weeks.
+
+⚠️ **The one number that mattered was the machine, not the code.** S64's failing run had `vitest`, `lint`
+and `typecheck` running inside it, and an FFOS `next dev` was holding 123% CPU on a 4-core box at the start
+of this session. **Check the machine before trusting a full-suite result** — `top -l 2 -n 0 | grep "CPU
+usage"`, not the load average, which lags by minutes.
 
 ### ⛔ THE ONE TO READ — the check that could not fail, twice in the same payload
 
@@ -85,41 +90,62 @@ against an empty room** — S62's lesson, in the place it mattered most.
 sessions, and *"mention session replay to your wife"* is an owed item. **The env var goes in after that
 conversation, not before.** Sentry's DSN has no such constraint and can go in whenever.
 
-### 🔴 BUG-058 — STILL OPEN. My fix was aimed at the wrong mechanism.
+### ✅ BUG-058 — CLOSED S65. It was a real product bug, S64's fix closes it, and neither could be seen at full speed.
 
-**X6 fails identically** (141 passed / 1 failed, 20.2m — unchanged from S63). What DID ship is a real fix
-on its own terms and worth keeping: the intent text now lives in `plan-page-client` and is passed down
-controlled, and the onboarding seed applies via a once-only ref-guarded effect.
+**The suite is GREEN: 142 passed, 19.5m, X6 included**, on a machine verified idle first (FFOS's `next dev`
+was holding 123% CPU and was killed; instantaneous idle measured at 79.5% before starting). S64's failing
+run had `vitest`, `lint` and `typecheck` inside it — **S53's "never run two suites at once" wearing a
+gauntlet as a costume.**
 
-⚠️ **That second half was a genuine, separate defect:** the seed was a `useState` initializer, but
-`takeHandoff()` is read in a mount effect and the chips arrive from a query after that, so `seed` is
-undefined on the render where the field first exists. **The onboarding hand-off's pre-fill only ever worked
-when the plan query happened to be slower than the handoff read.**
+⚠️ **But "it passed this time" is not a resolution, and this is the part worth keeping.** A green run cannot
+tell *the bug is gone* from *the trigger did not fire*. So the trigger was made controllable: a CPU dial
+over CDP (`Emulation.setCPUThrottlingRate` — the same channel `capture-runtime.ts` already used to clear
+IndexedDB), in `tests/e2e/harness/cpu-throttle.ts`.
 
-⚠️ **But it is not BUG-058.** The trace shows the textarea present in the post-`goto` snapshot, yet
-`fill()`'s locator took **125ms** to resolve and the following `click()`'s took **800ms** — an element that
-stays put resolves in ~1ms, so **the tree is being replaced at least twice during load**, upstream of
-wherever the state lives. Moving state from child to parent cannot help if the parent goes too.
-⚠️ **X5 is byte-for-byte identical to X6** and passes, so only timing distinguishes them.
-⚠️ **Measured baseline:** `error.spec.ts` ALONE gives 7 passed with `sameNode: true` and the value intact
-at every tick — the healthy case, and proof the probe reads what it claims to.
+**What the dial measured, in order:**
 
-**Sixth instance of the phase's lesson, and this time I was the one who inherited it:** S63 read the
-remount off the code and filed it as the cause; I built on that instead of measuring first.
+| Leg | Result |
+|---|---|
+| Full suite, idle machine | **142 passed**, X6 green, `sameNode: true` at every tick |
+| X6 at 4x / 6x / 20x (measured 4.27 / 6.47 / **22.93**) | **passes** — and the remount is REAL: field absent at +0ms, back as a **different node** |
+| 1500ms tRPC query delay | **no remount at all** — so the remount tracks client render speed, not when data lands |
+| **Pre-fix code at 4x** | **✘ `value: ""`, `disabled: true`** |
+| **Post-fix code at 4x** | **✓ text intact, `disabled: false`** |
 
-⚠️ **AND THE STRONGEST LEAD, found by measuring instead of theorising a fourth time:** the EXACT
-full-suite prefix — `cost`, `debug-hud`, `drawer`, `elapsed`, `error`, i.e. the same 24 tests in the same
-order X6 occupies in the full run — **passes in 3.1m, X6 healthy at every tick.** So it is **not** the
-preceding specs, **not** shared-state corruption, and **not** a long-lived server (X6 runs 2–3 minutes in,
-not at minute 20). ⚠️ **The one thing that differed during the failing run: `vitest`, `lint` and
-`typecheck` were run CONCURRENTLY inside those 20 minutes.** That is CPU contention — **S53's "never run
-two suites at once" in a costume nobody recognised**, because it was not two Playwright suites, it was
-Playwright plus everything else happening while waiting for it.
+**That last pair is the answer.** Same build pipeline, same spec, same throttle, only
+`plan-page-client.tsx` + `no-plan-state.tsx` differing. **BUG-058 was a genuine product bug — a phone-speed
+CPU loses what you typed on the north-star flow's front door — and S64's fix closes it.**
 
-**▶ FIRST ACTION NEXT SESSION: re-run the full suite with NOTHING else running.** One 20-minute run
-decides whether BUG-058 is a product bug at all. If X6 passes, the defect is load-sensitivity and the real
-question becomes whether a phone can be slow enough to hit it — which a phone can. If it still fails, the
-contention theory dies and the `sameNode` probe says what replaced the tree.
+⚠️ **S64 concluded its own fix had missed, and that conclusion was wrong.** The reason is worth carrying:
+**at full speed the remount does not happen at all**, so the defect AND its fix were both invisible in every
+fast repro. The fix looked inert because nothing could make the bug appear on demand.
+
+⚠️ **THE LESSON, and it corrects two sessions of framing: a mechanism read off the source is a hypothesis
+until you can turn its TRIGGER on and off. S63's remount was RIGHT** — filed from a code read, dismissed at
+S64 as unconfirmed, confirmed at S65 by measurement. The failure was never bad reasoning about the
+mechanism. It was that nothing in the harness could make the mechanism fire, so every run was a coin flip
+and each session drew its conclusion from whichever way it landed. **A defect that only appears under load
+needs a load knob before it needs another theory.**
+
+⚠️ **And CDP CPU throttling slows the RENDERER ONLY, not the Next server on the same box.** That is why it
+reproduces a slow phone but not machine-wide contention, and why the query-delay leg produced *no* remount
+rather than a worse one. Do not reach for it expecting to simulate a loaded machine.
+
+**Regression test: `X7` in `error.spec.ts`, pinned at 4x** (roughly a phone against this desktop), sampling
+across the whole load window rather than asserting once — a single assertion that runs before the remount
+passes on the pre-fix code too. **Force-failed against `eb9343b^`:
+`intent text at +400ms · Expected "a week of easy dinners" · Received ""`.**
+⚠️ **X6 passes against the pre-fix code**, so it had been catching this only by accident of contention. The
+S64 probe is removed and X6 owns the timeout ladder alone again.
+
+⚠️ **The dial itself carries two guards, both earned here.** It times a fixed busy-loop before and after and
+**fails if the page did not actually get slower** — `setCPUThrottlingRate` resolves happily on a detached
+session, so an unverified dial is a no-op that still lets a spec report "passed at 4x". And it re-checks
+**after** the navigation, because the rate is applied on `about:blank` and has to survive a cross-origin
+navigation. ⚠️ A third was found the hard way: `restore()` threw `cdpSession.detach: Target page … has been
+closed` on the failing run and **that error REPLACED the real one in the report** — teardown now never
+throws, because a cleanup error that buries the failure it is cleaning up after points at the instrument
+instead of the defect.
 ### ⚠️ Three source-scanning guards fired on their own explanatory comments
 
 `aria-leak.test.ts` flagged a `Check off ${name}` that existed **only inside the comment explaining the
@@ -133,7 +159,8 @@ expect a false red.**
 
 | Part | State |
 |---|---|
-| **(3)** Observability | ✅ **Done and verified end to end.** Replay masking checked against a real recording, both compression layers decoded. 26 of 34 events still unwired (mechanical). ⚠️ **Production env vars owed — see above.** |
+| **PR #28 merge** | 🆕 **UNBLOCKED — the suite has no red left.** This was gated on BUG-058 and nothing else. Merge it before anything else next session: `main` currently holds **none** of the observability code, so the production env vars set in S64 are inert until it lands, and the DoD's time-to-list measurement is gated behind it. ⚠️ **Do not redeploy production before the merge** — it would rebuild a tree with no analytics in it. |
+| **(3)** Observability | ✅ **Done and verified end to end.** Replay masking checked against a real recording, both compression layers decoded. 26 of 34 events still unwired (mechanical). ✅ **Production env vars are SET** (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`) — inert only until the merge. |
 | **(1)** Security review | **Still owed: prompt-injection review, secrets audit**, the RLS "which layer is load-bearing" statement. 🆕 **BUG-057: 4 high-severity CVEs in production deps**, fixed by a patch bump to Next **16.2.12**; needs its own E2E run. |
 | **(2)** Migration safety | ✅ Done S62. BUG-056 is its first real subject and is **not** fixed. |
 | **(4)** Wife's account + `ALLOWED_EMAILS` | ❌ **Griffin's.** Now also gates the PostHog production key. |
@@ -149,107 +176,64 @@ expect a false red.**
    One sentence; the recording is masked (verified, 0 leaks), but she should know it exists.
 3. 🆕 **Then set `NEXT_PUBLIC_POSTHOG_KEY` in Vercel Production** (and `NEXT_PUBLIC_SENTRY_DSN`, which is
    not gated on anything). Until then the DoD's time-to-list measurement cannot run on real usage.
-4. **Set `ALLOWED_EMAILS`** when you create your wife's account. Verify once by signing in with an address
-   that is not on the list — its failure mode is *"quietly stops working"*, not *"locked out"*.
+4. ✅ **`ALLOWED_EMAILS` is DONE — do not re-do it.** Commit `3656851` set it to **both real addresses**.
+   Still worth one verification when her account exists: sign in with an address that is *not* on the list,
+   because the failure mode is *"quietly stops working"*, not *"locked out"*.
 5. Two taste calls: whether **32px** reads right for the Recipes and Groceries titles, and whether the
    grocery quantity editor's **~5px headroom** bothers you.
+
+⚠️ **`SENTRY_AUTH_TOKEN` is ALSO already done** (same commit), as an **Organization Token** rather than a
+personal one — a personal token inherits access to every org and project the user can see, which is more
+privilege than a build-time upload needs. It is deliberately **not** in `.env.local`, because
+`uploadSourceMaps` is gated on the token's presence and a local copy would make **both Playwright suites**
+upload source maps on most runs. Production stack traces will not be minified. **The S64 handoff listed
+both of these as still-owed; it was written before the commit landed.**
 
 ### ▶ NEXT-SESSION KICKOFF PROMPT
 
 ```
-Resume meal app — S64 closed BUG-059 and BUG-060 and finally verified the replay masking on a real
-recording. BUG-058 is STILL OPEN and my S64 fix was aimed at the wrong mechanism, so do not build on it.
+Resume meal app — S65 CLOSED BUG-058. It was a REAL product bug (a phone-speed CPU wiped the Plan intent
+field on the north-star flow's front door), S64's fix closes it, and the suite is fully green: 143 passed /
+0 failed, 815 unit green, lint + typecheck clean.
 
-🔴 FIRST ACTION, BEFORE ANY CODE: run the FULL E2E suite with NOTHING else running — no vitest, no lint,
-no typecheck, no dev server, and confirm with me that I am not using the app. ⚠️ AND CHECK THE MACHINE
-FIRST, do not just check yourself: `lsof -ti:3000,3001,3102` plus `pgrep -fl "next-server|vitest|playwright"`.
-During S64 a `next-server (v16.2.10)` from ANOTHER project was running on port 3000 — this repo pins 16.2.6,
-so it was FFOS or similar. Whether it was up during the failing run is unknown, but the contention picture
-was broader than "Claude ran vitest inside the suite", and a clean run has to actually BE clean or it
-answers nothing. ~20 minutes. That single
-uncontaminated run decides whether BUG-058 is a product bug at all, and we do not have one yet: the S64 run
-that failed had vitest/lint/typecheck running CONCURRENTLY inside it, which is CPU contention and is S53's
-"never run two suites at once" in a costume nobody recognised.
+🔴 FIRST ACTION: MERGE PR #28. It was gated on BUG-058 and nothing else, and everything downstream is queued
+behind it — `main` holds NONE of the observability code, so the production env vars set in S64 are INERT
+until it lands, and the DoD's time-to-list measurement cannot start. Do NOT redeploy production before the
+merge; it would rebuild a tree with no analytics in it.
 
-⚠️ ALREADY MEASURED — DO NOT REDO: error.spec.ts ALONE passes (7 passed, X6 healthy at every tick). The
-EXACT full-suite prefix — cost + debug-hud + drawer + elapsed + error, the same 24 tests in the same order
-X6 occupies in the full run — ALSO passes, 24 passed in 3.1m, X6 healthy at every tick. So it is NOT the
-preceding specs, NOT shared-state corruption, and NOT a long-lived server (X6 runs 2-3 minutes into the
-full run, not at minute 20).
+⚠️ DO NOT RE-INVESTIGATE BUG-058, and do not re-litigate whether S64's fix was right. It was. The A/B is in
+the tracker: same build pipeline, same spec, same 4x CPU throttle, only the two files differing — pre-fix
+gives `value: ""` + `disabled: true`, post-fix gives the text intact. The regression test is X7 in
+error.spec.ts, pinned at 4x. ⚠️ THE THROTTLE IS THE TEST: at 1x the remount never fires and X7 passes against
+the pre-fix code, so do not remove it to "speed the suite up".
 
-⚠️ THE DIAGNOSIS HAS BEEN WRONG TWICE AND BOTH TIMES BY READING CODE INSTEAD OF MEASURING. S63 read a
-remount off the source and filed it as the cause; S64 inherited that and shipped a fix for it that did not
-close X6. DO NOT PROPOSE A THIRD MECHANISM FROM THE SOURCE. X6 carries a temporary probe logging
-value/disabled/sameNode at +0/150/400/1000/2500ms — `sameNode` is an expando on the DOM node, so it
-separates a REMOUNT from a state reset on the same element.
+⚠️ ALLOWED_EMAILS and SENTRY_AUTH_TOKEN are ALREADY DONE (commit 3656851, an Organization Token, not a
+personal one). The S64 handoff listed both as owed by me; it was written before that commit landed. Don't
+hand them back to me.
 
-⭐ WHILE THAT RUN IS GOING, BUILD THE DIAL: add CPU throttling to X6 via CDP
-(`context.newCDPSession(page)` → `Emulation.setCPUThrottlingRate`). The harness ALREADY uses CDP (the
-BUG-053 fix clears IndexedDB that way), so this is an established pattern here, not a new one. The point is
-to stop this being a coin flip — right now the trigger is uncontrolled load, so a pass proves nothing and a
-failure is not reproducible. Throttling turns it into a dial and makes all three outcomes decidable:
-  - passes clean, FAILS at 4x throttle  → PRODUCT BUG. A real phone is a slow CPU. Fix the app.
-  - passes clean, passes at 4x, fails only under absurd contention → TEST ARTIFACT. Fix the spec, say so
-    plainly, close it. (That is NOT S57's "don't lengthen a wait" — that rule is about papering over a
-    defect, not about letting an app finish mounting.)
-  - FAILS on the clean run → contention theory is dead; read `sameNode` and it tells you what replaced the
-    tree.
-Any of those three is a resolution. A fourth session of "it passed this time" is not.
-Remove the probe when it closes.
+⚠️ E2E is ~20 MINUTES (143 specs). Tell me before starting it, never run it while I'm using the app, nothing
+else alongside it — S64's "failure" was vitest + lint + typecheck running INSIDE the run. CHECK THE MACHINE
+FIRST: `top -l 2 -n 0 | grep "CPU usage"`, NOT the load average, which lags by minutes. An FFOS `next dev`
+was holding 123% CPU on a 4-core box at the start of S65 and had to be killed. Use run_in_background with NO
+redirect, never pipe it, never redirect into test-results/ (Playwright wipes that directory), and read the
+summary line — not the exit status.
 
-⚠️ What DID ship in S64 for BUG-058 is a real fix on its own terms and should be KEPT, it just is not this
-bug: the intent text now lives in plan-page-client (controlled), and the onboarding seed applies via a
-once-only ref-guarded effect — that pre-fill previously only worked when the plan query happened to lose a
-race to the handoff read.
+▶ THEN, in order: the PERF + A11Y PASS (start it from BUG-060 — six components changed their accessible
+names in S64 and that surface has never been swept), the ERROR-STATE SWEEP, then BUG-057 (4 high-severity
+CVEs, Next 16.2.6 → 16.2.12, needs its own E2E run), then the prompt-injection review, the secrets audit,
+and the RLS "which layer is load-bearing" statement. Then Workstream E.
 
-✅ DONE AND VERIFIED, do not redo. BUG-059 was posthog-js's own bot filter: `capture()` opens with
-`!config.opt_out_useragent_filter && this._is_bot()` and skips the send; `_is_bot()` fires on
-`navigator.webdriver` OR a blocklisted UA, and headless Playwright trips both independently. The gate is in
-capture(), NOT init() — which is why remote config, the recorder download and the total absence of errors
-all looked healthy, and why `/s/` died with `/i/v0/e/`. NO production code changed; the bot filter STAYS in
-prod (it also keeps Lighthouse and Vercel's screenshot bot out of the DoD numbers).
-BUG-060: session replay was recording the grocery list, the week's meal titles, the recipe library and my
-DIETARY CONSTRAINTS in the clear, via aria-label — rrweb records attributes verbatim, exposes no attribute
-hook at all, and there is no central scrub point because snapshots are compressed before before_send. Fixed
-in 6 components (names now come from text nodes / aria-labelledby / sr-only verbs), verified at 0 leaks
-across 157KB, guarded by src/lib/analytics/aria-leak.test.ts (force-failed to confirm it catches the real
-defect). ⚠️ The masking harness itself had been VACUOUS TWO WAYS — a URL-keyed gunzip that never fired (the
-/s/ request has no query string) and an outer JSON envelope whose every snapshot item is gzipped AGAIN
-inside it. Both fixed, with guards that fail on an undecoded body and on an expansion that stops expanding.
+STILL OWED BY ME: one sentence to my wife that session replay exists, before real recording starts. The
+two-phone check + app-kill replay. Whether 32px reads right for the Recipes and Groceries titles, and
+whether the grocery quantity editor's ~5px headroom bothers me.
 
-▶ THEN, in order: the PERF + A11Y PASS (start it from BUG-060 — six components just changed their
-accessible names and that surface has never been swept), the ERROR-STATE SWEEP, then BUG-057 (4
-high-severity CVEs, Next 16.2.6 → 16.2.12, needs its own E2E run), then the prompt-injection review,
-secrets audit, and the RLS "which layer is load-bearing" statement. Then Workstream E.
+Keep 815 unit green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md first, then give me the
+<=6-line scope check.
 
-🔴 PRODUCTION IS STILL DARK AND BUG-058 IS WHAT IS BLOCKING IT. NEXT_PUBLIC_POSTHOG_KEY and
-NEXT_PUBLIC_SENTRY_DSN are now SET in Vercel Production (S64), but they are INERT: main has none of the
-observability code, because PR #28 is unmerged on a 141/142 suite with X6 red. So the merge — and therefore
-the DoD's time-to-list measurement, and therefore the validation weeks — is gated on the BUG-058 call above.
-Do NOT redeploy production before the merge; it would rebuild code that has no analytics in it.
-⚠️ SENTRY_AUTH_TOKEN is not set anywhere, so production stack traces will be minified. Build-time only,
-never reaches the bundle — worth generating in Sentry before the merge.
-
-STILL OWED BY ME: the two-phone check + app-kill replay. ⚠️ ALLOWED_EMAILS is now SET
-(griffinyanny@gmail.com,akabor94@gmail.com — her account does not exist yet, which is fine, the list is
-just an allow-list). It takes effect on the next production DEPLOY, not immediately. Verify once after
-that deploy by signing in with a third address and confirming it bounces to /auth/rejected: its failure
-mode is "quietly stops working", not "obviously broken", and an empty or typo'd value silently OPENS the
-app rather than closing it (deliberate, see access.ts). Whether 32px reads right for the Recipes
-and Groceries titles, and whether the grocery quantity editor's ~5px headroom bothers me.
-
-⚠️ E2E is ~20 MINUTES (142 specs). Tell me before starting it, never run it while I am using the app, never
-run anything else alongside it, use run_in_background with NO redirect, never pipe it, never redirect into
-test-results/ (Playwright wipes that directory), and read the summary line — not the exit status — from the
-task's own output file.
-
-Keep 815 unit green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md BUG-058 first, then give
-me the <=6-line scope check.
-
-MODEL: stay on Opus 5. This is not a reasoning-horsepower problem — it is a measurement-discipline problem,
-and two wrong diagnoses both came from reading code instead of instrumenting. A second opinion
-(/codex-review) is worth spending only AFTER the clean run gives us a mechanism to argue about; asking for
-one now just multiplies theories, which is what got us here.
+MODEL: Opus 5. Not for the merge, which is mechanical — for what follows it. The a11y sweep starts from six
+components whose accessible names changed last session, which is exactly where a subtle regression hides,
+and the prompt-injection review and secrets audit are blast-radius reasoning rather than pattern matching.
+Sonnet 5 would be enough if the session were only the merge and the Next bump.
 ```
 
 ### 🔴 S64 · PRODUCTION IS DARK, AND THE ENV VARS ARE NOT WHAT WAS BLOCKING IT

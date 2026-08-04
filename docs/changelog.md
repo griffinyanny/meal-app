@@ -4,6 +4,88 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 65 — 2026-08-03 (BUG-058 closed: a real product bug, provable only once the trigger became a dial)
+
+### ⛔ The headline: **a green run is not a resolution, and neither is a fix you cannot make fail**
+
+BUG-058 had survived three sessions. S63 read a remount off the source and filed it as the cause. S64 shipped
+a fix for it, watched X6 fail identically, and concluded **the fix had missed and the mechanism was wrong**.
+Both halves of that conclusion were false.
+
+**S65 changed one thing: it made the trigger controllable.**
+
+**First, the clean measurement.** The full suite was run on a machine verified idle beforehand — an FFOS
+`next dev` was holding **123% CPU** on a 4-physical-core box and was killed, taking instantaneous idle to
+79.5%. Result: **142 passed, 19.5m, zero failures.** S64's failing run had `vitest`, `lint` and `typecheck`
+executing inside it. **S53's "never run two suites at once" wearing a gauntlet as a costume.**
+
+⚠️ **But that alone proves nothing, and saying so is the point.** A green run cannot distinguish *the bug is
+gone* from *the trigger did not fire*, which is precisely why three sessions of "it passed this time" never
+closed anything.
+
+**Second, the dial.** `tests/e2e/harness/cpu-throttle.ts` — CPU throttling over CDP
+(`Emulation.setCPUThrottlingRate`), the same channel `capture-runtime.ts` already used to clear IndexedDB.
+Rate comes from `E2E_CPU_THROTTLE` rather than a hard-coded spec value, so every leg runs the same build.
+
+| Leg | Result |
+|---|---|
+| Full suite, idle machine | **142 passed**, X6 green, `sameNode: true` at every tick |
+| X6 at 4x / 6x / 20x (measured 4.27 / 6.47 / **22.93**) | **passes** — and the remount is REAL: field absent at +0ms, back as a **different node** |
+| 1500ms tRPC query delay | **no remount at all** — the remount tracks client render speed, not when data lands |
+| **Pre-fix code at 4x** | **✘ `value: ""`, `disabled: true`** |
+| **Post-fix code at 4x** | **✓ text intact, `disabled: false`** |
+
+**The last pair closed it.** Same build pipeline, same spec, same throttle; only `plan-page-client.tsx` and
+`no-plan-state.tsx` differ. **BUG-058 was a genuine product bug — a phone-speed CPU loses what you typed on
+the north-star flow's front door — and S64's fix closes it.**
+
+⚠️ **THE LESSON: a mechanism read off the source is a hypothesis until you can turn its TRIGGER on and off.**
+S63's remount was **right**. It was filed from a code read, dismissed at S64 as unconfirmed, and confirmed at
+S65 by measurement. The failure was never bad reasoning about the mechanism — it was that nothing in the
+harness could make the mechanism fire, so every run was a coin flip and each session drew its conclusion from
+whichever way it landed. **A defect that only appears under load needs a load knob before it needs another
+theory.** ⚠️ And the reason S64 could not see its own fix working: **at full speed the remount does not
+happen at all**, so the defect and its fix were both invisible in every fast repro.
+
+⚠️ **CDP CPU throttling slows the RENDERER ONLY, not the Next server on the same box.** It reproduces a slow
+phone, not a loaded machine — which is why the tRPC-delay leg produced *no* remount rather than a worse one.
+
+### ✅ What shipped
+
+- **`X7`** in `error.spec.ts` — BUG-058's regression test, pinned at **4x** (roughly a phone against this
+  desktop). It samples across the whole load window instead of asserting once, because a single assertion
+  that runs before the remount **passes on the pre-fix code too**. Carries a did-it-see-anything guard so it
+  cannot pass vacuously on a page that never rendered the field.
+  **Force-failed against `eb9343b^`: `intent text at +400ms · Expected "a week of easy dinners" · Received ""`.**
+- **`tests/e2e/harness/cpu-throttle.ts`** — generic, copyable. Two guards earned in this session: it times a
+  fixed busy-loop before and after and **fails if the page did not actually get slower** (an unverified dial
+  is a no-op that still lets a spec report "passed at 4x"), and it **re-checks after the navigation**, since
+  the rate is applied on `about:blank` and must survive a cross-origin navigation.
+- **The S64 diagnostic probe is REMOVED from X6**, which is back to owning the timeout ladder alone.
+  ⚠️ **X6 passes against the pre-fix code** — it had been catching BUG-058 only by accident of contention.
+
+### ⚠️ A third guard, found the hard way
+
+On the failing run, `restore()` threw `cdpSession.detach: Target page … has been closed` and **that error
+REPLACED the real one in the report**. Teardown now never throws. **A cleanup error that buries the failure
+it is cleaning up after points at the instrument instead of the defect** (S59's "a failure list pointing at
+correct code teaches people to edit the expectation", one layer over).
+
+### ⚠️ Two items the S64 handoff listed as owed were already done
+
+`SENTRY_AUTH_TOKEN` **and** `ALLOWED_EMAILS` were both set in commit `3656851`, which landed after the
+handoff text was written. The token is an **Organization Token** rather than a personal one, and deliberately
+not in `.env.local` because `uploadSourceMaps` is gated on its presence and a local copy would make both
+Playwright suites upload on most runs. **A handoff ages like a bug repro does.**
+
+### ▶ Where this leaves the release
+
+**The suite has no red left, so PR #28 is unblocked** — and it was the only thing blocking it. `main` holds
+none of the observability code, so the S64 production env vars stay inert until it merges, and the DoD's
+time-to-list measurement is gated behind that merge.
+
+---
+
 ## Session 64 — 2026-08-03 (BUG-059 was the vendor muting the robot; the check meant to close D3 had been reading an envelope)
 
 ### ⛔ The headline: **a check that could not fail, twice in the same payload**

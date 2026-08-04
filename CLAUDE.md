@@ -32,15 +32,40 @@ device, and nothing in the suite can answer it.
 **Workstream D (production readiness) is 🔨 PART-DONE (S62–S64):** migration safety ✅, BUG-044 ✅,
 **observability ✅ S63, VERIFIED S64** (34-event taxonomy + PostHog + Sentry + inverted replay masking +
 the whole north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**),
-BUG-054 ✅, BUG-059 ✅, BUG-060 ✅. 🔴 **BUG-058 STILL OPEN** — S63's filed remount cause is unconfirmed
-and the S64 fix aimed at it did not close X6.
-🔴 **BUT NEITHER SDK HAS EVER RUN IN PRODUCTION:** `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_SENTRY_DSN`
-are **not set in Vercel Production** and both are allow-listed on key/DSN presence. **The PostHog one is
-deliberately held until Griffin tells his wife session replay exists.**
+BUG-054 ✅, BUG-059 ✅, BUG-060 ✅, **BUG-058 ✅ CLOSED S65** — a real product bug (a phone-speed CPU lost
+what you typed on the north-star flow's front door), closed by S64's fix, which S64 itself could not prove.
+**E2E: 142 passed / 0 failed, then 143 with the new `X7`. The suite has no red left.**
+🔴 **THE NEXT ACTION IS MERGING PR #28**, which was gated on BUG-058 and nothing else. `main` holds **none**
+of the observability code, so the production env vars are inert until it lands — and **do not redeploy
+production before the merge**, which would rebuild a tree with no analytics in it. Env vars ARE now set
+(`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`/`ORG`/`PROJECT`, `ALLOWED_EMAILS`).
+⚠️ **Griffin still owes his wife one sentence about session replay existing** before real recording starts.
 Security review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
 prompt-injection review, RLS "which layer is load-bearing", secrets audit**). ❌ **Perf + a11y pass and the
 error-state sweep are NOT started — that is the next session.** Then **E (feedback capture)**, then the two
 validation weeks.
+
+**⚠️ S65 · A MECHANISM READ OFF THE SOURCE IS A HYPOTHESIS UNTIL YOU CAN TURN ITS *TRIGGER* ON AND OFF.**
+BUG-058 cost three sessions, and the reason was never bad reasoning about the mechanism. **S63's remount was
+RIGHT** — filed from a code read, dismissed at S64 as unconfirmed, confirmed at S65 by measurement. What was
+missing is that **nothing in the harness could make the remount fire**, so every run was a coin flip and each
+session concluded from whichever way it landed: S63 filed a cause it could not demonstrate, S64 shipped the
+correct fix and read its own X6 failure as proof the fix had missed. ⚠️ **At full speed the defect does not
+exist** (`sameNode: true` at every tick), so the bug AND its fix were invisible in every fast repro. The dial
+— CPU throttling over CDP, `tests/e2e/harness/cpu-throttle.ts` — made the A/B decidable in two minutes:
+**pre-fix at 4x → `value: ""`, `disabled: true`; post-fix at 4x → text intact.** **A defect that only appears
+under load needs a load knob before it needs another theory.** ⚠️ **And a green run is never a resolution**:
+it cannot distinguish *the bug is gone* from *the trigger did not fire*, which is exactly what "it passed this
+time" had been hiding. ⚠️ Two riders. **CDP CPU throttling slows the RENDERER ONLY**, not the Next server on
+the same box — it reproduces a slow phone, not a loaded machine (a 1500ms tRPC delay produced *no* remount
+rather than a worse one). And **an unverified dial is a no-op wearing a passing test**, so the helper times a
+fixed busy-loop before and after and fails if the page did not actually get slower — the fifth shape of the
+test-that-cannot-fail, pre-empted rather than discovered. ⚠️ **Check the MACHINE before trusting a
+full-suite result** (`top -l 2 -n 0 | grep "CPU usage"`, not the load average, which lags by minutes): an
+FFOS `next dev` was holding 123% CPU on a 4-core box at this session's start, and S64's failing run had
+vitest + lint + typecheck inside it — **S53's "never run two suites at once" wearing a gauntlet as a costume.**
+⚠️ **Teardown must never throw:** `restore()` raised `cdpSession.detach: Target page … has been closed` on
+the failing run and **that replaced the real assertion error in the report**.
 
 **⚠️ S64 · THE CHECK WRITTEN TO CATCH A FALSE GREEN WAS ITSELF VACUOUS, TWICE, IN ONE PAYLOAD.**
 `masking-check.ts` reported **clean** while `aria-label="Check off Garlic"` sat in the recording — and its
@@ -854,7 +879,9 @@ There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; deta
 
 **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
 
-⚠️ **It takes ~18 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S61: 139 specs, 18.2 minutes** (S60 measured 136 specs / 17.8 min; the three new OF specs account for the difference). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+⚠️ **It takes ~20 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S65: 142 specs, 19.5 minutes on an idle machine** (S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+
+⚠️ **AND CHECK THE MACHINE, NOT JUST YOUR OWN PROCESSES, BEFORE TRUSTING THE RESULT.** Use `top -l 2 -n 0 | grep "CPU usage"` — the **instantaneous** idle figure, **not** `uptime`'s load average, which lags by minutes and reports work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`, `lint` and `typecheck` running concurrently **inside** the 20-minute run, and S65 opened with an unrelated project's `next dev` holding **123% CPU** on a 4-physical-core box. **S53's rule is not only about two Playwright suites** — it is about anything competing for the CPU, the gauntlet included. ⚠️ **And when a spec passes alone but fails in the full run, reach for `tests/e2e/harness/cpu-throttle.ts` before reaching for another theory:** under uncontrolled load a pass proves nothing and a failure cannot be reproduced, so the first move is a knob, not a hypothesis.
 
 ⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), S60 (pipe again, on the offline specs), **S61 (a trailing `grep`, in the same session that quoted this line)**. **Read the summary line, never the status.**
 

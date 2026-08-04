@@ -4,6 +4,39 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-03 (S65) — The harness gets a load dial, and device-speed defects get pinned tests
+
+**1. CPU throttling is a permanent harness capability, not a one-off probe.**
+`tests/e2e/harness/cpu-throttle.ts` stays, written generic and copyable like the rest of `harness/`. BUG-058
+took three sessions because its trigger was **uncontrolled load**: a pass proved nothing, a failure could not
+be reproduced, and each session concluded from whichever way the coin landed. Throttling turns that into a
+dial. ⚠️ **Rate comes from `E2E_CPU_THROTTLE`, never hard-coded into a spec**, so every leg of an
+investigation runs the *same build* — which is what keeps `E2E_REUSE_BUILD=1` honest between legs (S54: never
+verify a `src` edit against a reused build). **Future impact:** any load-sensitive defect gets a repro knob
+before it gets a second theory.
+
+**2. A device-speed regression is pinned at 4x, and the throttle is load-bearing.**
+`X7` runs at 4x because that is roughly a phone against this desktop — the claim being pinned is not "it
+survives a slow computer", it is "it survives the device the product ships on". ⚠️ **At 1x the defect does
+not exist**: the remount never fires and the pre-fix code passes. So the throttle is not decoration, and a
+future session that removes it to "speed the suite up" silently deletes the test. Stated in the spec's own
+comment for exactly that reason.
+
+**3. A dial that is not verified is a no-op wearing a passing test.**
+`setCPUThrottlingRate` resolves without complaint on a detached session or a browser that ignores it, so the
+helper times a fixed busy-loop before and after and **fails if the page did not actually get slower**, plus a
+guard that the baseline is long enough for the ratio to be signal. It also **re-checks after the navigation**,
+because the rate is applied on `about:blank` and has to survive a cross-origin navigation — without that,
+"passed at 4x" could be a measurement that never happened. **Fifth shape of the test-that-cannot-fail in this
+project, pre-empted rather than discovered.**
+
+**4. Test teardown must never throw.**
+`restore()` swallows CDP errors. On the force-failure run it threw `cdpSession.detach: Target page … has been
+closed` and **that replaced the real assertion error in the report**. A cleanup error that buries the failure
+it is cleaning up after points at the instrument instead of the defect.
+
+---
+
 ## 2026-08-03 (S64) — Four calls that came out of measuring the observability build
 
 **1. Production keeps posthog-js's bot filter. `opt_out_useragent_filter` stays unset.**

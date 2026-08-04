@@ -116,6 +116,7 @@ generate/review rows. D3 — the pointer-lockup regression — is verified sound
 | X4 | DRAFT, force generation failure | Start over → send a failing request | Failure is named AND the seeded week survives (Griffin's option B) | 🟢 (BUG-035, S50) |
 | X5 | EMPTY, `[E2E:FAIL_ONCE]` | Send a request whose first attempt dies | A week arrives; NO failure is ever named — the retry is invisible when it works | 🟢 (BUG-035, S50) |
 | X6 | EMPTY, `[E2E:SLOW=20000]` | Stall past both attempts (bound is 2.5s in the suite) | Named failure + Try again, not a spinner — drives the REAL timeout path | 🟢 (BUG-035, S50) |
+| X7 | EMPTY, **CPU throttled to 4x over CDP** | Type into the intent field during load | The text survives the load-time remount and `Send to chef` stays enabled | 🟢 (BUG-058, S65) ⚠️ **The throttle IS the test** — at 1x the remount never fires and this passes against the pre-fix code. Samples the whole load window, not one instant. Force-failed at `eb9343b^` |
 
 > **X3 and X4 both failed before the fix**, which is the point of them: the
 > generation failure card had been unreachable on every path since it was

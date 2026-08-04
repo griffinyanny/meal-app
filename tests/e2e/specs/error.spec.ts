@@ -16,6 +16,7 @@ import {
 } from "../app/selectors";
 import { seedPlanState, resetTestHousehold, type SeededPlan } from "../app/seed";
 import { FRESH_TITLE_PREFIX } from "../../../src/server/ai/providers/e2e-mock-fixtures";
+import { cpuThrottleRate, throttleCPU } from "../harness/cpu-throttle";
 
 const FAIL_CHIP = "[E2E:FAIL] break it";
 // Substring of "That didn't take — try again?" — avoids matching on the em-dash
@@ -192,44 +193,87 @@ test("X6 - a generation that stalls past both attempts ends as a named failure, 
   const field = page.getByPlaceholder("Or just start talking. What sounds good?");
   await field.fill("[E2E:SLOW=20000] plan my week");
 
-  // ⚠️ TEMPORARY DIAGNOSTIC (BUG-058, S64). The failure is that `Send to chef`
-  // stays disabled after a successful `fill()`, i.e. the text is empty. S63 read
-  // a remount off the code and filed it as the cause; lifting the state into
-  // `plan-page-client` did NOT fix it, so the cause is something else and the
-  // next move is to MEASURE rather than reason again (S62). This timeline says
-  // whether the value never took or took and was then cleared — which are two
-  // different bugs and the screenshot cannot tell them apart.
-  // An expando on the DOM node itself: if the textarea is ever replaced, the
-  // marker is gone, which distinguishes a REMOUNT from a state reset on the
-  // same element. Nothing in the app can see this, so it cannot perturb what it
-  // measures.
-  await field.evaluate((el) => {
-    (el as HTMLElement & { __x6?: number }).__x6 = 1;
-  });
-
-  for (const ms of [0, 150, 400, 1000, 2500]) {
-    if (ms) await page.waitForTimeout(ms);
-    const state = await page.evaluate(() => {
-      const el = document.querySelector<HTMLTextAreaElement>(
-        'textarea[placeholder="Or just start talking. What sounds good?"]'
-      );
-      const send = document.querySelector<HTMLButtonElement>(
-        '[data-testid="plan-intent-send"]'
-      );
-      return {
-        present: !!el,
-        value: el?.value ?? null,
-        sameNode: !!(el as (HTMLElement & { __x6?: number }) | null)?.__x6,
-        disabled: send?.disabled ?? null,
-      };
-    });
-    console.log(`[X6] +${ms}ms ${JSON.stringify(state)}`);
-  }
-
   await page.getByRole("button", { name: "Send to chef" }).click();
 
   // Two 2.5s attempts, then the failure — comfortably inside this budget, and
   // nowhere near the 20s the mock would have stalled for if the bound were dead.
   await expect(page.getByText(GENERATION_FAILED)).toBeVisible({ timeout: 15_000 });
   await expect(page.getByRole("button", { name: /Try again/i })).toBeVisible();
+});
+
+// X7 — BUG-058's regression test, and the reason it carries a CPU throttle.
+//
+// The defect: on a slow client the intent subtree is REPLACED during load. That
+// is measured, not read off the source — the textarea is absent for the first
+// ~150ms and comes back as a DIFFERENT node. While the text lived in
+// `NoPlanState`'s own `useState`, the remount took it with it: the field came
+// back EMPTY with `Send to chef` still disabled, and nothing on screen said why.
+// This is the front door of the north-star flow, so it is the worst place in the
+// product for a silent no-op.
+//
+// ⚠️ THIS TEST CANNOT SEE THE BUG AT FULL SPEED, WHICH IS THE WHOLE POINT.
+// At 1x the remount never fires (`sameNode: true` at every tick) and the pre-fix
+// code passes. S65 ran the A/B on the same build pipeline: pre-fix at 4x fails
+// with `value: ""` and `disabled: true`; post-fix at 4x passes with the text
+// intact. **The throttle IS the test** — remove it and this file goes green
+// against the defect it exists to catch.
+//
+// 4x because that is roughly a phone against this desktop. The claim being
+// pinned is not "it survives a slow computer", it is "it survives the device the
+// product ships on". Verified to a MEASURED 4.05-4.42x, and X6 above survives a
+// measured 22.9x, so the margin is real rather than assumed.
+const BUG_058_TYPED = "a week of easy dinners";
+
+test("X7 - the intent text survives the load-time remount on a phone-speed CPU (BUG-058)", async ({
+  page,
+}) => {
+  await seedPlanState("EMPTY");
+
+  const throttle = await throttleCPU(page, cpuThrottleRate(4));
+  try {
+    await page.goto("/plan");
+
+    const field = page.getByPlaceholder(
+      "Or just start talking. What sounds good?"
+    );
+    await field.fill(BUG_058_TYPED);
+
+    // Sampled ACROSS the load window rather than asserted once. The remount
+    // lands in the first few hundred milliseconds, so a single assertion that
+    // happens to run before it passes on the pre-fix code too — which is the
+    // "assertion that cannot fail" this project has now produced five ways.
+    let sawField = false;
+    for (const ms of [0, 150, 400, 1000, 2500]) {
+      if (ms) await page.waitForTimeout(ms);
+      const state = await page.evaluate(() => {
+        const el = document.querySelector<HTMLTextAreaElement>(
+          'textarea[placeholder="Or just start talking. What sounds good?"]'
+        );
+        const send = document.querySelector<HTMLButtonElement>(
+          '[data-testid="plan-intent-send"]'
+        );
+        return {
+          present: !!el,
+          value: el?.value ?? null,
+          disabled: send?.disabled ?? null,
+        };
+      });
+      // Mid-remount the field genuinely does not exist; that is the mechanism,
+      // not the defect. The ticks either side of it are what must hold.
+      if (!state.present) continue;
+      sawField = true;
+      expect(state.value, `intent text at +${ms}ms`).toBe(BUG_058_TYPED);
+      expect(state.disabled, `Send to chef disabled at +${ms}ms`).toBe(false);
+    }
+    // Without this the loop passes vacuously on a page that never rendered the
+    // field at all — a clean result and no result look identical (S64).
+    expect(
+      sawField,
+      "the intent field never appeared in any sample — this test measured nothing"
+    ).toBe(true);
+
+    await throttle.assertStillActive();
+  } finally {
+    await throttle.restore();
+  }
 });
