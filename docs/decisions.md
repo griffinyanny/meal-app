@@ -4,6 +4,38 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-04 (S66) — Contrast is ratcheted, never gated
+
+axe's `color-contrast` rule argues with **§01's locked palette** (warm near-black floors, muted warm-tan
+type, ratified by Griffin in S42 and swept app-wide in 1E.7). Gating the suite on it would mean a test file
+quietly overruling the design system.
+
+**Decision: ratchet it, do not gate it.** The count can only go down; a regression goes red, but the
+existing palette is not a build failure. ⚠️ **And the measurement is 0 definite / 31 undetermined** — axe
+cannot resolve what is behind text sitting on a translucent fill, so it declines to decide. Turning those 31
+into a verdict is a real measurement pass against rendered pixels, scoped only if Griffin asks.
+
+**Future impact:** any future "make the app WCAG AA" item starts from those 31, not from zero.
+
+---
+
+## 2026-08-04 (S66) — Bring findings, not questions
+
+Griffin's correction, mid-session. Claude had parked **BUG-063, the contrast numbers, the perf pass and the
+error-state sweep** as "Griffin's call". On challenge only **two** items were genuinely his: the two-phone
+check (physical device) and the two taste calls (visual judgement). The rest were an objective defect with
+exactly one obvious fix, unfinished measurement being handed over as a decision, and caution about session
+length dressed up as deference.
+
+**The rule: if the question has one defensible answer, answer it.** Escalate only where the answer depends
+on taste, on a physical device, or on information Claude cannot obtain.
+
+**Future impact:** applies to every session wrap and every "owed by Griffin" list — those lists should
+contain only things he alone can resolve.
+
+---
+
+
 ## 2026-08-03 (S65) — The harness gets a load dial, and device-speed defects get pinned tests
 
 **1. CPU throttling is a permanent harness capability, not a one-off probe.**

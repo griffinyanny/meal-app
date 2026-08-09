@@ -1247,21 +1247,36 @@ not called on the revocation paths).
             project would NOT have given us** — rehearsing a bad migration and then applying the same bad
             migration to prod loses the data either way. The dump is the only step that helps at the moment
             it matters.
-- [ ] **Performance + a11y pass** (B3's hit targets verified here)
-- [ ] **Error-state sweep** — every surface has a fallback with a retry, not a blank screen
+- [x] **Performance + a11y pass ✅ S66.** `tests/e2e/specs/a11y.spec.ts` (9 surfaces / 12 specs) and
+      `tests/e2e/specs/perf.spec.ts` (3 specs). **B3's hit targets are verified here and the verification
+      found two more** — the drawer close button at 32×32 and the household steppers at 36×36 (BUG-064),
+      both behind `SH2`'s blind spot, because `SH2` walks the four tabs plus one dialog and has never opened
+      a sheet or visited onboarding. Also **BUG-062** (`recipe-card` was a `role="button"` wrapping a real
+      button) and **BUG-063** (three surfaces with no `<h1>`). ⚠️ **The sweep's own first run was grading a
+      skeleton and would have reported it clean**, so every surface re-asserts its content before AND after
+      the scan. ⚠️ **Contrast is ratcheted, never gated** — 0 definite / 31 undetermined, because axe cannot
+      resolve a translucent fill over warm near-black, and a check that overrules §01 is the worse outcome.
+      Perf is deliberately not Lighthouse (it would only ever score `/login`): PF1 1116ms, PF2 2616ms at 4x
+      CPU throttle, PF3 a 2700KB bundle ratchet derived from a measured 2432KB.
+- [x] **Error-state sweep ✅ S66** — every surface has a fallback with a retry, not a blank screen.
+      **Found BUG-065, the sharpest bug of the phase:** a failed *query* was indistinguishable from an empty
+      result on **both north-star surfaces**. Plan's `planQuery.isError` had no branch at all, so a failed
+      `plan.current` rendered the intent screen — telling someone with a confirmed week that they had none,
+      and offering the one action that overwrites it. Groceries read the *mutation's* error, never the
+      query's. ⚠️ **Worse than the blank screen this line was written against: a blank screen tells the
+      truth.** Fixed with a shared `QueryErrorState`; X8/X9 force-failed against pre-fix code.
 - [ ] **BUG-017 🟡** — the first-run gate is not synchronous with first paint, so a brand-new account's
       page queries can race `ensureOnboarded` and throw FORBIDDEN before the redirect lands. React Query's
       default retry papers over it incidentally. **If it shows up in the wife's real first run, it becomes
       the first thing fixed** rather than a 1F hardening item.
-- [ ] **Full E2E suite green across all tabs** + the ship checklist
+- [x] **Full E2E suite green across all tabs ✅ S66 — 160/160 in 21.2m** on a verified-idle machine (up from 143: +12 a11y, +2 error-state, +3 perf). Ship checklist still open.
 - [ ] **Validation prep — the wife's account (added S60).** Her own account, **full `DEV_TOOLS_EMAILS`,
       identical permissions to Griffin's, no carve-out and no sequencing.** She is a **software engineer**,
       she has **sat beside Griffin through much of this build**, and she will be **testing as aggressively
       as he does.** She is a second tester with context, and the account is a five-minute setup, not an
       event to stage. ⚠️ **See the correction below — three drafts of this section treated her as an
       outside party, and that was wrong at the source.**
-- [ ] **Mention session replay to her before it records.** One sentence between spouses; noted because
-      the replay item above owes it, not because it is ceremony.
+- [x] **Session replay conversation ✅ done (Griffin, S66).** Closed; do not re-raise.
 
 ---
 

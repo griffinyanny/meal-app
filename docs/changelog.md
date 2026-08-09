@@ -4,6 +4,131 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 66 — 2026-08-04 (Workstream D's test layer closes: four PRs, and a failed load that claimed your week was gone)
+
+### ⛔ The headline: **BUG-065 — a failed QUERY was indistinguishable from an empty result, on both north-star surfaces**
+
+`planQuery.isError` had **no branch anywhere** in `plan-page-client.tsx`; only `.data` and `.isLoading` were
+ever read. So a failed `plan.current` fell straight through to `NoPlanState`. Measured from the rendered
+accessibility tree on the failing run, with a CONFIRMED week seeded and the query aborted:
+
+```
+- heading "What are you thinking this week?" [level=1]
+- button "Healthy weeknight dinners" …
+- button "Or let your chef figure it out →"
+```
+
+**A person with a confirmed week on the server is told they have none, and the single action offered is the
+one that overwrites it.** Groceries had the same defect one surface over: `Body` received
+`isError={generateMutation.isError}` — the **mutation's** error — while `currentQuery.isError` appeared
+nowhere in the file, so a failed load rendered *"your grocery list will appear here"*.
+
+⚠️ **Worse than the blank screen `react-components.md` was written against, and the distinction is the
+point: a blank screen tells the truth.** This one made a false claim about the user's data and offered a
+destructive remedy, with nothing about it looking broken.
+
+⚠️ **The rule was already written down, and had been applied exactly once.** `you-page-client.tsx`'s own
+comment reads *"a failed fetch of the trust surface must NOT look like 'you have no data yet'"* — it was the
+only surface honouring it. **S55's *present, correct, and unrun*, in a third costume.** Groceries is the
+sharper illustration: the file reasoned carefully about the *mutation's* error interacting with the ready
+path and the heading, and the *query's* error was never considered. **Ask what the layer cannot see.**
+
+React Query's three default retries are why it survived to now: the state only appears when the failure is
+**persistent**, which is exactly when it matters. Fixed with a shared `QueryErrorState` (You/Plan/Groceries
+is the repo's stated three-repetition extraction threshold). **X8/X9 verified RED against pre-fix code** via
+physical file backup; X8's load-bearing assertion is the **negative** one.
+
+### The tracker's recommended fix was wrong for the seventh consecutive session (BUG-057)
+
+Filed as *"a patch bump to `next@16.2.12`"*. **16.2.12 pins `postcss 8.4.31` and `sharp ^0.34.5` —
+byte-identical to the vulnerable versions 16.2.6 already carried.** Only **16.3.0** moves to `postcss 8.5.23`
+/ `sharp ^0.35.3`. `npm audit` had been recommending 16.3.0 the whole time and the filing read that as
+*"outside the stated dependency range"* noise. **A minor bump, not a patch bump.**
+
+⚠️ **And the same class of error happened inside the same item, by my own hand:** reading
+`npm audit --omit=dev` through `tail -25` truncated the head of the report and hid **`fast-uri`** (3
+advisories, high), which had been in the production tree all along. **Read the whole output, not its tail.**
+`npm audit --omit=dev` now reports **0 vulnerabilities**.
+
+### Next 16.3.0 broke two specs and left four more latent (BUG-066)
+
+The route announcer (`#__next-route-announcer__`, `role="alert"`) mirrors the page's `<h1>` into a hidden
+live region on **client-side** navigation, so `getByText` on heading copy resolves to two elements and dies
+on strict mode. **Verified against the failure screenshot rather than assumed** — the screen renders
+correctly, nothing duplicates, the announcer is correct behaviour correctly hidden. The locator was loose.
+
+⚠️ **Then the S62 question: four MORE specs assert `<h1>` copy the same way and PASSED**, because they arrive
+by hard `goto` where the announcer stays empty. **A passing `getByText` on a heading is a collision that has
+not happened yet, not correct code.** All six moved to `getByRole("heading", { name })`.
+
+### The a11y sweep, and its own instruments being wrong three times
+
+New `tests/e2e/specs/a11y.spec.ts` — **9 surfaces**, three of which no sweep had ever visited (the meal
+sheet, the welcome screen, the interview). One test per surface, so each gets a fresh browser context and
+therefore a fresh IndexedDB: a single test walking all nine would carry the persisted React Query cache
+between legs, which is **BUG-053 exactly**, solved by construction rather than by a cleanup step.
+
+- **BUG-062:** `recipe-card` was a `<div role="button">` wrapping the favourite heart. AT treats a button's
+  subtree as one control, so the heart was unreachable — and every row announced its title **plus** "Add to
+  favorites", a verb belonging to a different control.
+- **BUG-064:** the drawer close button at **32×32** (the dismiss control on *every* sheet) and the household
+  steppers at **36×36**, both behind `SH2`'s blind spot. Fixed with B8a's trade — target grows, paint does
+  not move. The measurement now lives in one shared file.
+- **BUG-063:** Plan and the three interview screens had **no `<h1>` at all**. BUG-028 fixed *"no heading"*
+  and stopped, leaving *"no level-one heading"*. Both ratchets tightened **1 → 0**.
+
+⚠️ **The sweep's first run was grading a SKELETON and would have reported it clean.** The wait passed, and
+milliseconds later the Plan page was a greeting and a tab bar — 96 elements where a rendered intent screen
+has 121. Every surface now re-asserts its content **before and after** the scan. ⚠️ **And the anchor must be
+the element whose ABSENCE would change the finding** — `you` was anchored on the safety card while the `<h1>`
+lives in the chef narrative, which cost three runs of intermittent noise.
+
+⚠️ **The contrast check failed on its own guard, which is the point.** axe files contrast as `incomplete`
+when it cannot resolve what is behind the text, and §01's surfaces are translucent fills over warm
+near-black — so it returned **zero violations and zero passes**. A test reading `violations.length === 0`
+calls that clean. Measured: **0 definite, 31 undetermined**. Ratcheted, never gated: it is the one rule that
+argues with a locked design decision, and a check that quietly overrules the design spec is the worse
+outcome.
+
+### BUG-061 — the analytics pin had a hole, and a second config had none at all
+
+`E2E_REUSE_BUILD=1` skips the build that `NEXT_PUBLIC_POSTHOG_KEY: ""` applies to. **Worse:
+`playwright.capture-live.config.ts` had `webServerEnv: {}`** — and Layer B drives *real* generations, so its
+events are indistinguishable from genuine use, landing in the DoD's time-to-list number as data.
+**`analytics-config.test.ts` listed its files by hand, so it could not see the one it was missing.** Derived
+from disk now. The new guard reads **the built artifact**, and was force-failed **both** directions, because
+a guard that only ever fails would break reuse permanently.
+
+### Perf, and my own budget being S59's failure in the file that quotes S59
+
+`JS_BUDGET_KB` was typed as **4200 before measuring**; the bundle is **2432KB**. **73% slack — enough to
+absorb a second copy of the app without going red.** Now 2700, with every measurement recorded beside its
+ceiling. Deliberately **not** Lighthouse: it grades a cold static page and everything that matters sits
+behind the auth gate, so the only thing it could score is `/login`. **PF1 asserts `toBeEnabled`, not
+visible** — BUG-058 left the field on screen and disabled, which `toBeVisible` would have passed.
+
+### A process correction Griffin made mid-session, worth keeping
+
+Claude drifted into check-in mode after the a11y findings, parking **BUG-063, the contrast numbers, perf and
+the error sweep** as "Griffin's call". On challenge, only **two** were genuinely his (the two-phone check and
+the taste calls); the rest were either objective defects with one obvious fix, unfinished measurement being
+handed over as a decision, or caution about session length dressed up as deference. **The rule: if the
+question has one defensible answer, answer it. Bring findings, not questions.**
+
+### State at close
+
+**817 unit green**, lint + typecheck clean, **E2E 160/160 in 21.2m** on a verified-idle machine. Four PRs
+merged: **#28** (observability), **#29** (Next 16.3.0), **#30** (a11y sweep), **#31** (error states + perf).
+Production deployed and **verified by curling the real URL** — `phc_` key and Sentry DSN both inlined in
+production chunks, `*.js.map` returning **403**. ⚠️ **The 160/160 count was read out of
+`playwright-report/index.html`'s embedded stats blob**, because the background task's output file was gone
+by the time it was read and this project does not accept an exit code as evidence.
+
+**Workstream D still owes three items, none needing the suite:** the prompt-injection review, the secrets
+audit, and the RLS "which layer is load-bearing" statement.
+
+---
+
 ## Session 65 — 2026-08-03 (BUG-058 closed: a real product bug, provable only once the trigger became a dial)
 
 ### ⛔ The headline: **a green run is not a resolution, and neither is a fix you cannot make fail**

@@ -29,21 +29,78 @@ icon, the Hero launch screen, the offline clause). The install prompt was **CUT*
 **775 unit green, migration `0010` applied, `/visual-qa` capture at 6 files / 55 states / all `ok`.**
 ⚠️ **The only thing left in C is the two-phone check** — the item most likely to be quietly wrong on a real
 device, and nothing in the suite can answer it.
-**Workstream D (production readiness) is 🔨 PART-DONE (S62–S64):** migration safety ✅, BUG-044 ✅,
-**observability ✅ S63, VERIFIED S64** (34-event taxonomy + PostHog + Sentry + inverted replay masking +
-the whole north-star funnel wired, so **time-to-list is a query** and **Workstream E is UNBLOCKED**),
-BUG-054 ✅, BUG-059 ✅, BUG-060 ✅, **BUG-058 ✅ CLOSED S65** — a real product bug (a phone-speed CPU lost
-what you typed on the north-star flow's front door), closed by S64's fix, which S64 itself could not prove.
-**E2E: 142 passed / 0 failed, then 143 with the new `X7`. The suite has no red left.**
-🔴 **THE NEXT ACTION IS MERGING PR #28**, which was gated on BUG-058 and nothing else. `main` holds **none**
-of the observability code, so the production env vars are inert until it lands — and **do not redeploy
-production before the merge**, which would rebuild a tree with no analytics in it. Env vars ARE now set
-(`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN`/`ORG`/`PROJECT`, `ALLOWED_EMAILS`).
-⚠️ **Griffin still owes his wife one sentence about session replay existing** before real recording starts.
-Security review part-done (authz/IDOR, rate limiting, SSRF, access gates, the offline cache — **still owed:
-prompt-injection review, RLS "which layer is load-bearing", secrets audit**). ❌ **Perf + a11y pass and the
-error-state sweep are NOT started — that is the next session.** Then **E (feedback capture)**, then the two
-validation weeks.
+**Workstream D (production readiness) is 🔨 NEARLY DONE (S62–S66):** migration safety ✅, BUG-044 ✅,
+**observability ✅ S63, VERIFIED S64, MERGED + LIVE IN PRODUCTION S66** (34-event taxonomy + PostHog +
+Sentry + inverted replay masking + the whole north-star funnel, so **time-to-list is a query** and
+**Workstream E is UNBLOCKED**), BUG-054 ✅, BUG-058/059/060 ✅, and **S66 closed the entire test layer**:
+**BUG-057** (CVEs — at `next@16.3.0`, *not* the filed 16.2.12, which fixes nothing), **BUG-061** (two
+analytics-key holes), **BUG-062**, **BUG-063**, **BUG-064**, **BUG-065**, **BUG-066**.
+**E2E: 160/160 in 21.2m. 817 unit green. `npm audit --omit=dev`: 0 vulnerabilities.**
+**Four PRs merged: #28 #29 #30 #31.** Production is deployed and **verified by curling the real URL** — the
+`phc_` key and the Sentry DSN are inlined in production chunks and `*.js.map` returns 403.
+🔴 **WHAT REMAINS IN D IS THREE SECURITY ITEMS, NONE NEEDING THE SUITE: the prompt-injection review, the
+secrets audit, and the RLS "which layer is load-bearing" statement.** Then **E (feedback capture)**, then
+the two validation weeks.
+
+**⚠️ S66 · A FAILED *QUERY* WAS INDISTINGUISHABLE FROM AN EMPTY RESULT — BUG-065, and it is the sharpest
+bug of the phase.** `planQuery.isError` had **no branch anywhere**; only `.data` and `.isLoading` were ever
+read, so a failed `plan.current` fell through to `NoPlanState`. Measured from the rendered accessibility
+tree with a CONFIRMED week seeded: `heading "What are you thinking this week?" [level=1]` plus the seed
+chips. **A person with a confirmed week is told they have none, and the one action offered is the one that
+overwrites it.** Groceries had it one surface over — `Body` read `isError={generateMutation.isError}`, the
+MUTATION's error, and `currentQuery.isError` appeared nowhere. ⚠️ **Worse than the blank screen
+`react-components.md` was written against, and that is the whole point: a blank screen tells the truth.**
+⚠️ **The rule was already written down and applied exactly ONCE** — `you-page-client.tsx`'s own comment says
+*"a failed fetch of the trust surface must NOT look like 'you have no data yet'"*. **S55's *present,
+correct, and unrun*, third costume.** React Query's three default retries are why it survived: the state
+only appears when the failure is **persistent**, which is exactly when it matters. **Whenever a component
+reads `.data` and `.isLoading`, ask what it does with `.isError` — the empty state is not a safe default.**
+
+**⚠️ S66 · THE PARKED FIX WAS WRONG FOR THE SEVENTH CONSECUTIVE SESSION, AND I REPEATED THE CLASS INSIDE
+THE SAME ITEM.** BUG-057 was filed as *"a patch bump to `next@16.2.12`"*. **16.2.12 pins `postcss 8.4.31`
+and `sharp ^0.34.5` — byte-identical to what 16.2.6 already carried.** Only **16.3.0** fixes them, and
+`npm audit` had been saying so all along while the filing read it as *"outside the stated dependency range"*
+noise. ⚠️ **Then reading `npm audit --omit=dev` through `tail -25` truncated the head of the report and hid
+`fast-uri`** (3 advisories, high), which had been in the production tree the whole time. **Read the whole
+output, not its tail** — the same family as S55/S56/S57/S60/S61's exit-code traps.
+
+**⚠️ S66 · AN INSTRUMENT'S WAIT PROVES A SCREEN RENDERED ONCE, NOT THAT IT WAS STILL THERE WHEN YOU
+MEASURED.** The a11y sweep's first run caught the Plan intent screen present at the `prepare()` wait and
+**gone milliseconds later** — main collapsed to a greeting and a tab bar, **96 elements where a rendered
+intent screen has 121** — and axe graded *that*, returning one best-practice violation, which reads as
+"nearly clean" rather than "there was nothing on the page". **S56's SH2 finding in a new costume.** Every
+surface now re-asserts its own content **immediately before AND immediately after** the scan. ⚠️ **And the
+anchor must be the element whose ABSENCE WOULD CHANGE THE FINDING**, not merely content proving the route
+rendered: `you` was anchored on the safety card while the `<h1>` lives in the chef narrative — separate
+cards, separate queries — which cost three runs of intermittent noise before it was named.
+
+**⚠️ S66 · A RULE THAT LISTS ITS OWN SUBJECTS BY HAND CANNOT SEE THE ONE IT IS MISSING — BUG-061.**
+`analytics-config.test.ts` checked exactly two Playwright configs, named as string literals, while
+**`playwright.capture-live.config.ts` had `webServerEnv: {}` and no `NEXT_PUBLIC_POSTHOG_KEY` pin at all.**
+Layer B drives **real generations** across every surface, so its events are indistinguishable from genuine
+use and would land in the DoD's *"time-to-list on a REAL week"* as data. S63's note said *"both Playwright
+configs pin it"* — true, and the wrong count. **The list is derived from disk now.** ⚠️ Second half:
+**`E2E_REUSE_BUILD=1` defeats the pin entirely**, because it skips the build the pin applies to and boots
+whatever `.next` is on disk — and a plain `npm run build` uses `.env.local`, which has held a real `phc_`
+key since S64. The guard reads **the built artifact**, not the config, and was **force-failed in both
+directions** — a guard that only ever fails would have broken reuse permanently.
+
+**⚠️ S66 · A RATCHET TYPED BEFORE THE MEASUREMENT IS S59 AGAIN, AND I DID IT IN THE FILE THAT QUOTES S59.**
+`JS_BUDGET_KB` was written as **4200**; the bundle measures **2432KB**. Seventy-three percent slack — enough
+to absorb an entire second copy of the app without going red. Now 2700, with the measurement recorded beside
+every ceiling so the slack is visible instead of accidental. ⚠️ **And the contrast check failed on its own
+guard, which is the point:** axe files contrast as `incomplete` when it cannot resolve what is behind the
+text, and §01's surfaces are translucent fills over warm near-black — so it returned **zero violations AND
+zero passes**, which a test reading `violations.length === 0` calls clean. Measured: 0 definite, 31
+undetermined. **Contrast is ratcheted, never gated** — it is the one rule that argues with a locked design
+decision, and a check that quietly overrules the design spec is the worse outcome.
+
+**⚠️ S66 · GRIFFIN'S PROCESS CORRECTION: BRING FINDINGS, NOT QUESTIONS.** Claude drifted into check-in mode
+after the a11y findings and parked BUG-063, the contrast numbers, the perf pass and the error sweep as
+"Griffin's call". On challenge, only **two** were genuinely his (the two-phone check, the taste calls); the
+rest were an objective defect with one obvious fix, unfinished measurement handed over as a decision, and
+caution about session length dressed up as deference. **If the question has one defensible answer, answer
+it.**
 
 **⚠️ S65 · A MECHANISM READ OFF THE SOURCE IS A HYPOTHESIS UNTIL YOU CAN TURN ITS *TRIGGER* ON AND OFF.**
 BUG-058 cost three sessions, and the reason was never bad reasoning about the mechanism. **S63's remount was
@@ -877,15 +934,15 @@ These apply to ALL code. Hooks enforce the critical ones deterministically.
 
 There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; details in `docs/plans/spike-e2e-testing-harness.md` and `tests/e2e/harness/README.md`). It self-verifies real UI mechanics in a browser — the layer unit tests can't reach.
 
-**Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend. After a build, `E2E_REUSE_BUILD=1 npm run test:e2e` skips the rebuild).
+**Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend). ⚠️ **`E2E_REUSE_BUILD=1` is now GUARDED and will refuse a build carrying a real analytics key (BUG-061)** — it skips the build that `NEXT_PUBLIC_POSTHOG_KEY: ""` applies to, and `.env.local` holds a real `phc_` key. Do not reach for it.
 
-⚠️ **It takes ~20 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S65: 142 specs, 19.5 minutes on an idle machine** (S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+⚠️ **It takes ~21 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S66: 160 specs, 21.2 minutes on an idle machine** (S65: 142 / 19.5; S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
 
 ⚠️ **AND CHECK THE MACHINE, NOT JUST YOUR OWN PROCESSES, BEFORE TRUSTING THE RESULT.** Use `top -l 2 -n 0 | grep "CPU usage"` — the **instantaneous** idle figure, **not** `uptime`'s load average, which lags by minutes and reports work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`, `lint` and `typecheck` running concurrently **inside** the 20-minute run, and S65 opened with an unrelated project's `next dev` holding **123% CPU** on a 4-physical-core box. **S53's rule is not only about two Playwright suites** — it is about anything competing for the CPU, the gauntlet included. ⚠️ **And when a spec passes alone but fails in the full run, reach for `tests/e2e/harness/cpu-throttle.ts` before reaching for another theory:** under uncontrolled load a pass proves nothing and a failure cannot be reproduced, so the first move is a knob, not a hypothesis.
 
 ⚠️ **Never pipe the run through `tail`, `head`, or a trailing `echo`** — the harness reports the LAST command's exit code, so a failing suite comes back as **exit 0**. S55 (pipe), S56 (trailing command), S57 (wrong directory), S60 (pipe again, on the offline specs), **S61 (a trailing `grep`, in the same session that quoted this line)**. **Read the summary line, never the status.**
 
-⚠️ **And never redirect the log into `test-results/` — Playwright WIPES that directory at startup.** S61 lost a full 18-minute run that way: the log was deleted a second after it was created, every write went to a dead file descriptor, and the run finished having produced **no readable output at all**. **The safe shape is `run_in_background: true` with NO redirect**, then read the summary line out of the background task's own output file — which also removes the trailing-command trap above, because there is no trailing command.
+⚠️ **And never redirect the log into `test-results/` — Playwright WIPES that directory at startup.** S61 lost a full 18-minute run that way: the log was deleted a second after it was created, every write went to a dead file descriptor, and the run finished having produced **no readable output at all**. **The safe shape is `run_in_background: true` with NO redirect**, then read the summary line out of the background task's own output file — and **if that file is gone** (a session restart will take it), the real counts are decodable from `playwright-report/index.html`'s `<template id="playwrightReportBase64">` zip, which carries a `stats` object. S66 read `160/160` out of it rather than trusting an exit code — which also removes the trailing-command trap above, because there is no trailing command.
 
 **Run it (without being asked) when:**
 - Your change touches code the suite covers, OR
