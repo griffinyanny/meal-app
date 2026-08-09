@@ -10,8 +10,53 @@ globs: src/server/db/schema/**/*.ts
 - JSONB columns must have a corresponding Zod schema for runtime validation. Define the Zod schema in the same file or a co-located types file.
 - Schema changes require a Drizzle migration (`npm run db:generate`). Never use `db push` against the production database.
 - When adding a new table, also add the RLS CI check assertion for that table.
+- ⚠️ **And know what that assertion does and does not buy you — see "Two doors" below.**
 - Split schema files by domain (recipes.ts, plans.ts, grocery.ts, users.ts). Keep each under 300 lines.
 - Index foreign keys and any column used in WHERE clauses. Add GIN index for JSONB columns that need querying.
+
+## Two doors — which layer is actually load-bearing (1F/D · measured S67)
+
+**The question Workstream D asked was "every table has a policy; would the app still be safe if one
+layer were removed, and which one is actually holding?" It has a measured answer, and it is not the
+comfortable one.**
+
+**There are two doors into this data, each held by exactly ONE layer. Neither backstops the other.**
+
+| Door | Who can knock | What holds it | Remove that layer and… |
+|---|---|---|---|
+| **PostgREST** — `<ref>.supabase.co/rest/v1/*` with the anon key, which **is inlined in the client bundle by design** and is readable by anyone who views source | anyone on the internet | **RLS, and only RLS** — 12 policies through `is_household_member()` | every row in every table becomes world-readable |
+| **The app's own connection** — Drizzle → pooler → the `postgres` role | server code only | **the tRPC layer, and only the tRPC layer** — `protectedProcedure` + an explicit `householdId` filter on every query | one unscoped query reads across households, and **nothing notices** |
+
+⚠️ **RLS DOES NOT APPLY TO THE APP'S OWN QUERIES.** Measured against the real database, three
+independent reasons, any one of which is sufficient:
+
+- the role the app connects as has **`rolbypassrls = true`**
+- that role **owns all 12 tables**, and an owner bypasses RLS
+- **`FORCE ROW LEVEL SECURITY` is off on all 12**
+
+Empirically: with no auth context at all, that connection sees **every row** (12 tables, RLS enabled on
+12, policies on 12 — and 2 households / 98 grocery_items visible). The other door was measured the same
+way and **RLS genuinely holds it**: the anon key returns `200` with **0 rows** on households,
+grocery_items, recipes, ai_memories and user_preferences.
+
+**So neither layer is redundant, and neither is a fallback. They cover disjoint surfaces.** The belief
+worth killing on sight is *"RLS will catch it if we forget a `WHERE householdId`."* **It will not, and it
+cannot**, while the app connects as the owning role.
+
+⚠️ **`rls.test.ts` is static analysis of migration SQL and guards the PostgREST door only.** Every
+assertion in it is true; none of them says anything about the app's own queries. A passing run reads as
+*"the data is protected"* and is a true statement about the wrong door.
+
+⚠️ **DO NOT "FIX" THIS BY TURNING ON `FORCE ROW LEVEL SECURITY`.** It is the obvious hardening and it
+would take the app down: every policy resolves through `is_household_member()`, which reads a JWT claim
+the app's pooled connection does not carry, so **every query in the product would return zero rows.**
+Making RLS a real backstop means setting `request.jwt.claims` per request on a pooled connection — an
+architectural change with its own failure modes, not a toggle. Filed as a V1.5 consideration, not a
+1F item.
+
+**What this means when you add a table:** the RLS policy is still mandatory (it holds door 1), *and* the
+router that reads it is the only thing holding door 2. Write the `householdId` filter as if there were
+nothing underneath it, because there is nothing underneath it.
 
 ## Expand/contract — the standing discipline for every schema change (1F/D)
 
