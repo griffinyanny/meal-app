@@ -4,6 +4,50 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-09 (S67) — Keep `GEMINI_API_KEY`, drop `SUPABASE_SERVICE_ROLE_KEY`
+
+**Griffin's call**, during the 1F/D secrets audit, on two credentials that were both live in Vercel
+Production and both read by **no code in the repo**.
+
+**The service-role key goes.** It bypasses every RLS policy in the database, its only consumer was ever the
+E2E harness, and S36 rewrote that path to password sign-in (BUG-007). It sat in the production runtime for
+74 days doing nothing, and its blast radius if it ever leaked is every row in every table. Removed. Fully
+reversible — it re-copies from the Supabase dashboard.
+
+**The Gemini key stays, and the reason is a real gap rather than sentiment.** Griffin: *"we may end up
+using Gemini as a model \[since\] they've never done any audit on how the actual AI responds properly."*
+That is correct and worth recording — **everything this project has measured about the model is
+structural**: Zod validation, `[N]`-ref safety, the day map, the title rule, the planner eval's 7/7
+personas. Layer B judges *content* quality by eye, once, on one provider. **No repeatable comparison
+between models has ever been run**, so switching is currently a guess, and the key is what keeps the
+option open. Filed to `idea-backlog.md` with the caveat that the blocker is a **rubric, not an API key** —
+"which model is better" is not measurable until the qualities are named, and the temptation is to grade on
+vibes and call it data.
+
+**Future impact:** the model-response audit pairs naturally with the validation weeks, when real
+generations and real receipts exist to grade against. Do not drop the Gemini key before then.
+
+---
+
+## 2026-08-09 (S67) — RLS is load-bearing on one door, and the app's own door has no second layer
+
+Measured against the real database rather than reasoned from the schema. **Recorded as a decision, not
+just a finding, because it decides how every future router is written.**
+
+The app connects as the role that **owns all 12 tables**, with **`rolbypassrls = true`**, and **`FORCE ROW
+LEVEL SECURITY` off everywhere** — so **RLS does not filter the app's own queries at all.** It does hold
+the PostgREST door, where the anon key (inlined in the client bundle by design) returns `200` with 0 rows.
+
+**The standing consequence: write every `householdId` filter as if there were nothing underneath it,
+because there is nothing underneath it.** *"RLS will catch it"* is false and cannot be true as built.
+
+**Deliberately NOT done:** turning on `FORCE ROW LEVEL SECURITY`, which would make every query in the
+product return zero rows (the policies resolve through `is_household_member()`, and the pooled connection
+carries no JWT claim). Making RLS a genuine backstop is a `request.jwt.claims`-per-request change —
+architectural, routed to V1.5 alongside household sharing.
+
+---
+
 ## 2026-08-04 (S66) — Contrast is ratcheted, never gated
 
 axe's `color-contrast` rule argues with **§01's locked palette** (warm near-black floors, muted warm-tan

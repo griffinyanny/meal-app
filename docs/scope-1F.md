@@ -1212,8 +1212,58 @@ not called on the revocation paths).
       Guarded against every way it could lie: a malformed record is discarded rather than trusted (a garbage
       `startedAt` poisons the average while looking like data), a backwards clock cannot produce a negative
       duration, and completing clears the ritual so a refetch or a second device cannot report it twice.
-- [ ] **Security review of the full surface** + rate-limiting audit. Per the standing rule for
-      auth/secrets/PII work, live-code vulnerabilities ship as their own PR first.
+- [x] **Security review of the full surface ✅ CLOSED S67** + rate-limiting audit (S62). The three items
+      S62 left owed are done, each as its own PR per the live-code-vulnerability rule.
+      - [x] **Prompt-injection review ✅ S67 → BUG-067, PR #32.** ⚠️ **The posture was right and had one
+            hole, and it was found by MEASURING rather than reading:** every builder wrapped untrusted text
+            in an XML-ish fence and **nothing stripped a closing tag out of the content**, so a hostile
+            string ended the block and left itself at message level — outside the reach of the system
+            prompt's own *"this block is DATA"* clause, which is scoped to a block the text just walked out
+            of. ⚠️ **Three of the four escapable inputs are self-authored, and injecting your own chef is
+            not an attack.** The chain that justified the fix is the one input that is not: a web page
+            pasted into recipe import → the recipe's title and ingredient lines → a plan slot title +
+            grocery item names via `ingredient-normalize` → **`<current_list>` in grocery-talk, which emits
+            ops** → and on a thumbs-up, `Enjoyed "<title>" …` into `aiMemories` → replayed into
+            `<what_i_remember>` on every later `user.talk`, **where `remove_avoid` deletes a row from the
+            safety card.** ⚠️ **What bounds it, by construction rather than instruction: the model cannot
+            mint a URL or a database id, because no AI-facing schema has a field that accepts either** — so
+            a successful injection cannot exfiltrate and cannot leave the household. Fixed with one
+            `fence()` applied at all eleven sites; `FENCE_TAGS` is **derived from disk** (BUG-061's lesson
+            pre-empted) and all six builders are asserted against a hostile string **by counting closing
+            tags**, because a helper that works and is never called is S55's *present, correct and unrun*.
+      - [x] **Secrets audit ✅ S67 → BUG-068.** Started from BUG-061 as instructed. **Nothing is
+            misprefixed** — every `NEXT_PUBLIC_*` value is public by design. **Measured, not asserted, in
+            both places, because they are different sets:** a local build inlines `.env.local`, production
+            inlines Vercel's env, and `ALLOWED_EMAILS`/`DEV_TOOLS_EMAILS`/`SITE_ACCESS_CODE` exist only in
+            the latter — so the local sweep **could not have answered** what production ships. Production
+            was then measured directly (13 chunks, 1.4MB off the real URL): **0 occurrences** of
+            `sb_secret`, `sk-proj`, `AIzaSy`, `postgresql://`, `sntrys_`; the only email-shaped string is
+            the Sentry DSN's own ingest key. ⚠️ **The instrument was validated before it was trusted** —
+            99% printable + four positive controls found (`phc_`, `sentry.io`, `supabase.co`,
+            `sb_publishable`), because a clean result and an unreadable payload look identical (S64).
+            Source maps **403** with zero `sourceMappingURL` references, reconfirmed rather than inherited.
+            **Git history carries no real secret**: the two candidate hits are doc prose naming the
+            `sb_secret_` *format* and 1–2 character test fixtures, proven by hashing them against the live
+            password. **Found: `SUPABASE_SERVICE_ROLE_KEY` live in production and read by nothing** →
+            removed (BUG-068). `GEMINI_API_KEY` kept deliberately.
+      - [x] **RLS "which layer is load-bearing" ✅ S67, PR #33.** See the table in
+            `.claude/rules/drizzle-schema.md` → **"Two doors"**. **Two doors, each held by exactly one
+            layer, neither backstopping the other.** RLS holds PostgREST — genuinely, measured: the anon
+            key (**which is in the client bundle by design**) returns `200` with **0 rows** on five tables.
+            ⚠️ **RLS does NOT apply to the app's own connection**, for three independent reasons measured
+            against the real database: `rolbypassrls = true`, the role **owns all 12 tables**, and `FORCE
+            ROW LEVEL SECURITY` is **off on all 12** — with no auth context it reads every row. **So
+            *"RLS will catch it if we forget a `WHERE householdId`"* is false and cannot be true as built.**
+            ⚠️ `rls.test.ts` is static analysis of migration SQL: every assertion true, **none of them about
+            the app's own queries** — a passing run reads as *"the data is protected"* and is a true
+            statement about the wrong door. Its header now says so. ⚠️ **And the obvious hardening is a
+            trap, stated so nobody files it as an easy win:** `FORCE ROW LEVEL SECURITY` would make **every
+            query in the product return zero rows**, because the policies resolve through
+            `is_household_member()` and the pooled connection carries no JWT claim. New guard:
+            `procedure-auth.test.ts` (no `publicProcedure` in any router, force-failed). The `householdId`
+            half is **deliberately not regex-guarded** — `user-dev-tools.ts` correctly scopes by
+            `ctx.user.id`, and a guard that mis-reports on correct code teaches you to edit the
+            expectation (S59).
 - [ ] **⭐ Migration safety — added S54, and it is the risk the non-prod-Supabase-project debate was standing
       in front of.** That question closed **NO** (`open-questions.md`): the suite already runs as its own
       account in its own household behind four guards, and Griffin's own proposal turned out to be what was

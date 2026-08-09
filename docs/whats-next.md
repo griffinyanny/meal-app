@@ -1,8 +1,136 @@
 # What's Next
 
-Last updated: 2026-08-04 (Session 66; **Workstream D's test-layer half is CLOSED — four PRs merged, production is instrumented and on Next 16.3.0**)
+Last updated: 2026-08-09 (Session 67; **WORKSTREAM D IS CLOSED. All three security items done, two PRs merged, one production credential removed.**)
 
-## ▶ NEXT SESSION — **the three security items, then Workstream E.**
+## ▶ NEXT SESSION — **Workstream E (feedback capture). Start with E0, the scoping pass.**
+
+**841 unit green**, lint + typecheck clean. **Two PRs merged** (#32 prompt-injection fencing, #33 the RLS
+statement). E2E was **not** run and did not need to be — none of the three items touches rendered
+behaviour. **Last full E2E: 160/160 in 21.2m at S66.**
+
+### ✅ What S67 closed — Workstream D, entirely
+
+| Item | State |
+|---|---|
+| **Prompt-injection review** | ✅ **BUG-067**, PR #32. Every fence was escapable; measured, fixed, guarded, force-failed both ways. |
+| **Secrets audit** | ✅ **BUG-068**. Production swept off the real URL. `SUPABASE_SERVICE_ROLE_KEY` removed from Vercel. |
+| **RLS load-bearing statement** | ✅ PR #33 + `.claude/rules/drizzle-schema.md` → **"Two doors"**. |
+| **Workstream D** | ✅ **CLOSED.** Only `BUG-017` remains, and it is explicitly conditional on the wife's first run. |
+
+### ⛔ THE ONE TO READ — RLS was never protecting the app's own queries
+
+Every table has a policy, all 12 enabled, `rls.test.ts` green for months. **None of it applies to the
+connection the app uses.** Measured against the real database — three independent reasons, any one
+sufficient: **`rolbypassrls = true`**, the role **owns all 12 tables**, **`FORCE ROW LEVEL SECURITY` off on
+all 12**. With no auth context it reads every row.
+
+⚠️ **RLS is not decorative — it holds a different door, and that door is real.** The anon key is in the
+client bundle *by design*, so anyone can point PostgREST at the database: measured, `200` with **0 rows**
+across five tables. The policies do exactly their job on the surface nobody was worried about.
+
+**Two doors, each held by one layer, neither backstopping the other.** The belief to kill on sight:
+*"RLS will catch it if we forget a `WHERE householdId`."* **It will not, and cannot, as built.**
+
+⚠️ **The transferable shape: a green guard that is TRUE ABOUT THE WRONG SUBJECT.** `rls.test.ts`'s own
+header says *"static analysis of the SQL files — no database connection."* It never claimed more than it
+delivered, and it still read to everyone as *"the data is protected."* Not stale, not vacuous, not
+seed-blinded — **correct, and about the other door.**
+
+⚠️ **DO NOT "fix" it with `FORCE ROW LEVEL SECURITY`** — every policy resolves through
+`is_household_member()`, which reads a JWT claim the pooled connection does not carry, so **every query in
+the product would return zero rows.** That is a `request.jwt.claims`-per-request change. **V1.5.**
+
+### ⚠️ The instrument that could not have answered the question it was run to answer
+
+The secrets audit's first sweep was a local production build. **A local build inlines `.env.local`;
+production inlines VERCEL's env — different sets.** `ALLOWED_EMAILS`, `DEV_TOOLS_EMAILS` and
+`SITE_ACCESS_CODE` exist **only** in Vercel, so the local sweep was structurally incapable of answering
+what production ships. Production was then measured directly: 13 chunks, 1.4MB, **0 occurrences** of every
+server-secret marker, and the only email-shaped string is the Sentry DSN's own ingest key.
+
+⚠️ **The instrument was validated before it was trusted** — 99% printable plus four positive controls that
+had to be *found*, because a clean result and an unreadable payload look identical (S64). Both apparent
+hits were chased down rather than waved off: `SENTRY_DSN` in a client chunk is **byte-identical** to its
+public twin (proven by hash), and `DEV_TOOLS_EMAILS` is the variable **name** in an error string.
+
+### ⚠️ And a force-failure that proved nothing while looking like it had
+
+The first attempt to red `procedure-auth.test.ts` used a `sed` that **never matched**, so the run produced
+no output at all — which reads exactly like a pass. S61's *a force-failure that does not reproduce the real
+defect is a green with extra steps*, in a new costume: **it did not run.** Check that the plant landed
+before believing the red, and before believing its absence.
+
+### ▶ WHAT'S NEXT — Workstream E, and its trigger is now met
+
+**E0 is a scoping pass, not a build**, and `scope-1F.md` carries a recommendation on all seven questions
+already — start from those positions rather than a blank page. Its stated trigger was *"when D's
+observability items land"*, and they landed at S63–S66. **Four of the seven have a strong lean already**
+(reuse the HUD corner control; no capture code — iOS's native screenshot + a file input; a Postgres
+`feedback` table, **not** Linear; cleanup at sweep time). **The one genuinely open question is #7's
+remainder:** separating *"this is broken"* from *"we should build X"* inside one submission, since only the
+second is weighted by source and a `source` field alone cannot express it.
+
+**Then the two validation weeks.**
+
+### ⚠️ Owed by Griffin — unchanged, and short
+
+1. ⭐ **THE TWO-PHONE CHECK. Still the only thing left in Workstream C.** Icon, launch screen, full-screen
+   with no Safari chrome, sign-in surviving installation. ⭐ **And the app-kill replay:** tick two items in
+   airplane mode, force-quit from the switcher, relaunch still offline, confirm the ticks, then re-enable
+   signal and confirm they reach the server.
+2. **Two taste calls:** whether **32px** reads right for the Recipes and Groceries titles, and whether the
+   grocery quantity editor's **~5px headroom** bothers you.
+3. **Optional, not blocking:** the 31 contrast nodes axe could not determine.
+
+### ▶ NEXT-SESSION KICKOFF PROMPT
+
+```
+Resume meal app — S67 CLOSED WORKSTREAM D. All three security items are done: the prompt-injection
+review (BUG-067, PR #32), the secrets audit (BUG-068 — SUPABASE_SERVICE_ROLE_KEY removed from Vercel
+Production), and the RLS load-bearing statement (PR #33). 841 unit green, lint + typecheck clean.
+E2E was not run and did not need to be — none of the three touched rendered behaviour. Last full
+E2E: 160/160 in 21.2m at S66.
+
+▶ THIS SESSION: WORKSTREAM E — in-app feedback capture. Start with E0, the scoping pass, NOT the
+build. scope-1F.md already carries a recommendation on all seven E0 questions; start from those
+positions and argue with them, don't re-derive them. Four have a strong lean already (reuse the HUD
+corner control behind DEV_TOOLS_EMAILS; NO capture code — iOS native screenshot + a plain file
+input, because getDisplayMedia does not exist in mobile Safari; a Postgres `feedback` table, NOT
+Linear; LLM cleanup at sweep time, not submit). THE GENUINELY OPEN ONE is #7's remainder: splitting
+"this is broken" from "we should build X" inside a single submission, because only the second is
+weighted by source and a `source` field cannot express it.
+
+⚠️ READ .claude/rules/drizzle-schema.md → "Two doors" BEFORE writing the feedback table's router.
+RLS does NOT filter the app's own queries — rolbypassrls=true, the role owns all 12 tables, FORCE is
+off. The tRPC householdId filter is the ONLY thing holding that door. Write it as if there is
+nothing underneath it, because there is nothing underneath it. And do NOT "fix" this by turning on
+FORCE ROW LEVEL SECURITY: every query in the product would return zero rows.
+
+⚠️ E's payload has a real head start — readDebugPanels() (src/lib/debug/debug-hud.ts) is already on
+prod and already produces most of it. The PostHog session id is the join to session replay; without
+it in the payload the replay is unfindable.
+
+⚠️ DO NOT re-litigate BUG-067, BUG-068, or the RLS statement. All closed, all measured, all in the
+tracker. GEMINI_API_KEY stays in Vercel deliberately (Griffin's call) — no audit has ever compared
+how the models actually RESPOND, and that key is what keeps a switch possible. Don't remove it.
+
+⚠️ E2E is ~21 MINUTES (160 specs). Tell me before starting it, nothing else alongside it, and CHECK
+THE MACHINE first: `top -l 2 -n 0 | grep "CPU usage"`, not the load average. run_in_background with
+NO redirect, never pipe it, never redirect into test-results/. Read the summary line, not the exit
+status. DO NOT USE E2E_REUSE_BUILD=1 — guarded, and it will refuse (BUG-061).
+
+STILL OWED BY ME: the two-phone check + app-kill replay. Whether 32px reads right for the Recipes
+and Groceries titles, and whether the grocery quantity editor's ~5px headroom bothers me.
+
+Keep 841 unit green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md first, then give
+me the <=6-line scope check.
+
+MODEL: Opus 5. E0 is a design pass with seven interacting calls and a V1.5 graduation constraint —
+the question is which affordance survives contact with real users later, not which is cheapest now.
+If E0 closes early and E1 (the build) starts, Sonnet 5 would carry the build fine.
+```
+
+## Session 66 archive — the test layer closes (its kickoff prompt below is SUPERSEDED by the one above)
 
 **817 unit green**, lint + typecheck clean, **E2E 160/160 in 21.2m**. Four PRs merged to `main` this
 session (#28 observability, #29 the Next bump, #30 the a11y sweep, #31 error states + perf).
