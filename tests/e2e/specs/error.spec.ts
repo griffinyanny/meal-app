@@ -277,3 +277,66 @@ test("X7 - the intent text survives the load-time remount on a phone-speed CPU (
     await throttle.restore();
   }
 });
+
+// ── X8/X9 · BUG-065 · A FAILED QUERY IS NOT AN EMPTY RESULT ──────────────────
+//
+// Everything above tests a failed AI GENERATION, which the app has always
+// handled well. Nothing tested a failed LOAD, and the two surfaces that carry
+// the north-star flow both got it wrong in the same way: neither read its
+// query's `isError` at all, so a failed fetch fell through to the empty state.
+//
+// ⚠️ The negative assertion is the real one. An error card appearing is easy to
+// satisfy; the defect was that the EMPTY state appeared instead, and on Plan
+// that empty state offers to generate a new week — over the confirmed one the
+// user still has on the server. A blank screen would have been kinder, because
+// a blank screen does not make a claim.
+//
+// React Query retries a failed query three times with backoff before settling
+// into `isError`, so these wait longer than a normal assertion. That retry is
+// also why the bug was survivable in practice and invisible in testing: it only
+// shows up when the failure is persistent, which is exactly when it matters.
+const LOAD_FAILED = "couldn't load";
+const SETTLE_MS = 20_000;
+
+test("X8 - a failed week load says so, and never offers to generate over it", async ({
+  page,
+}) => {
+  await seedPlanState("CONFIRMED");
+
+  // Persistent, not one-shot: React Query's own retries must all fail, or the
+  // query recovers and the state under test never renders.
+  await page.route("**/api/trpc/**plan.current**", (route) => route.abort());
+
+  await page.goto("/plan");
+
+  await expect(page.getByTestId("query-error-retry")).toBeVisible({ timeout: SETTLE_MS });
+  await expect(page.getByText(LOAD_FAILED)).toBeVisible();
+
+  // ⚠️ THE ASSERTION THAT WOULD HAVE CAUGHT BUG-065. Pre-fix this rendered
+  // `NoPlanState` — the intent screen — telling someone with a confirmed week
+  // that they had none, and offering the one action that would overwrite it.
+  await expect(
+    page.getByRole("heading", { name: "What are you thinking this week?" })
+  ).toBeHidden();
+
+  // And recovery is real, not decorative: lift the failure, press the control,
+  // and the week that was there all along comes back.
+  await page.unroute("**/api/trpc/**plan.current**");
+  await page.getByTestId("query-error-retry").click();
+  await expect(planRail(page)).toBeVisible({ timeout: SETTLE_MS });
+});
+
+test("X9 - a failed grocery load says so, rather than 'no list yet'", async ({ page }) => {
+  await seedPlanState("CONFIRMED");
+  await page.route("**/api/trpc/**grocery.current**", (route) => route.abort());
+
+  await page.goto("/groceries");
+
+  await expect(page.getByTestId("query-error-retry")).toBeVisible({ timeout: SETTLE_MS });
+  await expect(page.getByText(LOAD_FAILED)).toBeVisible();
+
+  // BUG-054's heading must survive the new branch — an error card under no
+  // heading at all is the state that bug existed to kill, and a new early
+  // return is exactly how it would come back.
+  await expect(page.getByRole("heading", { name: "Your list", level: 1 })).toBeVisible();
+});

@@ -22,6 +22,7 @@ import {
 } from "./use-you-mutations";
 import { buildNarrative, resolvePreferences } from "./build-narrative";
 import { restrictionLabel, makeRestriction } from "./constraint-utils";
+import { QueryErrorState } from "@/components/shared/query-error-state";
 
 const CHEF_SUGGESTIONS = [
   "I'm not pescatarian anymore",
@@ -161,23 +162,19 @@ export function YouPageClient() {
 
   // A failed fetch of the trust surface must NOT look like "you have no data yet"
   // (empty state) — show an honest error + retry (react-components.md rule).
+  // ⚠️ This was the ONLY surface in the app that honoured that rule; Plan and
+  // Groceries never read their query's `isError` at all (BUG-065). The card is
+  // shared now rather than written out here.
   if (preferencesQuery.isError || memoriesQuery.isError || accountQuery.isError) {
     return (
-      <div className="px-[22px] pt-16 text-center">
-        <p className="spec-body text-foreground">The chef couldn&apos;t load your profile.</p>
-        <p className="mt-1 spec-body text-muted-foreground">Check your connection and try again.</p>
-        <button
-          type="button"
-          onClick={() => {
-            preferencesQuery.refetch();
-            memoriesQuery.refetch();
-            accountQuery.refetch();
-          }}
-          className="mt-4 rounded-[14px] bg-primary px-5 py-2.5 text-[0.9rem] font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          Try again
-        </button>
-      </div>
+      <QueryErrorState
+        subject="your profile"
+        onRetry={() => {
+          preferencesQuery.refetch();
+          memoriesQuery.refetch();
+          accountQuery.refetch();
+        }}
+      />
     );
   }
 
