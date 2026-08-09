@@ -29,6 +29,7 @@ import {
 import { takeHandoff } from "@/lib/onboarding/handoff";
 import { takePickHandoff } from "@/lib/plan/pick-handoff";
 import { seedChips } from "@/lib/onboarding/synthesize";
+import { QueryErrorState } from "@/components/shared/query-error-state";
 import {
   type DisplayMeal,
   dayTitle,
@@ -597,6 +598,22 @@ export function PlanPageClient() {
           ))}
         </div>
       );
+    }
+
+    // ⚠️ BUG-065 · A FAILED LOAD IS NOT AN EMPTY WEEK.
+    //
+    // `planQuery.isError` had no branch at all — only `.data` and `.isLoading`
+    // were ever read — so a failed `plan.current` fell through to the return
+    // below and rendered `NoPlanState`. The person's confirmed week appeared to
+    // be GONE, and the one action offered was to generate a new one, which
+    // overwrites it.
+    //
+    // Worse than the blank screen `react-components.md` was written against: a
+    // blank screen tells the truth. This stated something false about their
+    // data and offered a destructive remedy, on the front door of the
+    // north-star flow, with nothing about it looking broken.
+    if (planQuery.isError) {
+      return <QueryErrorState subject="your week" onRetry={() => planQuery.refetch()} />;
     }
 
     // The first-run empty state, and the surface the onboarding interview hands
