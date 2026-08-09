@@ -1,5 +1,26 @@
 # Idea Backlog - Meal Management App
 
+## Incoming (S67) — surfaced during the secrets audit
+
+- **⭐ [validation weeks or V1.5] Nobody has ever audited how the model actually RESPONDS — only that it
+  responds in the right SHAPE.** Griffin's call during S67's secrets audit, and it is the reason
+  `GEMINI_API_KEY` stays in Vercel Production while `SUPABASE_SERVICE_ROLE_KEY` was removed: we may yet
+  switch models, and there is no evidence base for choosing. **Everything measured to date is structural** —
+  Zod validation, the `[N]`-ref safety, the day map, the title rule, `absorb-method`'s string test, the
+  planner eval's 7/7 personas. **Layer B judges content quality by eye, once, on one provider.** What does
+  not exist: a repeatable comparison of `gpt-4.1-mini` against Gemini Flash (and a Claude model) on the same
+  prompts — plan variety, rationale quality, cost-estimate accuracy against a real receipt, chip
+  imperative-ness, how each handles a contradictory request. ⚠️ **The blocker is a rubric, not an API key.**
+  "Which model is better" is not measurable until the qualities are named and scored, and the temptation is
+  to grade on vibes and call it data. Pairs naturally with the validation weeks, when real generations and
+  real receipts exist to grade against. **Do NOT drop the Gemini key** — it is the option this depends on.
+- **[V1.5] Make RLS a genuine backstop for the app's own connection.** S67 measured that it is not one and
+  cannot be one as built (`rolbypassrls=true`, owner, `FORCE` off — see `.claude/rules/drizzle-schema.md`
+  → "Two doors"). Doing it properly means setting `request.jwt.claims` per request on a pooled connection,
+  so `is_household_member()` can resolve for app traffic. ⚠️ **Not a toggle** — turning on `FORCE ROW LEVEL
+  SECURITY` alone makes every query in the product return zero rows. Worth it when household sharing ships
+  (V1.5), because that is when a scoping mistake stops being theoretical.
+
 ## Incoming (S65) — surfaced closing BUG-058
 
 - **A slow-device sweep, not just one throttled spec.** `X7` proves the intent field survives a 4x CPU, but
