@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { trackListReady } from "@/lib/analytics/funnel";
 import { GroceryList } from "./grocery-list";
 import { GroceryTitle } from "./grocery-title";
+import { QueryErrorState } from "@/components/shared/query-error-state";
 
 type GroceryListData = NonNullable<RouterOutputs["grocery"]["current"]>;
 
@@ -89,6 +90,24 @@ export function GroceriesPageClient() {
   // surviving in the one state hardest to reach.
   const readyPath =
     !!list && list.generationStatus === "ready" && !generateMutation.isError;
+
+  // ⚠️ BUG-065 · THE QUERY'S OWN FAILURE, WHICH NOTHING HERE HAD EVER READ.
+  //
+  // `Body` receives `isError={generateMutation.isError}` — the MUTATION's
+  // error. `currentQuery.isError` appeared nowhere in this file, so a failed
+  // load of an existing list rendered the "no list yet" empty state.
+  //
+  // The comment directly below is the sharp part: someone reasoned carefully
+  // about the mutation's error interacting with the ready path and the heading,
+  // and the QUERY's error was never considered. Ask what the layer cannot see.
+  if (currentQuery.isError) {
+    return (
+      <div className="space-y-3.5 p-4">
+        <GroceryTitle />
+        <QueryErrorState subject="your list" onRetry={() => currentQuery.refetch()} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3.5 p-4">

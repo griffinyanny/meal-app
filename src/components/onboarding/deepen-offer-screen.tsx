@@ -26,9 +26,15 @@ export function DeepenOfferScreen({ onAccept, onDecline }: DeepenOfferScreenProp
             THAT&apos;S THE ESSENTIALS
           </p>
         </div>
-        <h2 className="m-0 mb-2.5 spec-spoken-headline text-[var(--spec-text-primary)] text-pretty">
+      {/* ⚠️ BUG-063 · h1, not h2. Each interview screen is its own page — one
+          renders at a time — and this line is that page's title. They all sat
+          at h2, so every screen of the interview was a document with no
+          level-one heading, which is what axe's `page-has-heading-one` caught
+          once the a11y sweep finally visited onboarding. `intro-screen.tsx`
+          already had it right, which is why the welcome screen passed. */}
+        <h1 className="m-0 mb-2.5 spec-spoken-headline text-[var(--spec-text-primary)] text-pretty">
           Want to go a little deeper?
-        </h2>
+        </h1>
         <p className="m-0 max-w-[335px] spec-row-title text-[var(--spec-text-body)] text-pretty">
           I can plan a good week right now. A few more minutes and I&apos;ll cook to
           your spice, your timing, the flavors you actually reach for.
