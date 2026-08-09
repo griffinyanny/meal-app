@@ -9,6 +9,7 @@
 //      static system prompt can't be hijacked by an injected item name.
 // The system prompt is snapshot-tested — any change is a deliberate review.
 import { GROCERY_CATEGORIES } from "@/server/db/schema";
+import { fence } from "./fence";
 
 // One numbered item we show the model so it can reference existing items for
 // removal without ever seeing a real id.
@@ -32,7 +33,11 @@ export function buildGroceryTalkUserPrompt(
     list.length > 0
       ? list.map((l) => `[${l.ref}] ${l.name} (${l.category})`).join("\n")
       : "(the list is empty)";
-  return `<current_list>\n${listBlock}\n</current_list>\n\n<request>\n${request}\n</request>\n\nProduce the operations that satisfy the request, plus a one-sentence reply.`;
+  // ⚠️ Both blocks are fenced, and <current_list> is the one that matters: an
+  // item name is NOT self-authored. It can arrive from a recipe imported off an
+  // arbitrary web page, via ingredient-normalize — and this is the prompt that
+  // emits ops against a real list. See fence.ts for the full chain.
+  return `${fence("current_list", listBlock)}\n\n${fence("request", request)}\n\nProduce the operations that satisfy the request, plus a one-sentence reply.`;
 }
 
 const ROLE = `# Grocery list assistant

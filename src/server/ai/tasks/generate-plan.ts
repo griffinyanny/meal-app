@@ -2,6 +2,7 @@ import {
   buildPlanSystemPrompt,
   buildUserContext,
 } from "@/server/ai/prompts/chef-system";
+import { fence } from "@/server/ai/prompts/fence";
 import { aiPlanSchema } from "./plan-types";
 import { buildPicksBlock, type PickInput } from "./plan-picks";
 
@@ -82,7 +83,7 @@ export function buildPlanStreamParams(input: PlanGenerationInput) {
 
   const request = input.request?.trim();
   const intent = request
-    ? `<user_request>\n${request}\n</user_request>\n\nPlan the week of dinners around this request.`
+    ? `${fence("user_request", request)}\n\nPlan the week of dinners around this request.`
     : `The person didn't give specific direction — surprise them with a great week of dinners based on what you know about them.`;
 
   // The day map goes in the USER message, not the system prompt: it is per-week

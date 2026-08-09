@@ -3,6 +3,7 @@ import {
   buildPlanModifySystemPrompt,
   buildUserContext,
 } from "@/server/ai/prompts/chef-system";
+import { fence } from "@/server/ai/prompts/fence";
 import { aiPlanModificationSchema, type AIPlanModification } from "./plan-types";
 import { buildPicksBlock, type PickInput } from "./plan-picks";
 import { buildDayMap } from "./generate-plan";
@@ -69,8 +70,10 @@ export async function modifyPlan(
     // Before the plan, for the same reason generation puts it first: the model
     // has to know what the days ARE before it reads a list addressed by number.
     buildDayMap(input.weekStart),
-    `<current_plan>\n${planLines}\n</current_plan>`,
-    `<user_request>\n${input.request.trim()}\n</user_request>`,
+    // Both fenced: the plan lines carry meal TITLES, which on an imported
+    // recipe originate from a third-party web page (see fence.ts).
+    fence("current_plan", planLines),
+    fence("user_request", input.request.trim()),
     picks,
     `Return only the changes.`,
   ]
