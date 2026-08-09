@@ -6,6 +6,7 @@
 // a wrong key can only fail to merge (safe), never wrongly merge. The system
 // prompt is snapshot-tested — any change is a deliberate review.
 import { GROCERY_CATEGORIES } from "@/server/db/schema";
+import { fence } from "./fence";
 
 export interface RawIngredientLine {
   index: number;
@@ -31,7 +32,9 @@ export function buildIngredientNormalizeUserPrompt(
         `[${l.index}] qty: "${l.qty}" · unit: "${l.unit}" · item: "${l.item}"`
     )
     .join("\n");
-  return `<ingredients>\n${block}\n</ingredients>\n\nNormalize every line above. Return one entry per line, echoing its index.`;
+  // Fenced: an ingredient line on an imported recipe is third-party web page
+  // text, and this is the call that turns it into a grocery item name (fence.ts).
+  return `${fence("ingredients", block)}\n\nNormalize every line above. Return one entry per line, echoing its index.`;
 }
 
 const ROLE = `# Ingredient normalization

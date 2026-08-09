@@ -5,6 +5,7 @@
 // chef still picks the night, builds the rest of the week around it, shops for it
 // and spends its leftovers. So this block does not tell the model where anything
 // goes — it tells it what is fixed and what it may not touch.
+import { fence } from "@/server/ai/prompts/fence";
 import type { ValidatedMeal } from "./plan-types";
 
 export interface PickInput {
@@ -71,9 +72,9 @@ export function buildPicksBlock(
       : null;
 
   return [
-    `<picked_recipes>`,
-    ...lines,
-    `</picked_recipes>`,
+    // Fenced: a pick's title is a library recipe's title, which on an imported
+    // recipe originates from a third-party web page (fence.ts).
+    fence("picked_recipes", lines.join("\n")),
     ``,
     `The person chose ${one ? "this recipe" : "these recipes"} out of their own library. That is a constraint on you, not a schedule:`,
     nightNamed
