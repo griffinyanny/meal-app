@@ -16,6 +16,7 @@
 // instructions. The system prompt is snapshot-tested — any change is a deliberate review.
 import { z } from "zod";
 import { DIETARY_FRAMEWORKS } from "@/lib/diet";
+import { fence } from "./fence";
 
 export interface PreferencesTalkMemoryRef {
   ref: number; // 1-based; the server holds ref → memoryId
@@ -73,22 +74,24 @@ export function buildPreferencesTalkUserPrompt(
       ? snapshot.memories.map((m) => `[${m.ref}] ${m.content}`).join("\n")
       : "(nothing remembered yet)";
 
-  return `<what_i_know>
-Diet: ${snapshot.dietaryFramework}
+  // ⚠️ <what_i_remember> is the sharp one, and it is why this fencing exists.
+  // A memory is not always self-authored: `plan.feedback` writes
+  // `Enjoyed "<meal title>" …`, and on an imported recipe that title originates
+  // from a third-party web page. This prompt can emit `remove_avoid`, which
+  // DELETES A ROW FROM THE SAFETY CARD — the one op in the app whose failure
+  // mode is an allergen on a plate. See fence.ts.
+  const know = `Diet: ${snapshot.dietaryFramework}
 Never cook with: ${avoid}
 Dislikes: ${dislikes}
 Cooking for: ${snapshot.householdSize}
 Weeknight limit: ${snapshot.maxCookTimeWeeknight} min · Weekend limit: ${snapshot.maxCookTimeWeekend} min
-Cuisines: ${cuisines}
-</what_i_know>
+Cuisines: ${cuisines}`;
 
-<what_i_remember>
-${memBlock}
-</what_i_remember>
+  return `${fence("what_i_know", know)}
 
-<message>
-${message}
-</message>
+${fence("what_i_remember", memBlock)}
+
+${fence("message", message)}
 
 Produce the operations that satisfy the message, plus a one-sentence reply.`;
 }

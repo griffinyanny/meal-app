@@ -3,6 +3,7 @@ import {
   householdCookingNotes,
   type HouseholdComposition,
 } from "@/lib/household";
+import { fence } from "./fence";
 
 interface ChefContext {
   dietaryFramework?: string;
@@ -89,7 +90,9 @@ export function buildUserContext(ctx: ChefContext): string {
 
   if (sections.length === 0) return "";
 
-  return `<user_context>\n${sections.join("\n\n")}\n</user_context>`;
+  // Fenced, so a memory or a restriction cannot close the block and issue
+  // message-level instructions from outside it (see fence.ts).
+  return fence("user_context", sections.join("\n\n"));
 }
 
 const ROLE = `# You are a personal chef
