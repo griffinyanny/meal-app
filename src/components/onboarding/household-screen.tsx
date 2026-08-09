@@ -44,9 +44,15 @@ export function HouseholdScreen({
     <div className="animate-turn-in flex flex-1 flex-col">
       <ChefStatus label="GETTING TO KNOW YOU" />
 
-      <h2 className="m-0 mb-4 mt-4 spec-spoken-headline text-[var(--spec-text-primary)]">
+      {/* ⚠️ BUG-063 · h1, not h2. Each interview screen is its own page — one
+          renders at a time — and this line is that page's title. They all sat
+          at h2, so every screen of the interview was a document with no
+          level-one heading, which is what axe's `page-has-heading-one` caught
+          once the a11y sweep finally visited onboarding. `intro-screen.tsx`
+          already had it right, which is why the welcome screen passed. */}
+      <h1 className="m-0 mb-4 mt-4 spec-spoken-headline text-[var(--spec-text-primary)]">
         Who am I cooking for?
-      </h2>
+      </h1>
 
       <HouseholdComposer
         value={composition}

@@ -157,13 +157,13 @@ const SURFACES: Surface[] = [
   {
     name: "plan-confirmed",
     anchor: (page) => planRail(page),
-    // 1 = `page-has-heading-one`. MEASURED, and it is a real finding rather
-    // than noise: BUG-028 made `ChefHeader`'s summary an `<h2>` after the hero
-    // was deleted, so this tab's top heading is an h2 and the document has no
-    // level-one heading at all. Filed as BUG-063 — which element should be the
-    // h1 is a document-outline decision with a design half, so it is Griffin's
-    // call rather than a silent restructure by the sweep that found it.
-    otherCeiling: 1,
+    // 0 — BUG-063 is FIXED, and the ratchet came down with it. It stood at 1
+    // for `page-has-heading-one`: BUG-028 made `ChefHeader`'s summary an `<h2>`
+    // after the hero was deleted, which fixed "no heading at all" and left "no
+    // LEVEL-ONE heading" behind. A ceiling left at its old value after the
+    // finding is fixed is a stale exemption (S52), and it would silently
+    // re-admit the defect.
+    otherCeiling: 0,
     prepare: async (page) => {
       await seedPlanState("CONFIRMED");
       await page.goto("/plan");
@@ -255,8 +255,10 @@ const SURFACES: Surface[] = [
   {
     name: "onboarding-interview",
     anchor: (page) => page.getByTestId("onboarding-tell-me-input"),
-    // 1 = `page-has-heading-one`, same finding as plan-confirmed. See BUG-063.
-    otherCeiling: 1,
+    // 0 — same finding as plan-confirmed, fixed the same way. The three
+    // interview screens each carry their own `<h1>` now; `intro-screen.tsx`
+    // always did, which is why the welcome screen never failed.
+    otherCeiling: 0,
     prepare: async (page) => {
       await seedOnboardingState("ONBOARDING_NEW");
       await page.goto("/welcome");

@@ -45,12 +45,19 @@ export function ChefHeader({
         </span>
       </div>
 
-      {/* An h2, not a p. The chef's claim IS this screen's heading — and when
+      {/* An h1, not a p. The chef's claim IS this screen's heading — and when
           the rail replaced the "Your week, ready to review" hero it took the
           Plan tab's only heading with it, leaving the surface with no landmark
-          at all for assistive tech. The type is unchanged; only the element is. */}
+          at all for assistive tech. The type is unchanged; only the element is.
+
+          ⚠️ BUG-063 · h2 → h1. BUG-028 fixed "no heading at all" and stopped
+          there, so the tab had a heading but no LEVEL-ONE heading — a document
+          with no title, whose subsections (`SH3`'s h2s) were siblings of its
+          own name. axe's `page-has-heading-one` is what caught it, three
+          sessions later, once a sweep finally looked. There is exactly one
+          candidate for this screen's title and this is it. */}
       {summary ? (
-        <h2
+        <h1
           className={cn(
             "m-0 spec-feature-line text-[var(--spec-text-feature)]",
             rationale ? "mb-2" : "mb-4"
@@ -58,7 +65,7 @@ export function ChefHeader({
           style={{ textWrap: "pretty" }}
         >
           {summary}
-        </h2>
+        </h1>
       ) : null}
 
       {rationale ? (
