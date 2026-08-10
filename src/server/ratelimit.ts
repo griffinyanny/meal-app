@@ -70,6 +70,23 @@ export function checkAiBackgroundRateLimit(userId: string): RateLimitResult {
   return checkRateLimit(`ai:bg:${userId}`, limit, AI_BG_RATE_LIMIT.windowMs);
 }
 
+// In-app feedback submission (1F/E). Not an AI path and not expensive, so this
+// bucket exists for one reason only: a retry loop. The capture sheet keeps the
+// typed text and offers a manual retry on failure (BUG-014), so the caller is a
+// person tapping a button — 20 in five minutes is far beyond any real reporting
+// burst and still bounds a client bug that retries forever.
+// ⚠️ A 429 here must not read as "your report was lost": the sheet keeps the
+// body, and the message says to wait rather than implying failure.
+export const FEEDBACK_RATE_LIMIT = { limit: 20, windowMs: 300_000 } as const;
+
+export function checkFeedbackRateLimit(userId: string): RateLimitResult {
+  return checkRateLimit(
+    `feedback:${userId}`,
+    FEEDBACK_RATE_LIMIT.limit,
+    FEEDBACK_RATE_LIMIT.windowMs
+  );
+}
+
 // Distributed daily budget, enforced in Postgres so it holds across serverless
 // instances (unlike the in-memory per-minute limiter above). Atomic upsert —
 // concurrent calls each get the true post-increment count, no read-then-write

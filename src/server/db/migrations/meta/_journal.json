@@ -78,6 +78,13 @@
       "when": 1785467424817,
       "tag": "0010_omniscient_lester",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786286679211,
+      "tag": "0011_happy_warlock",
+      "breakpoints": true
     }
   ]
 }

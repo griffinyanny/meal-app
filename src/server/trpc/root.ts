@@ -5,6 +5,7 @@ import { groceryRouter } from "./routers/grocery";
 import { staplesRouter } from "./routers/staples";
 import { userRouter } from "./routers/user";
 import { memoryRouter } from "./routers/memory";
+import { feedbackRouter } from "./routers/feedback";
 
 export const appRouter = router({
   recipe: recipeRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   staples: staplesRouter,
   user: userRouter,
   memory: memoryRouter,
+  feedback: feedbackRouter,
 });
 
 export type AppRouter = typeof appRouter;

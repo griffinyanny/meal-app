@@ -6,7 +6,7 @@
 // whose ONLY member is the test user. Deletes are always household/user scoped
 // and never touch users/households/membership rows. This runs against Griffin's
 // real Supabase project; the guarded test household is the isolation boundary.
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../src/server/db/schema";
 import type { SlotType } from "../../../src/lib/plan-schema";
@@ -77,6 +77,16 @@ async function wipe(db: Db, ctx: TestContext): Promise<void> {
   await db
     .delete(schema.aiUsageDaily)
     .where(eq(schema.aiUsageDaily.userId, ctx.userId));
+  // ⚠️ FEEDBACK IS WIPED, AND THIS LINE IS LOAD-BEARING (1F/E). The suite drives
+  // the capture sheet, so without it every run leaves real rows in the table
+  // that Claude sweeps at session start — and the suite would file fabricated
+  // bug reports into `bug-tracker.md`. That is BUG-061's failure exactly (a
+  // suite polluting the dataset a human decision is read from), one table over.
+  // The sweep ALSO filters on the payload's server-stamped `environment` and
+  // `aiMock`; both, because either alone is one edit from silence.
+  await db
+    .delete(schema.feedback)
+    .where(eq(schema.feedback.householdId, ctx.householdId));
 }
 
 export interface SeededSlot {
@@ -461,6 +471,43 @@ export async function readOnboardingResult(): Promise<{
       onboardingMemories: memories
         .filter((m) => m.sourceType === "onboarding")
         .map((m) => m.content),
+    };
+  } finally {
+    await close();
+  }
+}
+
+// Reads back what the feedback sheet actually wrote (1F/E). The payload is the
+// half worth asserting: a spec that only checks "a row exists" passes on a build
+// that attaches nothing, which is the whole feature failing silently.
+export async function readLatestFeedback(): Promise<{
+  body: string;
+  imagePath: string | null;
+  status: string;
+  payload: Record<string, unknown>;
+} | null> {
+  const ctx = readTestContext();
+  const { db, close } = makeSeedDb(env.databaseUrl, schema);
+  try {
+    const [row] = await db
+      .select({
+        body: schema.feedback.body,
+        imagePath: schema.feedback.imagePath,
+        status: schema.feedback.status,
+        payload: schema.feedback.payload,
+        createdAt: schema.feedback.createdAt,
+      })
+      .from(schema.feedback)
+      .where(eq(schema.feedback.householdId, ctx.householdId))
+      .orderBy(desc(schema.feedback.createdAt))
+      .limit(1);
+
+    if (!row) return null;
+    return {
+      body: row.body,
+      imagePath: row.imagePath,
+      status: row.status,
+      payload: row.payload as unknown as Record<string, unknown>,
     };
   } finally {
     await close();

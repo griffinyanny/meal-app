@@ -292,6 +292,30 @@ for (const surface of SURFACES) {
   test(`A1 · ${surface.name} — no gated accessibility violations`, async ({ page }) => {
     await surface.prepare(page);
 
+    // ⚠️ LET THE SURFACE STOP REMOUNTING BEFORE GRADING IT (S68).
+    //
+    // Asserting the anchor before AND after the scan does not close the window
+    // the anchor was written for — a subtree can leave and return BETWEEN the
+    // two, and axe grades whatever is there in the middle. That is exactly what
+    // happened: `plan-intent` reported `page-has-heading-one` while a probe
+    // taken microseconds later found the `<h1>` back in the DOM. **BUG-058's
+    // remount** — `plan-page-client` renders `<NoPlanState>` from two call
+    // sites, and the subtree is replaced as data lands.
+    //
+    // ⚠️ It was ALREADY FLAKY at roughly 1 run in 3 before Workstream E existed,
+    // and E's floating control raised that to 3 in 3 by adding work to the same
+    // load. **Measured in both directions rather than concluded from one leg**
+    // (S65) — and the first A/B, at three samples, wrongly read a pre-existing
+    // flake as a regression this session had caused.
+    //
+    // `networkidle` is the real settling signal rather than a magic number: the
+    // remount is driven by queries landing, so once nothing is in flight no
+    // further branch flip can happen. Best-effort — a surface that legitimately
+    // polls (Groceries mid-generation) never reaches idle, and this is a
+    // settling aid, not an assertion. The two hard anchor checks below still
+    // own correctness.
+    await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+
     // ⚠️ The screen is still there — asserted immediately BEFORE the scan, not
     // only in `prepare()`. See the `anchor` doc comment: the first measurement
     // run caught the Plan body vanishing between the two, and axe then graded

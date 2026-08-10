@@ -95,6 +95,33 @@ export function resetAnalytics(): void {
 }
 
 /**
+ * The link from a feedback report to its session replay (1F/E, E0 call 5).
+ *
+ * ⚠️ WITHOUT THIS THE REPLAY EXISTS AND IS UNFINDABLE. A report says "the list
+ * bounced back"; the recording of it happening is in PostHog under a session id
+ * nothing else in the payload carries. This is the join.
+ *
+ * A URL rather than the bare session id because the reader is a person opening
+ * it. Null when analytics is off (every E2E run, by design) or when the recorder
+ * has not started — a value meaning "we could not tell", never a thrown error
+ * inside a capture path.
+ *
+ * ⚠️ `|| null`, NOT `?? null`. Checked against the installed package rather than
+ * assumed (S63): posthog-js types this as `string` and its own doc comment says
+ * it returns **an empty string** when sessions are unavailable. `??` would let
+ * `""` through, and `""` in a payload dump reads as "there is a replay link"
+ * while being useless — a falsy sentinel that is not null is worse than a null.
+ */
+export function sessionReplayUrl(): string | null {
+  if (!analyticsEnabled()) return null;
+  try {
+    return posthog.get_session_replay_url({ withTimestamp: true }) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Send a taxonomy event.
  *
  * The name must exist in `EventMap` and the properties must match it exactly,

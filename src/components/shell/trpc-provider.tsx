@@ -6,6 +6,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import { trpc } from "@/lib/trpc";
+import { trpcRingLink } from "@/lib/feedback/trpc-ring";
 import {
   OFFLINE_BUSTER,
   OFFLINE_MAX_AGE_MS,
@@ -46,6 +47,11 @@ export function TRPCProvider({ children }: TRPCProviderProps) {
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
+        // Records path/type/ok/duration for the feedback payload (1F/E). Placed
+        // ABOVE the terminating link so it measures the whole round trip,
+        // batching included — which is what the user actually waited for.
+        // ⚠️ It never reads `op.input`; see the header of `trpc-ring.ts`.
+        trpcRingLink,
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
           transformer: superjson,
