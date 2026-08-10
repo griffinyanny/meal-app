@@ -18,16 +18,15 @@ import { eq, and } from "drizzle-orm";
 import { protectedProcedure } from "../init";
 import { users, userPreferences, aiMemories } from "@/server/db/schema";
 import { TRPCError } from "@trpc/server";
-import { parseEmailList } from "@/lib/access";
+import { isDevToolsUser } from "@/lib/access";
 
 // Comma-separated emails, e.g. DEV_TOOLS_EMAILS="griffin@example.com,wife@example.com".
 // Unset means nobody, which is the correct default for a real deployment — note
 // this is the OPPOSITE default to ALLOWED_EMAILS, which opens up when unset.
 // Only the parsing is shared; the two answer "empty list" differently on purpose.
-function isDevUser(email: string | null | undefined): boolean {
-  if (!email) return false;
-  return parseEmailList(process.env.DEV_TOOLS_EMAILS).includes(email.toLowerCase());
-}
+// Moved to `@/lib/access` (1F/E) so the (app) layout can ask the same question
+// without a client round trip. One definition, two callers.
+const isDevUser = isDevToolsUser;
 
 export const devToolsProcedures = {
   // Whether to render the test-mode section at all. A query rather than a build
