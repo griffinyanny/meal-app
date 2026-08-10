@@ -143,3 +143,29 @@ export function isEmailAllowed(email: string | null | undefined): boolean {
   if (!email) return false;
   return list.includes(email.toLowerCase());
 }
+
+/**
+ * Dev tools (test mode, feedback capture). ⚠️ **Unset means NOBODY** — the
+ * opposite default to `ALLOWED_EMAILS` above, deliberately, because an
+ * unconfigured deployment should expose no reset-my-account button. Same
+ * parsing, opposite answer; don't cross them.
+ *
+ * ⚠️ ONE DEFINITION, TWO CALLERS, AND THE SECOND CALLER IS WHY THIS MOVED HERE
+ * (1F/E). `user-dev-tools.ts` had this as a private function serving a tRPC
+ * query, and the feedback trigger needs the same answer — but taking it as a
+ * QUERY was measured to be actively harmful: a client query fired during mount
+ * is batched by `httpBatchLink` with the page's own primary query, and adding
+ * one to Plan's first load reliably reproduced BUG-058's intent-screen remount
+ * (0/3 a11y failures without the component, 3/3 with it). The `(app)` layout
+ * already holds a cryptographically verified email, so the answer is free
+ * there and costs no request at all.
+ *
+ * Two callers, one definition — five copies of one domain is how BUG-044
+ * happened.
+ */
+export function isDevToolsUser(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return parseEmailList(process.env.DEV_TOOLS_EMAILS).includes(
+    email.toLowerCase()
+  );
+}

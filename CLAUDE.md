@@ -41,8 +41,66 @@ analytics-key holes), **BUG-062**, **BUG-063**, **BUG-064**, **BUG-065**, **BUG-
 ✅ **WORKSTREAM D IS CLOSED (S67).** The three security items are done — **BUG-067** (prompt-injection
 fencing, PR #32), **BUG-068** (secrets audit; `SUPABASE_SERVICE_ROLE_KEY` removed from Vercel Production),
 and the **RLS load-bearing statement** (PR #33). **841 unit green.** Only `BUG-017` remains in D, and it is
-explicitly conditional on the wife's real first run. **Next: Workstream E (feedback capture), starting with
-E0 — the scoping pass, not the build.** Then the two validation weeks.
+explicitly conditional on the wife's real first run.
+✅ **WORKSTREAM E — E0 RUN AND E1 CODE-COMPLETE (S68).** All seven E0 calls recorded in `decisions.md`;
+E1 ships the `feedback` table + RLS (migration `0011`, verified against the real database),
+`feedback.submit` (**write-only**, `householdId` from `ctx`), a **private Supabase Storage bucket + policy**
+(`npm run storage:feedback`, anon write measured as `403`), the capture sheet, a **sanitised tRPC ring
+buffer** (path/status/duration only — BUG-060's class pre-empted), a Groceries debug panel, the sweep
+(`npm run feedback:sweep`) wired into the session protocol above, and **FB1–FB3**. **860 unit green;
+E2E 162/163 in 23.0m** — the one red is **BUG-070**, an unrelated `RC13` flake that touches no feedback
+code and is green 3/3 in isolation and 3/3 under `E2E_CPU_THROTTLE=4`.
+⚠️ **NOT YET DONE: deploy, and use it once from Griffin's phone** — E's exit bar is that *a capture tool
+which has never captured anything is not verified*. **Then the two validation weeks.**
+
+**⛔ S68 · WORKSTREAM E — E0 RUN, E1 BUILT, AND TWO OF E0's OWN STARTING POSITIONS WERE FALSE.**
+All seven E0 calls are in `decisions.md` (2026-08-09, S68). **(1)** *"Reuse the HUD, behind
+`DEV_TOOLS_EMAILS`"* **merged two different flags**: `hudEnabled()` is NODE_ENV / `NEXT_PUBLIC_DEBUG_HUD` /
+a `localStorage` key, and **`NEXT_PUBLIC_DEBUG_HUD` is not set in Vercel Production** — so the 🐛 needs a
+browser console, **which an installed iOS PWA does not have**, with storage isolated from Safari's (S59).
+**A feature premised on "one control, no laptop" had been scoped onto a control that needs a laptop.**
+**(2)** *"`readDebugPanels()` already produces most of the payload"* — **ONE** registration site existed in
+the repo, so four of five surfaces returned `{}`. **A registry existing is not a registry populated**
+(S63's shape, one layer down). ⚠️ **The structural half of 6+7 is the reusable one:** the doc rightly
+established that a `source` field cannot express the defect/direction split, then wrongly concluded the
+*submission* needed a claim-type column. **Claim type is a property of a CLAIM, a submission holds one or
+more, and a one-to-many relationship cannot live in a column on the parent** — so the submission is
+UNTYPED and the sweep emits 1..N typed claims. ⚠️ **And answering question 3 collapsed question 4:** making
+the table write-only removed the only reader submit-time cleanup existed to serve.
+
+**⛔ S68 · THREE SAMPLES CANNOT SEPARATE AN AMPLIFIED FLAKE FROM A REGRESSION.** The `plan-intent` a11y
+failure measured **0/3 without** the new component and **3/3 with** it, and I called it a regression this
+session had caused. Re-running the removal leg gave **1 of 3** — a **pre-existing flake at ~33%**, raised
+to 100% by adding work to the same load. **S65's own rule, walked into while quoting it.** Two further
+mechanisms were chased and both were wrong (tRPC batch contention — deferring behind
+`requestIdleCallback` changed nothing, because *the page is idle precisely while the primary query is in
+flight*; then vaul's `Drawer`), each on a clean-looking A/B at three samples. ⚠️ **The code comments
+asserting those wrong causes were REWRITTEN rather than left**, because a wrong explanation in a comment is
+how this repo's stale beliefs propagate. Real cause: **BUG-069**, the intent screen still remounts during
+load, and `a11y.spec.ts` asserted its anchor before AND after the scan — **asserting both sides of a window
+does not close it** when the absence lands between them. It settles on `networkidle` now.
+
+**⚠️ S68 · A FLOATING CONTROL HAS NOWHERE SAFE TO LAND IN THIS APP.** `X1` caught
+`<button data-testid="feedback-trigger"> intercepts pointer events` on the plan toast's **Retry**: the
+trigger shipped `fixed bottom-24 right-3` and Plan's action slot is `fixed inset-x-0 bottom-24` — **full
+width, identical band**. Tapping Retry after a failed modify would have opened the feedback sheet, on the
+**error path of the north-star flow**. **The nav owns 0–64px and the slot owns 96–148px full-width, so any
+fixed overlay lands on something.** It lives **inside the tab bar row** now — the one region that owns its
+space, so a control there reflows rather than covers. ⚠️ **Griffin owes a taste read on it** (it narrows
+the four tabs slightly; §07 chrome, dev accounts only).
+
+**⚠️ S68 · WAITING ON A SURFACE IS NOT WAITING ON ITS DATA — S56, in a spec written this session.** `FB2`
+waited on `heading level 1`, and **BUG-054's fix moved the Groceries `<h1>` into `GroceryTitle`, which
+renders on the loading path too** — so the heading appears while `grocery.current` is still in flight and
+the ring buffer captured empty. **It passed in isolation and failed only in the full run.** Now waits on
+`grocery-row`, and **verified with the load knob rather than by hope** (S65): under `E2E_CPU_THROTTLE=4`
+the old wait is **2/2 RED**, the new one **2/2 GREEN**.
+
+**⚠️ S68 · THE ONE PLACE IN THIS APP WHERE RLS IS GENUINELY LOAD-BEARING.** The screenshot upload goes
+**direct from the browser to Supabase Storage** with the anon key + the user's JWT — which is **door 1**,
+the door RLS actually holds. Measured at provisioning: anon write to another user's prefix →
+`403 new row violates row-level security policy`; anon list → `200 []`. **Do not carry S67's "RLS doesn't
+protect us" reflex into `scripts/setup-feedback-storage.mjs` or `src/lib/feedback/upload.ts`.**
 
 **⛔ S67 · RLS WAS NEVER PROTECTING THE APP'S OWN QUERIES, AND EVERY TABLE HAS A POLICY.** All 12 enabled,
 `rls.test.ts` green for months — and **none of it applies to the connection the app uses.** Measured
@@ -841,6 +899,16 @@ When Griffin says "resume meal app" or starts a new session in this project:
 2. Briefly summarize to Griffin: "Here's where we left off: [status]. We were working on [topic]. Next up: [what's next]."
 3. **Scope check (every session, ≤6 lines — momentum over ceremony):** open with a clickable link to [docs/scope-v1.md](docs/scope-v1.md), then: (1) release position — phase X of 6, what's left in the active phase; (2) roadmap position — one line placing R1 on the V1→V4 arc + post-MVP gate status; (3) deltas since last session; (4) items awaiting Griffin's call. Respond to any checkbox/comment edits Griffin made in the scope docs (he may edit directly, but usually he'll just say it — apply his words to the doc). During the session, anything new gets triaged — into scope (change-log line) or to the backlog with a phase tag. Don't build what isn't in a scope doc.
 4. If there's an active phase plan in `docs/plans/`, read that too
+4b. **Sweep the in-app feedback queue (1F/E, S68):** `set -a; . ./.env.local; set +a; npm run feedback:sweep`.
+   Reports Griffin (or his wife) filed from a phone land in a Postgres `feedback` table, and **this script IS
+   the whole integration** — E0 chose a table over Linear precisely because "an agent picks it up at session
+   start" is already how this repo works. **A submission is UNTYPED and can hold more than one claim**, so
+   decompose each report into 1..N claims and route each one: a **defect from either user** files straight
+   into `docs/bug-tracker.md` (repro + severity + address-by, carrying its `FB-<id>` back-reference); a
+   **product direction from Griffin** goes to `docs/idea-backlog.md` with a phase tag; a **product direction
+   from anyone else** goes to idea-backlog's staging section with a recommendation, for Griffin to ratify
+   before it becomes work. The line is product **ownership**, not credibility. ⚠️ **Then mark them:**
+   `npm run feedback:sweep -- --mark <id>…`, or the next session files every one of them again.
 5. Do NOT ask Griffin to re-explain context. The docs have everything.
 
 ### At the END of every session:
@@ -990,7 +1058,7 @@ There is an in-repo Playwright E2E harness (`tests/e2e/`, built Session 17; deta
 
 **Run `npm run test:e2e`** (self-contained: builds + starts its own server on 3102, deterministic AI mock, no OpenAI spend). ⚠️ **`E2E_REUSE_BUILD=1` is now GUARDED and will refuse a build carrying a real analytics key (BUG-061)** — it skips the build that `NEXT_PUBLIC_POSTHOG_KEY: ""` applies to, and `.env.local` holds a real `phc_` key. Do not reach for it.
 
-⚠️ **It takes ~21 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S66: 160 specs, 21.2 minutes on an idle machine** (S65: 142 / 19.5; S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
+⚠️ **It takes ~21 minutes, not the "~1.5 min" this line claimed until S58.** That figure dated from S17, when the harness had ~20 specs. **Re-measured at S68: 163 specs, ~23 minutes on an idle machine** (S66: 160 / 21.2; S65: 142 / 19.5; S61: 139 / 18.2; S60: 136 / 17.8). Nothing is hung. **Budget for it, tell Griffin before starting it, and never start it while he is using the app** (S53's contention failure). Same stale-figure class as §09's four-controls sentence (S56) and BUG-042's premise (S53): a number written once and never re-measured — so **re-measure this one too rather than trusting the sentence you are reading.**
 
 ⚠️ **AND CHECK THE MACHINE, NOT JUST YOUR OWN PROCESSES, BEFORE TRUSTING THE RESULT.** Use `top -l 2 -n 0 | grep "CPU usage"` — the **instantaneous** idle figure, **not** `uptime`'s load average, which lags by minutes and reports work that has already finished. S64 spent a session diagnosing a "product bug" that was `vitest`, `lint` and `typecheck` running concurrently **inside** the 20-minute run, and S65 opened with an unrelated project's `next dev` holding **123% CPU** on a 4-physical-core box. **S53's rule is not only about two Playwright suites** — it is about anything competing for the CPU, the gauntlet included. ⚠️ **And when a spec passes alone but fails in the full run, reach for `tests/e2e/harness/cpu-throttle.ts` before reaching for another theory:** under uncontrolled load a pass proves nothing and a failure cannot be reproduced, so the first move is a knob, not a hypothesis.
 

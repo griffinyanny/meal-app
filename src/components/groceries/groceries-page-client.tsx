@@ -7,6 +7,7 @@ import { trackListReady } from "@/lib/analytics/funnel";
 import { GroceryList } from "./grocery-list";
 import { GroceryTitle } from "./grocery-title";
 import { QueryErrorState } from "@/components/shared/query-error-state";
+import { useDebugPanel } from "@/lib/debug/debug-hud";
 
 type GroceryListData = NonNullable<RouterOutputs["grocery"]["current"]>;
 
@@ -81,6 +82,32 @@ export function GroceriesPageClient() {
       generationMs: Math.max(0, Date.now() - new Date(list.createdAt).getTime()),
     });
   }, [list]);
+
+  // Publish live Groceries state to the debug HUD and, through it, to every
+  // feedback report filed from this tab (1F/E).
+  //
+  // ⚠️ THE SECOND REGISTRATION SITE IN THE APP. E0 scoped the feedback payload
+  // on the premise that `readDebugPanels()` "already produces most of it"; it
+  // had exactly ONE call site (Plan), so four of five surfaces returned `{}`.
+  // Groceries is the other north-star surface and the one used standing in a
+  // shop with bad signal, which is where the reports that matter come from.
+  //
+  // Counts and states, not contents: the item NAMES are household content, they
+  // are already visible in the report's screenshot when they matter, and this
+  // object is what a widening edit would quietly turn into a content channel.
+  useDebugPanel("groceries", () => ({
+    listId: list?.id ?? null,
+    generationStatus: list?.generationStatus ?? null,
+    generationError: list?.generationError ?? null,
+    itemCount: list?.items.length ?? 0,
+    checkedCount: list?.items.filter((i) => i.isChecked).length ?? 0,
+    sectionCount: list ? new Set(list.items.map((i) => i.category)).size : 0,
+    organizeMode: list?.organizeMode ?? null,
+    queryStatus: currentQuery.status,
+    isFetching: currentQuery.isFetching,
+    generateStatus: generateMutation.status,
+    generateError: generateMutation.error?.message ?? null,
+  }));
 
   // Exactly the condition under which `Body` renders `GroceryList` — which is
   // the only branch that draws its own heading. Derived here rather than

@@ -1,8 +1,122 @@
 # What's Next
 
-Last updated: 2026-08-09 (Session 67; **WORKSTREAM D IS CLOSED. All three security items done, two PRs merged, one production credential removed.**)
+Last updated: 2026-08-09 (Session 68; **WORKSTREAM E: E0 RUN AND E1 BUILT.** Feedback capture ships behind `DEV_TOOLS_EMAILS`.)
 
-## ▶ NEXT SESSION — **Workstream E (feedback capture). Start with E0, the scoping pass.**
+## ▶ NEXT SESSION — **E1 is built. Deploy it, use it once from your phone, then the validation weeks.**
+
+**860 unit green** (841 → 860), lint + typecheck clean. Migration `0011` applied and **verified against the
+real database**. Private `feedback` Storage bucket provisioned; its policy **measured** (anon write →
+`403 new row violates row-level security policy`).
+
+**E2E: 162 / 163 in 23.0m.** ⚠️ **The one red is `RC13` and it is NOT Workstream E** — it touches no
+feedback code, passed in the two immediately preceding full runs of the same tree, and is **3/3 green in
+isolation AND 3/3 green under `E2E_CPU_THROTTLE=4`**. Filed as **BUG-070** rather than waved off or
+papered over with a longer timeout. ⚠️ **That the throttle does not reproduce it is itself informative:**
+CDP throttling slows the RENDERER only, and a card that never rendered because its data never arrived is a
+server/DB-latency shape the knob cannot reach (S65's own rider). **All three Workstream E specs are
+green, as are the two the earlier runs caught (`X1`, `A1`).**
+
+### ✅ What S68 closed
+
+| Item | State |
+|---|---|
+| **E0 — the scoping pass** | ✅ **CLOSED.** All seven calls in `decisions.md` (2026-08-09, S68). One decided **against** its lean; 6+7 turned out to be one question with a structural answer. |
+| **E1 — the build** | ✅ **CODE-COMPLETE.** Table + RLS, `feedback.submit`, Storage bucket + policy, capture sheet, tRPC ring buffer, Groceries debug panel, sweep script + session-protocol step, FB1–FB3. |
+| **Not yet done** | ❌ **Deploy to prod, and use it once from the phone** (the E-exit bar: *a capture tool that has never captured anything is not verified*). |
+
+### ⛔ THE ONE TO READ — two false premises, and a diagnosis I got wrong twice
+
+**E0's own starting positions were wrong on two counts, both the project's recurring shape.** *"Reuse the
+HUD, behind `DEV_TOOLS_EMAILS`"* merged two different flags: `hudEnabled()` is NODE_ENV / a build flag /
+a `localStorage` key, and `NEXT_PUBLIC_DEBUG_HUD` **is not set in Vercel Production**. So the 🐛 needs a
+browser console — **which an installed iOS PWA does not have**, with storage isolated from Safari's (S59).
+**A feature premised on "one control, no laptop" had been scoped onto a control that needs a laptop.** And
+*"`readDebugPanels()` already produces most of the payload"* had **one** registration site in the whole
+repo. **A registry existing is not a registry populated.**
+
+⚠️ **AND THE PROCESS FAILURE IS THE SHARPER LESSON.** The `plan-intent` a11y failure looked like a
+regression: 0/3 without the new component, 3/3 with it. Re-running the removal leg gave **1 of 3** — it was
+a **pre-existing flake at ~33%**, amplified to 100%, not caused. **S65's own rule, walked into while
+quoting it.** Two more mechanisms were chased and both were wrong (tRPC batching; vaul's `Drawer`), each on
+a clean-looking A/B at three samples. **Three samples cannot separate an amplified flake from a
+regression.**
+
+### ⚠️ A real product bug the suite caught, and its placement is YOUR call
+
+`X1` reported `<button data-testid="feedback-trigger"> intercepts pointer events` on the plan toast's
+**Retry**. The trigger shipped `fixed bottom-24 right-3`; Plan's action slot is `fixed inset-x-0 bottom-24`
+— **full width, same band.** Tapping Retry after a failed modify would have opened the feedback sheet.
+**There is no free fixed band at the bottom** (nav 0–64px, slot 96–148px), so it now sits **inside the tab
+bar row**. ⚠️ **That narrows the four tabs slightly — a change to §07 chrome, dev-accounts only. Look at it
+and tell me if it reads wrong.**
+
+### ▶ WHAT'S NEXT
+
+1. **Merge + deploy**, then **file one real report from your phone** — that is E's exit bar.
+2. **The two-phone check + app-kill replay** (still the only thing left in Workstream C).
+3. **Then the two validation weeks.** ⚠️ Your wife's account needs to exist on prod with full
+   `DEV_TOOLS_EMAILS` before they start.
+
+### ⚠️ Owed by Griffin
+
+1. ⭐ **THE TWO-PHONE CHECK + APP-KILL REPLAY.**
+2. **Three taste calls:** 32px for the Recipes/Groceries titles; the grocery quantity editor's ~5px
+   headroom; **and now the feedback button in the tab bar.**
+3. **Optional:** the 31 contrast nodes axe could not determine.
+
+### ▶ NEXT-SESSION KICKOFF PROMPT
+
+```
+Resume meal app — S68 RAN E0 AND BUILT E1. Workstream E (in-app feedback capture) is code-complete:
+`feedback` table + RLS (migration 0011, verified against the real DB), `feedback.submit` (write-only,
+householdId from ctx), a private Supabase Storage bucket + policy (anon write measured as 403), the
+capture sheet, a sanitised tRPC ring buffer, a Groceries debug panel, the sweep script
+(`npm run feedback:sweep`) wired into CLAUDE.md's session protocol, and FB1–FB3. 860 unit green,
+lint + typecheck clean.
+
+▶ THIS SESSION: MERGE + DEPLOY E1, then I file ONE REAL REPORT FROM MY PHONE — that is E's exit bar
+("a capture tool that has never captured anything is not verified"). Then sweep it and confirm the
+payload arrived intact: route, build SHA (should be non-null on prod for the first time), PostHog
+replay URL, and the tRPC ring. After that, Workstream C's two-phone check, then validation.
+
+⚠️ DO NOT re-litigate E0. All seven calls are in decisions.md (2026-08-09, S68). The submission is
+UNTYPED on purpose — claim type is a property of a CLAIM, a submission holds one or more, and a
+one-to-many relationship cannot live in a column on the parent. The sweep decomposes into 1..N typed
+claims. No claim-type column, no feature-area select.
+
+⚠️ THE FEEDBACK TRIGGER LIVES IN THE TAB BAR, not floating. A floating control at bottom-24 sat on
+Plan's action slot (fixed inset-x-0 bottom-24, full width) and intercepted the toast's Retry — X1
+caught it. There is NO free fixed band at the bottom: nav owns 0-64px, slot owns 96-148px. Don't
+move it back to a floating overlay. I still owe a taste read on how it looks in the tab bar.
+
+⚠️ BUG-069 IS OPEN AND IT IS THE ONE TO KNOW: the Plan intent screen still REMOUNTS during load
+(two call sites of <NoPlanState>). S65 fixed the symptom it could see; the remount is still there.
+a11y.spec.ts settles on networkidle before scanning, which is a workaround, not a fix. Anything
+added to AppShell makes it worse — that is measured.
+
+⚠️ AND THE PROCESS LESSON FROM S68: three samples cannot separate an amplified flake from a
+regression. I claimed causation off 0/3-vs-3/3 and was wrong; the removal leg was really 1/3.
+
+⚠️ E2E is ~23 MINUTES (163 specs). Tell me before starting it, nothing else alongside it, and CHECK
+THE MACHINE first: `top -l 2 -n 0 | grep "CPU usage"`, not the load average. run_in_background with
+NO redirect, never pipe it, never redirect into test-results/. Read the summary line, not the exit
+status. DO NOT USE E2E_REUSE_BUILD=1 (guarded, BUG-061). For a load-sensitive spec, reach for
+E2E_CPU_THROTTLE before another theory.
+
+STILL OWED BY ME: the two-phone check + app-kill replay. 32px titles, the grocery quantity editor's
+~5px headroom, and the feedback button's look in the tab bar.
+
+Keep 860 unit green. Read docs/whats-next.md, docs/scope-1F.md and bug-tracker.md first, then give
+me the <=6-line scope check.
+
+MODEL: Sonnet 5. This is a deploy, a live verification and a doc sweep against decisions that are
+already made and written down — execution, not design. Switch to Opus 5 if the phone check turns up
+something that needs diagnosing, or if the validation weeks surface a real product question.
+```
+
+
+## Session 67 archive — Workstream D closes (its kickoff prompt below is SUPERSEDED by the one above)
+
 
 **841 unit green**, lint + typecheck clean. **Two PRs merged** (#32 prompt-injection fencing, #33 the RLS
 statement). E2E was **not** run and did not need to be — none of the three items touches rendered

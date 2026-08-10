@@ -5,7 +5,8 @@ globs: src/components/plan/**/*.tsx, src/components/groceries/**/*.tsx, src/comp
 # E2E rule
 
 You are editing code the Playwright E2E suite covers. Coverage today: **Plan,
-Groceries, Recipes, You, onboarding, and the PWA's offline half** (**143 specs**, S65).
+Groceries, Recipes, You, onboarding, the PWA's offline half, and in-app feedback
+capture** (**163 specs**, S68).
 Before wrapping:
 
 ⚠️ **NEVER ASSERT AN `<h1>` WITH `getByText` — USE `getByRole("heading", { name })`.** Next 16.3.0's route
@@ -20,7 +21,7 @@ yet. All six are by role now, which is S54's rule anyway (*assert the property t
 ⚠️ **`E2E_REUSE_BUILD=1` IS NO LONGER SAFE — IT DEFEATS THE ANALYTICS-OFF GUARD (BUG-061).**
 `playwright.config.ts` pins `NEXT_PUBLIC_POSTHOG_KEY: ""`, and its own comment states the load-bearing
 premise: *"the build runs inside `webServerCommand` with this env."* **Reuse removes exactly that premise.**
-Since S64 put a real `phc_` key in `.env.local`, a reused build inlines the **real** key and 143 specs fire
+Since S64 put a real `phc_` key in `.env.local`, a reused build inlines the **real** key and 163 specs fire
 fabricated rituals, plan generations and grocery lists into the PostHog project the DoD's time-to-list
 number is read from. `analytics-config.test.ts` cannot see it — the pinned line is still there.
 

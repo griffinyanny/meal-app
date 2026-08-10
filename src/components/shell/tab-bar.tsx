@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { FeedbackTrigger } from "@/components/feedback/feedback-trigger";
 
 const tabs = [
   { href: "/plan", label: "Plan", icon: TabIconPlan },
@@ -11,7 +12,12 @@ const tabs = [
   { href: "/you", label: "You", icon: TabIconYou },
 ] as const;
 
-export function TabBar() {
+export interface TabBarProps {
+  // Resolved server-side in the (app) layout from verified claims.
+  devTools?: boolean;
+}
+
+export function TabBar({ devTools = false }: TabBarProps) {
   const pathname = usePathname();
 
   return (
@@ -53,6 +59,25 @@ export function TabBar() {
             </Link>
           );
         })}
+
+        {/* ⚠️ IN THE CHROME, NOT FLOATING OVER THE APP — AND THAT PLACEMENT IS A
+            BUG FIX, NOT A PREFERENCE (1F/E, S68). The feedback control first
+            shipped as `fixed bottom-24 right-3 z-50`, which put it exactly on
+            top of Plan's floating action slot (`fixed inset-x-0 bottom-24`,
+            full width, z-[38]). X1 caught it: Playwright reported
+            `<button data-testid="feedback-trigger"> intercepts pointer events`
+            on the toast's **Retry** — so on a phone, tapping Retry after a
+            failed modify would have opened the feedback sheet instead, on the
+            error path of the north-star flow.
+
+            There is no free fixed band at the bottom: the nav owns 0–64px and
+            the slot owns 96–148px, full width. Any floating overlay lands on
+            something. The nav is the one region that OWNS its space, so a
+            control here reflows the tabs rather than covering anything.
+
+            `flex-none`, so the four tabs keep `flex-1` and merely narrow. Dev
+            users only — for everyone else this renders nothing. */}
+        {devTools && <FeedbackTrigger />}
       </div>
     </nav>
   );

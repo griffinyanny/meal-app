@@ -6,6 +6,9 @@ import { DebugHud } from "@/components/debug/debug-hud";
 
 export type AppShellProps = {
   children: React.ReactNode;
+  // Resolved server-side in the (app) layout from verified claims. A prop
+  // rather than a client query: see the note there.
+  devTools?: boolean;
 };
 
 // The onboarding interview is a conversation, not a destination: showing tabs
@@ -29,7 +32,7 @@ const WASH_BY_ROUTE: ReadonlyArray<readonly [string, string]> = [
   ["/groceries", "spec-light-flat"],
 ];
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, devTools = false }: AppShellProps) {
   const pathname = usePathname();
   const chromeless = FULL_SCREEN_ROUTES.includes(pathname);
   const wash = WASH_BY_ROUTE.find(([prefix]) => pathname.startsWith(prefix))?.[1];
@@ -60,7 +63,12 @@ export function AppShell({ children }: AppShellProps) {
         >
           {children}
         </main>
-        {!chromeless && <TabBar />}
+        {/* Feedback capture (1F/E) rides INSIDE the nav rather than floating
+            over the app — see the note at its call site in `tab-bar.tsx`. It is
+            therefore absent on the chromeless onboarding route for free, which
+            is the right answer anyway: the interview is a conversation, and a
+            report filed mid-question has no surface to describe. */}
+        {!chromeless && <TabBar devTools={devTools} />}
         <DebugHud />
       </div>
     </div>

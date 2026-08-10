@@ -34,6 +34,15 @@ function walk(dir: string): string[] {
   });
 }
 
+// Block comments, line comments, and JSX comment wrappers. Deliberately blunt:
+// the only question asked of the result is "does this file reference the symbol
+// in CODE", and a file that mentions it in prose is answering a different one.
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+}
+
 function hits(pattern: RegExp): string[] {
   return walk(SRC).flatMap((file) =>
     readFileSync(file, "utf8")
@@ -49,10 +58,29 @@ describe("spec §09 — one freeform control", () => {
     // `ui/textarea.tsx` was deleted with this item rather than left in place.
     // An unused primitive is not neutral: it is the rung the next call site
     // reaches for, which is exactly how six of these got written.
+    //
+    // ⚠️ THIS WAS `toEqual([])` UNTIL S68, AND WIDENING IT IS A REAL CHANGE TO
+    // THE GUARD — recorded rather than done quietly. §09 governs "one way to
+    // talk to the chef"; the entry below is not chef talk, and routing it
+    // through `FreeformField` would have made the app lie twice: the send
+    // button's hardcoded `aria-label="Send to chef"` would announce the wrong
+    // destination, and the mic's "voice is coming soon" notice is false on a
+    // surface where iOS's own keyboard mic genuinely works (E0 call 2 chose it
+    // precisely because it costs zero code). A three-line cap on a bug report
+    // is the smaller objection but it is real too.
+    //
+    // Pinned by file:line, palette.test.ts's precedent: an edit anywhere above
+    // it reds this test, so the exemption cannot outlive its reason (S52). When
+    // feedback capture GRADUATES to a real product surface in V1.5, this line
+    // moves and the question gets asked again, which is the intent.
     expect(
       hits(/<textarea/i),
       "Use `<FreeformField>` from components/shared/freeform-field.tsx. Offenders: "
-    ).toEqual([]);
+    ).toEqual([
+      // Dev-gated feedback capture (1F/E). Describing a defect is not talking to
+      // the chef, and this control is not on §09's surface at all.
+      "components/feedback/feedback-sheet.tsx:117",
+    ]);
   });
 
   it("should confine raw text inputs to the controls that are NOT §09", () => {
@@ -64,6 +92,11 @@ describe("spec §09 — one freeform control", () => {
     // decided a new control is not chef talk, which is a decision worth making
     // out loud rather than by writing an <input>.
     expect(hits(/<input/i)).toEqual([
+      // A FILE PICKER, not a text field (1F/E). §09 governs saying something in
+      // your own words; nothing is typed into this at all. It is listed rather
+      // than pattern-excluded (`type="file"`) on this file's own reasoning:
+      // narrowing the pattern fails open, an allow-list fails closed.
+      "components/feedback/feedback-sheet.tsx:133",
       // In-place edit of a row that already exists. Renaming "2 lemons" is not
       // telling the chef something; it is correcting a field.
       // ⚠️ Line numbers only — the two inputs themselves are unchanged. They
@@ -90,8 +123,17 @@ describe("spec §09 — one freeform control", () => {
     // The six sites, named. Onboarding was pass 1 (S39); the other five landed
     // in S56. Listed rather than counted, because "how many import it" passes
     // just as happily when one of them has quietly stopped.
+    //
+    // ⚠️ COMMENTS ARE STRIPPED BEFORE MATCHING, AND THIS IS THE FIFTH INSTANCE
+    // OF A GUARD FAILING AGAINST ITS OWN DOCUMENTATION (after palette.test.ts,
+    // caps-rungs.test.ts, and twice inside BUG-049's input sweep). S68's
+    // feedback sheet names `FreeformField` in a comment explaining why it
+    // deliberately does NOT use it, and a raw substring match read that as a
+    // seventh chef control. Adding it to the list below would have been the
+    // wrong fix twice over: it does not import the control, and recording it as
+    // a chef surface asserts something false about what it is.
     const importers = walk(SRC)
-      .filter((f) => /FreeformField/.test(readFileSync(f, "utf8")))
+      .filter((f) => /FreeformField/.test(stripComments(readFileSync(f, "utf8"))))
       .map((f) => f.slice(SRC.length + 1))
       .sort();
 

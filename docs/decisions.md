@@ -4,6 +4,155 @@ All confirmed product and technical decisions. Each entry includes the decision,
 
 ---
 
+## 2026-08-09 (S68) — Workstream E0: all seven calls, and two of the starting positions were wrong
+
+**E0 is the scoping pass for in-app feedback capture.** `scope-1F.md` carried a recommendation into each
+of its seven questions so the pass would start from a position rather than a blank page. Six leans
+survive; **two of them rested on claims about the build that turned out to be false**, and those
+corrections are the transferable part.
+
+### ⚠️ Correction 1 — the HUD is NOT behind `DEV_TOOLS_EMAILS`, and it is unreachable from a phone
+
+The doc's answer to question 1 was *"reuse the HUD's corner control, one tap, behind `DEV_TOOLS_EMAILS`.
+Both R1 users hold that flag, so the seam costs nothing."* **Two different flags were merged into one
+sentence.**
+
+`hudEnabled()` (`src/lib/debug/debug-hud.ts`) is `NODE_ENV=development` **OR**
+`NEXT_PUBLIC_DEBUG_HUD=1` at build **OR** `localStorage["debug-hud"]==="1"`. Measured: **`NEXT_PUBLIC_DEBUG_HUD`
+is not set in Vercel Production** (`vercel env ls production` — 12 vars, not among them). So on prod the
+only path to the 🐛 is the localStorage flag, which needs a browser console.
+
+⚠️ **An installed iOS PWA has no console, and its storage is isolated from Safari's** — the same isolation
+boundary as S59's cookie-jar finding, which is what nearly shipped the PWA as a dead icon. **So the "cheap
+HUD seam" is unreachable in precisely the situation Workstream E exists to serve: Griffin on the couch,
+phone, no laptop.** A feature whose entire premise is "one control, no laptop" was scoped onto a control
+that requires a laptop to turn on.
+
+`DEV_TOOLS_EMAILS` gates something else: `user-dev-tools.ts:29`, **server-side**, feeding the You-tab
+test-mode card. That is what Griffin verified on prod at S50. Both flags are real, both are working, and
+neither one does what the sentence claimed.
+
+### ⚠️ Correction 2 — `readDebugPanels()` is not "most of the payload"
+
+The doc: *"**Big head start:** `readDebugPanels()` already produces most of this and is already on prod."*
+**There is exactly ONE registration site in the entire repo** — `plan-page-client.tsx:687`, section
+`"plan"`. On Groceries, Recipes, You and onboarding the registry is empty and it returns `{}`.
+
+**Four of five surfaces publish nothing.** The registry is real, the plumbing works, and it is populated
+on one tab. ⚠️ **This is S63's shape one layer down: a file existing is not a file working, and a registry
+existing is not a registry populated.** The claim was true about the mechanism and false about the
+coverage, which is the same failure as *"the S9 taxonomy"* and *"both Playwright configs pin it"*.
+
+### The seven calls
+
+**1 · Trigger affordance — REVISED off the lean.** E gets **its own control in the app shell, gated
+server-side on `DEV_TOOLS_EMAILS`**, not the HUD's 🐛. Three reasons, in order of weight: the HUD's gate
+cannot be reached from the phone (above); the 🐛 sits at `left-2 top-2`, under the status bar in
+standalone mode; and a state-dump toggle and a capture sheet are different actions, so overloading one
+button creates a mode. **What gets reused is `readDebugPanels()`, never the trigger.** ⚠️ **The payload
+snapshots at sheet-OPEN, not at submit** — opening a sheet can itself change state, and the report may be
+typed a minute later.
+
+**2 · Media — no capture code, and the storage half is answered.** `getDisplayMedia` does not exist in
+mobile Safari, so the S39 vision's recording half is not buildable there at all. Native iOS screenshot +
+`<input type="file" accept="image/*">`. **Private Supabase Storage bucket**, path in a nullable column;
+the sweep resolves a signed URL locally with `SUPABASE_SERVICE_ROLE_KEY`, which lives in `.env.local` and
+(per BUG-068) deliberately nowhere else. ⚠️ **Claude priced this as "the one non-trivial piece" before
+checking**, and Griffin pushed back correctly: `@supabase/supabase-js` is already a production dependency
+and `src/lib/supabase/client.ts` already returns a browser client carrying the session, so the upload is
+one call. Four small pieces: bucket, one storage policy, one nullable column, sweep-side read.
+
+⚠️ **The browser uploads DIRECTLY to Supabase, never through our own server.** Fewer moving parts, and it
+sidesteps Vercel's 4.5MB request-body limit — which does not bite for a screenshot and would hard-block a
+screen recording. R1 ships `accept="image/*"` and nothing else; the architecture keeps video reachable for
+free rather than building for it now.
+
+⚠️ **And a nuance that cuts directly against the S67 reflex: RLS IS load-bearing here.** The upload goes
+through the Storage API with the anon key plus the user's JWT, which is **door 1** — the door RLS actually
+holds. That is the opposite of the Drizzle path, where `rolbypassrls` means the tRPC filter is the only
+thing standing. The storage policy is not decorative, and "RLS doesn't protect us" is the wrong lesson to
+carry into this one file.
+
+**Ordering:** the client mints a UUID for the path, uploads, then submits with the path attached. The
+alternative (submit → get id → upload → patch) needs a second mutation and leaves a window where the row
+claims no image. Orphaned uploads are possible if the upload lands and the submit fails; they are harmless
+and the sweep ignores anything unreferenced.
+
+**3 · Destination — a Postgres `feedback` table, NOT Linear.** Lean held with no argument. Linear needs an
+OAuth Griffin has not done, adds an integration surface, a second source of truth and a sync question, for
+a two-person release whose bug ledger is already a tracked, closeable markdown file. The "an agent picks
+it up" queue that justified Linear **is already how this repo works**; adding "read the feedback table" to
+the session-start protocol is a script. **The Linear graduation trigger moves to real users.**
+
+⚠️ **R1 is WRITE-ONLY: one `feedback.submit` mutation, no read procedure.** Per "Two doors", `householdId`
+comes from `ctx` and is **never** accepted from input, the table carries `household_id` + an RLS policy
+(door 1), and the mutation's own scoping is the whole of door 2.
+
+**4 · LLM cleanup at SWEEP time, not submit — and the counter-argument dissolves.** The doc's one argument
+for submit-time cleanup was *"the report is legible to Griffin between sessions."* **Call 3 makes it
+write-only, so nothing reads it between sessions.** Sweep-time cleanup is free, uses the house format
+Claude already writes, and adds no cost, latency, failure mode or rate limit. ⚠️ **Worth noting how this
+resolved: two questions that looked independent were coupled, and answering 3 collapsed 4.**
+
+**5 · The payload — rebuilt off correction 2.** Route, viewport, device/OS/UA, `posthog.get_session_replay_url()`
+(**better than the bare session id: it is clickable, and without it the replay is unfindable**),
+`Sentry.lastEventId()`, seeded-vs-real, build SHA (needs `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` enabled in
+Vercel project settings), `readDebugPanels()`, plus a **recent-tRPC-calls ring buffer** in a client link.
+
+⚠️ **The ring buffer logs path + status + duration ONLY, never inputs or outputs.** Logging inputs would
+put the grocery list, meal titles and dietary constraints into the table, which is **BUG-060's class
+arriving through a new door** — the same content, a different unguarded channel. Stated before the code
+exists rather than discovered after.
+
+Given correction 2, E1 adds a debug panel to **Groceries only** (the other north-star surface, and the one
+used standing in a shop) and lets route + ring buffer cover Recipes, You and onboarding. Panelling all
+five is not worth a session.
+
+**6 + 7 · Bug vs feature, and the claim-type split — ONE question, and it has an answer.**
+
+**One door. The submission is UNTYPED. The sweep decomposes it into 1..N typed claims.**
+
+The doc's premise (*"a `source` field alone cannot express that"*) is correct; the conclusion drawn from
+it — that the submission needs a claim-type field — does not follow. ⚠️ **Claim type is a property of a
+CLAIM, and a submission holds one or more of them** (*"the quantity editor drops the unit, and honestly we
+should let you type '2 lbs' directly"* is two claims, one of each type). **A one-to-many relationship
+cannot live in a column on the parent.** The table carries who and what was said; the sweep emits the
+types.
+
+That is also the right answer on its own merits: a type toggle at capture is work, done by the wrong
+person, at the worst moment, on a feature whose stated thesis is friction-free volume.
+
+Two consequences:
+
+- ⚠️ **A `status` column (`new` → `swept`) is mandatory, not a nicety.** Without it the sweep re-files
+  every report at every session start.
+- **Each filed row carries the feedback id back** (`FB-012` in the `bug-tracker.md` row), so a bug traces
+  to its raw submission and Griffin can see which direction-half was staged and never ratified.
+
+Ambiguity mostly stops mattering: an unclear submission produces two claims rather than forcing a choice.
+
+**Routing at sweep time is unchanged from the S60 call** — defects file directly from either user;
+product direction is Griffin's dictation and his wife's is staged for ratification. **The line is product
+ownership, not credibility.**
+
+**The sheet therefore shrinks to one text field + optional image + submit.** ⚠️ **The E1 sketch's
+"optional feature-area select" is CUT** — the payload already carries the route.
+
+### One item that was in none of the seven
+
+**On submit failure the sheet keeps the text and offers retry, and never clears.** That is **BUG-014
+exactly** (typed text lost on error), already found and closed once in this repo, and losing a bug report
+to a bug is the worst possible instance of it. ⚠️ **And `feedback.submit` stays OUT of
+`OFFLINE_MUTATION_PATHS`** — replay after a lost response duplicates the row, which is BUG-056's shape.
+
+**Future impact.** The graduation constraint is satisfied by construction: `source` is a **user id** rather
+than a string, the mutation derives everything from `ctx` and assumes no dev-only caller, and
+`useDebugPanel` registration is independent of `hudEnabled()`, so the payload works with the HUD off.
+Graduating to a real product surface in V1.5 means moving the control and swapping the gate. The table,
+the mutation and the payload do not change.
+
+---
+
 ## 2026-08-09 (S67) — Keep `GEMINI_API_KEY`, drop `SUPABASE_SERVICE_ROLE_KEY`
 
 **Griffin's call**, during the 1F/D secrets audit, on two credentials that were both live in Vercel

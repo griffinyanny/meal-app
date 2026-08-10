@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { isEmailAllowed } from "@/lib/access";
+import { isEmailAllowed, isDevToolsUser } from "@/lib/access";
 import { AppShell } from "@/components/shell/app-shell";
 import { OnboardGuard } from "@/components/shell/onboard-guard";
 import { AnalyticsProvider } from "@/components/shell/analytics-provider";
@@ -35,8 +35,17 @@ export default async function AppLayout({
   // already checked — never a client-side guess, and never the email.
   const userId = typeof data.claims.sub === "string" ? data.claims.sub : null;
 
+  // ⚠️ RESOLVED SERVER-SIDE, FROM THE CLAIMS THIS LAYOUT ALREADY VERIFIED, and
+  // deliberately NOT as a client query (1F/E). `httpBatchLink` batches a query
+  // fired during mount with the page's own primary query, and adding one to
+  // Plan's first load reliably reproduced BUG-058's intent-screen remount —
+  // measured 0/3 a11y failures without the component, 3/3 with it. Dev chrome
+  // must never compete with the app's first load. Free here, and still
+  // server-authoritative: the client is told, never trusted.
+  const devTools = isDevToolsUser(claimedEmail);
+
   return (
-    <AppShell>
+    <AppShell devTools={devTools}>
       <OnboardGuard />
       {userId && <AnalyticsProvider userId={userId} />}
       {children}

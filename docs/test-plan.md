@@ -244,6 +244,40 @@ suite. It is the first thing to check on a real phone.
 
 ---
 
+## FB — in-app feedback capture (Phase 1F Workstream E, Session 68)
+
+*⚠️ **The PAYLOAD is the subject, not the row.** The feature's promise is "describe the problem, never the
+state", so a spec asserting only that a row was written passes against a build that attaches **nothing** —
+the whole feature failing silently while the sheet still says `Sent ✓`. Every assertion below reads what
+actually landed in the database.*
+
+*⚠️ **The suite's own reports are wiped, and that line is load-bearing.** `wipe()` deletes `feedback`, because
+without it every run leaves real rows that Claude's session-start sweep files into `bug-tracker.md` — the
+suite fabricating bug reports. That is **BUG-061's failure one table over** (a suite polluting the dataset a
+human decision is read from). The sweep filters on the payload's server-stamped **`aiMock`** as a second
+layer; both, because either alone is one edit away from silence.*
+
+*⚠️ **The sweep deliberately does NOT filter on `environment`, and the tempting second filter is wrong.**
+`environment = 'production'` would look like the obvious hardening and would silently drop **Griffin testing
+against his own laptop**, which stamps `development` and is real feedback. `aiMock` is the precise filter:
+it is only ever true under `E2E_AI_MOCK=1`, so those rows are definitionally fixture-driven suite runs.
+Environment is **shown** rather than filtered, so a reader judges instead of a query.*
+
+| ID | Seed | Action | Expected | Status |
+|----|------|--------|----------|--------|
+| FB1 | EMPTY | Load Plan | The trigger is visible **and the debug HUD's 🐛 is not**. ⚠️ This pins the correction that reopened E0's first question: the two gates are genuinely different. `DEV_TOOLS_EMAILS` is server-checked and set in Vercel Production; `hudEnabled()` reads NODE_ENV, a build flag, or a `localStorage` key — **none reachable inside an installed iOS PWA**, which is the exact situation the feature exists for | 🟢 |
+| FB2 | GROCERY_READY | Open the sheet on Groceries, type, send | The row carries `route: "/groceries"`, `status: "new"` (without which the sweep re-files every report forever), the server-stamped `environment` + `aiMock`, the **Groceries debug panel**, and a **non-empty tRPC ring buffer** containing `grocery.current`. ⚠️ Every ring entry is asserted to hold **exactly** `path/type/ok/durationMs/msBeforeCapture` — BUG-060's class checked at the only layer that sees real data, with a real seeded list in memory | 🟢 |
+| FB3 | EMPTY | Type a report, abort the tRPC request, send | The sheet **stays open with the text intact** and the send button re-enabled. ⚠️ **BUG-014 at its worst possible moment**: losing typed text on error was already found and fixed once here, and losing a *bug report* to a bug is that failure when the reporter is most annoyed and least likely to retype | 🟢 |
+
+**⚠️ Not covered by this suite, named rather than pretended: the image upload.** FB2 asserts
+`imagePath: null`. Attaching a screenshot goes **direct from the browser to Supabase Storage**, so
+exercising it needs a real authenticated Storage round trip against the live project — which would write
+objects from every suite run. The path is guarded instead by the storage policy (measured at provisioning:
+anon write → `403 new row violates row-level security policy`) and by `feedback.submit`'s own prefix check
+(unit-tested). **First thing to confirm on the real phone**, alongside E-exit's "used at least once".
+
+---
+
 ## Visual-QA capture coverage (Layer A — `playwright.capture.config.ts`)
 The capture harness (Claude reads the PNGs, critiques vs `docs/design/visual-qa-rubric.md`) now covers three tabs:
 - **Plan** — `plan.capture.ts` (5 states; HUD-verified).

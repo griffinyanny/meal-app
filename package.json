@@ -19,6 +19,8 @@
     "db:studio": "drizzle-kit studio",
     "test:capture": "playwright test -c playwright.capture.config.ts",
     "test:capture:live": "E2E_LIVE_CAPTURE=1 playwright test -c playwright.capture-live.config.ts",
+    "storage:feedback": "node scripts/setup-feedback-storage.mjs",
+    "feedback:sweep": "node scripts/feedback-sweep.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "splash": "node scripts/generate-splash.mjs"
   },

@@ -1345,15 +1345,34 @@ is **friction-free volume**: report quality is the system's job, not the reporte
 notices something at 9pm, has no laptop, and either texts himself or forgets. Every bug lost that way is
 lost from the *only* two weeks of real-usage data R1 will ever produce before it is declared done.
 
-## E0 — the deep scoping pass (NOT YET RUN — this is the slot, not the spec)
+## E0 — the deep scoping pass ✅ **RUN S68 — all seven calls made, two of them against the lean**
 
 **Trigger: when Workstream D's observability items land** (PostHog taxonomy + Sentry + session replay).
-Not before. The metadata half of this feature is a *join* against those three, and specifying a payload
-against an event taxonomy that does not exist yet produces a spec that gets rewritten. ⚠️ **But see the
-open call below — the *build* may not want to wait for the *scope*.**
+Met at S63–S66. The metadata half of this feature is a *join* against those three, and specifying a payload
+against an event taxonomy that does not exist yet produces a spec that gets rewritten.
 
-**What E0 must decide.** Carrying a recommendation into each so the deep pass starts from a position
-rather than a blank page:
+**Full record: `decisions.md` → 2026-08-09 (S68).** Summary of the calls, in question order: **(1)** its own
+control in the app shell, **server-gated on `DEV_TOOLS_EMAILS`**, not the HUD's 🐛 — see the correction
+below; **(2)** no capture code, native screenshot + file input, **private Supabase Storage bucket, browser
+uploads direct**; **(3)** a Postgres `feedback` table, **write-only in R1**, not Linear; **(4)** LLM cleanup
+at **sweep** time; **(5)** payload as listed, **plus a sanitised tRPC ring buffer**, minus the head start
+that was not there; **(6+7)** **one door, untyped submission, the sweep decomposes it into 1..N typed
+claims.**
+
+⚠️ **TWO OF THE STARTING POSITIONS BELOW RESTED ON CLAIMS ABOUT THE BUILD THAT WERE FALSE.** Both are
+annotated in place rather than rewritten, because the correction is the useful part:
+
+- **Question 1's `DEV_TOOLS_EMAILS` premise.** `hudEnabled()` is dev **OR** `NEXT_PUBLIC_DEBUG_HUD=1` at
+  build **OR** a `localStorage` flag — and `NEXT_PUBLIC_DEBUG_HUD` **is not set in Vercel Production**
+  (measured). So on prod the 🐛 needs a browser console, **an installed iOS PWA has none, and its storage
+  is isolated from Safari's** (S59's cookie-jar boundary). The cheap seam was unreachable in exactly the
+  situation E exists for: couch, phone, no laptop.
+- **Question 5's "big head start".** `readDebugPanels()` has **ONE** registration site in the repo
+  (`plan-page-client.tsx:687`). Four of five surfaces return `{}`. ⚠️ **S63's shape one layer down: a
+  registry existing is not a registry populated.**
+
+**What E0 had to decide.** Each carried a recommendation so the pass would start from a position rather
+than a blank page:
 
 1. **The trigger affordance.** Floating control vs. shake vs. a You-tab entry. ⚠️ **Shake is the expensive
    one on iOS**: `DeviceMotionEvent.requestPermission()` is a permission prompt that only fires from a user
@@ -1364,6 +1383,14 @@ rather than a blank page:
    V1.5-facing, not R1-facing:** build the mutation, table and payload so the surface can **graduate** to a
    real product affordance when real users arrive, rather than wedging it into the HUD in a way that has to
    be rebuilt.
+   ✅ **ANSWERED S68, AGAINST THE LEAN.** Its **own control in the app shell, gated server-side on
+   `DEV_TOOLS_EMAILS`** — the flag that is actually in Vercel Production, actually server-checked, and
+   actually tested (`user-dev-tools.ts`). **Not the 🐛**, for three reasons in order of weight: the HUD's
+   gate is unreachable from the phone (above); the 🐛 sits at `left-2 top-2`, under the status bar in
+   standalone mode; and a state-dump toggle and a capture sheet are different actions, so one button means
+   a mode. **`readDebugPanels()` is what gets reused; the trigger is not.** ⚠️ **The payload snapshots at
+   sheet-OPEN, never at submit** — opening a sheet can change state, and the report may be typed a minute
+   later.
 2. **Media capture.** ⚠️ **Screen recording is effectively unavailable in mobile Safari** —
    `getDisplayMedia` is not supported on iOS, which kills the S39 vision's recording half outright. A
    DOM-to-canvas screenshot is possible but produces a *reconstruction*, not what he saw, and it will
@@ -1371,6 +1398,20 @@ rather than a blank page:
    all. **iOS's native screenshot + a plain file input**, so he screenshots the way he already does and
    attaches it. Zero capture code, real pixels, and it handles video too because iOS screen-records
    natively.*
+   ✅ **ANSWERED S68 — lean held, and the half the question never asked is now answered: WHERE it is
+   hosted.** Private **Supabase Storage** bucket; nullable `image_path` on the row; the sweep resolves a
+   signed URL locally with `SUPABASE_SERVICE_ROLE_KEY` (`.env.local` only, per BUG-068). ⚠️ **Claude called
+   this "the one non-trivial piece" before measuring it, and Griffin pushed back correctly:**
+   `@supabase/supabase-js` is already a production dependency and `src/lib/supabase/client.ts` already
+   returns a browser client carrying the session, so the upload is one call. Four small pieces: bucket, one
+   storage policy, one nullable column, sweep-side read. ⚠️ **The browser uploads DIRECT to Supabase, never
+   through our own server** — fewer moving parts, and it sidesteps Vercel's **4.5MB request-body limit**,
+   which does not bite for a screenshot and would hard-block a screen recording. R1 ships `accept="image/*"`
+   only; the architecture keeps video reachable without building for it. ⚠️ **And RLS IS load-bearing on
+   this one path**, against the S67 reflex: the upload rides the Storage API with the anon key + the user's
+   JWT, which is **door 1** — the door RLS genuinely holds. **Ordering:** the client mints the path UUID,
+   uploads, *then* submits with the path attached; an orphaned upload (upload lands, submit fails) is
+   harmless and the sweep ignores anything unreferenced.
 3. **⭐ Destination — the biggest simplification lever.** Options: a `feedback` table in Postgres that
    Claude sweeps at session start; a **Linear** ticket (this was S19's named graduation trigger); a file.
    *Lean: **the table.** Linear needs an OAuth authorization Griffin has not done, and it adds an
@@ -1379,15 +1420,34 @@ rather than a blank page:
    Linear is **already how this repo works** — Claude reads the docs at session start. Adding "read the
    feedback table" is a script, not an integration.* **The Linear trigger therefore moves to real users,
    not to this feature.**
+   ✅ **ANSWERED S68 — lean held with no argument, plus one narrowing: R1 is WRITE-ONLY.** One
+   `feedback.submit` mutation, no read procedure. Smaller surface, and it is what collapses question 4.
+   ⚠️ Per **"Two doors"**: `householdId` comes from `ctx` and is **never** accepted from input, the table
+   carries `household_id` + an RLS policy (door 1), and the mutation's own scoping is the whole of door 2.
 4. **Where the LLM cleanup happens.** Server-side at submit, or by Claude at sweep time. *Lean: **sweep
    time**, because it is free. Claude already writes the `bug-tracker.md` / `idea-backlog.md` entries in
    the house format. A server-side call adds cost, latency, a failure mode and a rate limit to buy a
    tidier row in a table only Claude reads.* ⚠️ **The one argument the other way:** cleanup at submit means
    the report is legible to *Griffin* between sessions. Worth weighing at E0, not now.
+   ✅ **ANSWERED S68 — sweep time, and the counter-argument DISSOLVED rather than lost.** Question 3's
+   write-only narrowing means **nothing reads the table between sessions**, so there is no reader for
+   submit-time cleanup to serve. ⚠️ **Two questions that looked independent were coupled; answering 3
+   collapsed 4.**
 5. **The auto-attached payload.** **Big head start: `readDebugPanels()` already produces most of this and
    is already on prod** (`src/lib/debug/debug-hud.ts`, shipped S17). Add: route, release/commit SHA,
    device + OS + viewport, the PostHog session id (**this is the join to replay — get it in the payload or
    the replay is unfindable**), recent tRPC calls, last Sentry error id, seeded-vs-real.
+   ⚠️ **CORRECTED S68 — the head start is ONE PANEL ON ONE TAB.** `useDebugPanel` has a single call site in
+   the repo (`plan-page-client.tsx:687`); Groceries, Recipes, You and onboarding return `{}`. **A registry
+   existing is not a registry populated** (S63's shape, one layer down). ✅ **ANSWERED:** everything listed
+   above, with `posthog.get_session_replay_url()` in place of the bare session id (**clickable, and the
+   join without which the replay is unfindable**), `Sentry.lastEventId()`, build SHA via
+   `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` (needs enabling in Vercel project settings), **a debug panel added
+   to Groceries only** — the other north-star surface, the one used standing in a shop — and a **tRPC ring
+   buffer** in a client link. ⚠️ **The ring buffer logs path + status + duration ONLY, never inputs or
+   outputs:** logging inputs would put the grocery list, meal titles and dietary constraints into the
+   table, which is **BUG-060's class arriving through a new door**. Stated before the code exists rather
+   than discovered after.
 6. **Bug vs. feature request.** One door or two. Griffin's S39 note is explicit that it must carry both.
 7. **✅ ANSWERED S60 — both users are engineers-with-context holding identical dev-tools permissions**, so
    this surface serves **two aggressive testers, not a stranger.** It does **not** need to be discoverable
@@ -1396,20 +1456,66 @@ rather than a blank page:
    build X"** inside a single submission, since only the second is weighted by source and a `source` field
    alone cannot express it.
 
+✅ **6 + 7 ANSWERED S68 — they are ONE question. One door. The submission is UNTYPED. The sweep
+decomposes it into 1..N typed claims.**
+
+The premise (*"a `source` field alone cannot express that"*) is right; the conclusion drawn from it — that
+the *submission* needs a claim-type field — does not follow. ⚠️ **Claim type is a property of a CLAIM, and
+a submission holds one or more of them.** *"The quantity editor drops the unit, and honestly we should let
+you type '2 lbs' directly"* is two claims, one of each type. **A one-to-many relationship cannot live in a
+column on the parent.** The table carries who and what was said; the sweep emits the types.
+
+It is also the right answer on its own merits: a type toggle at capture is work, done by the wrong person,
+at the worst moment, on a feature whose stated thesis is friction-free volume.
+
+- ⚠️ **A `status` column (`new` → `swept`) is MANDATORY, not a nicety** — without it the sweep re-files
+  every report at every session start.
+- **Each filed row carries the feedback id back** (`FB-012` in the `bug-tracker.md` row), so a bug traces
+  to its raw submission and Griffin can see which direction-half was staged and never ratified.
+- Ambiguity mostly stops mattering: an unclear submission yields two claims rather than forcing a choice.
+- **The sheet therefore shrinks to one text field + optional image + submit.** ⚠️ **The "optional
+  feature-area select" below is CUT** — the payload already carries the route.
+
+**Routing at sweep time is unchanged from the S60 call:** defects file directly from either user; product
+direction is Griffin's dictation and his wife's is staged for ratification.
+
 ## E1 — the build
 
-Provisional pending E0. Recorded so the shape is not re-derived from scratch:
+**No longer provisional — this is E0's output.** Full rationale in `decisions.md` → 2026-08-09 (S68).
 
-- [ ] `feedback` table + tRPC mutation, rate-limited like the other write paths. **Carries `source`
-      AND a claim type** (defect | product direction), per the weighting call below
-- [ ] Capture sheet: text (iOS's native keyboard mic covers "dictate" for **zero code**), optional
-      image attach, optional feature-area select
-- [ ] Payload assembly from `readDebugPanels()` + route + build + device + PostHog session id
+- [ ] `feedback` table + migration. `household_id` + RLS policy (door 1), `user_id` as **`source`**
+      (a user id, never a string, so a third user works), raw `body`, nullable `image_path`, `payload`
+      jsonb + its Zod schema, **`status` (`new` → `swept`)**. ⚠️ **NO claim-type column** — claim type is a
+      property of a claim and a submission holds one or more; the sweep emits it
+- [ ] `feedback.submit` mutation, `protectedProcedure`, rate-limited. **`householdId` from `ctx`, never
+      from input** (door 2 is the only thing holding that door)
+- [ ] Private **Supabase Storage** bucket + one storage policy scoping insert to the caller's own prefix.
+      ⚠️ **RLS is genuinely load-bearing here** (anon key + user JWT = door 1), unlike the Drizzle path
+- [ ] Capture sheet: **one text field** (iOS's native keyboard mic covers "dictate" for **zero code**) +
+      optional image via `<input type="file" accept="image/*">`, uploaded **direct from the browser**.
+      ⚠️ **On submit failure keep the text and offer retry, never clear** — that is BUG-014, and losing a
+      bug report to a bug is its worst instance. ⚠️ **Stays OUT of `OFFLINE_MUTATION_PATHS`** (replay
+      duplicates the row — BUG-056's shape)
+- [ ] Trigger: **its own control in the app shell, server-gated on `DEV_TOOLS_EMAILS`.** Payload snapshots
+      at sheet-**open**
+- [ ] Payload assembly: `readDebugPanels()` + route + `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` + device/OS/
+      viewport + `posthog.get_session_replay_url()` + `Sentry.lastEventId()` + seeded-vs-real + a tRPC ring
+      buffer logging **path/status/duration only, never inputs or outputs** (BUG-060's class, pre-empted)
+- [ ] A `useDebugPanel` registration on **Groceries** (the payload's one real gap that is worth closing)
 - [ ] Session-start sweep → **defects from either user file directly** to `bug-tracker.md`; **the wife's
-      product-direction items file to a staging section** with a recommendation, for Griffin's ratification
-- [ ] **No full product design pass in R1** — it rides the HUD seam both users hold. Build it to
-      **graduate** when real users arrive; do not build the graduation now
+      product-direction items file to a staging section** with a recommendation, for Griffin's ratification.
+      Marks rows `swept`, and each filed row back-references the feedback id
+- [ ] **No full product design pass in R1.** Build it to **graduate** when real users arrive — move the
+      control, swap the gate, table/mutation/payload unchanged — but do not build the graduation now
 - [ ] One E2E spec that submits and asserts the payload, verified failing first
+
+**⚠️ E1's placement was decided by the SUITE, not by taste — and it is Griffin's to ratify.** The trigger
+first shipped `fixed bottom-24 right-3 z-50` and X1 caught it intercepting the plan toast's **Retry**:
+Plan's action slot is `fixed inset-x-0 bottom-24`, full width, same band. **There is no free fixed band at
+the bottom of this app** (nav 0–64px, slot 96–148px), so any floating overlay lands on something. It now
+sits **inside the tab bar row** as a `flex-none` utility button, the one region that owns its space.
+**That is a change to spec §07 chrome — the four tabs narrow slightly — visible only to dev-tools accounts.
+Griffin's taste call.**
 
 ## ✅ RESOLVED S60 — E1 builds ONCE, after D. No v0 pull-forward.
 
@@ -1477,7 +1583,8 @@ setup item.
 
 ## E exit
 
-- [ ] E0 run and its calls recorded in `decisions.md`
+- [x] **E0 run and its calls recorded in `decisions.md`** ✅ **S68** — seven calls, one decided against its
+      lean, two false premises corrected in place
 - [ ] E1 built, deployed to prod, and **used at least once from Griffin's phone** before the two
       validation weeks start — a capture tool that has never captured anything is not verified
 
@@ -1527,6 +1634,7 @@ phase does not create.
 
 | Date | Change | Why |
 |------|--------|-----|
+| 2026-08-09 (S68) | **E0 RUN — all seven calls made and recorded in `decisions.md`.** Six leans held; **question 1 was decided against its lean**, and questions 6+7 turned out to be one question with a structural answer. E1's checklist is now E0's output rather than a provisional sketch: the trigger gets **its own control server-gated on `DEV_TOOLS_EMAILS`**, media is native-screenshot + a **direct-to-Supabase-Storage** upload, the table is **write-only**, cleanup is at sweep time, and the submission is **untyped** with the sweep decomposing it into typed claims. Two items **cut** (the feature-area select, any claim-type column); two **added** (a `status` column, a sanitised tRPC ring buffer). | ⚠️ **TWO STARTING POSITIONS RESTED ON FALSE CLAIMS ABOUT THE BUILD, and both are the project's own recurring shape.** (1) *"Reuse the HUD, behind `DEV_TOOLS_EMAILS`"* **merged two different flags**: `hudEnabled()` is dev / `NEXT_PUBLIC_DEBUG_HUD` / a `localStorage` key, and `NEXT_PUBLIC_DEBUG_HUD` **is not set in Vercel Production** (measured). The 🐛 therefore needs a browser console, **an installed iOS PWA has none, and its storage is isolated from Safari's** (S59's cookie-jar boundary) — so the cheap seam was unreachable in exactly the situation the feature exists for. **A feature premised on "one control, no laptop" had been scoped onto a control that requires a laptop to turn on.** (2) *"`readDebugPanels()` already produces most of the payload"* — **one registration site in the whole repo**, so four of five surfaces return `{}`. **S63's *a file existing is not a file working*, one layer down: a registry existing is not a registry populated.** ⚠️ **The structural half of 6+7 is the reusable one:** the doc correctly established that a `source` field cannot express the split, then concluded the *submission* needed a claim-type field. It does not follow — **claim type is a property of a CLAIM, a submission holds one or more, and a one-to-many relationship cannot live in a column on the parent.** ⚠️ And **answering 3 collapsed 4**: making the table write-only removed the only reader that submit-time cleanup existed to serve, so two questions that looked independent were coupled. ⚠️ Finally, **Claude priced the image half as "the one non-trivial piece" without checking** and Griffin pushed back; `@supabase/supabase-js` was already a production dependency with a live browser session, making the upload one call |
 | 2026-08-03 (S65) | **BUG-058 CLOSED, and the suite has no red left — PR #28 is unblocked.** The full run on a verified-idle machine gave **142 passed / 0 failed (19.5m)**; S64's failure was CPU contention (vitest + lint + typecheck inside the run, plus an FFOS `next dev` holding 123% CPU on a 4-core box). New **`X7`** pins the fix at a 4x CPU throttle and the S64 probe comes out of X6; **143 specs, all green, 815 unit green.** New permanent harness capability: `tests/e2e/harness/cpu-throttle.ts`. | ⚠️ **A green run is not a resolution, and that is the transferable half.** It cannot separate *the bug is gone* from *the trigger did not fire* — which is exactly what three sessions of "it passed this time" had been hiding. The dial made the A/B decidable in two minutes: **pre-fix at 4x → `value: ""`, `disabled: true`; post-fix at 4x → text intact.** ⚠️ **S63's remount was RIGHT.** It was filed off a code read, dismissed at S64 as unconfirmed, and confirmed at S65 by measurement. The three-session cost was never bad reasoning about the mechanism — it was that **nothing in the harness could make the mechanism fire**, so each session concluded from whichever way the coin landed, and S64 read its own X6 failure as proof its (correct) fix had missed. **A mechanism read off the source is a hypothesis until you can turn its TRIGGER on and off; a defect that only appears under load needs a load knob before it needs another theory.** ⚠️ Riders: **CDP CPU throttling slows the RENDERER only**, not the Next server on the same box, so it reproduces a slow phone rather than a loaded machine (a 1500ms tRPC delay produced *no* remount rather than a worse one); **an unverified dial is a no-op wearing a passing test**, so the helper fails unless a fixed busy-loop actually got slower; and **teardown must never throw**, after `cdpSession.detach` replaced the real assertion error in the report |
 | 2026-08-02 (S61) | **C's three design artifacts BUILT — the icon, the launch screen and the offline clause.** Workstream C is code-complete; the only thing left in it is **Griffin's two phones**. New `scripts/generate-splash.mjs` + `src/assets/splash-devices.json` (one table, two consumers), new `apple-splash.ts` + `splash.test.ts`, new `use-offline-clause.ts` + its unit table, new `.spec-offline-clause`, new **OF5/OF6/OF7** and a new `grocery-offline-clause` capture state. **BUG-051 🟠 filed rather than fixed** (an item added offline is the S60 illusion one control over). | ⚠️ **Every real defect this session was a value transcribed by eye instead of by its definition, and the icon carried three.** A `radial-gradient(circle at …)` has an implicit `farthest-corner` extent (0.892, not the placeholder's guessed 0.72); a **box-shadow blur radius is twice the Gaussian σ**; and an outer box-shadow is **clipped to outside its border box**, so an unmasked glow shines through a `.42`-alpha rim and makes the ember a different object. None of these look wrong in a thumbnail — they were caught by **sampling the rendered pixels against the arithmetic**, which is `/visual-qa`'s own "stop judging and measure" one layer lower down. ⚠️ **And the artifact beat the reasoning that predated it**: the placeholder's toque carried a comment arguing for scaling by the ink, which produced a hat ~8% larger than the locked `227px`. A comment explaining why a number is right is not evidence that it still is. |
 | 2026-08-02 (S61) | **The clause shipped as a crossfade and was corrected to a fade-swap**, and OF6 shipped too narrow to catch its own subject. | ⚠️ **Two stacked words in one grid cell is a true crossfade and puts both words in `textContent` at once** — so the header announced two contradictory states to anyone not looking at it, and every text assertion read `· offline · sending`. Neither opacity nor `visibility: hidden` helps, because `toHaveText` reads `textContent`. **At four characters of caption type a fade-swap and a crossfade look identical; announcing two contradictory states does not.** ⚠️ **The sharper one: OF6, whose entire subject is *no per-row anything*, could not see a per-row badge** — it measured the checkbox's own computed style, and a sibling element changes nothing about that. OF5 caught it; OF6 did not. *Ask what the layer cannot see* — **including a layer written this session**, which is S54's clause with the ink still wet. Widened to the row's text and box, then re-verified against an offline-**conditional** badge, because the first planted defect was unconditional and therefore appeared in both measurements — **a force-failure that does not reproduce the real defect proves nothing.** |

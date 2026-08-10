@@ -4,6 +4,157 @@ Session-by-session log of decisions, progress, and key discussions.
 
 ---
 
+## Session 68 — 2026-08-09 (Workstream E: E0 run and E1 built — and two of E0's own starting positions were false)
+
+**E0 closed with all seven calls recorded; E1 is code-complete. 860 unit green (841 → 860), lint +
+typecheck clean, FB1–FB3 green, migration `0011` applied and verified against the real database, the
+private `feedback` Storage bucket provisioned and its policy measured.**
+
+### ⛔ The headline: a feature premised on "one control, no laptop" had been scoped onto a control that needs a laptop to turn on
+
+`scope-1F.md` scoped E's trigger as *"reuse the HUD's corner control, behind `DEV_TOOLS_EMAILS`. Both R1
+users hold that flag, so the seam costs nothing."* **That sentence merged two different flags.**
+
+`hudEnabled()` is `NODE_ENV=development` **OR** `NEXT_PUBLIC_DEBUG_HUD=1` at build **OR** a `localStorage`
+key. Measured: **`NEXT_PUBLIC_DEBUG_HUD` is not set in Vercel Production.** So on prod the only route to the
+🐛 is the localStorage flag, which needs a browser console — and **an installed iOS PWA has none, with
+storage isolated from Safari's** (S59's cookie-jar boundary). The cheap seam was unreachable in precisely
+the situation Workstream E exists for: Griffin on the couch, phone, no laptop.
+
+`DEV_TOOLS_EMAILS` is a **server-side** check (`user-dev-tools.ts`) gating the You-tab test-mode card, and
+it *is* in Vercel Production. That is what Griffin verified at S50 — a different flag, a different
+mechanism. **The control now has its own affordance behind the server gate.**
+
+### ⚠️ The second false premise: "readDebugPanels() already produces most of the payload"
+
+**One registration site existed in the entire repo** (`plan-page-client.tsx:687`). Groceries, Recipes, You
+and onboarding returned `{}` — four of five surfaces. **S63's *a file existing is not a file working*, one
+layer down: a registry existing is not a registry populated.** E1 adds a second panel on Groceries (the
+other north-star surface, the one used standing in a shop) and lets route + ring buffer cover the rest.
+
+### The structural half of E0's one genuinely open question
+
+**6 and 7 were one question, and the answer is structural.** The doc correctly established that a `source`
+field cannot express the defect/direction split, then concluded the *submission* needed a claim-type
+column. It does not follow: **claim type is a property of a CLAIM, a submission holds one or more of them,
+and a one-to-many relationship cannot live in a column on the parent.** So the submission is **untyped**
+and the sweep decomposes it into 1..N typed claims. That also removed the feature-area select (the route
+already says it) and reduced the sheet to one text field + optional image + send.
+
+⚠️ **And answering question 3 collapsed question 4.** Making the table **write-only** removed the only
+reader that submit-time LLM cleanup existed to serve, so two questions that looked independent were
+coupled.
+
+### Guards that fired, and one I deliberately widened
+
+- **B7's §09 guard caught the sheet's `<textarea>`.** Routing it through `FreeformField` would have made
+  the app lie twice — the hardcoded `aria-label="Send to chef"` announces the wrong destination, and the
+  mic's *"voice is coming soon"* is false on a surface where iOS's own keyboard mic works (which is why E0
+  chose it: zero code). Widened from `toEqual([])` to one **line-pinned** exemption carrying its reason.
+  **Recorded as a real weakening of a guard, not a formality.**
+- **The same guard failed against its own documentation — fifth instance** (after `palette.test.ts`,
+  `caps-rungs.test.ts`, and twice inside BUG-049). The importers check matched the new file because the
+  words `FreeformField` appear in a comment *explaining why it is deliberately not used*. It strips
+  comments now. **Adding the file to the list would have been wrong twice: it does not import the control,
+  and recording it as a chef surface asserts something false about what it is.**
+- **`wipe()` did not cover `feedback`, so the suite would have filed fabricated bug reports.** Every run
+  would leave real rows that the session-start sweep files into `bug-tracker.md`. **BUG-061's failure one
+  table over** — a suite polluting the dataset a human decision is read from. Fixed in the wipe, with an
+  `aiMock` filter in the sweep as a second layer.
+
+### Two vendor APIs checked rather than assumed (S63's rule), and both had a catch
+
+- **`posthog.get_session_replay_url()` returns `""`, not null**, when no session exists — its own doc
+  comment says so. `?? null` would have stored an empty string, and **a falsy sentinel that is not null is
+  worse than a null**: it reads as "there is a replay link" in a payload dump. Now `|| null`.
+- **`Sentry.lastEventId` is absent from the SERVER build of `@sentry/nextjs` and present in the CLIENT
+  build** (`export * from '@sentry/react'`). A Node-resolved probe reported `undefined` and looked exactly
+  like an API that does not exist.
+
+### Measurements rather than assumptions
+
+- **A test of mine passed against broken code.** Force-failing two defects at once, the image-path test
+  stayed green — a zod validation error also returns `BAD_REQUEST`, so `toMatchObject({ code })` matched a
+  different failure entirely. Isolated, it reds correctly. **The assertion now pins the message.** Same
+  family as S61's *a force-failure that does not reproduce the real defect is a green with extra steps*:
+  an assertion loose enough for the wrong failure to satisfy.
+- **My own smoke test measured the wrong thing.** Port 3000 was occupied (an idle FFOS `next dev`), my dev
+  server landed on 3001, and I curled 3000 and got a 200 from something else.
+- **FB2 was force-failed** by unwiring `trpcRingLink` from the provider — red at *"the ring buffer recorded
+  nothing"*, which proves the spec measures the live client chain rather than the schema.
+- **The sweep was validated against a real inserted row** and its mark/re-mark idempotency, then the probe
+  was deleted. *"No unswept feedback"* is exactly what a broken query returns (S62).
+- **`autoExposeSystemEnvs` was already `true`** on the Vercel project, so there was nothing for Griffin to
+  click. But the build SHA now derives from the **base** `VERCEL_GIT_COMMIT_SHA` in `next.config.ts` rather
+  than Vercel's framework-prefixed variant, because the prefix behaviour cannot be verified without a
+  deploy and a null SHA is exactly the silent gap this project keeps finding late.
+- **The Storage door was measured, not asserted:** anon write to another user's prefix →
+  `403 new row violates row-level security policy`; anon list → `200 []`. ⚠️ **This is the one path in the
+  app where RLS is genuinely load-bearing** — the upload rides the Storage API with the anon key + the
+  user's JWT, which is **door 1**. The S67 reflex ("RLS doesn't protect us") is wrong about this file.
+
+### ⛔ The E2E run found a real product bug, and my diagnosis of the other failure was wrong twice
+
+The first full suite came back **161 passed / 2 failed (23.9m)**, and the two failures had nothing to do
+with each other.
+
+**X1 — a real product bug, introduced this session.** Playwright named it exactly:
+`<button data-testid="feedback-trigger"> intercepts pointer events` on the plan toast's **Retry**. The
+trigger shipped as `fixed bottom-24 right-3 z-50`; Plan's floating action slot is
+`fixed inset-x-0 bottom-24 z-[38]` — **full width, identical band.** On a phone, tapping Retry after a
+failed modify would have opened the feedback sheet, **on the error path of the north-star flow.**
+⚠️ **There is no free fixed band at the bottom of this app**: the nav owns 0–64px and the slot owns
+96–148px full-width, so *any* floating overlay lands on something. Moved **into the tab bar row** as a
+`flex-none` utility button — the one region that OWNS its space, so a control there reflows the tabs
+rather than covering anything. ⚠️ **That is a visual change to spec'd chrome (§07) and is flagged for
+Griffin's taste pass.**
+
+**A1 — a pre-existing flake, and I claimed causation from three samples.** `plan-intent` reported
+`page-has-heading-one` while a probe taken microseconds later found the `<h1>` back in the DOM: **BUG-058's
+intent-screen remount**, with axe scanning inside the window. The a11y spec asserts its anchor **before and
+after** the scan and its own comment says *"asserting one side of a window does not close it"* — **asserting
+both sides does not close it either** when the absence lands between them.
+
+⚠️ **THE PROCESS FAILURE IS THE TRANSFERABLE PART.** A first A/B gave 0/3 failures without the component and
+3/3 with it, and I called it a regression this session had caused. Re-running the removal leg gave **1 of 3
+failing** — the spec was **already flaky at roughly 33% before Workstream E existed**, and E's control merely
+raised it to 100% by adding work to the same load. **S65's own warning, walked into while quoting it.** Two
+further mechanisms were chased and both were wrong: tRPC batch contention (deferring behind
+`requestIdleCallback` changed nothing — the page is idle *precisely while* the primary query is in flight)
+and vaul's `Drawer` (a clean-looking 3/3-vs-2/2 A/B that was the same too-small sample). **Fixed in the
+spec**, which now settles on `networkidle` before grading — 5/5 green with the control present. ⚠️ **The
+code comments asserting the two wrong causes were rewritten rather than left**, because a wrong explanation
+in a comment is exactly how this repo's stale beliefs propagate.
+
+**Second run: 162 passed / 1 failed — and the survivor was my own spec.** `FB2` failed with *"the ring
+buffer recorded nothing"*. It waited on `heading level 1`, and **BUG-054's fix moved the Groceries `<h1>`
+into `GroceryTitle`, which renders on the loading path too** — so the heading appears while
+`grocery.current` is still in flight, and the ring only records a call when it settles. **S56's *waiting on
+a surface is not waiting on its data*, walked into by a spec written this session.** It passed in isolation
+and failed only in the full run, which is the shape S53/S65 keep naming: **a green isolated run proves
+nothing about a load-sensitive race.** Now waits on `grocery-row`. ⚠️ **Verified with the load knob rather
+than by hope** (S65): under `E2E_CPU_THROTTLE=4`, the old wait is **2/2 RED** and the new one **2/2 GREEN** —
+the dial reproduces the defect, so the fix is proven in both directions.
+
+**Third run: 162 passed / 1 failed (23.0m), and the survivor is unrelated to E.** `RC13` timed out waiting
+for a seeded recipe card at spec 134/163. It passed in both previous full runs of the same tree, is **3/3
+green in isolation and 3/3 under `E2E_CPU_THROTTLE=4`**, and touches no feedback code. Filed as **BUG-070**
+with what is actually measured. ⚠️ **The knob's failure to reproduce it is the useful half:** CDP throttling
+slows the **renderer only**, so a card that never rendered because its DATA never arrived is precisely the
+class it cannot reach — *"the load knob did not reproduce it"* is not evidence against the load theory
+(S65's own rider). **Deliberately not fixed by widening the timeout**, which would be a race with a longer
+fuse (S57). **`X1`, `A1` and `FB1`–`FB3` are all green.**
+
+### Griffin's calls this session
+
+- **Screenshots only, no capture code.** He pushed back on Claude pricing the image half as *"the one
+  non-trivial piece"* — correctly: `@supabase/supabase-js` was already a production dependency with a live
+  browser session, making the upload one call. **Claude had flagged the cost before measuring it.**
+- **Claude provisions the bucket** (done, as a checked-in idempotent script rather than dashboard clicks).
+- **The trigger gets its own dev-gated control** rather than riding the 🐛.
+
+---
+
 ## Session 67 — 2026-08-09 (Workstream D CLOSES: the three security items, and the layer that was never holding what everyone assumed)
 
 **Two PRs merged (#32, #33), one production credential removed, 841 unit green, lint + typecheck clean.

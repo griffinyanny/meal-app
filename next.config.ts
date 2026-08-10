@@ -34,6 +34,27 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+
+  env: {
+    // Which build a feedback report came from (1F/E). Without it a report says
+    // "this is broken" and nothing says which deploy it was broken on — the
+    // fix ships, the next report looks identical, and there is no way to tell
+    // whether it is a regression or a stale build.
+    //
+    // ⚠️ DERIVED FROM THE BASE SYSTEM VAR, NOT THE FRAMEWORK-PREFIXED ONE.
+    // Vercel also exposes `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA` for Next.js
+    // projects, and reading that directly would have been one character
+    // shorter — but it depends on Vercel's framework-prefix behaviour, which
+    // cannot be verified without a deploy, and a null SHA is exactly the kind
+    // of silent gap this project keeps finding after the fact. Reading
+    // `VERCEL_GIT_COMMIT_SHA` (the base system var, present whenever
+    // `autoExposeSystemEnvs` is on — measured true for this project via the
+    // API) and re-exporting it removes that dependency entirely.
+    //
+    // Empty string locally and in both Playwright suites, where there is no
+    // Vercel build. `capture.ts` maps that to null.
+    NEXT_PUBLIC_BUILD_SHA: process.env.VERCEL_GIT_COMMIT_SHA ?? "",
+  },
 };
 
 // ⚠️ The wrapper ALWAYS runs; only the source-map upload is conditional.
