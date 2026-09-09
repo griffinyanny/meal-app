@@ -19,19 +19,29 @@ Built as a mobile-first PWA on Next.js 16, React 19, tRPC, Drizzle, and Postgres
 ## Screenshots
 
 <p align="center">
-  <img src=".github/screenshots/01-plan.png" width="24%" alt="The week's plan, with the chef's reasoning under each meal" />
-  <img src=".github/screenshots/02-groceries.png" width="24%" alt="The grocery list, grouped by aisle" />
-  <img src=".github/screenshots/03-recipes.png" width="24%" alt="The recipe library" />
-  <img src=".github/screenshots/04-onboarding.png" width="24%" alt="The onboarding interview playing back what it learned" />
+  <img src=".github/screenshots/01-plan.png" width="31%" alt="The week's plan, with the chef's reasoning under each meal" />
+  <img src=".github/screenshots/02-groceries.png" width="31%" alt="The grocery list, grouped by aisle" />
+  <img src=".github/screenshots/03-recipes.png" width="31%" alt="The recipe library" />
 </p>
 
-<p align="center"><em>The planned week &middot; the grocery list &middot; the recipe library &middot; onboarding playback</em></p>
+<p align="center"><em>The planned week &middot; the grocery list &middot; the recipe library</em></p>
 
 The first screen shows real model output from a live generation. Note the reasoning under each meal: Wednesday's salmon "sets up leftover use later" and Friday's curry "finishes the spinach leftover from Wednesday's salmon salad." That is the planner's ingredient-reuse rule doing its job, and it is why one bunch of herbs gets finished across two dishes instead of rotting.
 
-The last screen is the end of onboarding, where the chef plays back what it heard. Allergies render in their own card because they are modeled as a separate class from preferences.
+### Onboarding
 
-All four are captured by the automated visual harness described below.
+<p align="center">
+  <img src=".github/screenshots/04-onboarding-interview.png" width="31%" alt="A diet question with tappable chips, a freeform field, and the chef catching a preference out of typed text" />
+  <img src=".github/screenshots/05-onboarding-reflect.png" width="31%" alt="The end of onboarding, where the chef plays back everything it learned" />
+</p>
+
+<p align="center"><em>The interview &middot; the playback</em></p>
+
+Onboarding is an interview, not a settings form. Every question takes a tap, a sentence, or the microphone, and the two paths feed the same place: on the left, someone typed "I love Thai food" into a question about dietary framework, and the chef caught `Thai` as a preference and showed its work. Nothing is lost for answering the wrong way, and any question can be skipped.
+
+The right screen closes the interview by playing back what it heard, in the chef's own voice, before writing anything. Allergies get their own card in a different color because they are modeled as a separate class from preferences, and the code paths that can change them are deliberately narrower.
+
+All five are captured by the automated visual harness described below.
 
 ---
 
@@ -102,7 +112,7 @@ The suite is built around the idea that different failure modes need different i
 
 **A real-model eval suite** grades the five AI tasks the product depends on against the live model, because every instrument above runs on a deterministic mock and none of them can tell you whether the model did a good job. Around fifty cases, roughly four in five graded by deterministic code reading structured output, the rest by a judge model from a different family. Cases are drawn from defects this app actually had, and [their provenance is written down](evals/failure-taxonomy.md).
 
-Two decisions in there are worth more than the case count. Model-quality checks are graded against the **raw** model output rather than the object our validator has already repaired, because a validator that renumbers steps and drops duplicate days makes the matching check incapable of failing. And there is no pass-rate threshold: across this many cases, sampling noise crosses any useful threshold often enough to make a red build meaningless, so a safety check that fails is re-run five times and only a second failure fails the build. The reasoning is in [evals/README.md](evals/README.md), and the numbers are in [evals/RESULTS.md](evals/RESULTS.md).
+Two decisions in there are worth more than the case count. Model-quality checks are graded against the **raw** model output, before our validator has repaired anything, because a validator that renumbers steps and drops duplicate days makes the matching check incapable of failing. And there is no pass-rate threshold: across this many cases, sampling noise crosses any useful threshold often enough to make a red build meaningless, so a safety check that fails is re-run five times and only a second failure fails the build. The reasoning is in [evals/README.md](evals/README.md), and the numbers are in [evals/RESULTS.md](evals/RESULTS.md).
 
 **Migration and RLS checks** run on every pass, so schema safety is a test result.
 
