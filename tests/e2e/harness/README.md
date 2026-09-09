@@ -2,9 +2,9 @@
 
 This `harness/` directory is the **generic, copyable** half of the E2E setup. It
 knows nothing about meal-app. Everything meal-app-specific lives in `../app/` and
-`../specs/`. To stand up the same kind of suite in another repo (a second app, Norah's
-Briefing — same Next.js + Supabase + Drizzle + Vercel shape), copy this directory
-and write a thin app layer.
+`../specs/`. To stand up the same kind of suite in any repo of the same shape
+(Next.js + Supabase + Drizzle + Vercel), copy this directory and write a thin
+app layer.
 
 ## What the core gives you
 
@@ -79,8 +79,8 @@ then runs against canned fixtures.
 In-repo and copyable by design — no npm package, no separate repo. Claude does the
 porting; this README is the checklist.
 
-**Validated by the port to a second app (S37):** harness/ copied verbatim, app layer written
-against the Goal tab, first run green except one ambiguous selector. Budget it as
+**Validated by a port to a second app (S37):** harness/ copied verbatim, app layer written
+against that app's main tab, first run green except one ambiguous selector. Budget it as
 an afternoon, not a project. What actually took the time was none of the harness:
 it was deciding what a deterministic seed for that app's domain looks like.
 
@@ -97,8 +97,8 @@ it was deciding what a deterministic seed for that app's domain looks like.
 - The mock stream is the AI-SDK **text-stream** protocol (progressive JSON text),
   NOT SSE.
 - **Seed for determinism, not realism.** Prefer inputs the app reads directly
-  (configured rows) over inputs it has to infer from a synthetic history. the second app's
-  Goal seed sets paycheck schedules and budgets rather than transactions, so
+  (configured rows) over inputs it has to infer from a synthetic history. The
+  ported app's seed sets schedules and budgets rather than transactions, so
   income and discretionary resolve the same way on every run instead of drifting
   with the trailing window.
 - **Give the capture layer an ugly state.** Every hand-written seed is
