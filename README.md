@@ -15,6 +15,25 @@ Built as a mobile-first PWA on Next.js 16, React 19, tRPC, Drizzle, and Postgres
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/01-plan.png" width="24%" alt="The week's plan, with the chef's reasoning under each meal" />
+  <img src="docs/screenshots/02-groceries.png" width="24%" alt="The grocery list, grouped by aisle" />
+  <img src="docs/screenshots/03-recipes.png" width="24%" alt="The recipe library" />
+  <img src="docs/screenshots/04-onboarding.png" width="24%" alt="The onboarding interview playing back what it learned" />
+</p>
+
+<p align="center"><em>The planned week &middot; the grocery list &middot; the recipe library &middot; onboarding playback</em></p>
+
+The first screen shows real model output from a live generation. Note the reasoning under each meal: Wednesday's salmon "sets up leftover use later" and Friday's curry "finishes the spinach leftover from Wednesday's salmon salad." That is the planner's ingredient-reuse rule doing its job, and it is why one bunch of herbs gets finished across two dishes instead of rotting.
+
+The last screen is the end of onboarding, where the chef plays back what it heard. Allergies render in their own card because they are modeled as a separate class from preferences.
+
+All four are captured by the automated visual harness described below.
+
+---
+
 ## What it does
 
 **Get recipes in, three ways.** Paste a URL and it parses the page into structured recipe data. Describe what you want and it generates one. Take a recipe you already have and modify it in conversation ("make it dairy free", "halve it", "I don't have shallots").
