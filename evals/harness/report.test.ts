@@ -1,7 +1,7 @@
 // The report is an evidence document, so its arithmetic is tested like any other
 // utility: a summary that can drift from the runs it describes is decoration.
 import { describe, expect, it } from "vitest";
-import { computeTotals, renderResults, totalCost } from "./report";
+import { computeTotals, renderResults, totalCost, truncatedRuns } from "./report";
 import type { CaseResult, EvalRunResults } from "./runner";
 
 function check(
@@ -21,6 +21,7 @@ function run(overrides: Partial<EvalRunResults> = {}): EvalRunResults {
     repeat: 3,
     startedAt: "2026-09-09T00:00:00.000Z",
     finishedAt: "2026-09-09T00:01:00.000Z",
+    definedCases: 1,
     cases: [
       {
         name: "an allergy is captured",
@@ -87,6 +88,26 @@ describe("computeTotals", () => {
     ]);
     expect(totals.gatesFailed).toEqual(["preferences-talk · confirmed · x"]);
     expect(totals.unreproduced).toEqual(["preferences-talk · flake · y"]);
+  });
+});
+
+describe("truncatedRuns", () => {
+  it("catches a shard written by a filtered run", () => {
+    // The real incident: a single-case negative-control run overwrote a task's
+    // shard, and the committed report described 44 cases instead of 51 while
+    // presenting a deliberately planted defect as a genuine finding.
+    const partial = run({ definedCases: 8 });
+    expect(truncatedRuns([partial])).toHaveLength(1);
+  });
+
+  it("passes a complete run", () => {
+    expect(truncatedRuns([run({ definedCases: 1 })])).toHaveLength(0);
+  });
+
+  it("does not block a shard written before the field existed", () => {
+    const legacy = run();
+    delete (legacy as { definedCases?: number }).definedCases;
+    expect(truncatedRuns([legacy])).toHaveLength(0);
   });
 });
 

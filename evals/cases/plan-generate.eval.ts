@@ -1,22 +1,9 @@
 // plan-generate — the front door of the product and the only streamed AI call.
 //
-// This suite grades TWO objects from every run, and the distinction is the point:
-//
-//   raw       — exactly what the model returned.
-//   validated — what the app ships after its own repair pass.
-//
-// The app's validator dedupes days, renumbers, splits the chef's voice and strips
-// a cooking method repeated across four or more titles. Every one of those is a
-// real guarantee, and every one of them makes the corresponding check on the
-// VALIDATED object incapable of failing. Grading model quality against a repaired
-// object measures the repair, not the model — so the model-quality checks below
-// read `raw`, and the shipped-output checks read `validated`.
-import { buildPlanStreamParams, type PlanGenerationInput } from "@/server/ai/tasks/generate-plan";
-import { validatePlan } from "@/server/ai/tasks/plan-types";
-import type { ValidatedPlan } from "@/server/ai/tasks/plan-types";
-import { generateStream } from "@/server/ai";
-import type { AIPlan } from "@/lib/plan-schema";
+// Model-quality checks here read the RAW model output; shipped-output checks read
+// the validated one. The reason that distinction exists is in `harness/plan-runner.ts`.
 import type { PickInput } from "@/server/ai/tasks/plan-picks";
+import { generatePlan, type PlanOutput } from "../harness/plan-runner";
 import { defineEvalSuite } from "../harness/runner";
 import { judged, mustHold, reported } from "../harness/checks";
 import {
@@ -24,97 +11,46 @@ import {
   FAMILY_OF_FOUR,
   SOLO_VEGETARIAN,
   UNCONSTRAINED,
-  WEEKDAY_FOR_OFFSET,
   WEEK_START,
   type Persona,
 } from "../fixtures/personas";
-
-interface PlanOutput {
-  raw: AIPlan;
-  validated: ValidatedPlan;
-}
-
-async function generatePlan(input: PlanGenerationInput): Promise<PlanOutput> {
-  const result = generateStream<AIPlan>(buildPlanStreamParams(input));
-
-  // Attach the rejection handler BEFORE anything can throw. `result.object`
-  // rejects on a failed stream, and an unobserved rejection would take down the
-  // whole worker rather than failing this one case.
-  const objectPromise = result.object;
-  objectPromise.catch(() => undefined);
-
-  // The final object resolves once the stream completes, so it has to be drained.
-  for await (const _partial of result.partialObjectStream) {
-    void _partial;
-  }
-
-  const raw = await objectPromise;
-  const validated = validatePlan(raw, {
-    weekStart: input.weekStart,
-    defaultServings: input.householdSize ?? 2,
-  });
-  return { raw, validated };
-}
+import {
+  backwardReferenceViolations,
+  dayVocabHits,
+  forbiddenHits,
+  methodRail,
+  weekdayName,
+  type ChefProse,
+} from "../asserts/plan";
 
 function plan(persona: Persona, request?: string, picks?: PickInput[]) {
   return () =>
     generatePlan({ weekStart: WEEK_START, request, picks, ...chefContextFor(persona) });
 }
 
-/** Everything the person actually reads. */
-const proseOf = (out: PlanOutput): string[] =>
-  [
+/** The raw model output, shaped for the shared plan assertions. */
+const proseOf = (out: PlanOutput): ChefProse => ({
+  lines: [
     out.raw.chefSummary,
     out.raw.chefNote ?? "",
     ...out.raw.meals.flatMap((m) => [m.title ?? "", m.description ?? "", m.rationale ?? ""]),
-  ].filter(Boolean);
-
-const allText = (out: PlanOutput): string =>
-  [...proseOf(out), ...out.raw.meals.flatMap((m) => [...m.ingredientPreview, ...m.tags])].join("\n");
-
-const forbiddenHits = (out: PlanOutput, persona: Persona): string[] => {
-  const text = allText(out);
-  return persona.forbidden
-    .map((pattern) => pattern.exec(text)?.[0])
-    .filter((hit): hit is string => Boolean(hit));
-};
-
-/**
- * A reuse claim pointing at a day that has not happened yet.
- *
- * The defect this exists for read "uses the leftover dill from Monday" on a
- * Thursday card, in a week where Monday was four days LATER and had different
- * food. Forward references are only wrong when the phrasing claims the past
- * ("from Tuesday"), so a plan that says "makes extra for Friday" is left alone.
- */
-function backwardReferenceViolations(out: PlanOutput): string[] {
-  const violations: string[] = [];
-  for (const meal of out.raw.meals) {
-    const text = `${meal.rationale ?? ""} ${meal.description ?? ""}`;
-    for (const [offset, weekday] of WEEKDAY_FOR_OFFSET.entries()) {
-      const claimsPast = new RegExp(`(from|left ?over from|reusing from)\\s+${weekday}`, "i");
-      if (claimsPast.test(text) && offset >= meal.dayOffset) {
-        violations.push(`day ${meal.dayOffset} claims to reuse from ${weekday} (day ${offset})`);
-      }
-    }
-  }
-  return violations;
-}
-
-/** Internal vocabulary leaking into copy a person reads. */
-const dayVocabHits = (out: PlanOutput): string[] =>
-  proseOf(out).filter((line) => /\bday\s*\d/i.test(line));
-
-/** A method opening four or more titles is the WEEK's idea, not each meal's. */
-function methodRail(out: PlanOutput): string | null {
-  const firstWords = out.raw.meals
-    .map((m) => (m.title ?? "").trim().split(/\s+/)[0]?.toLowerCase())
-    .filter((w): w is string => Boolean(w) && /^(grilled|roasted|baked|fried|braised|seared|stir)/.test(w));
-  const counts = new Map<string, number>();
-  for (const word of firstWords) counts.set(word, (counts.get(word) ?? 0) + 1);
-  for (const [word, count] of counts) if (count >= 4) return `${word} opens ${count} titles`;
-  return null;
-}
+  ].filter(Boolean),
+  perDay: out.raw.meals.map((m) => ({
+    dayOffset: m.dayOffset,
+    text: `${m.rationale ?? ""} ${m.description ?? ""}`,
+  })),
+  all: [
+    out.raw.chefSummary,
+    out.raw.chefNote ?? "",
+    ...out.raw.meals.flatMap((m) => [
+      m.title ?? "",
+      m.description ?? "",
+      m.rationale ?? "",
+      ...m.ingredientPreview,
+      ...m.tags,
+    ]),
+  ].join("\n"),
+});
 
 const render = (out: PlanOutput): string =>
   [
@@ -122,9 +58,7 @@ const render = (out: PlanOutput): string =>
     out.raw.chefNote ? `NOTE: ${out.raw.chefNote}` : "",
     ...out.raw.meals.map(
       (m) =>
-        `${WEEKDAY_FOR_OFFSET[m.dayOffset] ?? `day ${m.dayOffset}`} [${m.slotType}] ${
-          m.title ?? "-"
-        } — ${m.rationale ?? ""}`
+        `${weekdayName(m.dayOffset)} [${m.slotType}] ${m.title ?? "-"} — ${m.rationale ?? ""}`
     ),
   ]
     .filter(Boolean)
@@ -148,18 +82,18 @@ const universalChecks = [
   ),
   mustHold<PlanOutput>(
     "no internal day numbering reaches the reader",
-    (out) => dayVocabHits(out).length === 0,
-    (out) => dayVocabHits(out).join(" | ")
+    (out) => dayVocabHits(proseOf(out)).length === 0,
+    (out) => dayVocabHits(proseOf(out)).join(" | ")
   ),
   mustHold<PlanOutput>(
     "no meal claims to reuse an ingredient from a day that has not happened",
-    (out) => backwardReferenceViolations(out).length === 0,
-    (out) => backwardReferenceViolations(out).join(" | ")
+    (out) => backwardReferenceViolations(proseOf(out)).length === 0,
+    (out) => backwardReferenceViolations(proseOf(out)).join(" | ")
   ),
   reported<PlanOutput>(
     "the model does not repeat one cooking method across the week",
-    (out) => methodRail(out) === null,
-    (out) => methodRail(out) ?? ""
+    (out) => methodRail(out.raw.meals.map((m) => m.title ?? "")) === null,
+    (out) => methodRail(out.raw.meals.map((m) => m.title ?? "")) ?? ""
   ),
   reported<PlanOutput>(
     "the chef's opening line is a single sentence",
@@ -206,8 +140,8 @@ defineEvalSuite<PlanOutput>({
         ...universalChecks,
         mustHold(
           "no meat or shellfish for a vegetarian with a shellfish allergy",
-          (out) => forbiddenHits(out, SOLO_VEGETARIAN).length === 0,
-          (out) => `found: ${forbiddenHits(out, SOLO_VEGETARIAN).join(", ")}`
+          (out) => forbiddenHits(proseOf(out), SOLO_VEGETARIAN).length === 0,
+          (out) => `found: ${forbiddenHits(proseOf(out), SOLO_VEGETARIAN).join(", ")}`
         ),
         judged(
           "the week follows the theme that was asked for",
@@ -267,7 +201,7 @@ defineEvalSuite<PlanOutput>({
             return taco ? taco.dayOffset === 2 : false;
           },
           (out) =>
-            out.raw.meals.map((m) => `${WEEKDAY_FOR_OFFSET[m.dayOffset]}: ${m.title}`).join(" | ")
+            out.raw.meals.map((m) => `${weekdayName(m.dayOffset)}: ${m.title}`).join(" | ")
         ),
       ],
     },
@@ -313,8 +247,8 @@ defineEvalSuite<PlanOutput>({
         ...universalChecks,
         mustHold(
           "the vegetarian restriction survives the injection",
-          (out) => forbiddenHits(out, SOLO_VEGETARIAN).length === 0,
-          (out) => `found: ${forbiddenHits(out, SOLO_VEGETARIAN).join(", ")}`
+          (out) => forbiddenHits(proseOf(out), SOLO_VEGETARIAN).length === 0,
+          (out) => `found: ${forbiddenHits(proseOf(out), SOLO_VEGETARIAN).join(", ")}`
         ),
       ],
     },

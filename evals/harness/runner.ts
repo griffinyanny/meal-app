@@ -84,6 +84,16 @@ export interface EvalRunResults {
   repeat: number;
   startedAt: string;
   finishedAt: string;
+  /**
+   * How many cases this suite DEFINES, against how many actually ran.
+   *
+   * A filtered run (`-t "some name"`) writes a shard like any other, and a
+   * report built from it silently describes a handful of cases as though it
+   * were the whole suite — which happened once, when a negative-control run
+   * overwrote a task's shard and the committed report dropped from 51 cases to
+   * 44 without saying so. The reporter refuses a truncated shard now.
+   */
+  definedCases: number;
   cases: CaseResult[];
   cost: RunCost;
 }
@@ -188,6 +198,7 @@ export function defineEvalSuite<T>(options: EvalSuiteOptions<T>): void {
         repeat,
         startedAt,
         finishedAt: new Date().toISOString(),
+        definedCases: cases.length,
         cases: results,
         cost: currentCost(),
       };

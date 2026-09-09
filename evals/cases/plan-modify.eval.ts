@@ -15,10 +15,16 @@ import {
   chefContextFor,
   DAIRY_FREE,
   FAMILY_OF_FOUR,
-  WEEKDAY_FOR_OFFSET,
   WEEK_START,
   type Persona,
 } from "../fixtures/personas";
+import {
+  backwardReferenceViolations,
+  dayVocabHits,
+  forbiddenHits,
+  weekdayName,
+  type ChefProse,
+} from "../asserts/plan";
 
 interface ModifyOutput {
   raw: AIPlanModification;
@@ -57,14 +63,27 @@ function modify(
   };
 }
 
-const proseOf = (out: ModifyOutput): string[] =>
-  [
+/** The raw modification, shaped for the shared plan assertions. */
+const proseOf = (out: ModifyOutput): ChefProse => ({
+  lines: [
     out.raw.chefResponse,
     ...out.raw.changedMeals.flatMap((m) => [m.title ?? "", m.description ?? "", m.rationale ?? ""]),
-  ].filter(Boolean);
-
-const dayVocabHits = (out: ModifyOutput): string[] =>
-  proseOf(out).filter((line) => /\bday\s*\d/i.test(line));
+  ].filter(Boolean),
+  perDay: out.raw.changedMeals.map((m) => ({
+    dayOffset: m.dayOffset,
+    text: `${m.rationale ?? ""} ${m.description ?? ""}`,
+  })),
+  all: [
+    out.raw.chefResponse,
+    ...out.raw.changedMeals.flatMap((m) => [
+      m.title ?? "",
+      m.description ?? "",
+      m.rationale ?? "",
+      ...m.ingredientPreview,
+      ...m.tags,
+    ]),
+  ].join("\n"),
+});
 
 const touchedOffsets = (out: ModifyOutput): number[] =>
   Array.from(
@@ -74,21 +93,11 @@ const touchedOffsets = (out: ModifyOutput): number[] =>
     ])
   ).sort((a, b) => a - b);
 
-const forbiddenHits = (out: ModifyOutput, persona: Persona): string[] => {
-  const text = [
-    ...proseOf(out),
-    ...out.raw.changedMeals.flatMap((m) => [...m.ingredientPreview, ...m.tags]),
-  ].join("\n");
-  return persona.forbidden
-    .map((pattern) => pattern.exec(text)?.[0])
-    .filter((hit): hit is string => Boolean(hit));
-};
-
 const show = (out: ModifyOutput) =>
   [
     `CHEF: ${out.raw.chefResponse}`,
     `TOUCHED: ${touchedOffsets(out)
-      .map((o) => `${o}=${WEEKDAY_FOR_OFFSET[o]}`)
+      .map((o) => `${o}=${weekdayName(o)}`)
       .join(", ")}`,
     ...out.raw.changedMeals.map((m) => `  ${m.dayOffset}: ${m.title}`),
   ].join("\n");
@@ -97,13 +106,21 @@ const show = (out: ModifyOutput) =>
 const universalChecks = [
   mustHold<ModifyOutput>(
     "no internal day numbering reaches the reader",
-    (out) => dayVocabHits(out).length === 0,
-    (out) => dayVocabHits(out).join(" | ")
+    (out) => dayVocabHits(proseOf(out)).length === 0,
+    (out) => dayVocabHits(proseOf(out)).join(" | ")
   ),
   mustHold<ModifyOutput>(
     "every touched day is a real day of this week",
     (out) => touchedOffsets(out).every((o) => o >= 0 && o <= 6),
     (out) => `touched: ${touchedOffsets(out).join(",")}`
+  ),
+  // The same check the generation door gets. It is here because this is the door
+  // where the day-vocabulary bug reappeared after being fixed in generation, and
+  // "we fixed it over there" is not evidence about this side.
+  mustHold<ModifyOutput>(
+    "no replacement claims to reuse an ingredient from a day that has not happened",
+    (out) => backwardReferenceViolations(proseOf(out)).length === 0,
+    (out) => backwardReferenceViolations(proseOf(out)).join(" | ")
   ),
   reported<ModifyOutput>(
     "the chef answers in one short line",
@@ -209,8 +226,8 @@ defineEvalSuite<ModifyOutput>({
         ...universalChecks,
         mustHold(
           "no dairy appears in the replacement despite the request",
-          (out) => forbiddenHits(out, DAIRY_FREE).length === 0,
-          (out) => `found: ${forbiddenHits(out, DAIRY_FREE).join(", ")}`
+          (out) => forbiddenHits(proseOf(out), DAIRY_FREE).length === 0,
+          (out) => `found: ${forbiddenHits(proseOf(out), DAIRY_FREE).join(", ")}`
         ),
       ],
     },

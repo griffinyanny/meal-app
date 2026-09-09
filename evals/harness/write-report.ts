@@ -9,7 +9,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { EvalRunResults } from "./runner";
-import { renderResults } from "./report";
+import { renderResults, truncatedRuns } from "./report";
 import { promptFingerprint } from "./fingerprint";
 
 const EVALS_DIR = path.resolve(__dirname, "..");
@@ -60,8 +60,23 @@ function main(): void {
   }
 
   // A filtered run (`npm run eval:task -t …`) leaves shards for only the tasks it
-  // touched. Reporting that as though it were a full run would put a confident
-  // summary over a partial measurement, so say so loudly instead.
+  // touched, and a shard holding only the cases that matched the filter. Either
+  // one would put a confident summary over a partial measurement.
+  //
+  // The truncation check is the load-bearing one: a missing task is obvious in the
+  // report, while a task quietly reporting 1 of its 8 cases is not. That happened —
+  // a negative-control run overwrote a shard and the committed report silently
+  // described 44 cases instead of 51.
+  const truncated = truncatedRuns(runs);
+  if (truncated.length > 0) {
+    console.error("⛔ Refusing to write a report from a filtered run.\n");
+    for (const r of truncated) {
+      console.error(`   ${r.task}: ${r.cases.length} of ${r.definedCases} cases ran`);
+    }
+    console.error("\n   Run `npm run eval` for a full run before regenerating the report.");
+    process.exit(1);
+  }
+
   const missing = TASK_ORDER.filter((task) => !runs.some((r) => r.task === task));
   if (missing.length > 0) {
     console.warn(
@@ -93,7 +108,7 @@ function main(): void {
     r.cases.filter((c) => c.gate?.reproduced).map((c) => `${r.task}: ${c.name}`)
   );
 
-  console.log(`Wrote evals/RESULTS.md and evals/baseline/${commit}.json`);
+  console.log(`Wrote evals/RESULTS.md and evals/baseline/latest.json (${commit})`);
   if (failures.length) {
     console.error(`\n${failures.length} confirmed must-hold failure(s):`);
     for (const f of failures) console.error(`  - ${f}`);

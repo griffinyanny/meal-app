@@ -145,6 +145,19 @@ export function judgedLines(runs: EvalRunResults[]): string[] {
   return rows;
 }
 
+/**
+ * Shards holding fewer cases than their suite defines — i.e. written by a
+ * filtered run, and unfit to build a report from.
+ *
+ * Shards written before this field existed carry no `definedCases`; those are
+ * treated as complete rather than blocking, since there is nothing to compare.
+ */
+export function truncatedRuns(runs: EvalRunResults[]): EvalRunResults[] {
+  return runs.filter(
+    (r) => typeof r.definedCases === "number" && r.cases.length < r.definedCases
+  );
+}
+
 export interface ReportMeta {
   commit: string;
   promptsHash: string;

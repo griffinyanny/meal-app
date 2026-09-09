@@ -134,6 +134,17 @@ free, offline test in the normal commit gauntlet fingerprints the prompt and tas
 sources and **fails if they have changed since the last recorded run**. That is
 the only thing standing between "we have evals" and "we had evals".
 
+Two smaller guards exist for the same reason, and the second was added the hard
+way. A run clears the results directory before it starts, so a report can never
+blend two runs. And a filtered run — `npm run eval:task -t "some case"`, which is
+how you iterate — records how many cases the suite *defines* alongside how many
+actually ran, and the reporter **refuses to build a report from a truncated
+shard**. That guard exists because a single filtered run overwrote one task's
+results during development, and the committed report silently described 44 cases
+instead of 51, listing a deliberately planted defect as a real finding. A summary
+that can quietly describe a different run than the one it names is worth less
+than no summary.
+
 ## Offline here, online in production
 
 Everything in this directory is an offline eval: fixed inputs, graded outputs, run
@@ -188,9 +199,17 @@ suite this size, that was the cheaper side.
 ```
 evals/
   cases/          one file per task; each case is a name, an input, and its checks
-  harness/        the runner, the four check kinds, the judge, cost metering, the report
+  harness/        the runner, the four check kinds, the judge, cost metering, the report,
+                  and the two task drivers that need more than a function call
+  asserts/        assertions shared by more than one task
   fixtures/       fictional households and a seven-recipe week with hand-counted totals
-  baseline/       committed raw outputs from the run RESULTS.md describes
+  baseline/       the raw outputs from the run RESULTS.md describes; replaced each run
   RESULTS.md      generated; committed
   freshness.test.ts   runs in the free gauntlet, fails when the prompts outrun the results
 ```
+
+`asserts/plan.ts` exists because the two plan doors keep turning out to have the
+same holes: the internal day-numbering leak was found and fixed on the generation
+path, then reappeared in modify months later because nothing had asked whether the
+second door had it too. Anything true of "the chef writing about a week" is
+asserted against both.

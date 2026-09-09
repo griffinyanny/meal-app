@@ -7,57 +7,16 @@
 // deterministic code. These cases grade both halves, because a grocery list is
 // only correct if the split holds — a model that quietly invents a total is the
 // failure this architecture exists to prevent.
-import {
-  normalizeIngredients,
-  type RawIngredientLine,
-} from "@/server/ai/tasks/ingredient-normalize";
-import {
-  aggregateIngredients,
-  type AggregatedItem,
-  type NormalizedLine,
-} from "@/server/grocery/aggregate";
-import type { NormalizedResult } from "@/lib/normalized-ingredient";
 import { defineEvalSuite } from "../harness/runner";
 import { mustHold, reported, invariant } from "../harness/checks";
-import { toNormalizedLines, toRawLines, type FixtureRecipe } from "../harness/adapters";
+import {
+  normalizeAndAggregate,
+  rowsMatching,
+  showList as show,
+  type NormalizeOutput,
+} from "../harness/normalize-runner";
+import type { FixtureRecipe } from "../harness/adapters";
 import { GARLIC_TOTAL_CLOVES, WEEK } from "../fixtures/week";
-
-interface NormalizeOutput {
-  recipes: FixtureRecipe[];
-  normalized: NormalizedResult[];
-  aggregated: AggregatedItem[];
-}
-
-/** Normalize one or more fixture recipes in a single call, then aggregate deterministically. */
-async function normalizeAndAggregate(recipes: FixtureRecipe[]): Promise<NormalizeOutput> {
-  let offset = 0;
-  const raw: RawIngredientLine[] = [];
-  const offsets: number[] = [];
-  for (const recipe of recipes) {
-    offsets.push(offset);
-    raw.push(...toRawLines(recipe, offset));
-    offset += recipe.lines.length;
-  }
-
-  const normalized = await normalizeIngredients(raw);
-
-  const lines: NormalizedLine[] = [];
-  recipes.forEach((recipe, i) => {
-    lines.push(
-      ...toNormalizedLines(recipe, normalized.slice(offsets[i], offsets[i] + recipe.lines.length))
-    );
-  });
-
-  return { recipes, normalized, aggregated: aggregateIngredients(lines) };
-}
-
-const rowsMatching = (out: NormalizeOutput, re: RegExp) =>
-  out.aggregated.filter((item) => re.test(item.name));
-
-const show = (out: NormalizeOutput) =>
-  out.aggregated
-    .map((i) => `${i.name} ${i.quantity ?? "as needed"} ${i.unit ?? ""} (${i.sources.length}x)`)
-    .join("; ");
 
 const recipe = (id: string): FixtureRecipe => {
   const found = WEEK.find((r) => r.recipeId === id);
