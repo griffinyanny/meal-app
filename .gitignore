@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+# Unanchored too: vitest writes a cache under evals/node_modules/.vite when it
+# runs with the eval config, and the leading-slash rule above does not reach it.
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +15,10 @@
 
 # testing
 /coverage
+
+# eval scratch — the raw per-task shards a run writes. The committed evidence is
+# evals/RESULTS.md plus the snapshot in evals/baseline/.
+/evals/results/
 
 # playwright e2e
 /test-results/

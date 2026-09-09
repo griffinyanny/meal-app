@@ -17,6 +17,10 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
+    "eval": "rm -rf evals/results && { vitest run -c evals/vitest.config.ts; npm run eval:report; }",
+    "eval:task": "vitest run -c evals/vitest.config.ts",
+    "eval:mock": "EVAL_MOCK=1 vitest run -c evals/vitest.config.ts",
+    "eval:report": "tsx evals/harness/write-report.ts",
     "test:capture": "playwright test -c playwright.capture.config.ts",
     "test:capture:live": "E2E_LIVE_CAPTURE=1 playwright test -c playwright.capture-live.config.ts",
     "storage:feedback": "node scripts/setup-feedback-storage.mjs",
@@ -74,6 +78,7 @@
     "shadcn": "^4.8.1",
     "supabase": "^2.101.0",
     "tailwindcss": "^4",
+    "tsx": "4.22.3",
     "typescript": "^5",
     "vitest": "^4.1.7"
   }
