@@ -18,10 +18,10 @@ Built as a mobile-first PWA on Next.js 16, React 19, tRPC, Drizzle, and Postgres
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/01-plan.png" width="24%" alt="The week's plan, with the chef's reasoning under each meal" />
-  <img src="docs/screenshots/02-groceries.png" width="24%" alt="The grocery list, grouped by aisle" />
-  <img src="docs/screenshots/03-recipes.png" width="24%" alt="The recipe library" />
-  <img src="docs/screenshots/04-onboarding.png" width="24%" alt="The onboarding interview playing back what it learned" />
+  <img src=".github/screenshots/01-plan.png" width="24%" alt="The week's plan, with the chef's reasoning under each meal" />
+  <img src=".github/screenshots/02-groceries.png" width="24%" alt="The grocery list, grouped by aisle" />
+  <img src=".github/screenshots/03-recipes.png" width="24%" alt="The recipe library" />
+  <img src=".github/screenshots/04-onboarding.png" width="24%" alt="The onboarding interview playing back what it learned" />
 </p>
 
 <p align="center"><em>The planned week &middot; the grocery list &middot; the recipe library &middot; onboarding playback</em></p>
@@ -153,22 +153,15 @@ src/
     grocery/      Ingredient aggregation and buy-unit logic
     trpc/         Routers and procedure middleware
 tests/e2e/        Playwright specs, capture layer, seeding harness
-docs/             Roadmap, decisions, scope docs, bug tracker
 ```
 
 Source files are held to a 300-line ceiling. When a file would exceed it, it gets split before the change lands.
 
 ---
 
-## Roadmap
+## Status
 
-- **V1 (current)** Recipe library, weekly planner, grocery list, preferences, AI onboarding
-- **V1.5** Light pantry, "what can I make", household sharing
-- **V2** Photo and social recipe import, freshness-aware planning, grocery ordering
-- **V3** Nutrition engine, health coaching, smart reordering
-- **V4** Native iOS and Android
-
-`docs/roadmap.md` carries the detail, `docs/decisions.md` records why each call was made, and `docs/bug-tracker.md` tracks known defects with reproduction steps, severity, and an address-by target.
+V1 is feature-complete and running as a private beta with its first household. The roadmap past V1, the decision log, and the product research are maintained privately.
 
 ---
 
