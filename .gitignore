@@ -59,3 +59,4 @@ reference/competitor-videos/
 /AGENTS.md
 /.claude/
 /.git-internal/
+/.env.example

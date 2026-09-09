@@ -123,12 +123,12 @@ Requires Node 20+ and a Postgres database (Supabase recommended).
 git clone https://github.com/griffinyanny/meal-app.git
 cd meal-app
 npm install
-cp .env.example .env.local   # fill in Supabase + OpenAI values
+# create .env.local with the four required variables listed below
 npm run db:migrate
 npm run dev
 ```
 
-Every variable in `.env.example` is documented inline, including which ones are optional and what the app does when they are unset. The observability and access-gate variables are all optional; unset means the feature is off, which is the correct local and CI state.
+Four variables are required in `.env.local`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`, and `OPENAI_API_KEY`. Everything else (analytics, error tracking, access gates) is optional and off when unset, which is the correct local and CI state.
 
 ```bash
 npm run test         # unit tests (watch)
