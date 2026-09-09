@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 // BUG-018 · WHICH Supabase project this harness may be pointed at, checked
 // before anything opens a connection.
 //
@@ -10,17 +12,36 @@
 //
 // So the allowed ref is COMMITTED, not configured. A guard that lives in
 // `.env.local`, beside the URL it is guarding, cannot catch a bad `.env.local`.
-// The ref is not a secret — it is the host in `NEXT_PUBLIC_SUPABASE_URL`, which
-// ships to every browser that loads the app.
 //
 // It is an ALLOW-LIST rather than the is-this-production test the tracker named,
 // and deliberately so: no property of a URL says "production", so inverting the
 // question would make the guard fail OPEN on every project it did not recognise
-// — the opposite of what it exists for. When a dedicated non-prod project
-// exists, add its ref below; nothing else changes.
+// — the opposite of what it exists for.
+//
+// ⚠️ THE LIST HOLDS SHA-256 HASHES, NOT REFS (S70). The repo went public as a
+// job-search artifact, and a plaintext ref here would hand every reader the
+// project host — from which `/auth/v1/settings` is reachable, and signup is
+// open. The ref is not a *secret* (it ships inlined in the client bundle of the
+// deployed app), but publishing it in source removes the one step an attacker
+// would otherwise have to take, so it is not free either.
+//
+// Hashing keeps the property the comment above is about: the allow-list is
+// still COMMITTED, so a copied `.env.local` still cannot vote on whether it is
+// allowed. A hash is a one-way check — the guard can confirm a ref belongs
+// without the file naming it.
+//
+// To add a project: `node -e "console.log(require('crypto').createHash('sha256')
+// .update('<ref>').digest('hex'))"` and append the result below.
 
-/** Every Supabase project the E2E harness is permitted to write to. */
-export const ALLOWED_PROJECT_REFS: readonly string[] = ["REDACTED-PROJECT-REF"];
+/** sha256 of every Supabase project ref the E2E harness may write to. */
+export const ALLOWED_PROJECT_REF_HASHES: readonly string[] = [
+  "ec2e0a24e040c5aad457a0e707d0973777b0468a34b073161aa91ca6de9addc4",
+];
+
+/** The allow-list comparison, one-way. Refs are lowercased before hashing. */
+export function hashProjectRef(ref: string): string {
+  return createHash("sha256").update(ref.trim().toLowerCase()).digest("hex");
+}
 
 /** `https://<ref>.supabase.co` → `<ref>`. */
 export function refFromSupabaseUrl(url: string): string | null {
@@ -58,7 +79,11 @@ export function refFromDatabaseUrl(url: string): string | null {
  * allow-listed project. Throws — this is a destructive-write guard, so an
  * unrecognised project is a stop, never a warning.
  */
-export function assertAllowedProject(supabaseUrl: string, databaseUrl: string): void {
+export function assertAllowedProject(
+  supabaseUrl: string,
+  databaseUrl: string,
+  allowedHashes: readonly string[] = ALLOWED_PROJECT_REF_HASHES
+): void {
   const fromApi = refFromSupabaseUrl(supabaseUrl);
   const fromDb = refFromDatabaseUrl(databaseUrl);
 
@@ -79,11 +104,12 @@ export function assertAllowedProject(supabaseUrl: string, databaseUrl: string): 
       `project guard: NEXT_PUBLIC_SUPABASE_URL names project "${fromApi}" but DATABASE_URL names "${fromDb}" — refusing to run.`
     );
   }
-  if (!ALLOWED_PROJECT_REFS.includes(fromDb)) {
+  if (!allowedHashes.includes(hashProjectRef(fromDb))) {
     throw new Error(
-      `project guard: project "${fromDb}" is not in the harness allow-list [${ALLOWED_PROJECT_REFS.join(", ")}]. ` +
+      `project guard: project "${fromDb}" is not in the harness allow-list. ` +
         `The seeder DELETES rows, so it will not run against a project it does not recognise. ` +
-        `If this project is genuinely a test target, add its ref to ALLOWED_PROJECT_REFS in tests/e2e/app/project-guard.ts.`
+        `If this project is genuinely a test target, add sha256("${fromDb}") to ` +
+        `ALLOWED_PROJECT_REF_HASHES in tests/e2e/app/project-guard.ts.`
     );
   }
 }

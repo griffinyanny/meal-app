@@ -1,14 +1,19 @@
 import { describe, it, expect } from "vitest";
 import {
-  ALLOWED_PROJECT_REFS,
+  ALLOWED_PROJECT_REF_HASHES,
   assertAllowedProject,
+  hashProjectRef,
   refFromDatabaseUrl,
   refFromSupabaseUrl,
 } from "./project-guard";
 
-// The real project, so the happy path is the configuration that actually ships
-// rather than a shape invented for the test.
-const REF = ALLOWED_PROJECT_REFS[0];
+// ⚠️ A SYNTHETIC ref, and the allow-list is INJECTED (S70). The committed list
+// holds hashes rather than refs, so the real one is not derivable here — which
+// is the point of hashing it. The guard's LOGIC is what these assertions are
+// about, and it is identical either way: the happy path passes a list built
+// from this ref's own hash, exactly as production passes the committed list.
+const REF = "bbbbbbbbbbbbbbbbbbbb";
+const ALLOWED = [hashProjectRef(REF)];
 const API_URL = `https://${REF}.supabase.co`;
 const POOLED_DB_URL = `postgresql://postgres.${REF}:pw@aws-1-us-east-1.pooler.supabase.com:6543/postgres`;
 const DIRECT_DB_URL = `postgresql://postgres:pw@db.${REF}.supabase.co:5432/postgres`;
@@ -52,9 +57,32 @@ describe("refFromDatabaseUrl", () => {
   });
 });
 
+// ⚠️ The failure mode hashing introduces: a mistyped hash refuses the real
+// project, and the only place that surfaces is an E2E run refusing to start.
+// These assert the SHAPE of the committed list, which is all that can be
+// checked without the plaintext ref — the value itself is verified by the
+// harness booting at all.
+describe("ALLOWED_PROJECT_REF_HASHES", () => {
+  it("should not be empty, since an empty list refuses every project", () => {
+    expect(ALLOWED_PROJECT_REF_HASHES.length).toBeGreaterThan(0);
+  });
+
+  it("should hold only lowercase sha256 hex digests", () => {
+    for (const h of ALLOWED_PROJECT_REF_HASHES) {
+      expect(h).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it("should not hold a raw project ref by mistake", () => {
+    for (const h of ALLOWED_PROJECT_REF_HASHES) {
+      expect(h).not.toMatch(/^[a-z]{20}$/);
+    }
+  });
+});
+
 describe("assertAllowedProject", () => {
   it("should permit the project the harness is actually configured for", () => {
-    expect(() => assertAllowedProject(API_URL, POOLED_DB_URL)).not.toThrow();
+    expect(() => assertAllowedProject(API_URL, POOLED_DB_URL, ALLOWED)).not.toThrow();
   });
 
   // The bug itself: a .env.local carrying someone else's project. The sentinel
@@ -64,7 +92,8 @@ describe("assertAllowedProject", () => {
     expect(() =>
       assertAllowedProject(
         `https://${OTHER}.supabase.co`,
-        `postgresql://postgres.${OTHER}:pw@aws-1-us-east-1.pooler.supabase.com:6543/postgres`
+        `postgresql://postgres.${OTHER}:pw@aws-1-us-east-1.pooler.supabase.com:6543/postgres`,
+        ALLOWED
       )
     ).toThrow(/not in the harness allow-list/);
   });
@@ -75,16 +104,17 @@ describe("assertAllowedProject", () => {
     expect(() =>
       assertAllowedProject(
         API_URL,
-        `postgresql://postgres.${OTHER}:pw@aws-1-us-east-1.pooler.supabase.com:6543/postgres`
+        `postgresql://postgres.${OTHER}:pw@aws-1-us-east-1.pooler.supabase.com:6543/postgres`,
+        ALLOWED
       )
     ).toThrow(/but DATABASE_URL names/);
   });
 
   it("should refuse rather than proceed when a ref cannot be read at all", () => {
-    expect(() => assertAllowedProject("https://example.com", POOLED_DB_URL)).toThrow(
+    expect(() => assertAllowedProject("https://example.com", POOLED_DB_URL, ALLOWED)).toThrow(
       /NEXT_PUBLIC_SUPABASE_URL/
     );
-    expect(() => assertAllowedProject(API_URL, "postgresql://postgres:pw@localhost/db")).toThrow(
+    expect(() => assertAllowedProject(API_URL, "postgresql://postgres:pw@localhost/db", ALLOWED)).toThrow(
       /DATABASE_URL/
     );
   });
