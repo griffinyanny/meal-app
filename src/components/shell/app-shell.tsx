@@ -64,10 +64,22 @@ export function AppShell({ children, devTools = false }: AppShellProps) {
           {children}
         </main>
         {/* Feedback capture (1F/E) rides INSIDE the nav rather than floating
-            over the app — see the note at its call site in `tab-bar.tsx`. It is
-            therefore absent on the chromeless onboarding route for free, which
-            is the right answer anyway: the interview is a conversation, and a
-            report filed mid-question has no surface to describe. */}
+            over the app — see the note at its call site in `tab-bar.tsx`.
+            ⚠️ IT IS THEREFORE ABSENT ON THE CHROMELESS ONBOARDING ROUTE, AND
+            THAT IS BUG-071, NOT A DESIGN. An earlier version of this comment
+            claimed the absence was "the right answer anyway: the interview is a
+            conversation, and a report filed mid-question has no surface to
+            describe." Both clauses are false. Onboarding IS a surface — route,
+            step, rendered screen, screenshot — and "don't invite them to wander
+            off mid-question" is the argument for hiding the TAB BAR, which is
+            navigation. A feedback trigger is not navigation; the justification
+            was borrowed because the control happens to live inside the nav.
+            A PLACEMENT decision silently produced a SCOPE decision, and this
+            comment then read back as though the scope decision were deliberate.
+            Onboarding runs exactly once, so its defects cannot be re-derived by
+            going back, and the second user's first run IS onboarding. The fix is
+            an invocation that is invisible until used (Griffin, S69), which
+            removes the tab-bar button too — not a trigger added here. */}
         {!chromeless && <TabBar devTools={devTools} />}
         <DebugHud />
       </div>
