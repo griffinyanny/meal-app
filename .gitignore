@@ -51,3 +51,11 @@ yarn-error.log*
 next-env.d.ts
 .masking-wire/
 reference/competitor-videos/
+
+# internal layer — tracked in the private meal-app-internal repo (.git-internal)
+/docs/
+/reference/
+/CLAUDE.md
+/AGENTS.md
+/.claude/
+/.git-internal/
