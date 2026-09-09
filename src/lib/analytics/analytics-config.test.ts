@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -77,11 +77,22 @@ describe("analytics is disabled for every automated run", () => {
     }
   });
 
-  // The env file is how a new machine learns the variable exists at all — and
-  // `reference_env_secrets` says these get recreated by hand on every machine.
-  it("documents the analytics variables in .env.example", () => {
-    const example = configSource(".env.example");
-    expect(example).toContain("NEXT_PUBLIC_POSTHOG_KEY");
-    expect(example).toContain("SENTRY_DSN");
-  });
+  // The env file is how a new machine learns the variable exists at all, and
+  // these get recreated by hand on every machine.
+  //
+  // ⚠️ SKIPPED IN A PUBLIC CHECKOUT, DELIBERATELY AND VISIBLY. `.env.example` is
+  // gitignored from the public repo, so this assertion has no subject there —
+  // and reading a missing file made `npm test` fail for anyone who cloned the
+  // repo, which is exactly what CI caught on its first run. It is `skipIf`
+  // rather than a silent early return so the runner PRINTS it as skipped: a
+  // guard that quietly passes when its subject is absent is the shape this
+  // project keeps getting burned by.
+  it.skipIf(!existsSync(join(process.cwd(), ".env.example")))(
+    "documents the analytics variables in .env.example",
+    () => {
+      const example = configSource(".env.example");
+      expect(example).toContain("NEXT_PUBLIC_POSTHOG_KEY");
+      expect(example).toContain("SENTRY_DSN");
+    }
+  );
 });
