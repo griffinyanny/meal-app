@@ -8,7 +8,7 @@ Built as a mobile-first PWA on Next.js 16, React 19, tRPC, Drizzle, and Postgres
 
 | | |
 |---|---|
-| **Status** | Phase 1F, private beta |
+| **Status** | Private beta, one household |
 | **Tests** | 875 unit tests across 79 files, 20 Playwright end-to-end specs |
 | **Data model** | 13 tables, 12 migrations, row-level security on all of them |
 | **AI surface** | 9 task types, all structured-output and schema-validated |
@@ -182,9 +182,33 @@ Source files are held to a 300-line ceiling. When a file would exceed it, it get
 
 ---
 
-## Status
+## Status and where this goes
 
-V1 is feature-complete and running as a private beta with its first household. The roadmap past V1, the decision log, and the product research are maintained privately.
+V1 is feature-complete and running as a private beta with its first household. Dates, sequencing, and the decision log are maintained privately, but the direction is not a secret, and it explains several choices in the architecture above.
+
+**Know what you have.** Today the app plans forward from nothing. The next thing it needs is the state of your kitchen.
+
+- **A pantry that nobody has to maintain.** Binary have / do not have, inferred from what you bought and cooked. The bar is zero friction: a pantry that asks for inventory work goes stale in a week and then lies to the planner.
+- **"What can I make right now?"** The same planner, constrained to what is already in the house.
+- **A household, not an account.** Shared plans and a grocery list two people can both check off in the aisle without stepping on each other.
+
+**From plan to doorstep.** The list is the handoff point today. Everything here shortens the distance between deciding and eating.
+
+- **Capture from a photo or a shared post.** Recipes arrive as screenshots and videos far more often than as clean URLs.
+- **Freshness-aware sequencing.** Cook the fish before the root vegetables. The planner already reasons about ingredient reuse; this extends it to spoilage.
+- **A list in the order of the store you actually shop.** Aisle mapping per store instead of generic categories.
+- **Ordering, when a cart integration earns the trust.** The manual list has to keep working perfectly regardless, because a failed cart handoff costs more confidence than it saves time.
+
+**Kitchen intelligence.** Depth on the health side, which is where the data finally gets interesting.
+
+- **Nutrition and diet adherence at depth**, measured against the goals someone actually set.
+- **Recurring purchases that reorder themselves**, learned from actual cadence.
+
+**On the home screen.** The PWA is the deliberate first step, not the destination.
+
+- **Native iOS and Android**, for push, a share extension, and the offline story a browser cannot fully tell.
+
+The tRPC boundary rule in the architecture section is the load-bearing decision for that last one: business logic lives behind procedures a native client can call, so mobile becomes a new client instead of a rewrite.
 
 ---
 
